@@ -1,0 +1,36 @@
+{
+  "tmdb_id": 457027,
+  "media_type": "movie",
+  "title": "我们",
+  "original_title": "アタシラ。",
+  "english_title": "Atashira",
+  "year": "2017",
+  "poster_url": "https://image.tmdb.org/t/p/w500/215CqWQyobkWz649h9pPiMeJfHT.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/sQdkVgzw8WfOkbMtGlrhKEJPRfI.jpg",
+  "overview": "我是不了解自己是谁的孤独的天才。你知道自己是谁吗？当问到你“你自己是谁”的时候，你一定会一时不知如何回答。这是因为所有人都不是因由自己的意识降生于世。所以，人在描述自己是谁的时候会用上“我是谁谁家的孩子”亦或是“我是在哪里哪里上班的某某”。这明明是在描述自己，却一定要用上自身之外的某样东西。“我们”自己不了解自己，自己也无法控制自己……",
+  "rating": 3.9,
+  "genres": [
+    "剧情",
+    "悬疑"
+  ],
+  "director": "ヨリコジュン",
+  "cast": [
+    "森野美咲",
+    "Masakatsu Nakasaki",
+    "速水今日子",
+    "Noriko Kimura"
+  ],
+  "runtime": 101,
+  "imdb_id": "tt6634930",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Japan"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

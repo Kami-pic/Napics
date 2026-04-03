@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 604605,
+  "media_type": "movie",
+  "title": "你好世界",
+  "original_title": "HELLO WORLD",
+  "english_title": "HELLO WORLD",
+  "year": "2019",
+  "poster_url": "https://image.tmdb.org/t/p/w500/8E2hu0QcHKfefegoWUoJSi7qD4Q.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/cXEZWZSxiD7w96p1sCd23FL2O9y.jpg",
+  "overview": "在京都居住的内向男高中生直实 的面前，突然出现从10年后穿越而来26岁的自己。未来的直实告诉他，自己不久便会与琉璃 相爱，可是之后烟花大会时她却会因为一场事故意外离世。 为了拯救爱人，16岁的直实卷入了这场现实与虚拟的记忆世界，经历了一系列超乎想象的事情。即使世界毁灭，我也想再见你一面。",
+  "rating": 7.3,
+  "genres": [
+    "动画",
+    "爱情",
+    "科幻",
+    "剧情"
+  ],
+  "director": "伊藤智彦",
+  "cast": [
+    "北村匠海",
+    "松坂桃李",
+    "滨边美波",
+    "福原遥",
+    "寿美菜子",
+    "钉宫理惠"
+  ],
+  "runtime": 97,
+  "imdb_id": "tt9418812",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Japan"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

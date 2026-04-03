@@ -1,0 +1,69 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/8zbAoryWbtH0DKdev8abFAjdufy.jpg",
+      "genre_ids": [
+        10765,
+        9648,
+        10759
+      ],
+      "id": 66732,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Stranger Things",
+      "overview": "1983 年，当一个小男孩莫名其妙地失踪后，他的朋友、家人和当地警察开始寻找答案时，他们都被卷入一个非同寻常的谜团，揭开了涉及秘密实验、恐怖的超自然力量以及一个奇怪的小女孩的谜团。",
+      "popularity": 137.9557,
+      "poster_path": "/2mYLTEQd1oHuXA6NICPIKX7OOvo.jpg",
+      "first_air_date": "2016-07-15",
+      "name": "怪奇物语",
+      "vote_average": 8.573,
+      "vote_count": 20918
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vV6Ri27Zd0VGMbeNY3yKQxj5Q9P.jpg",
+      "genre_ids": [
+        9648
+      ],
+      "id": 108262,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "おそろし～三島屋変調百物語",
+      "overview": "故事发生在江户时代，为了逃避不快的回忆，美丽灵巧的女孩阿近（波瑠 饰）来到叔叔伊兵卫（佐野史郎 饰）经营的提袋店三岛屋帮佣。她手脚勤快，任劳任怨，令三岛屋上上下下颇为欢心。偶然机缘，阿近代替叔父接待了预定上门的客人。客人神色慌张，欲言又止。自信能够帮人排忧解难的阿近主动担当起倾听者的重任。谁知对方却娓娓道出一段关于“死人之花”曼珠沙华的凄迷诡异故事。以此为开端，接下来的日子里阿近听说并记录了一段又一段灵异诡异的故事（凶宅、邪恋、魔镜、满屋作响），而她也在不知不觉间卷入其中……",
+      "popularity": 3.4639,
+      "poster_path": "/xRDRDLnx6mwxY7yjo4rNGdWIxkW.jpg",
+      "first_air_date": "2014-08-30",
+      "name": "怪谈：三岛屋奇异百物语",
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ulBGaxq9GmJexyEOi4Xci74g6Vt.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        9648,
+        10759
+      ],
+      "id": 224263,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Stranger Things: Tales from '85",
+      "overview": "1985 年冬，霍金斯。欢迎回到这座充满秘密的小镇 — 在这里，备受喜爱的主角团将面临新的谜团以及全新的怪奇。",
+      "popularity": 5.8874,
+      "poster_path": "/yFXcUqN3nQCxWklI35DwffOMNZz.jpg",
+      "first_air_date": "2026-04-23",
+      "name": "Stranger Things: Tales from '85",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

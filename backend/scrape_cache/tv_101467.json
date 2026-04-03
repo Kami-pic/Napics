@@ -1,0 +1,31 @@
+{
+  "tmdb_id": 101467,
+  "media_type": "tv",
+  "title": "29",
+  "original_title": "29",
+  "english_title": "29",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/oX98o06sisn7RDKo6QOLUcTOpMf.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/hDgISCV5MWgUAvoZZuqxEwwYLLi.jpg",
+  "overview": "",
+  "rating": 10.0,
+  "genres": [
+    "喜剧",
+    "剧情"
+  ],
+  "director": "",
+  "cast": [],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 5,
+  "status": "Ended",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Denmark"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

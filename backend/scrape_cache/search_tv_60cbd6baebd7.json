@@ -1,0 +1,216 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/7hQ4jjfuH04stb1d4H2u4CLoQvu.jpg",
+      "genre_ids": [
+        16,
+        35,
+        10759,
+        10765
+      ],
+      "id": 99778,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "THE GOD OF HIGH SCHOOL ゴッド・オブ・ハイスクール",
+      "overview": "　　从爷爷那里得到跆拳道真传的陈毛利，得到了“高中之神”的邀请，并在大会中脱颖而出，进入全国争霸赛。但是陈毛利在比赛中意外受到了诺克思军团恶意袭击，在那之后，陈毛利和朋友们组成反侵略组织一起对抗诺克思军团...",
+      "popularity": 30.9811,
+      "poster_path": "/2opVODFZkXn5yIIE2Es1Z6fHG2U.jpg",
+      "first_air_date": "2020-07-06",
+      "name": "高校之神",
+      "vote_average": 8.2,
+      "vote_count": 735
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/nU5YaWbnF4dmdpSQz06Dn2uL0Hk.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10762
+      ],
+      "id": 11100,
+      "origin_country": [
+        "US",
+        "JP"
+      ],
+      "original_language": "en",
+      "original_name": "Godzilla: The Series",
+      "overview": "《酷斯拉》上映后，许多欧美影迷给了它一个绰号：GINO，意思是“GodzillaInNameOnly”。延续电影的剧情，美日的两家公司共同制作了《哥斯拉：动画系列》，总共两季，亚洲区HBO曾在2000年播出过中文字幕版。在此系列中，尼克·塔特普洛斯意外发现了那颗没有被摧毁的蛋，刚好此时蛋孵化了，刚出生的哥斯拉因为对尼克不小心沾到哥斯拉蛋的羊水产生了铭印而亲近他，后来更和主角们一起帮人类对抗接踵而来的其他变种怪兽。动画版的哥斯拉和电影版的不太一样，因为要面对多种不一样的怪物，就要拥有强大的力量，制作公司刻意使动画版的哥斯拉近似原版的哥斯拉，所以让它也可以吐出强力的热线，拥有日版一般坚硬的皮肤，导弹之类的武器已经无法伤他分毫。动画的剧情走向很好，对人类内心的黑暗也进行了刻画。比起索尼电影版《酷斯拉》更受原著迷的认同。",
+      "popularity": 9.8237,
+      "poster_path": "/elcF4hnfQ4tx0lmW9tGKDsI3Vct.jpg",
+      "first_air_date": "1998-09-12",
+      "name": "哥斯拉 末世龙战",
+      "vote_average": 7.9,
+      "vote_count": 145
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/qSdvfhaDhFhNbfU3A6ukJgJrGLQ.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        10759
+      ],
+      "id": 97333,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Twilight of the Gods",
+      "overview": "扎克·施奈德为我们带来大胆而雄奇的全新北欧神话动画《诸神末日》。在这个充满伟大战役、伟大事迹和巨大绝望的神话世界，凡人国王利夫在战场上被铁腕战士西格丽德所救，并爱上了她。在他们的新婚之夜，西格丽德和利夫从索尔的恐怖怒火中幸存下来，这让他们和一队十字军开始了一场排除万难的无情复仇之旅。这是一个关于爱、失去和复仇的英雄故事，讲述了一场通往地狱及更远之地的旅程，他们横跨奇幻的土地和激烈而血腥的战场，经历了神明和恶魔的战争。",
+      "popularity": 8.3924,
+      "poster_path": "/eD06k57wjm9KgUcDZdtXsr6vOmI.jpg",
+      "first_air_date": "2024-09-19",
+      "name": "诸神末日",
+      "vote_average": 7.6,
+      "vote_count": 145
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ev3DavWp8CEuNBTicb6UAS7Lwvv.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 39651,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Mario Puzo's The Godfather: The Complete Novel for Television",
+      "overview": "《教父》与《教父2》的七小时编年剪辑版，新增超过一小时的修复场景，完整呈现柯里昂家族从维托在西西里的青年时期，到迈克尔在1950年代美国掌权的崛起之路。",
+      "popularity": 8.9619,
+      "poster_path": "/zqIfrXlz3xT31uem2jA2acXinr7.jpg",
+      "first_air_date": "1977-11-12",
+      "name": "教父 (电视剧重剪版)",
+      "vote_average": 8.6,
+      "vote_count": 91
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lfgjDGLdVgyCSx4XUiclckeQf5R.jpg",
+      "genre_ids": [
+        35,
+        16
+      ],
+      "id": 3511,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "God, the Devil and Bob",
+      "overview": "",
+      "popularity": 5.3903,
+      "poster_path": "/uSpUzhklRGKcBgeuDdAxsOuizCs.jpg",
+      "first_air_date": "2000-03-09",
+      "name": "God, the Devil and Bob",
+      "vote_average": 7.4,
+      "vote_count": 22
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/q78bZF6LIOIUonmIFOgUTX2JqEA.jpg",
+      "genre_ids": [
+        99,
+        18
+      ],
+      "id": 242392,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Alexander: The Making of a God",
+      "overview": "该剧将聚焦于著名的军事领袖亚历山大大帝(公元前356-前323)，作为国王腓力二世的儿子，亚历山大的军事才能帮助他建立了历史上最庞大最著名的帝国之一，其本人成为马其顿的传奇。尽管英年早逝，亚历山大仍然成为了一个极具影响力的人物，他的遗产时至今日仍被世人所铭记。这部剧集结合专家访谈和扣人心弦的场景重现，展现亚历山大大帝的非凡一生及其征服世界的强烈渴望。",
+      "popularity": 4.853,
+      "poster_path": "/tKUTpdyg0wGfIYplIAfkN6hDbRw.jpg",
+      "first_air_date": "2024-01-31",
+      "name": "亚历山大大帝：封神之路",
+      "vote_average": 6.0,
+      "vote_count": 49
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/7pnGtMK5JYlXUQ2gwKORnX6sap1.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 66185,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Story of God with Morgan Freeman",
+      "overview": "",
+      "popularity": 4.0823,
+      "poster_path": "/bEnmBF9RHhNPAF4ZdFMGtHO8onZ.jpg",
+      "first_air_date": "2016-04-03",
+      "name": "跟摩根·弗里曼追寻神的故事",
+      "vote_average": 7.5,
+      "vote_count": 383
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/j0A36vVNM3JXQuZBoNOhZ5Dr8bP.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 30898,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Clash of the Gods",
+      "overview": "在古希腊的神话中，有着形形色色的神祗，也有着光怪陆离的鬼怪。希腊神话中的诸神跟人类一样，有着爱恨情仇，七情六欲。但是这些流传千古的神话故事，又与现实有着怎样千丝万缕的联系？这些神话传说的背后，又隐藏着什么样的秘密？\n\n这部纪录片有趣之处在于把很多神话中的故事与自然、历史考古发现联系起来，试图证明希腊神话并非凭空捏造，而是根据古代希腊的自然风貌、灾害而创造出来的。\n\n例如考古证实宙斯出生的山洞在现实中确有其地；宙斯与其父的决斗，实际对应了一次超强地震；泰坦巨人和他们召唤出的泰丰巨兽被宙斯击败后，坠入意大利的埃特纳火山而掉入地狱，火山爆发乃是泰丰巨兽复仇的烈焰；宙斯惩罚人类的洪水和《圣经》中”诺亚方舟“的那场洪水，实际可能对应着同一场7000年前真实发生过的的东地中海冰川融水；赫拉克勒斯打通地中海通向外面世界道路时劈开的山岭，竟是今天欧非大陆间的直布罗陀海峡……这就是古代人认识世界的方式：用神话解释神奇。",
+      "popularity": 1.9839,
+      "poster_path": "/5yZvtX3O97uYpAdmxk4FiGLQhmd.jpg",
+      "first_air_date": "2009-08-10",
+      "name": "诸神之战",
+      "vote_average": 7.4,
+      "vote_count": 8
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6cqDd6lFTQG8yOdB6lP0xMvu3nA.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 238179,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Love Has Won: The Cult of Mother God",
+      "overview": "",
+      "popularity": 4.5998,
+      "poster_path": "/i5yPnJJ7tOzswWQSlZK83VYaVNV.jpg",
+      "first_air_date": "2023-11-13",
+      "name": "Love Has Won: The Cult of Mother God",
+      "vote_average": 6.9,
+      "vote_count": 29
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/wUqv2GOPHMEIXFCKjM2z8ZADvHm.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 75848,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Windmills of the Gods",
+      "overview": "",
+      "popularity": 2.3268,
+      "poster_path": "/mmIMxaNqKPHFMx2ssRV0FfWDbLI.jpg",
+      "first_air_date": "1988-02-07",
+      "name": "Windmills of the Gods",
+      "vote_average": 5.8,
+      "vote_count": 7
+    }
+  ]
+}

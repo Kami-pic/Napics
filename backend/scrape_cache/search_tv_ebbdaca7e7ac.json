@@ -1,0 +1,68 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/61YttrsiP6B4sJo98HFMuHKPV3G.jpg",
+      "genre_ids": [
+        35,
+        80,
+        18
+      ],
+      "id": 87428,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Why Women Kill",
+      "overview": "剧中讲述三个年代的三名女主，分别是60年代的家庭主妇、80年代的社交名媛及2018 年的律师，她们的共同点是得应付婚姻里的不忠。贝斯从小的梦想就是能够成为一名家庭主妇，如今她嫁给了罗伯特为妻，总算是实现了理想。没想到第三者的出现将她美好的生活幻影撕成了碎片。社交名媛西蒙尼嫁给了非常疼爱她的卡尔，哪知道竟然在偶然之中发现卡尔竟然是一名同性恋者，在守住秘密和守住尊严之间，西蒙尼必须做出选择。泰勒和埃里正在进行一场开放式婚姻，泰勒的情人杰德的出现让埃里开始觉得，在他们两个人里面再加一个人似乎也是个不错的主意。",
+      "popularity": 17.1788,
+      "poster_path": "/3KO94CDaC7JBezLx1BtzSPyaUNk.jpg",
+      "first_air_date": "2019-08-15",
+      "name": "致命女人",
+      "vote_average": 7.873,
+      "vote_count": 367
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 263017,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "致命女人",
+      "overview": "被丈夫林莫凡用“煤气灯效应”迫害，净身出户的温绮，在闺蜜水晶晶的指点下，得知婚姻中的情感骗局的真相，意识觉醒决定以其人之道还治其人之身，携手小三陈珊珊一起复仇“渣男”。",
+      "popularity": 0.8694,
+      "poster_path": "/jI0cPGJrKYMbMy6vSsy9K5cYJVe.jpg",
+      "first_air_date": "2022-12-30",
+      "name": "致命女人",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/9vypNFCSB7GWK6wfAbVml9pMVi9.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        10759
+      ],
+      "id": 19997,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Andromeda Strain",
+      "overview": "改编自Michael Crichton的同名畅销小说。 \n　　此片是斯科特兄弟重导2008年的电视剧而成的迷你剧。 \n　　犹他州的皮德蒙特小镇，一对男女情侣正在山上约会，突然一颗人造卫星掉落。好奇的两人将卫星带回小镇，却不知道也将可怕的遭难带回了小镇。突然间小镇上爆发了可怕的病毒， 人们纷纷不明原因地死去。为防止病毒扩散到其他城市，军队封锁了小镇，并派出了代号为“仙女座”的科学队前去查明病源。队员包括：传染病学家Jeremy（本杰明·布拉特BenjaminBratt 饰）、外空生物学家Angela（克里斯塔·米勒 Christa Miller 饰）、微生物学家Tsi（金大贤 饰）、病理学家Charlene（维奥拉·戴维斯 ViolaDavis 饰）。同时，一个名叫Jack（艾瑞克·麦克马奇EricMcCormack 饰）的记者似乎也在探寻着不可告人的秘密……",
+      "popularity": 7.3164,
+      "poster_path": "/n33QUOYAoNScuFu75CK0fy0Cyyk.jpg",
+      "first_air_date": "2008-05-26",
+      "name": "天外来菌",
+      "vote_average": 6.2,
+      "vote_count": 233
+    }
+  ]
+}

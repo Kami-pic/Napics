@@ -1,0 +1,61 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99,
+        10767
+      ],
+      "id": 232205,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "奸臣传",
+      "overview": "谢承汇讲述中国历代奸臣的故事",
+      "popularity": 0.1767,
+      "poster_path": "/tSop6OCkX3Ca3YLGBcPMuB60ZTE.jpg",
+      "first_air_date": "2022-05-26",
+      "name": "奸臣传",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 281875,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "朕的朝堂都是奸臣",
+      "overview": "李天事业受挫，情感破裂。一日，他于街边偶遇老旧书摊被古朴小说吸引。翻阅时，奇异光芒闪过，他穿越至书中成为次日继位的太子，却面临死期。朝堂被权势滔天、心怀叵测的奸臣把控，国家乌烟瘴气，李天性命危在且夕。绝望之际，他发现穿越时带来的神奇玉佩，拥有神秘力量，在生死危机中屡建奇功，成为他在异世唯一的依靠。凭借这枚金手指”，李天踏上惊险征程，立志斩奸除恶，扭转乾坤拯救自身命运与岌岌可危的国家。",
+      "popularity": 0.0,
+      "poster_path": "/bmD47M9FOGvMFgcT53xHZjcjLhO.jpg",
+      "first_air_date": "2024-10-28",
+      "name": "朕的朝堂都是奸臣",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 246438,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "炮灰穿的好，奸臣也折腰",
+      "overview": "一位有着医学博士身份的女小说家，却因诅咒意外穿越到书中，成为被反派利用陷害的哑巴炮灰角色；而肖钰是圣上太子所忌惮的丞相，也是因功高盖主被陷害经历重重磨难的男主角。为了能改变剧情活到大结局，她不得不利用自己的现代医术帮助肖钰来再次重写小说剧情，并在过程中与肖钰产生愈发微妙的感情……",
+      "popularity": 0.0,
+      "poster_path": "/kLKCtbCUccUuZ4Vi5exH9zNNobk.jpg",
+      "first_air_date": "2023-11-06",
+      "name": "炮灰穿的好，奸臣也折腰",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

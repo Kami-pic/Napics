@@ -1,0 +1,63 @@
+{
+    "id": 1774758251,
+    "time": "Sun Mar 29 12:24:11 2026",
+    "label": "organize",
+    "summary": "整理 11 个文件 → 09、10、05 等11个文件夹",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\02.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\02\\02.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\03.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\03\\03.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\04.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\04\\04.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\05.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\05\\05.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\06.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\06\\06.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\07.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\07\\07.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\08.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\08\\08.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\09.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\09\\09.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\10.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\10\\10.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\11.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\11\\11.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\交响情人梦 Nodame Cantabile (2007) 720p.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\交响情人梦 Nodame Cantabile\\交响情人梦 Nodame Cantabile (2007)\\交响情人梦 Nodame Cantabile (2007) 720p.mp4",
+            "is_dir": false
+        }
+    ]
+}

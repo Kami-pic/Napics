@@ -1,0 +1,43 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 315884,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "过年带女神回家，爸妈装穷被曝光了",
+      "overview": "林深本是超级富二代，但自小被父母穷养，因此林深对身世并不知情。成年后的林深进入社会，没有因为贫穷身份而自卑，反而获得美女总裁赵伊人的好感。与女总裁互相假扮男女朋友见家长，却引来坏人妒忌陷害，林深凭借过人的机智，以及父母的暗中相助，终于步步破局，而林深也终于意识到自己出身不简单，体谅父母苦心之后，接受了全新的生活。",
+      "popularity": 0.0631,
+      "poster_path": "/lUn3WysL6oT6daQnY3V3VNbKV2z.jpg",
+      "first_air_date": "2026-02-07",
+      "name": "过年带女神回家，爸妈装穷被曝光了",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fvmP260GyJyejGXvoSGHmTAnDv0.jpg",
+      "genre_ids": [
+        16,
+        35
+      ],
+      "id": 45968,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "貧乏神が!",
+      "overview": "　　自古以来，生灵万物自出生时就带来了两股能量——幸福的能量和不幸的能量。然而日本的佛女津市这两股能量的平衡却遭到了破坏。神明界掌管幸运与不幸平衡的穷神会派出穷神红叶（内山夕实 饰）下凡到人间调查破坏运气秩序的元凶樱市子（花泽香菜 饰）。16岁的高中生樱市子是一名集美丽、智慧、财力、运动细胞于一身的天生幸运儿，她从出生就不知道什么是努力和失败。红叶用观察幸福与不幸能量值的眼镜看出原来樱市子不仅幸福的能量值大大高于常人，还在不断汲取着别人的幸福能量。红叶断言如果樱市子继续不断吸收别人的幸福能量的话，将会招致身边人变得不幸。于是红叶宣布要废掉樱市子吸收幸福能量的能力并且把她多得离谱的幸福能量还回它们应有的地方……",
+      "popularity": 5.3255,
+      "poster_path": "/3gmBRiWz8Elnb1VoRHehhYtd0sj.jpg",
+      "first_air_date": "2012-07-05",
+      "name": "贫乏神来了！",
+      "vote_average": 6.6,
+      "vote_count": 35
+    }
+  ]
+}

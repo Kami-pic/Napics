@@ -1,0 +1,36 @@
+{
+  "tmdb_id": 830531,
+  "media_type": "movie",
+  "title": "The Lake House",
+  "original_title": "The Lake House",
+  "english_title": "The Lake House",
+  "year": "2020",
+  "poster_url": "https://image.tmdb.org/t/p/w500/qbsZnW0bbbYcRXQrNzZdEJQnRaZ.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 10.0,
+  "genres": [
+    "爱情"
+  ],
+  "director": "Max Carter",
+  "cast": [
+    "Brian Gibson",
+    "Jacob Hansen",
+    "Devin Holt",
+    "Garrett Kinsley",
+    "Jace Myers"
+  ],
+  "runtime": 15,
+  "imdb_id": "tt13441166",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

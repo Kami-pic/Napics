@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/qEakqZN8kLK71amM0g26Shg1rHD.jpg",
+      "genre_ids": [
+        16,
+        9648,
+        10765
+      ],
+      "id": 42142,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "UN-GO",
+      "overview": "人称之为最后的名侦探，结城新十郎与搭档因果，两人是专门破解谜团及找出真相的侦探双人组。从抽丝剥解找出杀害有钱人家的凶嫌、到证实死于诅咒之下的男人并非因诅咒而死等事件，新十郎与因果两人的搭档下，没有解不开的谜团。\n\n其实，总是爱面子逞强，往往事与愿违的场面也比较多。即便如此，两人还是如同被吸引着去迎面解决所发生的事件。",
+      "popularity": 12.6307,
+      "poster_path": "/uzsz4NmGe0Q77bLjk7FKa9eV5Gm.jpg",
+      "first_air_date": "2011-10-14",
+      "name": "UN-GO 因果日记",
+      "vote_average": 6.5,
+      "vote_count": 13
+    }
+  ]
+}

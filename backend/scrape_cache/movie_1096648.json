@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 1096648,
+  "media_type": "movie",
+  "title": "EVANGELION: 3.0 (-46h)",
+  "original_title": "EVANGELION: 3.0",
+  "english_title": "EVANGELION: 3.0",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/obeRgHwiJaGvaLyXro4pa54cbMz.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/yUf6854Nad5OLhJJUyY49TcwaTn.jpg",
+  "overview": "《福音战士新剧场版：Q》剧情之前46小时发生的事件。北上绿想起了她在近三冲后的经历以及她是如何在WILLE的帮助下获救的。",
+  "rating": 6.3,
+  "genres": [
+    "动画",
+    "科幻",
+    "动作"
+  ],
+  "director": "谷田部透湖",
+  "cast": [
+    "伊濑茉莉也",
+    "宫村优子",
+    "大原沙耶香",
+    "胜杏里",
+    "坂本真绫"
+  ],
+  "runtime": 11,
+  "imdb_id": "tt27121876",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Japan"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

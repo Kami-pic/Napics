@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/xXliNn9WUSqv5MkjrwD3cp1xXNr.jpg",
+      "genre_ids": [
+        16,
+        18,
+        9648,
+        14
+      ],
+      "id": 798544,
+      "original_language": "ja",
+      "original_title": "サマーゴースト",
+      "overview": "“知道夏日幽灵吗？”通过网络相识的高中生，友也、葵、凉。据称，都市传说中被称作“夏日幽灵”的是一位年轻女性的幽灵，只要燃放烟花她就会现身。无法迈向心仪人生的“友也”，寻找不到容身之处的\"葵\"，美好未来不翼而飞的\"凉\"，他们分别有着必须见到夏日幽灵的理由。在生与死交织的夏夜，三人各自的思虑会迈向何方呢？",
+      "popularity": 3.3077,
+      "poster_path": "/5SlXacj4F5RdLRL8GFusdk1KybB.jpg",
+      "release_date": "2021-11-12",
+      "title": "夏日幽灵",
+      "video": false,
+      "vote_average": 7.221,
+      "vote_count": 154
+    }
+  ]
+}

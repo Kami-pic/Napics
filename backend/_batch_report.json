@@ -1,0 +1,1654 @@
+{
+  "results": [
+    {
+      "name": "National Geographic Ultimate Factories Porsche 911 (2011)",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.9,
+      "status": "ok"
+    },
+    {
+      "name": "National_Geographic_Megafactories_Mercedes_720p_HDTV_x264",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "National_Geographic_S..Factories.1080p_HDTV_x264",
+      "category": "national geographic ultimate factory",
+      "folder_type": "mixed",
+      "struct_ops": 0,
+      "rename_changed": 68,
+      "elapsed": 76.2,
+      "status": "ok"
+    },
+    {
+      "name": "【国家地理.伟大工程巡礼系列E117.布加迪超级跑车】National.Geographic.Man.Made.Bugatti.Super.Car.720p.HDTV.x264-DHD",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "【国家地理.超级工厂.兰博基尼】National.Geographic.Ultimate.Factories.Lamborghini.HDTV.720p.x264.AC3.5.1",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "【国家地理.超级工厂.宝马Z4跑车】National.Geographic.Ultimate.Factories-BMW.HDTV.720p.x264.AC3.5.1",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "国家地理.超级工厂.玛莎拉蒂.national.geographic.ultimate.factories.maserati.720p.hdtv.x264",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "国家地理：超级工厂：法拉利跑车 (2006)",
+      "category": "national geographic ultimate factory",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "剑风传奇 黄金时代篇 剧场版1-3",
+      "category": "动画电影",
+      "folder_type": "series_collection",
+      "struct_ops": 0,
+      "rename_changed": 3,
+      "elapsed": 6.5,
+      "status": "ok"
+    },
+    {
+      "name": "动画短片合集",
+      "category": "动画电影",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 8,
+      "elapsed": 15.5,
+      "status": "ok"
+    },
+    {
+      "name": "千年女优 Millennium Actress (2002)",
+      "category": "动画电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "命运之夜 无限剑制 Fatestay night [Unlimited Blade Works]",
+      "category": "动画电影",
+      "folder_type": "mixed",
+      "struct_ops": 0,
+      "rename_changed": 4,
+      "elapsed": 5.4,
+      "status": "ok"
+    },
+    {
+      "name": "壳中少女 Mardock Scramble",
+      "category": "动画电影",
+      "folder_type": "series_collection",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 6.0,
+      "status": "ok"
+    },
+    {
+      "name": "未麻的部屋 PERFECT BLUE (1998)",
+      "category": "动画电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "来自深渊剧场版三部曲",
+      "category": "动画电影",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 4,
+      "elapsed": 8.0,
+      "status": "ok"
+    },
+    {
+      "name": "永远之久远",
+      "category": "动画电影",
+      "folder_type": "series_collection",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 11.6,
+      "status": "ok"
+    },
+    {
+      "name": "福音战士新剧场版 Evangelion 三部曲",
+      "category": "动画电影",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 9,
+      "elapsed": 10.4,
+      "status": "ok"
+    },
+    {
+      "name": "红辣椒 Paprika (2006)",
+      "category": "动画电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 2.0,
+      "status": "ok"
+    },
+    {
+      "name": "茗记：2nd Life (2007)",
+      "category": "动画电影",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 5,
+      "elapsed": 5.4,
+      "status": "ok"
+    },
+    {
+      "name": "言叶之庭 The Garden of Words (2013)",
+      "category": "动画电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "86-不存在的战区- 86 EIGHTY-SIX",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 24,
+      "elapsed": 57.2,
+      "status": "ok"
+    },
+    {
+      "name": "91天 91Days",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 22.4,
+      "status": "ok"
+    },
+    {
+      "name": "JOJO的奇妙冒险 JoJo's Bizarre Adventure",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 189,
+      "elapsed": 401.2,
+      "status": "ok"
+    },
+    {
+      "name": "PLUTO",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 8,
+      "elapsed": 13.3,
+      "status": "ok"
+    },
+    {
+      "name": "UN-GO 因果日记 UN-GO",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 23.9,
+      "status": "ok"
+    },
+    {
+      "name": "一拳超人 One-Punch Man",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 34.0,
+      "status": "ok"
+    },
+    {
+      "name": "东京ESP 東京ESP",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 33.2,
+      "status": "ok"
+    },
+    {
+      "name": "东京地震8.0 Tokyo Magnitude 8.0",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 11,
+      "elapsed": 19.8,
+      "status": "ok"
+    },
+    {
+      "name": "东京食尸鬼 Tokyo Ghoul",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 23,
+      "elapsed": 61.4,
+      "status": "ok"
+    },
+    {
+      "name": "交响情人梦 Nodame Cantabile",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 11,
+      "elapsed": 29.7,
+      "status": "ok"
+    },
+    {
+      "name": "交响诗篇 Eureka Seven",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 24,
+      "elapsed": 64.2,
+      "status": "ok"
+    },
+    {
+      "name": "人渣的本愿 Scum's Wish",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 32.7,
+      "status": "ok"
+    },
+    {
+      "name": "军火女王 Jormungand",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 24,
+      "elapsed": 53.8,
+      "status": "ok"
+    },
+    {
+      "name": "剑豪生死斗 Shigurui Death Frenzy",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 33.0,
+      "status": "ok"
+    },
+    {
+      "name": "加速世界",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 25,
+      "elapsed": 46.0,
+      "status": "ok"
+    },
+    {
+      "name": "十二国记",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 45,
+      "elapsed": 121.5,
+      "status": "ok"
+    },
+    {
+      "name": "卡罗尔与星期二 CAROLE & TUESDAY",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 20,
+      "elapsed": 14.4,
+      "status": "ok"
+    },
+    {
+      "name": "双斩少女",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 24,
+      "elapsed": 2.1,
+      "status": "ok"
+    },
+    {
+      "name": "变形金刚：赛博坦之战s1-s2",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 15,
+      "elapsed": 38.9,
+      "status": "ok"
+    },
+    {
+      "name": "只有我不在的街道只有我不在的城市[Boku_Dake_ga_Inai_Machi][BDrip][01_12][GB][1080P][HEVC_Main10]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 33.5,
+      "status": "ok"
+    },
+    {
+      "name": "吹响！上低音号",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 37.7,
+      "status": "ok"
+    },
+    {
+      "name": "哥斯拉：奇点",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 35.8,
+      "status": "ok"
+    },
+    {
+      "name": "四月是你的谎言",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 23,
+      "elapsed": 61.1,
+      "status": "ok"
+    },
+    {
+      "name": "地球队长",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 26,
+      "elapsed": 69.4,
+      "status": "ok"
+    },
+    {
+      "name": "夏日重现",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 24,
+      "elapsed": 61.8,
+      "status": "ok"
+    },
+    {
+      "name": "奇巧计程车[odd taxi][01~13][GB_MP4][1280X720]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 25.9,
+      "status": "ok"
+    },
+    {
+      "name": "妖精的旋律[终极经典动画]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 36.0,
+      "status": "ok"
+    },
+    {
+      "name": "尽管如此世界依然美丽",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 33.4,
+      "status": "ok"
+    },
+    {
+      "name": "巴哈姆特之怒 s1-s3",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 48,
+      "elapsed": 106.0,
+      "status": "ok"
+    },
+    {
+      "name": "幻灵镇魂曲 Phantom Requiem for the Phantom",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 25,
+      "elapsed": 8.9,
+      "status": "ok"
+    },
+    {
+      "name": "心理测量者s1-s3",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 44,
+      "elapsed": 96.3,
+      "status": "ok"
+    },
+    {
+      "name": "恶魔城第1季&第2季",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 15,
+      "elapsed": 36.8,
+      "status": "ok"
+    },
+    {
+      "name": "成为僵尸前要做的的100件事",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 10,
+      "elapsed": 26.0,
+      "status": "ok"
+    },
+    {
+      "name": "我们仍未知道那天所看见的花的名字",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 32.1,
+      "status": "ok"
+    },
+    {
+      "name": "我的朋友很少[720P]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 29,
+      "elapsed": 68.0,
+      "status": "ok"
+    },
+    {
+      "name": "拾荒者统治.Scavengers.Reign",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 31.7,
+      "status": "ok"
+    },
+    {
+      "name": "新天地无用",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 27,
+      "elapsed": 67.8,
+      "status": "ok"
+    },
+    {
+      "name": "星际牛仔",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 26,
+      "elapsed": 65.7,
+      "status": "ok"
+    },
+    {
+      "name": "昭和元禄落语心中s1+s2",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 27,
+      "elapsed": 67.6,
+      "status": "ok"
+    },
+    {
+      "name": "月刊少女野崎君",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 31.6,
+      "status": "ok"
+    },
+    {
+      "name": "未来日记",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 26,
+      "elapsed": 65.7,
+      "status": "ok"
+    },
+    {
+      "name": "来自深渊S1-S2",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 32.2,
+      "status": "ok"
+    },
+    {
+      "name": "死亡游行 Death Parade",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 11.0,
+      "status": "ok"
+    },
+    {
+      "name": "永生之酒 Baccano!",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 16,
+      "elapsed": 29.2,
+      "status": "ok"
+    },
+    {
+      "name": "混沌武士  Samurai Champloo (BD 720P x264 10bit AAC)",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 30,
+      "elapsed": 53.3,
+      "status": "ok"
+    },
+    {
+      "name": "漂流少年",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 29.4,
+      "status": "ok"
+    },
+    {
+      "name": "漂流武士[Drifters][01-12+OVA(13-14)+Extra][1980x1080 AVC_AAC][BDRIP][MKV 简繁外挂]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 28.7,
+      "status": "ok"
+    },
+    {
+      "name": "火星公主 Aldnoah.Zero",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 31.2,
+      "status": "ok"
+    },
+    {
+      "name": "灵探特莱丝.Trese.S01",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 7,
+      "elapsed": 16.4,
+      "status": "ok"
+    },
+    {
+      "name": "牙狼GARO -炎之刻印-",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 26,
+      "elapsed": 71.8,
+      "status": "ok"
+    },
+    {
+      "name": "特别的她",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 7,
+      "elapsed": 18.6,
+      "status": "ok"
+    },
+    {
+      "name": "甘城光辉游乐园",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 39.0,
+      "status": "ok"
+    },
+    {
+      "name": "甜蜜惩罚~我是看守专用宠物",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 32.6,
+      "status": "ok"
+    },
+    {
+      "name": "白箱",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 25,
+      "elapsed": 68.4,
+      "status": "ok"
+    },
+    {
+      "name": "百花缭乱01",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 36.9,
+      "status": "ok"
+    },
+    {
+      "name": "穷神",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 6.3,
+      "status": "ok"
+    },
+    {
+      "name": "精灵守护者",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 25,
+      "elapsed": 67.6,
+      "status": "ok"
+    },
+    {
+      "name": "紫罗兰花园[1080P][CHS][MP4]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 1.2,
+      "status": "ok"
+    },
+    {
+      "name": "翠星之加尔刚蒂亚",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 33.3,
+      "status": "ok"
+    },
+    {
+      "name": "自由的她们",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 11,
+      "elapsed": 26.5,
+      "status": "ok"
+    },
+    {
+      "name": "莉可丽丝 Lycoris Recoil",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 34.1,
+      "status": "ok"
+    },
+    {
+      "name": "记录的地平线",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 27,
+      "elapsed": 68.2,
+      "status": "ok"
+    },
+    {
+      "name": "赛博朋克：边缘行者",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 11,
+      "elapsed": 27.0,
+      "status": "ok"
+    },
+    {
+      "name": "越狱兔 Usavich",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 29,
+      "elapsed": 90.3,
+      "status": "ok"
+    },
+    {
+      "name": "路人女主的养成方法（不起眼女主角培育法）",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 33.7,
+      "status": "ok"
+    },
+    {
+      "name": "进击的巨人s1-s5",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 93,
+      "elapsed": 126.2,
+      "status": "ok"
+    },
+    {
+      "name": "钢之炼金术师FA",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 64,
+      "elapsed": 164.0,
+      "status": "ok"
+    },
+    {
+      "name": "铳墓",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 26,
+      "elapsed": 60.4,
+      "status": "ok"
+    },
+    {
+      "name": "银翼杀手：黑莲花",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 7,
+      "elapsed": 15.9,
+      "status": "ok"
+    },
+    {
+      "name": "青春之旅",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 14,
+      "elapsed": 33.3,
+      "status": "ok"
+    },
+    {
+      "name": "鬼泣 Devil May Cry",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 28.3,
+      "status": "ok"
+    },
+    {
+      "name": "鬼灭之刃游郭篇",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 29.6,
+      "status": "ok"
+    },
+    {
+      "name": "魁拔—殊途",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 5,
+      "elapsed": 11.4,
+      "status": "ok"
+    },
+    {
+      "name": "鲁鲁修s1-s2",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 50,
+      "elapsed": 7.3,
+      "status": "ok"
+    },
+    {
+      "name": "黑礁s1-s2",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 48,
+      "elapsed": 55.4,
+      "status": "ok"
+    },
+    {
+      "name": "黑街Gangsta [BD HEVC 720p AAC]",
+      "category": "动画番",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 13,
+      "elapsed": 29.8,
+      "status": "ok"
+    },
+    {
+      "name": "007：无暇赴死 No Time to Die (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "21克 21 Grams (2003)",
+      "category": "电影",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "300勇士：帝国崛起 300 Rise of an Empire (2014)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "两杆大烟枪 Lock, Stock and Two Smoking Barrels (1998)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "你好世界 HELLO WORLD (2019)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "你好，李焕英 Hi, Mom (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "信条 Tenet (2020)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "克洛伊 Chloe (2010)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "华尔街之狼 The Wolf of Wall Street (2013)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "南方车站的聚会 The Wild Goose Lake (2019)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "卡罗尔 Carol (2015)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 2.1,
+      "status": "ok"
+    },
+    {
+      "name": "双面玛莎 Martha Marcy May Marlene (2011)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "嘉年华 Angels Wear White (2017)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.8,
+      "status": "ok"
+    },
+    {
+      "name": "嘘！禁止想象！ Nineteen (2015)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.8,
+      "status": "ok"
+    },
+    {
+      "name": "大侦探皮卡丘 Pokémon Detective Pikachu (2019)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "天才枪手 Bad Genius (2017)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "天鹅挽歌 Swan Song (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.1,
+      "status": "ok"
+    },
+    {
+      "name": "失控玩家 Free Guy (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "她 Her (2013)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "小丑 Joker (2019)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.9,
+      "status": "ok"
+    },
+    {
+      "name": "恶人传 The Gangster, the Cop, the Devil (2019)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.8,
+      "status": "ok"
+    },
+    {
+      "name": "戏梦巴黎 The Dreamers (2003)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.9,
+      "status": "ok"
+    },
+    {
+      "name": "扎克·施奈德版正义联盟 Zack Snyder's Justice League (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "扬名立万 Be Somebody (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.1,
+      "status": "ok"
+    },
+    {
+      "name": "斯巴达300勇士 300 (2007)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "新蝙蝠侠 The Batman (2022)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "极寒之城 Atomic Blonde (2017)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "毒液2 Venom Let There Be Carnage (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "沙丘 Dune (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "流浪地球 The Wandering Earth (2019)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "温柔地杀我 Killing Me Softly (2002)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.9,
+      "status": "ok"
+    },
+    {
+      "name": "爱乐之城 La La Land (2016)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.9,
+      "status": "ok"
+    },
+    {
+      "name": "爱情与灵药 Love & Other Drugs (2010)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "爱的边缘 The Edge of Love (2008)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "狗神 Dogman (2023)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 0.9,
+      "status": "ok"
+    },
+    {
+      "name": "狙击手的战争 A Sniper's War (2018)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "猩球崛起：新世界 Kingdom of the Planet of the Apes (2024)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "王国：北方的阿信 Kingdom Ashin of the North (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "神奇动物：格林德沃之罪 Fantastic Beasts The Crimes of Grindelwald (2018)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "窗台 The Ledge (2011)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.9,
+      "status": "ok"
+    },
+    {
+      "name": "红字 The Scarlet Letter (2004)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.9,
+      "status": "ok"
+    },
+    {
+      "name": "经典电影之新世代诠释 Reframed Next Gen Narratives",
+      "category": "电影",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 19,
+      "elapsed": 43.4,
+      "status": "ok"
+    },
+    {
+      "name": "绿皮书 Green Book (2018)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "美国人 The American (2010)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "美国队长 Captain America The First Avenger (2011)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "老千 Tazza The High Rollers (2006)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "自杀小队2：全员集结 The Suicide Squad (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "芬奇 Finch (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 2,
+      "elapsed": 1.0,
+      "status": "ok"
+    },
+    {
+      "name": "让子弹飞 Let the Bullets Fly (2010)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 2.0,
+      "status": "ok"
+    },
+    {
+      "name": "长津湖 The Battle at Lake Changjin (2021)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "阿黛尔的生活 La Vie d'Adèle - Chapitres 1 et 2 (2013)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 0,
+      "elapsed": 1.6,
+      "status": "ok"
+    },
+    {
+      "name": "鹅毛笔 Quills (2000)",
+      "category": "电影",
+      "folder_type": "movie",
+      "struct_ops": 0,
+      "rename_changed": 1,
+      "elapsed": 1.7,
+      "status": "ok"
+    },
+    {
+      "name": "Netflix XX监督S1 S2",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 18,
+      "elapsed": 35.2,
+      "status": "ok"
+    },
+    {
+      "name": "Se Education 1-4季",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 36,
+      "elapsed": 81.7,
+      "status": "ok"
+    },
+    {
+      "name": "better call saul s5",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 7,
+      "elapsed": 15.7,
+      "status": "ok"
+    },
+    {
+      "name": "低俗怪谈1-3季",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 31,
+      "elapsed": 52.2,
+      "status": "ok"
+    },
+    {
+      "name": "兄弟连",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 11,
+      "elapsed": 25.7,
+      "status": "ok"
+    },
+    {
+      "name": "冰与火之歌1-8季",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 82,
+      "elapsed": 174.9,
+      "status": "ok"
+    },
+    {
+      "name": "切尔诺贝利S1",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 5,
+      "elapsed": 10.9,
+      "status": "ok"
+    },
+    {
+      "name": "名姝S1",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 15,
+      "elapsed": 18.5,
+      "status": "ok"
+    },
+    {
+      "name": "守望尘世S1",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 11,
+      "elapsed": 26.1,
+      "status": "ok"
+    },
+    {
+      "name": "守望者S1",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 10,
+      "elapsed": 24.3,
+      "status": "ok"
+    },
+    {
+      "name": "怪奇物语",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 39,
+      "elapsed": 94.4,
+      "status": "ok"
+    },
+    {
+      "name": "我的阿勒泰.2160p",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 8,
+      "elapsed": 7.6,
+      "status": "ok"
+    },
+    {
+      "name": "指环王：力量之戒",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 7,
+      "elapsed": 16.1,
+      "status": "ok"
+    },
+    {
+      "name": "斯巴达克斯s0-s2",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 34,
+      "elapsed": 67.4,
+      "status": "ok"
+    },
+    {
+      "name": "方子传TV版",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 5,
+      "elapsed": 11.7,
+      "status": "ok"
+    },
+    {
+      "name": "旺达幻视.WandaVision.S01",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 10,
+      "elapsed": 23.9,
+      "status": "ok"
+    },
+    {
+      "name": "曼达洛人s1-s3",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 27,
+      "elapsed": 71.1,
+      "status": "ok"
+    },
+    {
+      "name": "毒枭第一季",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 17,
+      "elapsed": 38.5,
+      "status": "ok"
+    },
+    {
+      "name": "求婚大作战",
+      "category": "电视剧",
+      "folder_type": "tv",
+      "struct_ops": 0,
+      "rename_changed": 12,
+      "elapsed": 27.7,
+      "status": "ok"
+    }
+  ],
+  "errors": [
+    {
+      "name": "哥斯拉动画电影",
+      "category": "动画电影",
+      "error": "Expecting ',' delimiter: line 12247 column 55 (char 441804)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 361, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ~~~~~~~~~~~~~~^^^^^^^^\njson.decoder.JSONDecodeError: Expecting ',' delimiter: line 12247 column 55 (char 441804)\n"
+    },
+    {
+      "name": "冰菓 Hyouka",
+      "category": "动画番",
+      "error": "Expecting ',' delimiter: line 6101 column 38 (char 221953)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 361, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ~~~~~~~~~~~~~~^^^^^^^^\njson.decoder.JSONDecodeError: Expecting ',' delimiter: line 6101 column 38 (char 221953)\n"
+    },
+    {
+      "name": "剑风传奇",
+      "category": "动画番",
+      "error": "Expecting value: line 1 column 1 (char 0)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n"
+    },
+    {
+      "name": "新恶魔人",
+      "category": "动画番",
+      "error": "Expecting ',' delimiter: line 24201 column 28 (char 877788)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 361, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ~~~~~~~~~~~~~~^^^^^^^^\njson.decoder.JSONDecodeError: Expecting ',' delimiter: line 24201 column 28 (char 877788)\n"
+    },
+    {
+      "name": "罗德岛战记",
+      "category": "动画番",
+      "error": "Expecting property name enclosed in double quotes: line 45407 column 9 (char 1635608)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 361, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ~~~~~~~~~~~~~~^^^^^^^^\njson.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 45407 column 9 (char 1635608)\n"
+    },
+    {
+      "name": "老男孩 Oldboys (2009)",
+      "category": "电影",
+      "error": "Expecting property name enclosed in double quotes: line 2916 column 9 (char 111815)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 361, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ~~~~~~~~~~~~~~^^^^^^^^\njson.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 2916 column 9 (char 111815)\n"
+    },
+    {
+      "name": "火线1-6季",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "爱、死亡、机器人1-4季",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "猎魔人s1",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "生活大爆炸",
+      "category": "电视剧",
+      "error": "[WinError 2] 系统找不到指定的文件。: '\\\\\\\\DS218play\\\\share\\\\视频\\\\电视剧\\\\生活大爆炸\\\\fanart.jpg'",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 83, in run_pipeline\n    archived = archive_old_scrape(folder_path, delete_after=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 60, in archive_old_scrape\n    total = _archive_dir(folder_path)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 56, in _archive_dir\n    os.remove(os.path.join(dir_path, f))\n    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [WinError 2] 系统找不到指定的文件。: '\\\\\\\\DS218play\\\\share\\\\视频\\\\电视剧\\\\生活大爆炸\\\\fanart.jpg'\n"
+    },
+    {
+      "name": "真探S1",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "纸牌屋",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "罗马s1-s2",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "致命女人",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "蛇蝎美人",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "西部世界1-3季",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "超感猎杀1-2季",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "辐射 Fallout",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "逆局",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "都铎王朝s1-s2",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "非自然死亡",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "鱿鱼游戏Squid.Game.S01",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "黑镜1-4季",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    },
+    {
+      "name": "龙之家族第一季",
+      "category": "电视剧",
+      "error": "Extra data: line 58134 column 1 (char 2074222)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_batch_organize.py\", line 55, in main\n    r = run_pipeline(f[\"path\"], execute=True)\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\_organize_pipeline.py\", line 163, in run_pipeline\n    if shadow_m.auto_fill(fp, shadow, source=\"parsed\"):\n       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 74, in auto_fill\n    library = self._load_library()\n  File \"C:\\Users\\shenq\\nas-video-upgrader\\backend\\shadow_name_manager.py\", line 30, in _load_library\n    return json.load(f)\n           ~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\shenq\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\json\\decoder.py\", line 348, in decode\n    raise JSONDecodeError(\"Extra data\", s, end)\njson.decoder.JSONDecodeError: Extra data: line 58134 column 1 (char 2074222)\n"
+    }
+  ],
+  "timestamp": "2026-03-29 00:59:38"
+}

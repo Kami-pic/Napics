@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/1fkuBPid72KGS6WmtkEXMftZtkE.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 875828,
+      "original_language": "en",
+      "original_title": "Peaky Blinders: The Immortal Man",
+      "overview": "1940年的伯明翰，在第二次世界大战的混乱中，因疏远已久的儿子卷入一场纳粹阴谋，已离开江湖的黑帮老大托马斯·谢尔比不得不重返伯明翰，拯救家人和国家。",
+      "popularity": 337.6486,
+      "poster_path": "/r1QSrP7xTqA4roGeAUt8a3Gwiy4.jpg",
+      "release_date": "2026-03-05",
+      "title": "浴血黑帮：不朽传奇",
+      "video": false,
+      "vote_average": 7.384,
+      "vote_count": 444
+    }
+  ]
+}

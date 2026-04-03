@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 28771,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Loves Me, Loves Me Not",
+      "overview": "",
+      "popularity": 0.5673,
+      "poster_path": null,
+      "first_air_date": "1977-03-20",
+      "name": "Loves Me, Loves Me Not",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

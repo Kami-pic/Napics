@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/zecxlBpLx0aLIjNjX1IOZuaSgo0.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 1412113,
+      "original_language": "ko",
+      "original_title": "오징어 게임: 시즌2 제작 이야기",
+      "overview": "三年前，鱿鱼游戏由456号选手（李政宰 饰）胜出，他本想远走高飞，却在搭机赴美前临阵反悔，决心展开新计划。成奇勋再度投身这场神秘的生存游戏，又一次赌上性命，与一群新的参赛者一起争夺高达456亿韩元的奖金。",
+      "popularity": 7.8548,
+      "poster_path": "/yQGaui0bQ5Ai3KIFBB45nTeIqad.jpg",
+      "release_date": "2025-01-02",
+      "title": "鱿鱼游戏： 第二季 制作特辑",
+      "video": false,
+      "vote_average": 8.4,
+      "vote_count": 442
+    }
+  ]
+}

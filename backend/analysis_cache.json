@@ -1,0 +1,202 @@
+{
+  "results": [
+    {
+      "path": "\\\\DS218play\\share\\视频\\其他视频",
+      "folder_name": "其他视频",
+      "folder_type": "mixed",
+      "structure_ops": [],
+      "rename_ops": [],
+      "scrape_issues": [],
+      "shadow_name_issues": [],
+      "quality_issues": [],
+      "filename_issues": [],
+      "subtitle_info": {
+        "has_embedded": false,
+        "has_external": false,
+        "external_languages": [],
+        "missing_chinese": true
+      },
+      "videos": []
+    },
+    {
+      "path": "\\\\DS218play\\share\\视频\\动画电影",
+      "folder_name": "动画电影",
+      "folder_type": "mixed",
+      "structure_ops": [
+        {
+          "action": "wrap_in_folder",
+          "file": "你好世界 helloworld (2019).mkv",
+          "target_folder": "你好世界 helloworld",
+          "severity": "high",
+          "auto_fixable": true,
+          "desc": "散装视频 你好世界 helloworld (2019).mkv → 包进文件夹 你好世界 helloworld/"
+        }
+      ],
+      "rename_ops": [
+        {
+          "old_name": "你好世界 helloworld (2019).mkv",
+          "new_name": "Helloworld (2018).mkv",
+          "severity": "low",
+          "auto_fixable": true,
+          "desc": "你好世界 helloworld (2019).mkv → Helloworld (2018).mkv"
+        }
+      ],
+      "scrape_issues": [],
+      "shadow_name_issues": [
+        {
+          "type": "tmdb_id_mismatch",
+          "file": "你好世界 helloworld (2019).mkv",
+          "shadow_tmdb_id": 604605,
+          "nfo_tmdb_id": 86910,
+          "severity": "high",
+          "auto_fixable": false
+        }
+      ],
+      "quality_issues": [
+        {
+          "type": "low_bitrate",
+          "file": "你好世界 helloworld (2019).mkv",
+          "approx_gb_per_hour": 0.68,
+          "severity": "low",
+          "auto_fixable": false
+        }
+      ],
+      "filename_issues": [],
+      "subtitle_info": {
+        "has_embedded": false,
+        "has_external": false,
+        "external_languages": [],
+        "missing_chinese": true
+      },
+      "videos": [
+        {
+          "file_name": "你好世界 helloworld (2019).mkv",
+          "resolution": "1280x720",
+          "codec": "",
+          "audio": "ac3",
+          "size_gb": 1.11,
+          "duration": 97.77,
+          "hdr_type": "SDR"
+        }
+      ]
+    },
+    {
+      "path": "\\\\DS218play\\share\\视频\\动画番",
+      "folder_name": "动画番",
+      "folder_type": "tv",
+      "structure_ops": [],
+      "rename_ops": [],
+      "scrape_issues": [
+        {
+          "type": "missing_nfo",
+          "file": null,
+          "severity": "medium",
+          "auto_fixable": true
+        },
+        {
+          "type": "missing_poster",
+          "file": null,
+          "severity": "low",
+          "auto_fixable": true
+        }
+      ],
+      "shadow_name_issues": [],
+      "quality_issues": [],
+      "filename_issues": [],
+      "subtitle_info": {
+        "has_embedded": false,
+        "has_external": false,
+        "external_languages": [],
+        "missing_chinese": true
+      },
+      "videos": []
+    },
+    {
+      "path": "\\\\DS218play\\share\\视频\\电影",
+      "folder_name": "电影",
+      "folder_type": "mixed",
+      "structure_ops": [],
+      "rename_ops": [],
+      "scrape_issues": [],
+      "shadow_name_issues": [],
+      "quality_issues": [],
+      "filename_issues": [],
+      "subtitle_info": {
+        "has_embedded": false,
+        "has_external": false,
+        "external_languages": [],
+        "missing_chinese": true
+      },
+      "videos": []
+    },
+    {
+      "path": "\\\\DS218play\\share\\视频\\电视剧",
+      "folder_name": "电视剧",
+      "folder_type": "tv",
+      "structure_ops": [],
+      "rename_ops": [],
+      "scrape_issues": [
+        {
+          "type": "missing_nfo",
+          "file": null,
+          "severity": "medium",
+          "auto_fixable": true
+        },
+        {
+          "type": "missing_poster",
+          "file": null,
+          "severity": "low",
+          "auto_fixable": true
+        }
+      ],
+      "shadow_name_issues": [],
+      "quality_issues": [],
+      "filename_issues": [],
+      "subtitle_info": {
+        "has_embedded": false,
+        "has_external": false,
+        "external_languages": [],
+        "missing_chinese": true
+      },
+      "videos": []
+    },
+    {
+      "path": "\\\\DS218play\\share\\视频\\综艺",
+      "folder_name": "综艺",
+      "folder_type": "mixed",
+      "structure_ops": [
+        {
+          "action": "flatten_single_subdir",
+          "subdir": "奇葩大会",
+          "severity": "medium",
+          "auto_fixable": true,
+          "desc": "只有一个子目录 奇葩大会，内容可提升到 综艺/"
+        }
+      ],
+      "rename_ops": [],
+      "scrape_issues": [],
+      "shadow_name_issues": [],
+      "quality_issues": [],
+      "filename_issues": [],
+      "subtitle_info": {
+        "has_embedded": false,
+        "has_external": false,
+        "external_languages": [],
+        "missing_chinese": true
+      },
+      "videos": []
+    }
+  ],
+  "summary": {
+    "total_folders": 6,
+    "structure_issues": 2,
+    "rename_issues": 1,
+    "scrape_issues": 4,
+    "quality_issues": 1,
+    "filename_issues": 0,
+    "shadow_name_issues": 1,
+    "cross_folder_issues": 0
+  },
+  "cross_folder_issues": [],
+  "updated_at": 1775117559.5210958
+}

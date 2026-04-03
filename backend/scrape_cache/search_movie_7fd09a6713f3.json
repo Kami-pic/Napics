@@ -1,0 +1,193 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/kBqhOUi8gCL0jYgRIQdcl3BguVW.jpg",
+      "genre_ids": [
+        10752,
+        10749,
+        36,
+        28
+      ],
+      "id": 676,
+      "original_language": "en",
+      "original_title": "Pearl Harbor",
+      "overview": "雷夫（本•阿弗莱克）和丹尼（乔什•哈奈特）是一对自小玩在一起的好兄弟，两人对飞行都有很大兴趣，曾一起学习过驾驶飞机，二战初期，两人又一起加入了美国空军部队。受训期间，雷夫与军中医院里的女护士伊弗琳（凯特•贝金赛尔）坠入爱河。为协助欧洲各国抵抗纳粹德国的侵略，美军决定派出精英部队前往欧洲大陆，雷夫自告奋勇前往参战，并将伊弗琳托付给丹尼照顾，不久，噩耗传来，雷夫的飞机在空战中不幸被德军击落，生还可能几乎为零。伊弗琳与丹尼在相互勉励的伤痛中，萌生爱情。令他们没想到的是，雷夫并没死去，当三人重聚首时，尴尬顿生。日军偷袭珍珠港一事帮他们解了围，雷夫与丹尼决定不做情敌做战友。",
+      "popularity": 8.5136,
+      "poster_path": "/uMyeYnL47TZgGVhPnEp3YCsfkmR.jpg",
+      "release_date": "2001-05-21",
+      "title": "珍珠港",
+      "video": false,
+      "vote_average": 6.937,
+      "vote_count": 6922
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 1467053,
+      "original_language": "en",
+      "original_title": "Pearl Harbor",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": null,
+      "release_date": "1941-12-10",
+      "title": "Pearl Harbor",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4BN6aQ3AO5wc8OnfBR1Dpz9h3jJ.jpg",
+      "genre_ids": [
+        99,
+        36,
+        10752,
+        10770
+      ],
+      "id": 435482,
+      "original_language": "en",
+      "original_title": "Remember Pearl Harbor",
+      "overview": "",
+      "popularity": 0.7729,
+      "poster_path": "/r2q8f3hFiAQvZUdbbHBiohOCaXh.jpg",
+      "release_date": "2016-12-04",
+      "title": "Remember Pearl Harbor",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/v3vL9demh0kxZFokUvdm4Z2a0su.jpg",
+      "genre_ids": [
+        18,
+        10752,
+        10749
+      ],
+      "id": 274827,
+      "original_language": "en",
+      "original_title": "Remember Pearl Harbor",
+      "overview": "",
+      "popularity": 0.6225,
+      "poster_path": "/7tlKKEQ9WiXgfHf0Bmi7yONoGGd.jpg",
+      "release_date": "1942-01-02",
+      "title": "Remember Pearl Harbor",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 459529,
+      "original_language": "en",
+      "original_title": "Pearl Harbor II, Pearlmageddon",
+      "overview": "",
+      "popularity": 0.5892,
+      "poster_path": "/52aOWuclk95Xi1TTtBL1eGtM8P7.jpg",
+      "release_date": "2001-12-04",
+      "title": "Pearl Harbor II, Pearlmageddon",
+      "video": false,
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/klh94xCiEl26ewXHhhjoWFiLWDR.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 674910,
+      "original_language": "en",
+      "original_title": "Unsung Heroes of Pearl Harbor",
+      "overview": "",
+      "popularity": 0.4183,
+      "poster_path": "/w9mv9Tk7J3bj4rk2tfYymwoMCYk.jpg",
+      "release_date": "2001-05-27",
+      "title": "Unsung Heroes of Pearl Harbor",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        12
+      ],
+      "id": 531637,
+      "original_language": "en",
+      "original_title": "Secrets of Pearl Harbor",
+      "overview": "",
+      "popularity": 0.3429,
+      "poster_path": "/keDVisOO2kP4i6gVJ2ZRPA5h6ki.jpg",
+      "release_date": "2004-12-10",
+      "title": "Secrets of Pearl Harbor",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99,
+        10752
+      ],
+      "id": 287856,
+      "original_language": "ja",
+      "original_title": "Pearl Harbor: The View from Japan",
+      "overview": "",
+      "popularity": 0.6102,
+      "poster_path": "/bSITDMgYLpZnYzDTAb4icBcYCGa.jpg",
+      "release_date": "1994-01-01",
+      "title": "Pearl Harbor: The View from Japan",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 402305,
+      "original_language": "en",
+      "original_title": "Sacrifice at Pearl Harbor",
+      "overview": "",
+      "popularity": 0.2168,
+      "poster_path": "/aqzaWednN8eOuPwKXa4eUPKRzz4.jpg",
+      "release_date": "1989-12-01",
+      "title": "Sacrifice at Pearl Harbor",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 577837,
+      "original_language": "en",
+      "original_title": "Since Pearl Harbor",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": null,
+      "release_date": "1943-02-18",
+      "title": "Since Pearl Harbor",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/9pgGVXJYXGtECErbNbgxQkj7994.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "id": 75208,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "DEVILMAN crybaby",
+      "overview": "随着恶魔觉醒，人类世界陷入混乱。性格温柔的男孩与恶魔合体，在神秘好友飞鸟了的指引下，卷入一场残酷、堕落的对抗邪恶之战。",
+      "popularity": 21.2144,
+      "poster_path": "/vFIk26CGrhDrWgYkTdVqp6dZc48.jpg",
+      "first_air_date": "2018-01-05",
+      "name": "恶魔人：哭泣之子",
+      "vote_average": 7.7,
+      "vote_count": 710
+    }
+  ]
+}

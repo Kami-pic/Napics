@@ -1,0 +1,42 @@
+{
+    "id": 1774671720,
+    "time": "Sat Mar 28 12:22:00 2026",
+    "label": "",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她 FLCL",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\Ep01.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\特别的她 FLCL S01E01 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\Ep02.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\特别的她 FLCL S01E02 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\Ep03.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\特别的她 FLCL S01E03 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\Ep04.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\特别的她 FLCL S01E04 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\Ep05.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\特别的她 FLCL S01E05 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\Ep06.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\特别的她\\特别的她 FLCL S01E06 720p.mp4",
+            "is_dir": false
+        }
+    ]
+}

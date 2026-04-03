@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 1033219,
+  "media_type": "movie",
+  "title": "攻击泰坦",
+  "original_title": "Attack on Titan",
+  "english_title": "Attack on Titan",
+  "year": "2022",
+  "poster_url": "https://image.tmdb.org/t/p/w500/abekGyrfYT6lFXu4DN07tp3iI7B.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/eNJhWy7xFzR74SYaSJHqJZuroDm.jpg",
+  "overview": "随着地球上可利用的水枯竭，一个任务被派往土星的卫星土卫六，从其外星居民那里取回可持续的水储量。但是，正当人类获得宝贵的资源时，他们遭到了泰坦叛军的攻击，他们不相信地球人会平安离去",
+  "rating": 6.0,
+  "genres": [
+    "科幻",
+    "动作"
+  ],
+  "director": "Noah Luke",
+  "cast": [
+    "迈克尔·帕雷",
+    "Erin Coker",
+    "Jack Pearson",
+    "Anthony Jensen",
+    "Neli Sabour",
+    "Karan Sagoo"
+  ],
+  "runtime": 93,
+  "imdb_id": "tt22408766",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

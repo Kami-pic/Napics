@@ -1,0 +1,41 @@
+{
+  "tmdb_id": 498095,
+  "media_type": "movie",
+  "title": "The American",
+  "original_title": "The American",
+  "english_title": "The American",
+  "year": "1998",
+  "poster_url": "https://image.tmdb.org/t/p/w500/31TRnwone1u6OsC27VPQK1xZVkC.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/s872c8JaIgvkdwnTSZo2rbH5wxa.jpg",
+  "overview": "",
+  "rating": 4.8,
+  "genres": [
+    "剧情",
+    "爱情",
+    "电视电影"
+  ],
+  "director": "Paul Unwin",
+  "cast": [
+    "马修·莫迪恩",
+    "黛安娜·里格",
+    "Aisling O'Sullivan",
+    "保罗·希基",
+    "安德鲁·斯科特",
+    "布伦达·弗里克"
+  ],
+  "runtime": 84,
+  "imdb_id": "tt0215514",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom",
+    "United States of America",
+    "Ireland"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

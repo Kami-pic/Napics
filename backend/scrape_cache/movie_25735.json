@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 25735,
+  "media_type": "movie",
+  "title": "The Gangster",
+  "original_title": "The Gangster",
+  "english_title": "The Gangster",
+  "year": "1947",
+  "poster_url": "https://image.tmdb.org/t/p/w500/iD780H3mMhXFWkPMhBIgoreyKjf.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/pgmWZsDuqSRTnC0JXlZCc1iLcQW.jpg",
+  "overview": "",
+  "rating": 5.1,
+  "genres": [
+    "犯罪",
+    "剧情",
+    "爱情"
+  ],
+  "director": "Gordon Wiles",
+  "cast": [
+    "巴里·沙利文",
+    "Belita",
+    "Joan Lorring",
+    "阿基姆·塔米罗夫",
+    "哈利·摩爾根",
+    "John Ireland"
+  ],
+  "runtime": 84,
+  "imdb_id": "tt0039410",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

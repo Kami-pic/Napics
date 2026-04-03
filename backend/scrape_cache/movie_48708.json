@@ -1,0 +1,33 @@
+{
+  "tmdb_id": 48708,
+  "media_type": "movie",
+  "title": "25 Ways to Quit Smoking",
+  "original_title": "25 Ways to Quit Smoking",
+  "english_title": "25 Ways to Quit Smoking",
+  "year": "1989",
+  "poster_url": "https://image.tmdb.org/t/p/w500/wDAVQWUpscgevckpge5gnlDnkcN.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/d4E1HTbbqSvW41arLK1FHGQF0uV.jpg",
+  "overview": "",
+  "rating": 6.2,
+  "genres": [
+    "动画",
+    "喜剧"
+  ],
+  "director": "Bill Plympton",
+  "cast": [
+    "Bill Plympton"
+  ],
+  "runtime": 5,
+  "imdb_id": "tt0096739",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

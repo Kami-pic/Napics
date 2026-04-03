@@ -1,0 +1,96 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        878,
+        16,
+        12
+      ],
+      "id": 1077468,
+      "original_language": "en",
+      "original_title": "Eighty-Six",
+      "overview": "",
+      "popularity": 0.4075,
+      "poster_path": "/9rDLXBj34UrwUrKC0GK754ceO9u.jpg",
+      "release_date": "2012-12-11",
+      "title": "Eighty-Six",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 1367516,
+      "original_language": "en",
+      "original_title": "Eighty-Six",
+      "overview": "",
+      "popularity": 0.0531,
+      "poster_path": null,
+      "release_date": "2024-07-24",
+      "title": "Eighty-Six",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 129751,
+      "original_language": "en",
+      "original_title": "The Eighty Six",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": "/spk7D4otvHeXWv6ppIvz7X0po5R.jpg",
+      "release_date": "2012-08-12",
+      "title": "The Eighty Six",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1516863,
+      "original_language": "en",
+      "original_title": "Eighty-Six Thousand Four Hundred Seconds",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "2013-09-01",
+      "title": "Eighty-Six Thousand Four Hundred Seconds",
+      "video": false,
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/snkRCV3ED99mYwo962fxohaTfrI.jpg",
+      "genre_ids": [
+        18,
+        36,
+        28
+      ],
+      "id": 589761,
+      "original_language": "ru",
+      "original_title": "Чернобыль",
+      "overview": "这是俄罗斯第一部大型电影，讲述了切尔诺贝利核电站事故以及为避免全球陷入灾难付出生命代价的人们。  阿列克谢，一个普通的苏联年轻人，普里皮亚季的一名消防员，初看起来不像英雄。他爱上了理发师奥利亚，向奥利亚坦白了自己的感情，他们计划一起搬去海边。切尔诺贝利核电站突发事故，危及阿列克谢的梦想和所有他挚爱之人的生命。反应堆的爆炸意味着处于辐射破坏区的数千人的死亡，还有可能引发第二次爆炸，造成无法想象的灾难性后果。  阿列克谢被派去灭火，工程师瓦莱尔卡和潜水员鲍里斯自愿同他一起进入核反应堆下方以释放水箱中的水，从而防止再次发生强烈爆炸。小组几乎没有时间制定详细的计划，而且由于堆芯的熔化，反应堆容器内的水每小时都变得越来越热。小组面临着一个致命的任务，一个最危险的任务：去往人间炼狱，面对最可怕的灾难后果…",
+      "popularity": 6.0621,
+      "poster_path": "/q5dIdOQPsYtjR3fmsOswLbglHAE.jpg",
+      "release_date": "2021-04-15",
+      "title": "切尔诺贝利：深渊",
+      "video": false,
+      "vote_average": 6.246,
+      "vote_count": 558
+    }
+  ]
+}

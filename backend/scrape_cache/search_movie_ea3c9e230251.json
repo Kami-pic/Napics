@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/fqv8v6AycXKsivp1T5yKtLbGXce.jpg",
+      "genre_ids": [
+        878,
+        12,
+        28
+      ],
+      "id": 653346,
+      "original_language": "en",
+      "original_title": "Kingdom of the Planet of the Apes",
+      "overview": "“猿流感”病毒蔓延全球，人类几近毁灭，而进化为高级智慧生物的猿类一跃成为食物链顶端的王者。时移世异，暴虐的猿类首领赛撒在一片废墟中建立起猿族历史上的第一个帝国——“猩球”崛起，这是世界新秩序诞生的黎明时分。神秘的人类女孩诺娃的出现，引起了赛撒的警觉。她似乎掌握着一个巨大的秘密，不仅关乎人类的存亡，甚至可能再度颠覆整个“猩球”。被迫逃亡的诺娃在躲避赛撒军队的过程中，与青年猿类诺亚的命运交汇，揭开了一段冒险的旅程。",
+      "popularity": 10.103,
+      "poster_path": "/tE10WMV3SK2kq79aLHztJhz0EM5.jpg",
+      "release_date": "2024-05-08",
+      "title": "猩球崛起：新世界",
+      "video": false,
+      "vote_average": 7.058,
+      "vote_count": 4163
+    }
+  ]
+}

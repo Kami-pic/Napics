@@ -1,0 +1,200 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 124374,
+      "origin_country": [],
+      "original_language": "en",
+      "original_name": "Ghostbusters of East Finchley",
+      "overview": "",
+      "popularity": 2.5534,
+      "poster_path": null,
+      "first_air_date": "1995-11-16",
+      "name": "Ghostbusters of East Finchley",
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 79060,
+      "origin_country": [],
+      "original_language": "en",
+      "original_name": "Hopper and Finch",
+      "overview": "",
+      "popularity": 0.7943,
+      "poster_path": "/5npJnXgb1zOoV5Vsv3btuL1C2tX.jpg",
+      "first_air_date": "2014-09-04",
+      "name": "Hopper and Finch",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4Slk7JWHJJHyYwW7AvAvbjZDhUf.jpg",
+      "genre_ids": [
+        35,
+        99
+      ],
+      "id": 95954,
+      "origin_country": [
+        "ES"
+      ],
+      "original_language": "es",
+      "original_name": "Vincent Finch: Diario de un ego",
+      "overview": "",
+      "popularity": 1.1033,
+      "poster_path": "/72k23N6dAGX0bJ0DciIKRzeLlO2.jpg",
+      "first_air_date": "2013-06-01",
+      "name": "Vincent Finch: Diario de un ego",
+      "vote_average": 5.0,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 308099,
+      "origin_country": [
+        "ES"
+      ],
+      "original_language": "es",
+      "original_name": "Vincent Finch: 10 años después",
+      "overview": "",
+      "popularity": 0.9994,
+      "poster_path": "/VUUwz3BPWjdVWoR6AJgBedF1DH.jpg",
+      "first_air_date": "2025-12-12",
+      "name": "Vincent Finch: 10 años después",
+      "vote_average": 1.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16
+      ],
+      "id": 71041,
+      "origin_country": [],
+      "original_language": "en",
+      "original_name": "The Gradual Demise of Phillipa Finch",
+      "overview": "",
+      "popularity": 0.4062,
+      "poster_path": "/8e2mAVb8sJyHMoJp83S5UiPCOXs.jpg",
+      "first_air_date": "2011-04-06",
+      "name": "The Gradual Demise of Phillipa Finch",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fgOnJO2WySyCTgwNVJOeuYnkltX.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 301840,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "I Hate Tommy Finch",
+      "overview": "",
+      "popularity": 0.5027,
+      "poster_path": "/upJazrF17NQlT7hvjlEEa0xJdTZ.jpg",
+      "first_air_date": "2012-01-25",
+      "name": "I Hate Tommy Finch",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/mbJ8kjfGsE4KrXeVxrWS6Urmu0Q.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 41411,
+      "origin_country": [
+        "IT"
+      ],
+      "original_language": "it",
+      "original_name": "Finché c'è ditta c'è speranza",
+      "overview": "",
+      "popularity": 0.3695,
+      "poster_path": "/qbYXT7dMEj5966jSVo6L6z8d2S9.jpg",
+      "first_air_date": "1999-01-03",
+      "name": "Finché c'è ditta c'è speranza",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vbcxvMIeQXSOyyE56SdK2YNZXCc.jpg",
+      "genre_ids": [
+        18,
+        9648,
+        10751,
+        99
+      ],
+      "id": 317561,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "What Remains of Edith Finch",
+      "overview": "",
+      "popularity": 0.0388,
+      "poster_path": "/5lZBA2yCcwr9LRtv8puwhTTicZS.jpg",
+      "first_air_date": "2017-04-25",
+      "name": "What Remains of Edith Finch",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/9m5UWmi08aj6uP6B07x9Z57uzn6.jpg",
+      "genre_ids": [
+        9648
+      ],
+      "id": 284449,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "朱雀堂",
+      "overview": "1929年，上海滩发生一起诡疑的壁橱双尸案，此后，凶手连杀数名舞女。法医夏漠和精明探长唐震云意外发现凶案背后纠缠着更险恶更黑暗的权色交易——那些被杀的女孩都是即将献祭给幕后权贵的玩物。而这一切又与全上海最奢华的朱雀堂舞厅紧密勾连。朱雀堂女老板高英，为了保护她手下那些姑娘，与法医夏漠和探长唐震云先敌后友，结成联盟，查探真相，却发现比连环杀人凶手更危险的人物一直就在身边......他们飞蛾扑火，用生命戳破了1929年的黑暗，换回一缕微弱的光。",
+      "popularity": 5.6036,
+      "poster_path": "/l6I2OBEk3Ug9x8eRdZCXmEKXwi1.jpg",
+      "first_air_date": "2025-07-04",
+      "name": "朱雀堂",
+      "vote_average": 7.0,
+      "vote_count": 3
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/9JTzzMuHaOR7oNg3HK4woP8CMcy.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 120189,
+      "origin_country": [
+        "PT"
+      ],
+      "original_language": "pt",
+      "original_name": "Até Que a Vida nos Separe",
+      "overview": "一家三代人一起生活在风景如画的别墅中，一面应对婚礼策划业务的难题，一面处理个人危机。",
+      "popularity": 2.2557,
+      "poster_path": "/p0emUBiNikJYQPI3d0130pRtOGx.jpg",
+      "first_air_date": "2021-02-03",
+      "name": "直至生活将我们分开",
+      "vote_average": 7.1,
+      "vote_count": 11
+    }
+  ]
+}

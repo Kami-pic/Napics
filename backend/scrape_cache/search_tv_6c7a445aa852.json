@@ -1,0 +1,200 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/cSGIZSkGEKxZD2HWWu1kgFnXXoU.jpg",
+      "genre_ids": [
+        10767
+      ],
+      "id": 219783,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "더 시즌즈",
+      "overview": "",
+      "popularity": 22.9909,
+      "poster_path": "/5WUFnTXfJkadGV5Ho5JzhdZ3sH0.jpg",
+      "first_air_date": "2023-02-05",
+      "name": "The Seasons",
+      "vote_average": 7.5,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/n5OUdKd3Hg8vovQctCzNlWXrBTX.jpg",
+      "genre_ids": [],
+      "id": 293981,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "The Seasons: Park Bo-gum's Cantabile",
+      "overview": "包含你的“所有烦恼、所有担心都能消除的”音乐和故事的脱口秀。2025KBS Live Music Project《The Seasons》第七季—《朴宝剑的Cantabile》。“cantabile：就像唱歌一样”，音乐家的音符聚集在一起，创造世界逗号的瞬间！",
+      "popularity": 1.2192,
+      "poster_path": "/yGXdXJ2XtPs2nYPovApZYFvE3Ky.jpg",
+      "first_air_date": "2025-03-14",
+      "name": "The Seasons - 朴宝剑的Cantabile",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xJATsbyFLf4LMtJBOco08RNxqPE.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 243316,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Four Seasons",
+      "overview": "三对伴侣、四段假期、千头万绪。聚焦六个多年老友，跟随他们在四季中各度过一段假期，见证人生的更迭起伏。",
+      "popularity": 7.9783,
+      "poster_path": "/62mfAg6SEeRmezE9DZHlojxBN0J.jpg",
+      "first_air_date": "2025-05-01",
+      "name": "四季情",
+      "vote_average": 6.5,
+      "vote_count": 129
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vTk7kzumh6XJdlsXafl8Lcu0yox.jpg",
+      "genre_ids": [],
+      "id": 95778,
+      "origin_country": [],
+      "original_language": "es",
+      "original_name": "Club Friday The Series Season 6: Unable Love",
+      "overview": "女主愛上Gay蜜-Punn 暗恋着她有男朋友的英俊朋友 Ong。但当他们分开时，她想知道：她有机会和 Ong 在一起吗？",
+      "popularity": 0.1754,
+      "poster_path": "/rTAu7T0BVCYYEzs0XTFyOTTojEz.jpg",
+      "first_air_date": "",
+      "name": "Club Friday The Series Season 6: 错在不能爱",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/AqDvdtjetmWLzbiFnLKbvX7n03O.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 131367,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "MLB: Baseball's Seasons",
+      "overview": "",
+      "popularity": 4.0395,
+      "poster_path": "/w4QCcod6UIOW5fhGqxdlpwhlyg.jpg",
+      "first_air_date": "2009-01-07",
+      "name": "MLB: Baseball's Seasons",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4SRQ5EuqrGfw6tCFlD6FIcdE0p5.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 97141,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Justin Bieber: Seasons",
+      "overview": "一个关于流行歌手贾斯汀·比伯（Justin Bieber）的纪录片，记录了贾斯汀·比伯的个人私生活，包括与海莉·比伯（Hailey Bieber）前所未有的婚礼镜头，以及贾斯汀·比伯与周围的人的相处，专辑幕后制作，以及内心的坦白。",
+      "popularity": 2.8041,
+      "poster_path": "/sEwk4XPTfH2zIFQqawul2B4oX05.jpg",
+      "first_air_date": "2020-01-27",
+      "name": "贾斯汀·比伯：四季",
+      "vote_average": 7.7,
+      "vote_count": 14
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xeNlJJE7INmoDKCpHO6U6KJuNH.jpg",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 79058,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "花のち晴れ～花男 Next Season～",
+      "overview": "江户川音（杉咲花饰）本是社长的千金，不料父亲公司破产，她的生活发生巨变。虽然地位一落千丈，但是江户川音顽强地过着穷日子，在她就读的英德学园里，神乐木晴（平野紫耀饰）因为崇拜道明寺而与另外四个人结成correct5（简称“C5”），在学生面前硬装成“道明寺第二”，实际上他是个胆小鬼。而小音的未婚夫是英德学园的竞争对手、桃乃学园的学生会会长驰天马（中川大志饰）",
+      "popularity": 3.3927,
+      "poster_path": "/hGznocCo5wssoQgH2cADxJ5hn1s.jpg",
+      "first_air_date": "2018-04-17",
+      "name": "花过天晴",
+      "vote_average": 7.9,
+      "vote_count": 14
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/j83gebPK0GzbMSKyP8yUcqQzaVO.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 86638,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "近キョリ恋愛～Season Zero～",
+      "overview": "",
+      "popularity": 2.7393,
+      "poster_path": "/lmeAav4qmIPHQfQ9Xo7TvWGo057.jpg",
+      "first_air_date": "2014-07-20",
+      "name": "近キョリ恋愛～Season Zero～",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 300231,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "A Season in Purgatory",
+      "overview": "",
+      "popularity": 3.4491,
+      "poster_path": null,
+      "first_air_date": "1996-05-05",
+      "name": "A Season in Purgatory",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/hycJ6ULD29ZlobER5JFdrCeG28e.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 77438,
+      "origin_country": [
+        "DE"
+      ],
+      "original_language": "en",
+      "original_name": "Rosamunde Pilcher's Four Seasons",
+      "overview": "",
+      "popularity": 3.1367,
+      "poster_path": "/3eo11jAmCzb9iXton1RTAaONIsv.jpg",
+      "first_air_date": "2008-12-25",
+      "name": "Rosamunde Pilcher's Four Seasons",
+      "vote_average": 7.5,
+      "vote_count": 2
+    }
+  ]
+}

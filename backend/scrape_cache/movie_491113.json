@@ -1,0 +1,35 @@
+{
+  "tmdb_id": 491113,
+  "media_type": "movie",
+  "title": "The God of Death",
+  "original_title": "The God of Death",
+  "english_title": "The God of Death",
+  "year": "2017",
+  "poster_url": "https://image.tmdb.org/t/p/w500/9Ceuk5767gQLEsiMESrsqCsjYoZ.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/uDRJEqbeNm1Rsvd6qQayhXcit2E.jpg",
+  "overview": "",
+  "rating": 3.0,
+  "genres": [
+    "动作",
+    "恐怖",
+    "科幻"
+  ],
+  "director": "R.R. Baker",
+  "cast": [
+    "90000",
+    "Brittany Baker"
+  ],
+  "runtime": 110,
+  "imdb_id": "tt6174142",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

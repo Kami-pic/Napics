@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/5hWwHMCln3N7APZOajZ6cTe4llG.jpg",
+      "genre_ids": [
+        16,
+        35,
+        10759
+      ],
+      "id": 20485,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "新・天地無用!",
+      "overview": "由AIC制作的日本动画电视连续剧，于1997年4月1日至9月23日在东京电视台播出。这是Tenchi Muyo的第三次安装！系列的系列，在Tenchi Muyo之前！GXP和随后的天地宇宙。",
+      "popularity": 5.5157,
+      "poster_path": "/eZ9gyrJS2wqfkzlkY3lv34cDqHL.jpg",
+      "first_air_date": "1997-04-01",
+      "name": "新·天地无用！",
+      "vote_average": 8.0,
+      "vote_count": 5
+    }
+  ]
+}

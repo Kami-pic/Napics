@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/yXybBEC45p84D0Ky7GmQQYrclVr.jpg",
+      "genre_ids": [
+        28,
+        12,
+        14
+      ],
+      "id": 447404,
+      "original_language": "en",
+      "original_title": "Pokémon Detective Pikachu",
+      "overview": "蒂姆·古德曼（贾斯提斯·史密斯饰）为寻找下落不明的父亲来到莱姆市，意外与父亲的前宝可梦搭档大侦探皮卡丘（瑞安·雷诺兹 配音）相遇，并惊讶地发现自己是唯一能听懂皮卡丘说话的人类，他们决定组队踏上揭开真相的刺激冒险之路。探案过程中他们邂逅了各式各样的宝可梦，并意外发现了一个足以毁灭整个宝可梦宇宙的惊天阴谋。",
+      "popularity": 7.8117,
+      "poster_path": "/47z6KoHoGxCkkEQQkk1sGIq1kRt.jpg",
+      "release_date": "2019-05-03",
+      "title": "大侦探皮卡丘",
+      "video": false,
+      "vote_average": 6.906,
+      "vote_count": 7279
+    }
+  ]
+}

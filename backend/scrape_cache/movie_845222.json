@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 845222,
+  "media_type": "movie",
+  "title": "王国：北方的阿信",
+  "original_title": "킹덤: 아신전",
+  "english_title": "Kingdom: Ashin of the North",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/p5USmIJ6XFIZdJ3BUcF9plBNm52.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/pfcj8IYB5bK8RTWiHwOCGfIzVw6.jpg",
+  "overview": "阿信和其父是定居于朝鲜王国的番邦异族。他们遇到了一种神秘疾病，这进而导致雅信走上了背叛、偏见和复仇的道路。",
+  "rating": 7.1,
+  "genres": [
+    "剧情",
+    "奇幻",
+    "惊悚"
+  ],
+  "director": "金成勋",
+  "cast": [
+    "全智贤",
+    "朴炳垠",
+    "金诗雅",
+    "金雷夏",
+    "具教焕",
+    "郑锡元"
+  ],
+  "runtime": 93,
+  "imdb_id": "tt13412252",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "South Korea"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,69 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/63gEmXYDtJKcqTzLmyU9uCD8foE.jpg",
+      "genre_ids": [
+        16,
+        35
+      ],
+      "id": 122932,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "召しませロードス島戦記 ～それっておいしいの？～",
+      "overview": "",
+      "popularity": 1.0802,
+      "poster_path": "/nOxPbvPa7lotDQFmRL8MsheEtpc.jpg",
+      "first_air_date": "2014-04-06",
+      "name": "享用罗德岛战记",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lOVKwI5TtcZMiB94Gkn9Tj1uu7k.jpg",
+      "genre_ids": [
+        10759,
+        16,
+        18
+      ],
+      "id": 42713,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ロードス島戦記",
+      "overview": "由于一个错误，魔王被召唤了出来，世界被黑暗包围，人们绝望的死去。为了对抗黑暗，希望之光也在聚集。七个英雄来到了迷宫，光明战胜了黑暗。活下来的六个人成为了挽救世界的英雄。他们是手握圣剑的瓦利斯王白银骑士法恩；拥有魔剑碎魂的暗黑皇帝，赤发佣兵贝鲁特；掌握所有魔法知识的荒野的贤者渥特；守护着大地，纯洁的玛法神官妮丝；失落的石之王国国王，矮人弗雷贝；最后一个是没留下姓名的魔法使者。然而，罗德斯岛的动荡局面并没有从此结束，三十年后……",
+      "popularity": 6.9234,
+      "poster_path": "/z5HSnjHXQIyTy60vH1uALFNJbfT.jpg",
+      "first_air_date": "1990-06-30",
+      "name": "罗德斯岛战记",
+      "vote_average": 7.5,
+      "vote_count": 67
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/k52zrD5uzjpTr0s9cwtfw5Cw0gD.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "id": 72041,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ロードス島戦記 英雄騎士伝",
+      "overview": "《罗德斯岛战记》最先是以小说的形式出现的，水野良和安田均或许在一开始并想不到他们的小说会成为动漫界不朽的经典。真正成就了《罗德斯岛战记》的是1990年它首次作为动画OVA出现的时候，制作阵容毋庸质疑的庞大，水野良担任编辑，出浏裕的原画，结城信辉的人设，新居昭乃的音乐，在小说已经在日本奇幻文学中立住足迹后重新锁定了大众的眼球，和《BASARA》《亚尔斯兰战记》一同成为日本动漫界里的“史诗”经典。",
+      "popularity": 7.5278,
+      "poster_path": "/33UUAMX577JrNVb4pwM8yQF8hiy.jpg",
+      "first_air_date": "1998-04-01",
+      "name": "罗德斯岛战记：英雄骑士传",
+      "vote_average": 7.1,
+      "vote_count": 20
+    }
+  ]
+}

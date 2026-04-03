@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/qFq2Ixo3XApoTp1H7JCTgLfGwVk.jpg",
+      "genre_ids": [
+        18,
+        36,
+        80
+      ],
+      "id": 338803,
+      "original_language": "ko",
+      "original_title": "간신",
+      "overview": "以朝鲜历史上著名暴君燕山君执政时期为背景，讲述的是在君王面前伪装忠臣，实际上却是扰乱政坛主谋的奸臣的故事，其视王为傀儡，实为“王上之王”。(燕山君，李隆，1494年－1506年，朝鲜的第10代君王，被废黜王位，并被赶出皇宫，因病结束了惨淡的一生。同样讲他的影视剧还有《王得男人》，《大长今》，《女人天下》)",
+      "popularity": 8.9492,
+      "poster_path": "/l59P2UkHmsNECESWM6KlJUH1Imh.jpg",
+      "release_date": "2015-05-21",
+      "title": "奸臣",
+      "video": false,
+      "vote_average": 6.1,
+      "vote_count": 89
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/bSTvvll9gIOcoavWRIVYL5RoTkn.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 25430,
+      "original_language": "en",
+      "original_title": "All the King's Men",
+      "overview": "改编自劳勃潘华伦的普立兹奖小说《国王的手下》，曾荣获第二十二届奥斯卡金像奖最佳影片，男主角布罗德里克．克劳福德及女星马塞蒂斯．麦坎布里奇分获奥斯卡影帝及女配角奖。剧情描述充满正义感的新闻记者杰克波顿去采访肯诺马郡竞选郡出纳局长的威利史塔克，史塔克是一个力求上进，充满爱心的人，但是他失败了。后来他又经过两次参选当上了州长。然而当上州长的史塔克开始滥权舞弊，引发议会对他的弹劾，无法无天的史塔克却发动群众示威，并获得胜利。民主、自由、法律已无法制服的情况下，被他陷害的对手的儿子以暴制暴，在议会外开枪结束了他的生命。本片是奥斯卡历史上第一部夺得大奖的政治电影。大胆剖析美国政客政治形式，更毫不客气的指出群众盲目拥护是造成政客滥权舞弊的主要原因。",
+      "popularity": 1.8894,
+      "poster_path": "/7o8nnvFnkekDAlIYznNUWzxQFM6.jpg",
+      "release_date": "1949-11-16",
+      "title": "当代奸雄",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 238
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        10749,
+        16
+      ],
+      "id": 917071,
+      "original_language": "zh",
+      "original_title": "茗记3：取舍",
+      "overview": "这是发生在校园里，少男少女对青涩情感取舍的故事。苍一个为画痴迷的女孩，虽然不缺天赋与技术，但她的画里却总缺少一些情感要素。野是和她同一个艺考班的男生，苍从他的画里看到了自己的欠缺。在共同应对艺考的过程中，两人相互较劲，却在不知不觉中又彼此吸引。渐渐地，苍有了爱的感觉，而野也变得成熟。残酷的艺考结束后，苍即将出国留学，而野考上了心仪的大学，萌芽中的感情去留已成定局……",
+      "popularity": 0.0,
+      "poster_path": "/ah6GM9yKS9Zlb8i0e5WyZETdXtG.jpg",
+      "release_date": "2010-10-06",
+      "title": "茗记3：取舍",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

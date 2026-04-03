@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/joeWNlosN0XyBkApi215L6asTx6.jpg",
+      "genre_ids": [
+        9648,
+        18
+      ],
+      "id": 241860,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "클라이맥스",
+      "overview": "剧情聚焦检察官「方泰燮」（朱智勋 饰），为了登上韩国政坛顶峰而潜入权力集团，与曾是韩国顶级女星的「秋尚雅」（河智苑 饰）结婚后，一夜​​之间成为炙手可热的「明星检察官」。 河智苑在剧中饰演婚后事业急速下滑、被外界视为过气女星的秋尚雅，展开一段在野心与名利夹击下的高张力关系。",
+      "popularity": 18.6524,
+      "poster_path": "/ruld5xeOsfDrqRD5aP8iWeuxRKw.jpg",
+      "first_air_date": "2026-03-16",
+      "name": "权欲之巅",
+      "vote_average": 10.0,
+      "vote_count": 2
+    }
+  ]
+}

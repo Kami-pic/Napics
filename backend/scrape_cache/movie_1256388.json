@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 1256388,
+  "media_type": "movie",
+  "title": "Blame",
+  "original_title": "Blame",
+  "english_title": "Blame",
+  "year": "2022",
+  "poster_url": null,
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "喜剧",
+    "剧情"
+  ],
+  "director": "Derek Brown",
+  "cast": [
+    "Jessie Barnes Jr.",
+    "Lisa Bostnar",
+    "凯伦·林恩·戈尼",
+    "Barbara McCulloh",
+    "Anne Rutter"
+  ],
+  "runtime": 9,
+  "imdb_id": "tt21035794",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

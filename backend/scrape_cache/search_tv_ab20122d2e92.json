@@ -1,0 +1,208 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/cG0aOH5hyqA81VfXMgMrkHB8BCe.jpg",
+      "genre_ids": [
+        16,
+        35
+      ],
+      "id": 293010,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "Let's Play クエストだらけのマイライフ",
+      "overview": "　　人生就像游戏，每一步都是选择——\n\n　　22岁就能写代码的天才开发者山姆·杨，从小就是游戏狂人。学生时代整天泡在开发里，终于推出冒险解谜游戏《Ruminate》！但超人气实况主马歇尔·罗给了差评，山姆的开发者之路瞬间被堵死。更惨的是，马歇尔还搬到了隔壁！山姆的上司查尔斯·琼斯、青梅竹马兼常去咖啡店的店员林克·哈德森……因马歇尔的闯入，周围的关系开始微妙变化。被父母过度保护、恋爱经验为零的山姆，面对男性的突然接近手忙脚乱，却也慢慢卸下心防。\n\n　　这场以人生为赌注的最高难度游戏，山姆能否通关——！？",
+      "popularity": 5.3649,
+      "poster_path": "/xiEliydUROR2yncQ6wolAxUXM4e.jpg",
+      "first_air_date": "2025-10-02",
+      "name": "Let's Play 充满挑战的人生",
+      "vote_average": 7.5,
+      "vote_count": 12
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/860ilnmDIAc80TORUFB52WCIuKW.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 13654,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Play for Today",
+      "overview": "",
+      "popularity": 57.9191,
+      "poster_path": "/aIgjKkazKMhqQjytljsofAEsp3q.jpg",
+      "first_air_date": "1970-10-15",
+      "name": "今日剧",
+      "vote_average": 6.3,
+      "vote_count": 9
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3j190a4ZV7ArjxfdKoJi0QGFJ2H.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 20532,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "BBC Play of the Month",
+      "overview": "",
+      "popularity": 61.4011,
+      "poster_path": "/2JdkYwK9k87M4ZhOhynoTeK3mtQ.jpg",
+      "first_air_date": "1965-10-19",
+      "name": "月度佳剧",
+      "vote_average": 5.0,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 30504,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Playhouse",
+      "overview": "",
+      "popularity": 44.0404,
+      "poster_path": "/5hkYEnIuKZRSIwvVhWAKgIFv0UJ.jpg",
+      "first_air_date": "1974-03-13",
+      "name": "Playhouse",
+      "vote_average": 7.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 1737,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Four Star Playhouse",
+      "overview": "",
+      "popularity": 42.2867,
+      "poster_path": null,
+      "first_air_date": "1952-09-25",
+      "name": "Four Star Playhouse",
+      "vote_average": 6.7,
+      "vote_count": 10
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/mnASvq84XWrEpyDJzt1NzXdcREp.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 10809,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Philco Television Playhouse",
+      "overview": "",
+      "popularity": 32.2723,
+      "poster_path": "/nnsKNCd14JjRTnaz6OZh4sQoNV6.jpg",
+      "first_air_date": "1948-10-03",
+      "name": "The Philco Television Playhouse",
+      "vote_average": 6.3,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 11303,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "The Wednesday Play",
+      "overview": "",
+      "popularity": 25.0803,
+      "poster_path": "/pJ3G30k2IjxHnipXobZJZKQZErR.jpg",
+      "first_air_date": "1964-09-30",
+      "name": "周三剧场",
+      "vote_average": 4.5,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 44697,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "BBC2 Play of the Week",
+      "overview": "",
+      "popularity": 18.3907,
+      "poster_path": "/bxw3egrIzeydlHvSruBVDpa3AU8.jpg",
+      "first_air_date": "1977-09-21",
+      "name": "BBC2 Play of the Week",
+      "vote_average": 7.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 8591,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Westinghouse Desilu Playhouse",
+      "overview": "",
+      "popularity": 20.4913,
+      "poster_path": "/cytDf1TprtFva2YBcmXk9vI4i9J.jpg",
+      "first_air_date": "1958-10-06",
+      "name": "Westinghouse Desilu Playhouse",
+      "vote_average": 5.8,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/iD3FaP71cAOy5u9D3WaizSdJhMm.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 27575,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Screen Director's Playhouse",
+      "overview": "",
+      "popularity": 16.8342,
+      "poster_path": "/s1LPx21vNJ37IDGqLqDC0e8ygQC.jpg",
+      "first_air_date": "1955-10-05",
+      "name": "Screen Director's Playhouse",
+      "vote_average": 6.5,
+      "vote_count": 4
+    }
+  ]
+}

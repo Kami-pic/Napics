@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/3upEZ0ltY7WwOSFVXrtiP34D48p.jpg",
+      "genre_ids": [
+        53,
+        18,
+        10749
+      ],
+      "id": 290098,
+      "original_language": "ko",
+      "original_title": "아가씨",
+      "overview": "故事背景设定在1930年代日本占领时期的朝鲜。新人女仆淑熙受雇服侍日本贵族秀子，后者与专横的舅舅居住在一座偏僻的乡间大宅中。然而女仆怀揣秘密：她实为一名扒手，受假冒日本伯爵的骗子招募，企图助其引诱小姐私奔，夺取财产后将秀子关进疯人院。计划似乎顺利进行，直到淑熙与秀子之间萌生了意料之外的情愫。",
+      "popularity": 14.6611,
+      "poster_path": "/4XSCTGx7qAkvcrFXMjrM1SpGPu0.jpg",
+      "release_date": "2016-06-01",
+      "title": "小姐",
+      "video": false,
+      "vote_average": 8.189,
+      "vote_count": 4240
+    }
+  ]
+}

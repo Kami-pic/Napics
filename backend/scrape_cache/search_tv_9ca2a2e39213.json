@@ -1,0 +1,49 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/8zbAoryWbtH0DKdev8abFAjdufy.jpg",
+      "genre_ids": [
+        10765,
+        9648,
+        10759
+      ],
+      "id": 66732,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Stranger Things",
+      "overview": "1983 年，当一个小男孩莫名其妙地失踪后，他的朋友、家人和当地警察开始寻找答案时，他们都被卷入一个非同寻常的谜团，揭开了涉及秘密实验、恐怖的超自然力量以及一个奇怪的小女孩的谜团。",
+      "popularity": 137.9557,
+      "poster_path": "/2mYLTEQd1oHuXA6NICPIKX7OOvo.jpg",
+      "first_air_date": "2016-07-15",
+      "name": "怪奇物语",
+      "vote_average": 8.573,
+      "vote_count": 20918
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ulBGaxq9GmJexyEOi4Xci74g6Vt.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        9648,
+        10759
+      ],
+      "id": 224263,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Stranger Things: Tales from '85",
+      "overview": "1985 年冬，霍金斯。欢迎回到这座充满秘密的小镇 — 在这里，备受喜爱的主角团将面临新的谜团以及全新的怪奇。",
+      "popularity": 5.8874,
+      "poster_path": "/yFXcUqN3nQCxWklI35DwffOMNZz.jpg",
+      "first_air_date": "2026-04-23",
+      "name": "Stranger Things: Tales from '85",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

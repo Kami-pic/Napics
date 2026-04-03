@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 122,
+  "media_type": "movie",
+  "title": "指环王3：王者无敌",
+  "original_title": "The Lord of the Rings: The Return of the King",
+  "english_title": "The Lord of the Rings: The Return of the King",
+  "year": "2003",
+  "poster_url": "https://image.tmdb.org/t/p/w500/kKUgYEOVebuu21N0KnQiGpIStiN.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg",
+  "overview": "索伦大军为剿灭人类种族，已对刚铎都城米那斯提力斯展开围攻。这座昔日的伟大王国由一位日渐衰弱的摄政王守护，此刻比任何时候都更需要它的王者归来。但阿拉贡能否回应血脉的召唤，成为命定之君？中土世界的命运，正系于他宽阔的双肩。",
+  "rating": 8.5,
+  "genres": [
+    "冒险",
+    "奇幻",
+    "动作"
+  ],
+  "director": "彼得·杰克逊",
+  "cast": [
+    "伊利亚·伍德",
+    "伊恩·麦克莱恩",
+    "维果·莫特森",
+    "西恩·奥斯汀",
+    "安迪·瑟金斯",
+    "多米尼克·莫纳汉"
+  ],
+  "runtime": 263,
+  "imdb_id": "tt0167260",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "New Zealand",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

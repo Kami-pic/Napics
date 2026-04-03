@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/1o2zEe5IS9NXj9FqNxDGgNegVYJ.jpg",
+      "genre_ids": [
+        27,
+        35
+      ],
+      "id": 1307267,
+      "original_language": "en",
+      "original_title": "The Sculptor's Clayground",
+      "overview": "",
+      "popularity": 0.3196,
+      "poster_path": "/jlSMkd45exDbu4kXnzrv14pwxHl.jpg",
+      "release_date": "2016-03-14",
+      "title": "The Sculptor's Clayground",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 765245,
+  "media_type": "movie",
+  "title": "天鹅挽歌",
+  "original_title": "Swan Song",
+  "english_title": "Swan Song",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/m4FimqdBvhQS0w6lOxyGFTVwutb.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/4iMURVQCxjyMH8Vr1Wd3GCsxE06.jpg",
+  "overview": "在不久的将来，卡梅隆被诊断出患有绝症。他被告知有一个实验性的解决方案，可以通过他的努力，让他的妻子和儿子免受悲痛。",
+  "rating": 7.1,
+  "genres": [
+    "剧情",
+    "科幻"
+  ],
+  "director": "Benjamin Cleary",
+  "cast": [
+    "马赫沙拉·阿里",
+    "娜奥米·哈里斯",
+    "奥卡菲娜",
+    "格伦·克洛斯",
+    "亚当·比奇",
+    "Lee Shorten"
+  ],
+  "runtime": 112,
+  "imdb_id": "tt13207508",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America",
+    "Ireland"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,168 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/gf35Z14VTGfwI9mmgSMeNEoq99O.jpg",
+      "genre_ids": [
+        16,
+        35
+      ],
+      "id": 184322,
+      "original_language": "en",
+      "original_title": "Cheech & Chong's Animated Movie!",
+      "overview": "你没有幻觉（但他们是）。。。这是传奇的小丑Cheech&Chong，你以前从未见过他们——在他们的第一部动画电影中。当他们获得格莱美奖的专辑中最离谱的套路和大声笑出的台词变得生动起来时，包括“Dave不在这里”、“让我们做一笔毒品交易”等等。在一只名叫巴斯特、奇奇和冲（Buster，Cheech&Chong）的爱芽蟹的帮助下，“烟雾大师”（masters of smokin’word）上演了终极喜剧高潮，并为你提供了更多的零食。",
+      "popularity": 0.6794,
+      "poster_path": "/8mKqjklFjLZXsjA4bhMCdOrxa8d.jpg",
+      "release_date": "2013-04-18",
+      "title": "奇客和冲的动画大电影",
+      "video": false,
+      "vote_average": 5.2,
+      "vote_count": 27
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        12,
+        16,
+        35,
+        10751,
+        14
+      ],
+      "id": 271617,
+      "original_language": "cn",
+      "original_title": "老夫子反斗侦探",
+      "overview": "　　老夫子、大蕃薯、秦先生三人合办了一间寻回失踪宠物的侦探社，生意不过不失。秦先生与老夫子各自有感情生活寄托。相反，大蕃薯因为自卑而将感情转移在互联网的世界上。老夫子女友陈小姐的学生大眼生活不如意，将时间用于网上游戏。一次网吧相遇，老夫子、秦先生、大蕃薯、大眼无意中进入虚拟世界里；为了返回现实，他们必须进行大冒险……",
+      "popularity": 0.7901,
+      "poster_path": "/q11YDrEu9sLTRD1QD5FMgwbHAm8.jpg",
+      "release_date": "2003-12-20",
+      "title": "老夫子动画大电影：反斗侦探",
+      "video": false,
+      "vote_average": 2.0,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jUIT2wLol4NGLevmNBi3O7h8cMH.jpg",
+      "genre_ids": [
+        16,
+        10749,
+        35
+      ],
+      "id": 1252371,
+      "original_language": "ko",
+      "original_title": "유미의 세포들 더 무비",
+      "overview": "",
+      "popularity": 0.8898,
+      "poster_path": "/zJ7qQhwUv2JwDSozQpq0xrJD2VL.jpg",
+      "release_date": "2024-04-03",
+      "title": "柔美的细胞小将：动画大电影",
+      "video": false,
+      "vote_average": 6.6,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16
+      ],
+      "id": 890770,
+      "original_language": "en",
+      "original_title": "Leonard Maltin's Animation Favorites from the Film Board of Canada",
+      "overview": "",
+      "popularity": 0.3854,
+      "poster_path": "/bcGzcg7lP87OBTA9I3g8GSuIQ1p.jpg",
+      "release_date": "1994-06-01",
+      "title": "加拿大电影局最喜欢的动画",
+      "video": true,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16,
+        35,
+        10751
+      ],
+      "id": 786891,
+      "original_language": "zh",
+      "original_title": "长江7号：超萌特攻队",
+      "overview": "周小狄（徐娇 配音）和周爸（石班瑜 饰）、外星狗七仔（林簌 配音）、大胖狗朱古力（简耀宗 配音）一起过着幸福快乐的生活。某日，他们在废弃的游乐园里遇见了外星迷糊战士88号。迷糊战士告诉周小狄，此时星际大魔王金宝宝（马语飞 配音）正在蠢蠢欲动，它策划了一个名为“暗黑美食计划”的阴谋，想要靠此称霸地球，而迷糊战士的责任，就是打倒金宝宝，保护地球。  　　周小狄决定帮助迷糊战士，他们得知，有一本失传已久的古籍上记载了能够打败金宝宝的秘密武器，于是一行人踏上了寻找古籍的旅途。一路上，会有怎样有笑有泪的故事在等待着他们呢？",
+      "popularity": 0.6914,
+      "poster_path": "/bsOsjYz7ZoyPQVryq85uoNL3TbJ.jpg",
+      "release_date": "2015-09-26",
+      "title": "长江7号：超萌特攻队",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/479lwbWHo18dO5RayDNXSU5J1FL.jpg",
+      "genre_ids": [
+        16,
+        28,
+        18
+      ],
+      "id": 613200,
+      "original_language": "zh",
+      "original_title": "全职高手之巅峰荣耀",
+      "overview": "电子竞技成为全国第78个体育赛事，“荣耀”将首次举办职业联赛。18岁的叶秋（本名叶修）与好友苏沐秋，在网吧老板陶轩的协助下，开始组建草根电竞战队“嘉世 ”。同时，来自全国各地不同背景的队友们也因为梦想齐聚一堂，为着电竞舞台的最高荣耀而刻苦训练。嘉世一路过关斩将，即将冲进决赛之际，团队却遭遇危机。面对劲敌皇风战队来势汹汹，作为队长的叶秋要如何解决眼前的困境？这样一群怀揣梦想的少年，是否能够登上荣耀的巅峰？  讲述了18岁的叶修，如何与一群志同道合的“战友”，共同组建“嘉世战队”，并一路过关斩将、迎战大Boss，最终走向巅峰的故事。  一个人为了理想可以拼到什么地步？为了追求电竞游戏“荣耀”的冠军，我们的男主叶修，他离家出走，他一往无前，他……当然是个好男孩，在遇到了同样热爱“荣耀”的苏沐橙等人后，不出意外的被“捡”回了家，与高冷御姐“苍天”，倔强又孤独的“暗无天日”，独孤求败的“气冲云海”等人组建起了嘉世战队，在夺冠的道路上，面对来势汹汹的皇风战队，这群一腔热血的年轻人又该如何面对……  少年时期的叶修怀揣着电竞冠军的梦想，克服了重重困难，带领嘉世战队最终走上荣耀巅峰！",
+      "popularity": 2.5238,
+      "poster_path": "/pZnTP3Iny2TrwHhnXqgG0EQPmqC.jpg",
+      "release_date": "2019-08-16",
+      "title": "全职高手之巅峰荣耀",
+      "video": false,
+      "vote_average": 6.5,
+      "vote_count": 71
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/eHSz800btEXfgAPAyZMXtknZefA.jpg",
+      "genre_ids": [
+        10749,
+        16,
+        35,
+        37,
+        28
+      ],
+      "id": 85791,
+      "original_language": "xx",
+      "original_title": "おんぼろフィルム",
+      "overview": "手冢治虫实验动画：英雄要救美，还要与剥落的画面搏斗。",
+      "popularity": 0.9341,
+      "poster_path": "/hP0I7MQCGvHCOCyZH850eWFFann.jpg",
+      "release_date": "1985-08-17",
+      "title": "残片",
+      "video": false,
+      "vote_average": 6.6,
+      "vote_count": 51
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jxIcuIIHEGeT9RZ1zE9UBI3WzxS.jpg",
+      "genre_ids": [
+        10751,
+        16,
+        12,
+        14,
+        35,
+        878
+      ],
+      "id": 160642,
+      "original_language": "ja",
+      "original_title": "映画ドラえもん のび太と奇跡の島 ～アニマル アドベンチャー～",
+      "overview": "在平凡的夏日一天，大雄和好友们在空地上举行独角仙相扑比赛，虽然寄予了无数的厚望，可是大雄的独角仙还是败在胖虎的手下。他回到家后心有不甘，痛哭流涕。哆拉A梦和哆拉美实在看不下去，拿出道具时光洞帮大雄捕捉更强大的独角仙。谁知他们却意外抓到了早在500年前就已经灭绝的大型动物恐鸟，善良的小伙伴们不愿将恐鸟送回原处迎接灭亡的命运，于是一同前往了位于大海中央的奇迹之岛是由灭绝动物学家凯利博士主持开发、专门用作保护灭绝生物的岛屿。在这里，小伙伴们见到了巨犀、板齿犀、渡渡鸟、剑齿虎等只在图片上才见过的生物。与此同时，他们还见到了和大雄长得一模一样的神秘男孩达凯。达凯来自祖祖辈辈生活在岛上的乐可乐一族，族人奉黄金独角仙赫拉克勒斯为守护神。大雄他们受到乐可乐族的欢迎和礼遇，他们也很快和达凯以及可爱的女孩可珑成为好朋友。突然，一伙邪恶之人打破了奇迹之岛的宁静。来自未来的恶德商人谢尔曼妄图夺取黄金独角仙，他和他的爪牙斯卡伊、史奈克、罗克将贪婪之手伸向小岛。为了保护岛上的动物和黄金独角仙，哆拉A梦、大雄以及小伙伴们勇敢地迎接挑战.",
+      "popularity": 3.9028,
+      "poster_path": "/u5hPNINIVRetAaRCvEOKgluqzQJ.jpg",
+      "release_date": "2012-03-03",
+      "title": "哆啦A梦：大雄与奇迹之岛 ~动物历险记~",
+      "video": false,
+      "vote_average": 6.8,
+      "vote_count": 73
+    }
+  ]
+}

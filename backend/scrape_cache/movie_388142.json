@@ -1,0 +1,30 @@
+{
+  "tmdb_id": 388142,
+  "media_type": "movie",
+  "title": "Nineteen",
+  "original_title": "Nineteen",
+  "english_title": "Nineteen",
+  "year": "2015",
+  "poster_url": "https://image.tmdb.org/t/p/w500/jStVmVKFqWCf6fzJToxp2bUihVo.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/cMOyWCDVapDBo3lCXnzuRby38FQ.jpg",
+  "overview": "",
+  "rating": 3.0,
+  "genres": [],
+  "director": "Madeline Kelly",
+  "cast": [
+    "James Fraser",
+    "Benjamin Mathews",
+    "香努·艾诗琳"
+  ],
+  "runtime": 11,
+  "imdb_id": "tt3809264",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

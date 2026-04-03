@@ -1,0 +1,195 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/alxkhwiANOXV1MOysWnDoUqIw8O.jpg",
+      "genre_ids": [
+        18,
+        878
+      ],
+      "id": 9314,
+      "original_language": "en",
+      "original_title": "Nineteen Eighty-Four",
+      "overview": "这是一部虚构的政治恐怖电影。一九八四年，在经历一系列战争和合并后，世界只存在三个超级大国了——大洋国、东亚国和欧亚国。温斯顿（约翰•赫特 John Hurt 饰）生活在老大哥统治下的大洋国，这里，和其他两国一样，到处都安装着电幕（一种类似电视机的监视器），每个人都生活都在党的思想警察的监视下，历史完全按照党的需要每天都被改写。虽然无法说出为什么，作为外围党员的温斯顿从心里厌恶老大哥。一日，他偷偷从一家陈年杂货铺处买了一本日记本——原则上党不允许写日记，表达个人思想——开始写日记。当他和在小说司工作的裘莉亚（苏珊娜•汉密尔顿 Suzanna Hamilton 饰）违反党的政策开始秘密偷情时，思想警察悄悄盯上了他。",
+      "popularity": 3.8461,
+      "poster_path": "/hrdQlicxuyTg3zyVqq78EsA4Z6J.jpg",
+      "release_date": "1984-11-09",
+      "title": "一九八四",
+      "video": false,
+      "vote_average": 6.785,
+      "vote_count": 1624
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/egiZUdhhWutp0VDchQfjq56ePJU.jpg",
+      "genre_ids": [
+        18,
+        878,
+        10770
+      ],
+      "id": 78852,
+      "original_language": "en",
+      "original_title": "Nineteen Eighty-Four",
+      "overview": "本片为BBC出的电视电影，是最早将原著小说《1984》搬上荧幕的影视改编版本，也是迄今为止三个影视改编版本（1954年Rudolph Cartier版，1956年Michael Anderson版，1984年Michael Radford版）里普遍评价最高的一个。或许是因为出品年代久远的缘故本片在国际上长期受到忽视（许多人只知道迈克尔·雷德福导演的版本）。",
+      "popularity": 1.0515,
+      "poster_path": "/w6fHgUpUA3aRwv8MrmxfuYlKoCJ.jpg",
+      "release_date": "1954-12-16",
+      "title": "BBC周日晚间剧场：1984",
+      "video": false,
+      "vote_average": 7.3,
+      "vote_count": 40
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 220472,
+      "original_language": "nl",
+      "original_title": "EK 'Eighty-Eight - Oranje Kampioen!",
+      "overview": "",
+      "popularity": 0.7701,
+      "poster_path": "/4x2mUChtWEeXhfpK1ondOv8G2NE.jpg",
+      "release_date": "2004-03-13",
+      "title": "EK 'Eighty-Eight - Oranje Kampioen!",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/b9YeBPQwrucsHWGYZ5FnOHAm80f.jpg",
+      "genre_ids": [
+        35,
+        16,
+        28,
+        12,
+        14,
+        878
+      ],
+      "id": 708335,
+      "original_language": "en",
+      "original_title": "Aqua Teen Hunger Force Eighty Minutes of a Whole Nother Movie",
+      "overview": "",
+      "popularity": 0.6991,
+      "poster_path": "/8ZtYjReEY3WtGY66NTqwAISbnkt.jpg",
+      "release_date": "2007-08-14",
+      "title": "Aqua Teen Hunger Force Eighty Minutes of a Whole Nother Movie",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        878,
+        16,
+        12
+      ],
+      "id": 1077468,
+      "original_language": "en",
+      "original_title": "Eighty-Six",
+      "overview": "",
+      "popularity": 0.5787,
+      "poster_path": "/9rDLXBj34UrwUrKC0GK754ceO9u.jpg",
+      "release_date": "2012-12-11",
+      "title": "Eighty-Six",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 360172,
+      "original_language": "en",
+      "original_title": "The Eighty Days",
+      "overview": "",
+      "popularity": 0.3755,
+      "poster_path": "/6815f1HEuvqP9gA6mev40PmUAR9.jpg",
+      "release_date": "1944-01-02",
+      "title": "The Eighty Days",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        80,
+        53,
+        35
+      ],
+      "id": 1257071,
+      "original_language": "en",
+      "original_title": "One Hundred and Eighty",
+      "overview": "",
+      "popularity": 0.5509,
+      "poster_path": "/jz8HPW7VBM6BskaqXbB6l1VApi3.jpg",
+      "release_date": "2025-06-21",
+      "title": "One Hundred and Eighty",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1367561,
+      "original_language": "en",
+      "original_title": "One Hundred and Eighty!!!",
+      "overview": "",
+      "popularity": 0.4947,
+      "poster_path": "/sRs2R6qI9C3Liv3hWrQTdmoSqqp.jpg",
+      "release_date": "1981-01-16",
+      "title": "One Hundred and Eighty!!!",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 1367516,
+      "original_language": "en",
+      "original_title": "Eighty-Six",
+      "overview": "",
+      "popularity": 0.2727,
+      "poster_path": null,
+      "release_date": "2024-07-24",
+      "title": "Eighty-Six",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jQo4PZp3CvhxlPWXOZyzTOsyq8D.jpg",
+      "genre_ids": [
+        18,
+        36
+      ],
+      "id": 1567980,
+      "original_language": "pa",
+      "original_title": "Eighty-Four",
+      "overview": "",
+      "popularity": 0.3186,
+      "poster_path": "/wjGZR7ujh0W81qVPxQwAjTcLmen.jpg",
+      "release_date": "2025-01-02",
+      "title": "Eighty-Four",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

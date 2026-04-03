@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/jlGmlFOcfo8n5tURmhC7YVd4Iyy.jpg",
+      "genre_ids": [
+        28,
+        35,
+        12
+      ],
+      "id": 436969,
+      "original_language": "en",
+      "original_title": "The Suicide Squad",
+      "overview": "被关押在美梦监狱的自杀小队成员获得一项可以减轻刑罚的新任务，前往南美洲的科多·马提斯岛国，摧毁纳粹时期遗留的约顿海姆监狱和实验室，它当前用于关押该国的政治犯并施行人体实验。执行任务期间，自杀小队遭遇巨型外星生物——海星斯塔罗，并与它发生冲突。",
+      "popularity": 12.3378,
+      "poster_path": "/9XVB5sQndDVxETunlXn2Gq5aRWW.jpg",
+      "release_date": "2021-07-28",
+      "title": "X特遣队：全员集结",
+      "video": false,
+      "vote_average": 7.465,
+      "vote_count": 9456
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/mI0Qo7VtgW5siCtQQqNPXIk0Ar6.jpg",
+      "genre_ids": [
+        16,
+        28,
+        18,
+        878
+      ],
+      "id": 685274,
+      "original_language": "ja",
+      "original_title": "機動戦士ガンダム 閃光のハサウェイ",
+      "overview": "夏亚叛乱之后，哈萨维·诺亚领导了一场反地球联邦军的暴动，但他的命运却在与一名敌方军官和一个神秘女性相遇后发生了改变。",
+      "popularity": 6.5537,
+      "poster_path": "/ybvwxhVbekSx9BuCCBdk5BiXryb.jpg",
+      "release_date": "2021-06-11",
+      "title": "机动战士高达 闪光的哈萨维",
+      "video": false,
+      "vote_average": 7.2,
+      "vote_count": 141
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4ZTD67RhUOcI8WVP1Kmd1LFFc7d.jpg",
+      "genre_ids": [
+        16,
+        878,
+        10752,
+        18
+      ],
+      "id": 910850,
+      "original_language": "ja",
+      "original_title": "機動戦士ガンダム  閃光のハサウェイ キルケーの魔女",
+      "overview": "",
+      "popularity": 3.2192,
+      "poster_path": "/du8DVr2MoeuxNNCa99gxRW38Ppf.jpg",
+      "release_date": "2026-01-30",
+      "title": "机动战士高达 闪光的哈萨维 喀耳刻的魔女",
+      "video": false,
+      "vote_average": 8.0,
+      "vote_count": 1
+    }
+  ]
+}

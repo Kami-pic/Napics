@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 182545,
+  "media_type": "movie",
+  "title": "Bingo",
+  "original_title": "Bingo",
+  "english_title": "Bingo",
+  "year": "2013",
+  "poster_url": "https://image.tmdb.org/t/p/w500/iBqDYjd0UrogUNFly2WHPrgRfWk.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/g89nNhpyOU2SXpNB6vu8SWZ5qGV.jpg",
+  "overview": "",
+  "rating": 6.4,
+  "genres": [
+    "喜剧",
+    "剧情"
+  ],
+  "director": "Rudi Van den Bossche",
+  "cast": [
+    "Ruud De Ridder",
+    "Nicole Laurent",
+    "Sven de Ridder",
+    "Anke De Ridder",
+    "Marijn Devalck",
+    "Aron Wade"
+  ],
+  "runtime": 87,
+  "imdb_id": "tt2572160",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Belgium"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

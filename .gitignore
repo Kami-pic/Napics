@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+dist/
+.next/
+out/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project generated caches & temp files
+backend/sandbox/
+backend/sandbox_real/
+backend/posters/
+backend/*_report.txt
+*.log
+
+# User Data / Settings (if needed, adjust accordingly)
+# backend/recycle_bin/
+# backend/recycle_bin.json
+# backend/config.json

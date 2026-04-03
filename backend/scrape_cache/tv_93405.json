@@ -1,0 +1,32 @@
+{
+  "tmdb_id": 93405,
+  "media_type": "tv",
+  "title": "鱿鱼游戏",
+  "original_title": "오징어 게임",
+  "english_title": "Squid Game",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/1qLhWdhkuchtoBLmLzvubxqgF8O.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/2meX1nMdScFOoV4370rqHWKmXhY.jpg",
+  "overview": "数百名经济拮据的人接受了一个奇怪的邀请，参加儿童游戏比赛。在这场游戏中，有诱人的奖金，也有致命的高风险。",
+  "rating": 7.9,
+  "genres": [
+    "动作冒险",
+    "悬疑",
+    "剧情"
+  ],
+  "director": "",
+  "cast": [],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 3,
+  "status": "Ended",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "South Korea"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

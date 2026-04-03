@@ -1,0 +1,31 @@
+{
+  "tmdb_id": 20710,
+  "media_type": "tv",
+  "title": "Angry Kid",
+  "original_title": "Angry Kid",
+  "english_title": "Angry Kid",
+  "year": "2000",
+  "poster_url": "https://image.tmdb.org/t/p/w500/3HLZMo4dzc1PfXzuof5sPr1lI7g.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/7uo7KovUgmAH45FnuCXy21ZOGfz.jpg",
+  "overview": "",
+  "rating": 8.4,
+  "genres": [
+    "动画",
+    "喜剧"
+  ],
+  "director": "",
+  "cast": [],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 4,
+  "status": "Ended",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

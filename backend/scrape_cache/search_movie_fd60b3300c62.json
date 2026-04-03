@@ -1,0 +1,191 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 669513,
+      "original_language": "fr",
+      "original_title": "Jojo",
+      "overview": "",
+      "popularity": 0.6589,
+      "poster_path": "/gnVfvyeHhSHlwSh56SqeJq9WBRs.jpg",
+      "release_date": "2019-04-23",
+      "title": "Jojo",
+      "video": false,
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 866626,
+      "original_language": "fr",
+      "original_title": "Jojo",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": "/xp3IUTOypGKgFQ7ambSOJkxOqHv.jpg",
+      "release_date": "2021-07-21",
+      "title": "Jojo",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jw2FmU7RKMMkgDCshUBE9OaXuaJ.jpg",
+      "genre_ids": [
+        28,
+        16,
+        12
+      ],
+      "id": 387470,
+      "original_language": "ja",
+      "original_title": "ジョジョの奇妙な冒険 ファントム ブラッド",
+      "overview": "2007年2月17日公映，根据原作的第一部改编的剧场版动画。制作人员为第三部OVA的原班人马。由于过度改编，为了在短短1、2个小时内塞进如此多的内容导致部分角色神秘失踪：比如我们的解说员史比特瓦根先生。公映至今因票房收入惨淡而没有制作做成DVD等媒介，只有一个预告片和短短的16分钟流出画面（没有声音），是名符其实的“黑历史”。唯一的遗产是被称为DIO的角色曲的主题曲《Voodoo Kingdom》。  2023年，据传闻，本片确实有计划过发行DVD，但本片的所有材料和样片已被集英社完全回收，原因不明。",
+      "popularity": 3.0027,
+      "poster_path": "/k9568nNUbo7z81j2eYuHp0vkEy6.jpg",
+      "release_date": "2007-02-17",
+      "title": "JOJO的奇妙冒险 幻影血脉",
+      "video": false,
+      "vote_average": 6.1,
+      "vote_count": 23
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/f72Z2VbNhtVjFlkBE6oDLYXrhzF.jpg",
+      "genre_ids": [
+        28,
+        12,
+        14,
+        53
+      ],
+      "id": 431572,
+      "original_language": "ja",
+      "original_title": "ジョジョの奇妙な冒険 ダイヤモンドは砕けない 第一章",
+      "overview": "《JOJO的奇妙冒险：不灭钻石》的故事发生在上一部《星尘斗士》的剧情结束的11年后。1999年，空条承太郎为寻找外公乔瑟夫·乔斯达的私生子东方仗助来到日本M县S市杜王町，却发现仗助与其一样拥有着名为“替身”的特殊能力。以承太郎的到访为开端，发生在杜王町上有关“替身使者”们的全新故事拉开了序幕。",
+      "popularity": 3.1218,
+      "poster_path": "/cgioPVO5SAJTfD7GrgVtvd7T5Z6.jpg",
+      "release_date": "2017-08-04",
+      "title": "JOJO的奇妙冒险：不灭钻石 第一章",
+      "video": false,
+      "vote_average": 6.6,
+      "vote_count": 108
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lTyikzfGgRX5ZqIfVeT26APYfRL.jpg",
+      "genre_ids": [
+        35,
+        10752,
+        18
+      ],
+      "id": 515001,
+      "original_language": "en",
+      "original_title": "Jojo Rabbit",
+      "overview": "二战时期，男孩乔乔(戴维斯)和母亲(斯嘉丽)生活在纳粹德国统治下，他不知道母亲在家中藏着一个犹太女孩(麦肯齐)，而母亲秘密为抵抗军工作。乔乔渴望加入希特勒青年团，他脑内出了一个颠覆版的希特勒，这个希特勒有魅力、傻傻的、天真可爱，是他的朋友，帮助他应付生活中的困境。",
+      "popularity": 7.6336,
+      "poster_path": "/6iwVNGB40ICgWt2ASOJ0kdT3hfA.jpg",
+      "release_date": "2019-10-18",
+      "title": "乔乔的异想世界",
+      "video": false,
+      "vote_average": 7.99,
+      "vote_count": 10284
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jsG76GJLKZvPtYGLGlLyOZZtoY3.jpg",
+      "genre_ids": [
+        16,
+        878,
+        10749
+      ],
+      "id": 34111,
+      "original_language": "en",
+      "original_title": "Jojo in the Stars",
+      "overview": "",
+      "popularity": 1.0019,
+      "poster_path": "/9ZuNllzTeG18hyrREXNTupb0Wde.jpg",
+      "release_date": "2003-02-04",
+      "title": "Jojo in the Stars",
+      "video": false,
+      "vote_average": 6.3,
+      "vote_count": 19
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/mKc0lx97WFPK7Rq3QoSy18BTpdK.jpg",
+      "genre_ids": [
+        10402
+      ],
+      "id": 653673,
+      "original_language": "en",
+      "original_title": "JoJo's D.R.E.A.M. Concert",
+      "overview": "",
+      "popularity": 0.7202,
+      "poster_path": "/3TOOq1psDaXSQUSfj2ZGrAJ5zrm.jpg",
+      "release_date": "2019-11-22",
+      "title": "JoJo's D.R.E.A.M. Concert",
+      "video": false,
+      "vote_average": 3.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99,
+        35
+      ],
+      "id": 686858,
+      "original_language": "en",
+      "original_title": "JoJo: The Pop Princess",
+      "overview": "",
+      "popularity": 0.8568,
+      "poster_path": "/w8vjLqIaNCHtbPiGWKFYlKP3ueM.jpg",
+      "release_date": "2006-08-15",
+      "title": "JoJo: The Pop Princess",
+      "video": true,
+      "vote_average": 8.3,
+      "vote_count": 3
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/9e2eIvO3TOIP7lPhzsj9J1mGr3a.jpg",
+      "genre_ids": [],
+      "id": 156608,
+      "original_language": "fr",
+      "original_title": "Jojo la frite",
+      "overview": "",
+      "popularity": 0.8129,
+      "poster_path": "/kl3kfFQ5q3ZQ42OgulJrWD20GJU.jpg",
+      "release_date": "2002-05-15",
+      "title": "Jojo la frite",
+      "video": false,
+      "vote_average": 3.8,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/9VfVJsuEJXUYonewgaNirFEe6O1.jpg",
+      "genre_ids": [
+        10751,
+        16
+      ],
+      "id": 120464,
+      "original_language": "en",
+      "original_title": "JoJo's Circus: Take a Bow!",
+      "overview": "",
+      "popularity": 0.4273,
+      "poster_path": "/k3uXR33FIhdsgjvMnbUzmqR7wGa.jpg",
+      "release_date": "2005-03-22",
+      "title": "JoJo's Circus: Take a Bow!",
+      "video": true,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

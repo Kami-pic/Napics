@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 53182,
+  "media_type": "movie",
+  "title": "300勇士：帝国崛起",
+  "original_title": "300: Rise of an Empire",
+  "english_title": "300: Rise of an Empire",
+  "year": "2014",
+  "poster_url": "https://image.tmdb.org/t/p/w500/gNvSHWW4vQozM3754dUrzRpCyyn.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/chjkfyo57JexWo1YeIZRMk8wA4m.jpg",
+  "overview": "据漫画家弗兰克·米勒介绍，前传故事比《300勇士》要早上10年，以马拉松战役为起点。前传暂以“薛西斯”（Xerxes）为名，他就是《300勇士》中的波斯王，薛西斯在公元前5世纪成为“万王之王”，继承父亲大流士的意志远征希腊。前传的主要人物是被称为雅典海军之父的特米斯托克利（Themistocles），他成为希腊的统治者并建立了海军，同时也是斯巴达国王列奥尼达斯（Leonidas）的死对头。",
+  "rating": 6.1,
+  "genres": [
+    "动作",
+    "剧情",
+    "战争"
+  ],
+  "director": "诺姆·穆罗",
+  "cast": [
+    "沙利文·斯特普尔顿",
+    "伊娃·格林",
+    "琳娜·海蒂",
+    "卡兰·马尔韦",
+    "大卫·文翰",
+    "罗德里戈·桑托罗"
+  ],
+  "runtime": 95,
+  "imdb_id": "tt1253863",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Bulgaria",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

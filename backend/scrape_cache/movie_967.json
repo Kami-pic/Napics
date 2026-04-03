@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 967,
+  "media_type": "movie",
+  "title": "斯巴达克斯",
+  "original_title": "Spartacus",
+  "english_title": "Spartacus",
+  "year": "1960",
+  "poster_url": "https://image.tmdb.org/t/p/w500/lLTkOw0UFRUnsVyF8TAEYKYdCpj.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/9caD0fGCrp96JTFFeGyI0CGNj7.jpg",
+  "overview": "斯坦利·库布里克执导了这部由银幕传奇们出演的宏大史诗——柯克·道格拉斯饰演那位带领罗马奴隶起义的顽强角斗士。本片定义了一种类型片，并开创了好莱坞的新时代。其沉稳的表演、绚丽的特艺彩色摄影、大胆的服装设计以及震撼人心的搏斗场面，为本片赢得了四项奥斯卡奖；而其中政治与性暗示的交融则曾令观众哗然。如今，库布里克这部充满争议的经典之作，作为首部公开反抗好莱坞黑名单的电影，依然是电影艺术与历史的里程碑。[标准收藏]",
+  "rating": 7.5,
+  "genres": [
+    "历史",
+    "战争",
+    "剧情",
+    "冒险"
+  ],
+  "director": "斯坦利·库布里克",
+  "cast": [
+    "柯克·道格拉斯",
+    "劳伦斯·奥利弗",
+    "简·西蒙斯",
+    "查尔斯·劳顿",
+    "彼得·乌斯蒂诺夫",
+    "约翰·加文"
+  ],
+  "runtime": 197,
+  "imdb_id": "tt0054331",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

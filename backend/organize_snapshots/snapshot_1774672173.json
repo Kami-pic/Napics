@@ -1,0 +1,42 @@
+{
+    "id": 1774672173,
+    "time": "Sat Mar 28 12:29:33 2026",
+    "label": "",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族 House of the Dragon",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙之家族.House.of.the.Dragon.S01E01.The.Heirs.of.the.Dragon.1080p.HD中英双字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙的继承者 The Heirs of the Dragon S01E01 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙之家族.House.of.the.Dragon.S01E02.The.Rogue.Prince.1080p.HD中英双字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\浪荡王子 The Rogue Prince S01E02 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙之家族.House.of.the.Dragon.S01E03.Second.of.His.Name.2160p.HD中英双字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\伊耿二世 Second of His Name S01E03 2160p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙之家族.House.of.the.Dragon.S01E04.King.of.the.Narrow.Sea.1080p.HD中英双字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\狭海之王 King of the Narrow Sea S01E04 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙之家族.House.of.the.Dragon.S01E05.We.Light.the.Way.1080p.HD中英双字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\照亮前程 We Light the Way S01E05 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\龙之家族.House.of.the.Dragon.S01E06.The.Princess.and.the.Queen.1080p.HD中英双字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\龙之家族第一季\\公主与王后 The Princess and the Queen S01E06 1080p.mp4",
+            "is_dir": false
+        }
+    ]
+}

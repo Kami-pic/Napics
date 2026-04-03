@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 338803,
+  "media_type": "movie",
+  "title": "奸臣",
+  "original_title": "간신",
+  "english_title": "The Treacherous",
+  "year": "2015",
+  "poster_url": "https://image.tmdb.org/t/p/w500/l59P2UkHmsNECESWM6KlJUH1Imh.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/qFq2Ixo3XApoTp1H7JCTgLfGwVk.jpg",
+  "overview": "以朝鲜历史上著名暴君燕山君执政时期为背景，讲述的是在君王面前伪装忠臣，实际上却是扰乱政坛主谋的奸臣的故事，其视王为傀儡，实为“王上之王”。(燕山君，李隆，1494年－1506年，朝鲜的第10代君王，被废黜王位，并被赶出皇宫，因病结束了惨淡的一生。同样讲他的影视剧还有《王得男人》，《大长今》，《女人天下》)",
+  "rating": 6.1,
+  "genres": [
+    "剧情",
+    "历史",
+    "犯罪"
+  ],
+  "director": "闵奎东",
+  "cast": [
+    "朱智勋",
+    "金康宇",
+    "林智妍",
+    "李裕英",
+    "千虎珍",
+    "车智妍"
+  ],
+  "runtime": 133,
+  "imdb_id": "tt4844288",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "South Korea"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

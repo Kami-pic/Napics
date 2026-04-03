@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 779029,
+  "media_type": "movie",
+  "title": "长津湖",
+  "original_title": "长津湖",
+  "english_title": "The Battle at Lake Changjin",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/b3BM9liGHm4nvzsDO3frDtiEC6P.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/dwNeWkccTWJCgfc6yqpkuH93nSu.jpg",
+  "overview": "电影以抗美援朝战争第二次战役中的长津湖战役为背景，讲述了一段波澜壮阔的历史：71年前，中国人民志愿军赴朝作战，在极寒严酷环境下，东线作战部队凭着钢铁意志和英勇无畏的战斗精神一路追击，奋勇杀敌，扭转了战场态势，打出了军威国威。",
+  "rating": 6.2,
+  "genres": [
+    "剧情",
+    "战争"
+  ],
+  "director": "陈凯歌",
+  "cast": [
+    "吴京",
+    "易烊千玺",
+    "段奕宏",
+    "朱亚文",
+    "李凯文",
+    "李晨"
+  ],
+  "runtime": 176,
+  "imdb_id": "tt13462900",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "China",
+    "Hong Kong"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,31 @@
+{
+  "tmdb_id": 825378,
+  "media_type": "movie",
+  "title": "The Lover",
+  "original_title": "The Lover",
+  "english_title": "The Lover",
+  "year": "2014",
+  "poster_url": "https://image.tmdb.org/t/p/w500/3qDSPC0r0OG9AJweNC7bqf8BuFm.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 6.5,
+  "genres": [],
+  "director": "Anisa Qureshi",
+  "cast": [
+    "Mali Elfman",
+    "Sheldon Anderson"
+  ],
+  "runtime": 6,
+  "imdb_id": "tt4304184",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

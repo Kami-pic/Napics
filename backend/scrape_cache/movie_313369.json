@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 313369,
+  "media_type": "movie",
+  "title": "爱乐之城",
+  "original_title": "La La Land",
+  "english_title": "La La Land",
+  "year": "2016",
+  "poster_url": "https://image.tmdb.org/t/p/w500/wEOWf7ahe1yeDkng1AxIcuIXcB.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/nofXR1TN1vgGjdfnwGQwFaAWBaY.jpg",
+  "overview": "心怀演员梦想的米娅在试镜间隙为电影明星端送拿铁，而执着于爵士乐的塞巴斯汀则在昏暗酒吧靠弹奏钢琴曲勉强度日。然而当事业渐有起色，两人不得不做出抉择，这些决定逐渐磨损着他们如薄纱般的恋情，那些曾奋力彼此守护的梦想，此刻却可能将彼此撕裂。",
+  "rating": 7.9,
+  "genres": [
+    "喜剧",
+    "剧情",
+    "爱情"
+  ],
+  "director": "达米恩·查泽雷",
+  "cast": [
+    "瑞恩·高斯林",
+    "艾玛·斯通",
+    "约翰•传奇",
+    "罗丝玛丽·德薇特",
+    "芬恩·维特洛克",
+    "卡莉·埃尔南德斯"
+  ],
+  "runtime": 128,
+  "imdb_id": "tt3783958",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

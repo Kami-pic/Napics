@@ -1,0 +1,199 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/1qSo3zT9XAQYcbZaLBn46mTeTHZ.jpg",
+      "genre_ids": [
+        878,
+        9648,
+        18,
+        27,
+        10770
+      ],
+      "id": 569547,
+      "original_language": "en",
+      "original_title": "Black Mirror: Bandersnatch",
+      "overview": "一位年轻的程序员，他将一部奇幻小说改编为游戏。然而很快现实和虚拟世界混合在一起，开始造成混乱。影片充满大量的暴力元素。",
+      "popularity": 2.6319,
+      "poster_path": "/pA9FNm4ZHsXSfDCwBHYHklpvMgS.jpg",
+      "release_date": "2018-12-28",
+      "title": "黑镜：潘达斯奈基",
+      "video": false,
+      "vote_average": 6.761,
+      "vote_count": 4139
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lGRSkC5ySatEncPOPqdg8lzZchl.jpg",
+      "genre_ids": [
+        18,
+        53,
+        27,
+        9648
+      ],
+      "id": 630720,
+      "original_language": "it",
+      "original_title": "Occhiali neri",
+      "overview": "戴安娜是一名妓女，每天夜里都出去提供性服务。 一天夜里下班遇上了一个专门杀害妓女的连环杀手，杀手驾驶汽车装上了戴安娜的汽车，戴安娜在车祸后导致失明，成为了一个盲人，但杀手并未结束对戴安娜的追杀。",
+      "popularity": 1.5019,
+      "poster_path": "/f4vQArwE3LLvRyhoG3X5nNcWXoG.jpg",
+      "release_date": "2022-02-24",
+      "title": "黑眼镜",
+      "video": false,
+      "vote_average": 4.8,
+      "vote_count": 205
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16,
+        10770
+      ],
+      "id": 441189,
+      "original_language": "ko",
+      "original_title": "터닝메카드W: 블랙미러의 부활",
+      "overview": "",
+      "popularity": 0.6915,
+      "poster_path": "/eFEpJlKFyhIqmjJ2mxTbiBaW7Sa.jpg",
+      "release_date": "2017-01-18",
+      "title": "魔幻车神W：黑镜复活",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        28,
+        53
+      ],
+      "id": 105941,
+      "original_language": "en",
+      "original_title": "When the Cobra Strikes",
+      "overview": "西斯维·比克是南非的一个普通人，却身怀武术绝技。他最大的梦想就是过上简简单单的生活，但被卷入了为父亲争取自由的斗争",
+      "popularity": 0.5236,
+      "poster_path": "/2Lb733nyjYaNiB0WuPqBAC1tyA.jpg",
+      "release_date": "2012-05-22",
+      "title": "黑色眼镜蛇",
+      "video": false,
+      "vote_average": 4.6,
+      "vote_count": 8
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2lUwdbnaPEFjcbyYOuZ1QEGDt9t.jpg",
+      "genre_ids": [
+        80,
+        53,
+        35
+      ],
+      "id": 333252,
+      "original_language": "fr",
+      "original_title": "Le Monocle noir",
+      "overview": "",
+      "popularity": 0.5765,
+      "poster_path": "/udVSYzSvH6O3LLFhFWCgmnY0syr.jpg",
+      "release_date": "1961-08-29",
+      "title": "黑色单片眼镜",
+      "video": false,
+      "vote_average": 5.9,
+      "vote_count": 23
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/9xmJFgtVlBf6lb3PPx8olu2VRG1.jpg",
+      "genre_ids": [
+        27,
+        53
+      ],
+      "id": 24874,
+      "original_language": "en",
+      "original_title": "Dark Mirror",
+      "overview": "一个摄影师搬家到一个古怪的老房子里，她发现了一面古怪的镜子，镜子里面经常出照射出一些实际不存在的东西，黑暗的现实正在慢慢的接近她…",
+      "popularity": 0.5377,
+      "poster_path": "/2ECVnTEVPI5CTWIReuyPQoMLKi1.jpg",
+      "release_date": "2007-01-01",
+      "title": "黑暗的镜子",
+      "video": false,
+      "vote_average": 5.1,
+      "vote_count": 40
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/eOc4u7M1e4WvgQCmzpBU5GQd2cL.jpg",
+      "genre_ids": [
+        27
+      ],
+      "id": 92706,
+      "original_language": "en",
+      "original_title": "Mirror Mirror 2: Raven Dance",
+      "overview": "",
+      "popularity": 0.7024,
+      "poster_path": "/4f3KWtOyYXAdkvkUKAW9lEwrOZZ.jpg",
+      "release_date": "1994-05-25",
+      "title": "禁入魔镜2：黑舞",
+      "video": false,
+      "vote_average": 3.6,
+      "vote_count": 20
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ystlIBV89gqnbMe92xTxKSKeucV.jpg",
+      "genre_ids": [
+        27,
+        53
+      ],
+      "id": 575361,
+      "original_language": "ru",
+      "original_title": "Пиковая дама: Зазеркалье",
+      "overview": "",
+      "popularity": 0.6364,
+      "poster_path": "/deHYXSMJNCqi1fI5mip8fhebbEG.jpg",
+      "release_date": "2019-03-14",
+      "title": "黑桃皇后2：鬼镜",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 178
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/cJZSjoJU1wnpRFbRSc8G95hCIPa.jpg",
+      "genre_ids": [
+        99,
+        10770
+      ],
+      "id": 862355,
+      "original_language": "en",
+      "original_title": "Cobra Mafia",
+      "overview": "",
+      "popularity": 0.1117,
+      "poster_path": "/zjmYQIRa57D1qlc2OjnWxBXmuov.jpg",
+      "release_date": "2015-05-14",
+      "title": "黑手党眼镜蛇",
+      "video": false,
+      "vote_average": 8.0,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1Wtkqwq8aLIOtBJ1AKf4SL5MGJT.jpg",
+      "genre_ids": [
+        18,
+        14
+      ],
+      "id": 398581,
+      "original_language": "en",
+      "original_title": "The Other Side of the Mirror",
+      "overview": "富有的年轻女子爱丽丝刚搬到位于西北太平洋地区之豪宅。在花园中，爱丽丝遇见一神秘男子并跟随他指示同行。突然之间，神秘男子消失于兔子洞内，爱丽丝亦跟他掉入洞中。当她醒来时已失去意识，只发现自己已在1905年西北太平洋地区的「另一世界」 – 一个超现实的仙境。",
+      "popularity": 0.2845,
+      "poster_path": "/hdcePxwb44MIIrPWKsibVTQg9Mg.jpg",
+      "release_date": "2016-05-03",
+      "title": "爱丽丝幻游仙境之暗黑魔镜",
+      "video": false,
+      "vote_average": 4.1,
+      "vote_count": 48
+    }
+  ]
+}

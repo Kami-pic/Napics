@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 120,
+  "media_type": "movie",
+  "title": "指环王1：护戒使者",
+  "original_title": "The Lord of the Rings: The Fellowship of the Ring",
+  "english_title": "The Lord of the Rings: The Fellowship of the Ring",
+  "year": "2001",
+  "poster_url": "https://image.tmdb.org/t/p/w500/dvNHlWMxba5f9r8xS9tILLUig8m.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/a0lfia8tk8ifkrve0Tn8wkISUvs.jpg",
+  "overview": "J.R.R.托尔金的文学巨著首次以电影形式磅礴呈现——这是一场正义对抗邪恶的史诗冒险，一段关于友谊力量与个人勇气的传奇，更是一次为人类纪元开辟道路的英雄征程。",
+  "rating": 8.4,
+  "genres": [
+    "冒险",
+    "奇幻",
+    "动作"
+  ],
+  "director": "彼得·杰克逊",
+  "cast": [
+    "伊利亚·伍德",
+    "伊恩·麦克莱恩",
+    "维果·莫特森",
+    "西恩·奥斯汀",
+    "伊恩·霍姆",
+    "丽芙·泰勒"
+  ],
+  "runtime": 228,
+  "imdb_id": "tt0120737",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "New Zealand",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

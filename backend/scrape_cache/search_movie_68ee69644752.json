@@ -1,0 +1,92 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1111624,
+      "original_language": "ja",
+      "original_title": "日本極道戦争　第九章",
+      "overview": "",
+      "popularity": 1.52,
+      "poster_path": "/n34CdWJX1IjdYUcnAuscpizMVCp.jpg",
+      "release_date": "2021-01-01",
+      "title": "日本極道戦争　第九章",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        80
+      ],
+      "id": 1150014,
+      "original_language": "ja",
+      "original_title": "極道の紋章 レジェンド 第九章",
+      "overview": "",
+      "popularity": 1.0323,
+      "poster_path": "/tgce2FUt2tIr6yzUPiUaEbqdquW.jpg",
+      "release_date": "2022-06-25",
+      "title": "極道の紋章 レジェンド 第九章",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1143397,
+      "original_language": "ja",
+      "original_title": "極道（やくざ）の紋章（だいもん）　第九章",
+      "overview": "",
+      "popularity": 1.1034,
+      "poster_path": "/tIFTPHrDxHvFBAVYQGjJKgbRs0F.jpg",
+      "release_date": "2009-01-30",
+      "title": "極道（やくざ）の紋章（だいもん）　第九章",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        27
+      ],
+      "id": 1200318,
+      "original_language": "ja",
+      "original_title": "呪いの黙示録 第九章",
+      "overview": "",
+      "popularity": 0.1715,
+      "poster_path": "/xeljCXxefrCzmdlcBW57LrgPgeb.jpg",
+      "release_date": "2023-09-08",
+      "title": "呪いの黙示録 第九章",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/zddramNr7DYJknnLk7be56Y18Yw.jpg",
+      "genre_ids": [
+        9648,
+        16,
+        14
+      ],
+      "id": 47747,
+      "original_language": "ja",
+      "original_title": "劇場版「空の境界」終章",
+      "overview": "1999年3月，某个下雪的夜晚。相隔四年，黑桐干也与『两仪式』再会。",
+      "popularity": 2.6584,
+      "poster_path": "/bpnNkxpTuZugsGsnZRcHzAxUZ7O.jpg",
+      "release_date": "2010-12-28",
+      "title": "空之境界 终章",
+      "video": false,
+      "vote_average": 6.4,
+      "vote_count": 59
+    }
+  ]
+}

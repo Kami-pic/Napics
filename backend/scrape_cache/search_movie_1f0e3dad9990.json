@@ -1,0 +1,191 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/egMoIQnc1Dk207GSRNtIeq6nykt.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 36280,
+      "original_language": "ja",
+      "original_title": "19",
+      "overview": "大學生USAMI光天化日之下被三個奇怪的後生仔綁架。原來綁匪只是興趣，沒有任何詐騙贖金的計劃，只威逼USAMI到處[HARE]，一時到超市搶食物，一時到動物園看馬駒，一時到海邊吹吹風，這就是他們的生活。出奇地，起初想逃走的USAMI漸漸適應這種生活。一天綁匪又有新物件，四人的關係在一個不可思議的情況下終結……",
+      "popularity": 0.4357,
+      "poster_path": "/2Z5O0mrai9WoNhJCSmF3rt1oeG8.jpg",
+      "release_date": "2000-07-14",
+      "title": "19",
+      "video": false,
+      "vote_average": 6.1,
+      "vote_count": 12
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/sSYaWAt2KhOlpY9Z5iZ9lW60gqi.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 766418,
+      "original_language": "ml",
+      "original_title": "19",
+      "overview": "一位经营复印店的女性过着平淡无奇的生活，然而，当一位革命作家将他未出版小说的手稿交给她保管后，她的生活陷入了混乱。",
+      "popularity": 0.3391,
+      "poster_path": "/i9KffYGqL9vPF6lbj1NHfma4wLR.jpg",
+      "release_date": "2022-07-29",
+      "title": "19",
+      "video": false,
+      "vote_average": 5.3,
+      "vote_count": 6
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/aTloiKdNs2c8vlstbx3wBWD6Thi.jpg",
+      "genre_ids": [
+        53,
+        28,
+        18,
+        10752
+      ],
+      "id": 252178,
+      "original_language": "en",
+      "original_title": "'71",
+      "overview": "本片讲述了1971年贝尔法斯特街头骚乱后，一名年轻的英国士兵（杰克·奥康奈尔 饰）意外被部队遗弃，不得不在这个城市独自度过一夜的故事。他无法分辨敌友，甚至对己方战友也日渐警惕，必须孤身求生，在迷失方向、陌生且危机四伏的街区中寻得安全归途。",
+      "popularity": 15.4803,
+      "poster_path": "/xHVVzpolB5FJQToQWdjvJhXD8Oe.jpg",
+      "release_date": "2014-10-10",
+      "title": "迷失1971",
+      "video": false,
+      "vote_average": 6.81,
+      "vote_count": 1196
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2lBOQK06tltt8SQaswgb8d657Mv.jpg",
+      "genre_ids": [
+        10752,
+        36
+      ],
+      "id": 530915,
+      "original_language": "en",
+      "original_title": "1917",
+      "overview": "1917 年，第一次世界大战进入最激烈之际，两个年仅 16 岁的英国士兵接到的命令，需立即赶往死亡前线，向那里的将军传达一个“立刻停止进攻”讯息。 时间只有八小时，武器弹药有限，无人知晓前方敌况：死亡寂静之地、布满尸体的铁丝网、突入其来的敌军、随时毙命的危险境况……这一次两个少年为救 1600 个人的性命，不完成，毋宁死！",
+      "popularity": 9.8754,
+      "poster_path": "/t4z44X5hwzDVVkwoQWbIiA0hFus.jpg",
+      "release_date": "2019-12-25",
+      "title": "1917",
+      "video": false,
+      "vote_average": 7.987,
+      "vote_count": 13387
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 1030516,
+      "original_language": "es",
+      "original_title": "19",
+      "overview": "",
+      "popularity": 0.4354,
+      "poster_path": "/u3DXFc14076nzO6AqZ08dJZYytn.jpg",
+      "release_date": "2022-03-31",
+      "title": "19",
+      "video": false,
+      "vote_average": 2.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/egg7KFi18TSQc1s24RMmR9i2zO6.jpg",
+      "genre_ids": [
+        28,
+        12,
+        14
+      ],
+      "id": 464052,
+      "original_language": "en",
+      "original_title": "Wonder Woman 1984",
+      "overview": "戴安娜和博物馆的同事们偶然发现一个神奇的水晶，据说水晶能够帮助他们实现一个愿望。半信半疑的戴安娜默默许愿，谁曾想因故去世的男友竟然真得回还人间。眼见如此人间奇迹，戴安娜貌不惊人的同事芭芭拉·密涅瓦也许下变美的愿望，谁知却化身力大无穷的豹女。然而，更大危机紧随私欲之后……",
+      "popularity": 6.8862,
+      "poster_path": "/gntrKdmTtlkFRuqTqPMnfErzsGj.jpg",
+      "release_date": "2020-12-16",
+      "title": "神奇女侠1984",
+      "video": false,
+      "vote_average": 6.37,
+      "vote_count": 8970
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1419074,
+      "original_language": "de",
+      "original_title": "19",
+      "overview": "",
+      "popularity": 0.2185,
+      "poster_path": null,
+      "release_date": "2020-05-10",
+      "title": "19",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 1168926,
+      "original_language": "fr",
+      "original_title": "19",
+      "overview": "",
+      "popularity": 0.1101,
+      "poster_path": "/jlduHE59vLOPUhN0CgMQbXwhYbk.jpg",
+      "release_date": "2019-09-23",
+      "title": "19",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/26MVKVGQf1J0yrzJx97Ww4DLslV.jpg",
+      "genre_ids": [
+        10770,
+        12,
+        878
+      ],
+      "id": 15691,
+      "original_language": "en",
+      "original_title": "Doctor Who",
+      "overview": "《神秘博士（1996）》是基于英国科幻电视剧《神秘博士》制作的电视电影。该片由环球影视（Universal Television）、BBC电视台（BBC Television）、BBC国际（BBC Worldwide）和福克斯电视网（Fox Network）合作拍摄，1996年5月12日首映于加拿大Alberta州Edmonton的CITV电视台，BBC一台放映的十五天前，同时也是在美国福克斯台播出的两天前。此部电影是把《神秘博士》带回荧幕的第一次尝试，原始的剧集在1989年的时候就结束了。该片也是美制《神秘博士》电视剧集的一个导剧（back door pilot,导剧是作为独立剧独立拍摄的，若没有收入某剧集里面则可单独播放），并把Paul McGann作为第八任博士推出——虽然他只在该片中唯一一次扮演博士。尽管在英国，该片摘下了收视率冠军的桂冠，但在美国却没有什么反响，因此新剧集也没被买下。2005年，该剧集在BBC回归。该片在加拿大英属哥伦比亚州的Vancouver拍摄，唯一在加拿大拍摄的《神秘博士》。",
+      "popularity": 8.4676,
+      "poster_path": "/cwae2p7JcRNtz1CvNCzpX5ad96V.jpg",
+      "release_date": "1996-05-12",
+      "title": "神秘博士1996电影版",
+      "video": false,
+      "vote_average": 6.2,
+      "vote_count": 238
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/38FD40S9kAYxJ5SRZjViLhWC1Nz.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 84308,
+      "original_language": "es",
+      "original_title": "Madrid, 1987",
+      "overview": "一位西班牙女大学生在接受记者采访时，迷上了这位老男人记者。他引诱她到他的房间，两个被锁在浴室，在这种奇怪场合里上演两天的不伦激战……",
+      "popularity": 3.2041,
+      "poster_path": "/yeW09WcYkpEchfxjPs6SNs7PLFL.jpg",
+      "release_date": "2012-04-13",
+      "title": "马德里1987",
+      "video": false,
+      "vote_average": 6.5,
+      "vote_count": 71
+    }
+  ]
+}

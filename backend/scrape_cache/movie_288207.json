@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 288207,
+  "media_type": "movie",
+  "title": "激情迷宫",
+  "original_title": "Labyrinth",
+  "english_title": "Labyrinth",
+  "year": "1959",
+  "poster_url": "https://image.tmdb.org/t/p/w500/7KL3quLMYJGBQCWRAG483mD5YNf.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/pWFXBRUD0TMXxy74yTl1UfzlbFr.jpg",
+  "overview": "",
+  "rating": 5.5,
+  "genres": [
+    "剧情"
+  ],
+  "director": "Rolf Thiele",
+  "cast": [
+    "Nadja Tiller",
+    "Peter van Eyck",
+    "Amedeo Nazzari",
+    "Nicole Badal",
+    "Hanne Wieder",
+    "Elisabeth Flickenschildt"
+  ],
+  "runtime": 95,
+  "imdb_id": "tt0052984",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Germany",
+    "Italy"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

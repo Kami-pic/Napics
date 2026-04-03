@@ -1,0 +1,199 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/1fkuBPid72KGS6WmtkEXMftZtkE.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 875828,
+      "original_language": "en",
+      "original_title": "Peaky Blinders: The Immortal Man",
+      "overview": "1940年的伯明翰，在第二次世界大战的混乱中，因疏远已久的儿子卷入一场纳粹阴谋，已离开江湖的黑帮老大托马斯·谢尔比不得不重返伯明翰，拯救家人和国家。",
+      "popularity": 290.8743,
+      "poster_path": "/r1QSrP7xTqA4roGeAUt8a3Gwiy4.jpg",
+      "release_date": "2026-03-05",
+      "title": "浴血黑帮：不朽传奇",
+      "video": false,
+      "vote_average": 7.364,
+      "vote_count": 470
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8Tfys3mDZVp4tNoH2ktm06a0Tau.jpg",
+      "genre_ids": [
+        878,
+        12
+      ],
+      "id": 687163,
+      "original_language": "en",
+      "original_title": "Project Hail Mary",
+      "overview": "　　太阳即将熄灭，地球命悬一线，对太空一窍不通的中学老师瑞恩（瑞恩·高斯林 饰）竟成为全人类的希望。被迫成为宇航员的他，踏上有去无回的太空孤旅。他能否力挽狂澜，为人类带来新的黎明？\r 　　影片改编自安迪·威尔的同名畅销科幻小说。",
+      "popularity": 298.5383,
+      "poster_path": "/qf8HaEGNUFXU6nVAq9BVEk4Tiqb.jpg",
+      "release_date": "2026-03-15",
+      "title": "挽救计划",
+      "video": false,
+      "vote_average": 8.2,
+      "vote_count": 581
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6GuqUJ33BnWDAoVPZP55gDr5G55.jpg",
+      "genre_ids": [
+        28,
+        53,
+        27
+      ],
+      "id": 1084187,
+      "original_language": "en",
+      "original_title": "Pretty Lethal",
+      "overview": "五个芭蕾舞者去参加比赛，却遭遇公车坠毁，被困在一家偏远旅馆中，遭遇杀身之祸，必须用自己的舞技逃脱危机。",
+      "popularity": 280.2981,
+      "poster_path": "/hOWBt0j7ccH09hglIcQKeTbj85E.jpg",
+      "release_date": "2026-03-13",
+      "title": "索命舞娘",
+      "video": false,
+      "vote_average": 6.8,
+      "vote_count": 80
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/w3Bi0wygeFQctn6AqFTwhGNXRwL.jpg",
+      "genre_ids": [
+        14,
+        10402,
+        35,
+        16
+      ],
+      "id": 803796,
+      "original_language": "en",
+      "original_title": "KPop Demon Hunters",
+      "overview": "Kpop 超级明星鲁米、米拉和佐伊如果不是在座无虚席的体育场举办演唱会，就是在利用自己的秘密身份 — 强悍的恶魔猎人 — 保护粉丝们免受无处不在的超自然威胁。她们必须共同面对迄今为止最强大的敌人：一支魅力难挡、由恶魔伪装的男团组合。",
+      "popularity": 43.7644,
+      "poster_path": "/fhlteEEo6ybxQjqhmZ6U9QAglJn.jpg",
+      "release_date": "2025-06-20",
+      "title": "K-Pop 猎魔女团",
+      "video": false,
+      "vote_average": 8.034,
+      "vote_count": 2570
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/XuvGhhRp3DqpSrD5b0QS1d6CW0.jpg",
+      "genre_ids": [
+        27,
+        18
+      ],
+      "id": 135195,
+      "original_language": "th",
+      "original_title": "P",
+      "overview": "",
+      "popularity": 1.1441,
+      "poster_path": "/z5CtmnbGyek9Yv40YecPlHXpy3z.jpg",
+      "release_date": "2005-10-07",
+      "title": "黑魔法降头",
+      "video": false,
+      "vote_average": 5.7,
+      "vote_count": 98
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/82lM4GJ9uuNvNDOEpxFy77uv4Ak.jpg",
+      "genre_ids": [
+        28,
+        878,
+        12
+      ],
+      "id": 1242898,
+      "original_language": "en",
+      "original_title": "Predator: Badlands",
+      "overview": "一名外星猎手被所属部族驱逐后，意外与一台受损的机器人结为盟友，随后踏上险象环生的旅程，寻找自己的终极宿敌。",
+      "popularity": 70.0945,
+      "poster_path": "/xexWbMMgTf3YJ4Qw2yTusmcA8V.jpg",
+      "release_date": "2025-11-05",
+      "title": "铁血战士：杀戮之地",
+      "video": false,
+      "vote_average": 7.696,
+      "vote_count": 2496
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/dbh1TWT21i5ZRJf31BnDfWFPIwx.jpg",
+      "genre_ids": [
+        28,
+        80,
+        9648,
+        53
+      ],
+      "id": 11851,
+      "original_language": "en",
+      "original_title": "The Presidio",
+      "overview": "　　故事发生在位于旧金山的普西迪基地，这是一座拥有着212年漫长历史的军事基地。一名女警的尸体在这里被人发现，旧金山警探杰伊（马克·哈蒙 Mark Harmon 饰）负责调查此案，让杰伊非常不爽的是，他的搭档是名叫阿兰（肖恩·康纳利 Sean Connery 饰）的男人，阿兰曾经是杰伊服役期间的长官，两人的性格针锋相对，一直互相不对付。更糟的是，杰伊爱上了阿兰的女儿唐娜（梅格·瑞恩 Meg Ryan 饰），这令两人之间的关系雪上加霜。\r 　　随着调查的深入，杰伊发现案情并不是他想象的那么简单，想要逮捕幕后的凶手，他和阿兰必须尽释前嫌携手合作，而他们所要面对的凶手也异常的强大和危险。",
+      "popularity": 37.5558,
+      "poster_path": "/pHYtq4wFaUy5Rfa8lRi24QMUwRY.jpg",
+      "release_date": "1988-06-10",
+      "title": "普西迪基地",
+      "video": false,
+      "vote_average": 5.8,
+      "vote_count": 363
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/cUqXHZtnptgvyAE1hN47Wsf3ami.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 57214,
+      "original_language": "en",
+      "original_title": "Project X",
+      "overview": "汤玛斯（汤玛斯·曼 Thomas Mann 饰）要过生日了，他在学校里的两个好友科斯塔（奥利弗·库珀 Oliver Cooper 饰）和JB（乔纳森·丹尼尔·布朗 Jonathan Daniel Brown 饰）打算为他筹办一场最疯狂的party，洗刷掉三人的屌丝身份。趁汤玛斯父母出去度周末，三人开始着手准备，他们向高中所有能接触到的同学发出了邀请，用假身份证买了酒，还搞来了摇头丸。入夜，原本担心无人前来的三人看着一波波人潮心花怒放，尤其是其中还有许多陌生美女，令三人更加荷尔蒙爆棚。人越来越多，派对也越来越疯狂，邻居投诉不断，无法阻止人们上楼和进父亲书房……汤玛斯感到越来越不安，但是科斯塔始终鼓动他享受疯狂，随着近两千人聚集，事态再也非三个少年能掌控……",
+      "popularity": 44.9263,
+      "poster_path": "/iXaB2pWKkPvjDvKUML4iQxFOwFU.jpg",
+      "release_date": "2012-03-01",
+      "title": "X计划",
+      "video": false,
+      "vote_average": 6.884,
+      "vote_count": 6724
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        878
+      ],
+      "id": 1238445,
+      "original_language": "en",
+      "original_title": "P",
+      "overview": "",
+      "popularity": 0.2779,
+      "poster_path": "/hfdowl4inDeXAx6RbERw552077b.jpg",
+      "release_date": "2017-06-26",
+      "title": "P",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fO8xmjkGsDBzyGdw6ZgwqVoK50w.jpg",
+      "genre_ids": [
+        28,
+        80,
+        18
+      ],
+      "id": 2061,
+      "original_language": "da",
+      "original_title": "Pusher",
+      "overview": "　　人生都到最底了还能怎么样？毒贩法兰克丢了货也没了钱，奋力求生却只能任由周围黑暗向他逐渐收拢。最生猛的暴力、罪与罚、连篇爆粗口、性、爱与背叛，每一天，都加倍疯狂，也更接近死亡。慢慢削去身为人生存的可能，那么还剩下些什么？有「丹麦的昆汀塔伦提诺」之称的尼古拉斯温丁雷弗恩一次彻底对形式与甜美世界的黑色革命。  　　《末路狂奔三部曲》由1996年的《毒贩子》、2004年的《毒贩子第二集,我的双手沾满血》以及2005年的《毒贩子第三集,我是死亡天使》组成。  　　Pusher已经成为丹麦不朽的电影作品,导演透过三个人物的命运，描绘出哥本哈根黑道贩毒界内阴暗和激动人心的一面。三个人物的命运悲怆感人，他们的生活方式掩盖了其内心深处的创伤。",
+      "popularity": 37.8121,
+      "poster_path": "/3e1g0b6CRV6TMseZvbZfDHVIM7q.jpg",
+      "release_date": "1996-08-30",
+      "title": "末路狂奔",
+      "video": false,
+      "vote_average": 6.997,
+      "vote_count": 845
+    }
+  ]
+}

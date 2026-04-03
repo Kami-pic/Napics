@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/dPFWFVz2YeGIkdiF0NRzbunF5xc.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        10759
+      ],
+      "id": 84869,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "マナリアフレンズ",
+      "overview": "这里是“人”“神”“魔”各个种族混杂在一起的神秘世界密斯塔尔希亚。快活的玛纳利亚王国公主“安”，内向的龙族公主“古蕾雅”。自两人的相遇之后，玛纳利亚魔法学院的生活开始了。",
+      "popularity": 6.5084,
+      "poster_path": "/vlAxtYCmBPcJK0ymm3oqUnU8UxN.jpg",
+      "first_air_date": "2019-01-21",
+      "name": "玛娜利亚魔法学院",
+      "vote_average": 7.6,
+      "vote_count": 41
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "tmdb_id": 532622,
+  "media_type": "movie",
+  "title": "狙击手的战争",
+  "original_title": "A Sniper's War",
+  "english_title": "A Sniper's War",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/pklgIctUQ3n072wZq1GQs4DJ7Lc.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/n8fzu9irjghl619AJr8PItv8U5R.jpg",
+  "overview": "一名狙击手在顿巴斯地区为亲俄叛军作战",
+  "rating": 5.0,
+  "genres": [
+    "纪录",
+    "战争"
+  ],
+  "director": "Olya Schechter",
+  "cast": [],
+  "runtime": 80,
+  "imdb_id": "tt7974772",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Russia",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

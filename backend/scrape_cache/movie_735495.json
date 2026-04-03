@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 735495,
+  "media_type": "movie",
+  "title": "Loves Me, Loves Me Not",
+  "original_title": "Loves Me, Loves Me Not",
+  "english_title": "Loves Me, Loves Me Not",
+  "year": "2019",
+  "poster_url": "https://image.tmdb.org/t/p/w500/uYizOjgUPz5gFiHJKR6IRDqcPxW.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/6snsx2V9CVRTqupzS4ezJkfxeOU.jpg",
+  "overview": "",
+  "rating": 4.4,
+  "genres": [
+    "剧情",
+    "爱情"
+  ],
+  "director": "韦恩·鲍尔斯",
+  "cast": [
+    "Isabelle Chester",
+    "David DeLuise",
+    "David Chokachi",
+    "Georgia Reign",
+    "T.J. Power",
+    "Steven Cox"
+  ],
+  "runtime": 81,
+  "imdb_id": "tt9331550",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,32 @@
+{
+  "tmdb_id": 691191,
+  "media_type": "movie",
+  "title": "LA LA Land",
+  "original_title": "LA LA Land",
+  "english_title": "LA LA Land",
+  "year": "2008",
+  "poster_url": "https://image.tmdb.org/t/p/w500/nmdBXLTDzTaWzxcY32vz8CSpzbQ.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 5.5,
+  "genres": [
+    "喜剧"
+  ],
+  "director": "Jason Gajda",
+  "cast": [
+    "Mike Caravella",
+    "罗伯特·拉斯勒",
+    "Doren Sorell"
+  ],
+  "runtime": 26,
+  "imdb_id": "tt1179042",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

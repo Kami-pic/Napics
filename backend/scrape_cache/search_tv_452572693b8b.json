@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/3v2JfPAr1dP23hGTkG44dRYGri6.jpg",
+      "genre_ids": [
+        18,
+        9648,
+        10759
+      ],
+      "id": 292474,
+      "origin_country": [
+        "BR"
+      ],
+      "original_language": "pt",
+      "original_name": "Emergência Radioativa",
+      "overview": "在这部灵感来自真实事件的剧集中，物理学家和医生争分夺秒，试图控制大规模放射性灾难，拯救数千人的生命。",
+      "popularity": 33.1915,
+      "poster_path": "/m7bGOf2EQKgfM6T0tbR7tTm58Gm.jpg",
+      "first_air_date": "2026-03-18",
+      "name": "放射危机",
+      "vote_average": 7.898,
+      "vote_count": 49
+    }
+  ]
+}

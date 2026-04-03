@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/qNkLpxlGkNCGb68VpuFzoIY67Bj.jpg",
+      "genre_ids": [
+        16,
+        28,
+        878
+      ],
+      "id": 1360829,
+      "original_language": "ja",
+      "original_title": "ヴァージン・パンク Clockwork Girl",
+      "overview": "孤儿院出身的少女神冰羽舞，曾梦想成为索玛迪亚工程师，却在少年时亲眼目睹Mr.优雅处决院长（非法改造索玛迪亚通缉犯），梦想与家园一夕崩毁。对Mr.优雅的恨意，伴随她成长为猎人。十年后，羽舞已是独当一面的赏金猎人，却再度与Mr.优雅相遇。对方试图招募她加入旗下组织「阿基米DEATH」，遭羽舞冷淡拒绝后，枪口指向了她……非法改造索玛迪亚通缉犯 VS 赏金猎人——少女的宿命战役由此展开。",
+      "popularity": 5.8746,
+      "poster_path": "/oARmiq6Lar4RNAlPzsuRf8cqL8j.jpg",
+      "release_date": "2025-06-27",
+      "title": "处女朋克：发条女孩",
+      "video": false,
+      "vote_average": 7.5,
+      "vote_count": 2
+    }
+  ]
+}

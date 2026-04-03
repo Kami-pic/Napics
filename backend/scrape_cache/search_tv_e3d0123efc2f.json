@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/dEvpOwq0hHUDmaP6apTp0RLtLYL.jpg",
+      "genre_ids": [],
+      "id": 278250,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "诱你偷香",
+      "overview": "《诱你偷香》故事围绕珠宝设计师谢清菡展开。谢清菡曾遭受男友乔一州的欺骗与伤害，在长达数年的时间里，她不仅经历着道德绑架与洗脑，还成为了男友利用的 “枪手”。为了爱情，她不停妥协，远离社会，压抑内心，从而丧失了自我，成为任人摆布的傀儡。然而，命运的转折悄然降临。邵氏集团总裁邵擎云出现在她的生命中。邵擎云给予她帮助，让她逐渐走出阴影。在邵擎云的支持下，谢清菡重拾自信，勇敢地回归社会。她不再是那个被伤害后一蹶不振的女孩，而是开始踏上寻找自我的征程，努力重新拥抱生活，开启属于自己的崭新篇章。",
+      "popularity": 1.2702,
+      "poster_path": "/tDYwnDRER2aDKNw1nYlfGf3CsNs.jpg",
+      "first_air_date": "2024-10-18",
+      "name": "诱你偷香",
+      "vote_average": 8.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 308387,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "偷月娇藏",
+      "overview": "孤女林疏月自小被沈家收养，培养为赌博机器，为沈家的地下产业敛财。一直以为可以和青梅竹马的沈钊铭在一起，谁知沈家掌门人沈镇钧竟为弟弟安排了未婚妻。心灰意冷的林疏月决定在参加沈钊铭订婚宴后离开沈家。谢家家主谢凛为追查仇人证据潜入订婚宴，设计混乱本欲寻找沈家神秘小少爷，却意外带走了受伤昏迷的林疏月。林疏月醒来后失忆，谢凛发现她并不像表面上那么简单，为了从林疏月口中套出沈家的罪证，假扮成林疏月记忆中的沈钊铭，把她带回了谢家一起生活。原本只是欺骗的关系，谢凛对林疏月的关怀，和林疏月暴露出的脆弱与依赖，让两人的感情逐渐产生变化。最后两人联手复仇，扳倒沈家后，林疏月也为早年涉赌的经历而接受惩罚……",
+      "popularity": 1.354,
+      "poster_path": "/vWQLbDYF381EMrC7Qza2I8hLZTA.jpg",
+      "first_air_date": "2025-12-19",
+      "name": "偷月娇藏",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

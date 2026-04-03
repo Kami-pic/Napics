@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/tq3h43fZy0H80vzf47MAY7R9Mxo.jpg",
+      "genre_ids": [
+        16,
+        35,
+        10751
+      ],
+      "id": 1297842,
+      "original_language": "en",
+      "original_title": "GOAT",
+      "overview": "　　主角威尔是只梦想成为职业球手的小山羊，面对向来由猛兽主宰的凶险赛场，队友对他嗤之以鼻，他能否打破偏见，用实力证明小个子也能称霸球场？",
+      "popularity": 182.8644,
+      "poster_path": "/nODMNLnqlyusqGr8l4R0IzIN49D.jpg",
+      "release_date": "2026-02-11",
+      "title": "奇迹梦之队",
+      "video": false,
+      "vote_average": 7.589,
+      "vote_count": 151
+    }
+  ]
+}

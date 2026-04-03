@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 436969,
+  "media_type": "movie",
+  "title": "X特遣队：全员集结",
+  "original_title": "The Suicide Squad",
+  "english_title": "The Suicide Squad",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/9XVB5sQndDVxETunlXn2Gq5aRWW.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/jlGmlFOcfo8n5tURmhC7YVd4Iyy.jpg",
+  "overview": "被关押在美梦监狱的自杀小队成员获得一项可以减轻刑罚的新任务，前往南美洲的科多·马提斯岛国，摧毁纳粹时期遗留的约顿海姆监狱和实验室，它当前用于关押该国的政治犯并施行人体实验。执行任务期间，自杀小队遭遇巨型外星生物——海星斯塔罗，并与它发生冲突。",
+  "rating": 7.5,
+  "genres": [
+    "动作",
+    "喜剧",
+    "冒险"
+  ],
+  "director": "詹姆斯·古恩",
+  "cast": [
+    "玛格特·罗比",
+    "伊德瑞斯·艾尔巴",
+    "约翰·塞纳",
+    "乔尔·金纳曼",
+    "西尔维斯特·史泰龙",
+    "维奥拉·戴维斯"
+  ],
+  "runtime": 132,
+  "imdb_id": "tt6334354",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 490132,
+  "media_type": "movie",
+  "title": "绿皮书",
+  "original_title": "Green Book",
+  "english_title": "Green Book",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/kjO6OdgVK9UimXupZcGIuQy2pbO.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/5En0fmDagt3Pk8d7P3uTwfeQceg.jpg",
+  "overview": "托尼（维果·莫腾森 Viggo Mortensen 饰）是一个吊儿郎当游手好闲的混混，在一家夜总会做侍者。这间夜总会因故要停业几个月，可托尼所要支付的房租和生活费不会因此取消，所以他的当务之急是去寻找另一份工作来填补这几个月的空缺。在这个节骨眼上，一位名叫唐雪莉（马赫沙拉·阿里 Mahershala Ali 饰）的黑人钢琴家提出雇佣托尼。唐雪莉即将开始为期八个星期的南下巡回演出，可是，那个时候南方对黑人的歧视非常的严重，于是托尼便成为了唐雪莉的司机兼保镖。一路上，两人迥异的性格使得他们之间产生了很多的矛盾，与此同时，唐雪莉在南方所遭受的种种不公平的对待也让托尼对种族歧视感到深恶痛绝。",
+  "rating": 8.2,
+  "genres": [
+    "剧情",
+    "喜剧",
+    "历史"
+  ],
+  "director": "彼得·法雷利",
+  "cast": [
+    "维果·莫特森",
+    "马赫沙拉·阿里",
+    "琳达·卡德里尼",
+    "塞巴斯蒂安·马尼斯科",
+    "迪米特·D·马里诺夫",
+    "迈克·哈顿"
+  ],
+  "runtime": 130,
+  "imdb_id": "tt6966692",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

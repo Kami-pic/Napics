@@ -1,0 +1,63 @@
+{
+    "id": 1774709745,
+    "time": "Sat Mar 28 22:55:45 2026",
+    "label": "organize",
+    "summary": "整理 11 个文件 → Angry Kid Peter Lord (2000)、齿轮 Wectepehkn (2005)、Alarm ALARM (2008) 等11个文件夹",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\25 Ways to Quit Smoking Ways.To.Quit.Smoking (1989).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\25 Ways to Quit Smoking Ways To Quit Smoking (1989)\\25 Ways to Quit Smoking Ways.To.Quit.Smoking (1989).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Alarm ALARM (2008) 720p.wmv",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Alarm ALARM (2008)\\Alarm ALARM (2008) 720p.wmv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Angry Kid Peter.Lord (2000).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Angry Kid Peter Lord (2000)\\Angry Kid Peter.Lord (2000).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Color Dream no. 246 Michael.Theodore (2006).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Color Dream no 246 Michael Theodore (2006)\\Color Dream no. 246 Michael.Theodore (2006).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Play Matt.Abbiss (2018).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Play Matt Abbiss (2018)\\Play Matt.Abbiss (2018).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\The God of Death Konstantin.Bronzit (2017).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\The God of Death Konstantin Bronzit (2017)\\The God of Death Konstantin.Bronzit (2017).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\小丑宾果 Bingo (1998).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\小丑宾果 Bingo (1998)\\小丑宾果 Bingo (1998).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\爱情是什么 Loves Me, Loves Me Not (1993).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\爱情是什么 Loves Me, Loves Me Not (1993)\\爱情是什么 Loves Me, Loves Me Not (1993).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\父与女 Father and Daughter (2001).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\父与女 Father and Daughter (2001)\\父与女 Father and Daughter (2001).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\獾 Badgered (2005).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\獾 Badgered (2005)\\獾 Badgered (2005).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\齿轮 Wectepehkn (2005).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\齿轮 Wectepehkn (2005)\\齿轮 Wectepehkn (2005).avi",
+            "is_dir": false
+        }
+    ]
+}

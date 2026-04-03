@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/8yj0OQKNqvT6csdvx0lsM41bzl6.jpg",
+      "genre_ids": [
+        10762,
+        10765
+      ],
+      "id": 123034,
+      "origin_country": [
+        "SU"
+      ],
+      "original_language": "ru",
+      "original_name": "Хранители",
+      "overview": "",
+      "popularity": 2.7531,
+      "poster_path": "/jOTLe14XueFZpy6vKVO28cmtcJB.jpg",
+      "first_air_date": "1991-04-13",
+      "name": "Хранители",
+      "vote_average": 5.8,
+      "vote_count": 10
+    }
+  ]
+}

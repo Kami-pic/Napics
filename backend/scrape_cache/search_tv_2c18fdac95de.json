@@ -1,0 +1,106 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/a0KNc0EiegJLfw5rQEbUhN6NOX8.jpg",
+      "genre_ids": [
+        16,
+        10762,
+        35
+      ],
+      "id": 45075,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "あずきちゃん",
+      "overview": "大家好,我是山野梓,十一岁,绰号「小豆豆」,目前没有男朋友,不过却有一个暗恋的男生哦!他是新转来的转学生·勇之助.虽然我很喜欢他,可是却没有向他告白的勇气,而且他在班上风头很健,我的情敌也有一大卡车,特别是洋子…她又可爱、又坐在勇之助的隔壁…我要怎么办呢？",
+      "popularity": 6.5405,
+      "poster_path": "/1w3sh0bDAhblOl3CLRcnY0VZsMz.jpg",
+      "first_air_date": "1995-04-04",
+      "name": "同班同学",
+      "vote_average": 8.2,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2bxkjQWVW4sX2DLNgooDwNTg5Yu.jpg",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 254592,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "クラスメイトの女子、全員好きでした",
+      "overview": "　　本剧改编自同名随笔小说，讲述了37岁的枝松胫男立志成为小说家，主要的收入来源是做害虫防治的兼职，有一天，他偶然得到一本笔记本，抄袭了里面写的小说，并获得了文学奖。一跃成为人气作家的枝松，与34岁的责任编辑片山美晴一起，为了寻找小说真正的作者而开始行动。掌握真正作者的关键的，是枝松中学时代恋爱的同班女生。枝松想起与超有个性的女子们的苦涩而美丽强烈的回忆…",
+      "popularity": 4.442,
+      "poster_path": "/k1ZPCFlXmRlx9vlhFo6naICdOyj.jpg",
+      "first_air_date": "2024-07-11",
+      "name": "班上的女同学，我全部都喜欢",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/zg3lxd43jiTARDM1m5iQWrrsk0B.jpg",
+      "genre_ids": [],
+      "id": 36805,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "同・級・生",
+      "overview": "鸭居透（绪形直人 饰）和名取千奈美（安田成美 饰）是大学同班同学中被传言会结婚的一对情侣，但在毕业派对之后，千奈美却提出分手的要求。鸭居透就再思念千奈美中度过了一年时光......",
+      "popularity": 2.0161,
+      "poster_path": "/aGi01Lsxqj1nNMnXhMioFuJtpm.jpg",
+      "first_air_date": "1989-07-03",
+      "name": "同级生",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/wj9gg7DPT0fkX9m0ZkGconFHIMu.jpg",
+      "genre_ids": [
+        16
+      ],
+      "id": 27346,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ToHeart",
+      "overview": "1999年，KSS制作了动画《To Heart》，共十三集。第二个相关动画《To Heart 青春纪事》（To Heart ～Remember My Memories～）直到2004年10月才在日本推出。《To Heart》系列在日本受到相当大的回响。它受欢迎的程度，在为数众多的同人志里可见一斑。游戏中的女角来栖川芹香以及Multi的人气，在日本历久不衰。",
+      "popularity": 10.0568,
+      "poster_path": "/9EuhiTMDpdWEIWq9D1IZte2b1xL.jpg",
+      "first_air_date": "1999-04-02",
+      "name": "心之彼端",
+      "vote_average": 5.6,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/zcg7S5Bmzu6FEikWUd9JYlDWVBw.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 204391,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "新･信長公記 〜クラスメイトは戦国武将〜",
+      "overview": "该剧改编自甲斐谷忍的漫画，以战国武将的克隆高中生剧集的学校为舞台，讲述个性十足的英雄们变成15岁高中生，为称霸学园天下全力以赴的故事。剧中战国武将克隆高中生们除了源自史实与野史的性格，每一个都个性强烈。",
+      "popularity": 6.1772,
+      "poster_path": "/jV3ffjPlufurNIhwf98OulPtaX5.jpg",
+      "first_air_date": "2022-07-24",
+      "name": "新·信长公记～同学是战国武将～",
+      "vote_average": 6.0,
+      "vote_count": 2
+    }
+  ]
+}

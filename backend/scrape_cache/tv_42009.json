@@ -1,0 +1,32 @@
+{
+  "tmdb_id": 42009,
+  "media_type": "tv",
+  "title": "黑镜",
+  "original_title": "Black Mirror",
+  "english_title": "Black Mirror",
+  "year": "2011",
+  "poster_url": "https://image.tmdb.org/t/p/w500/cF9V4PXhgRztl7g7nOJqFHvgeHT.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/dg3OindVAGZBjlT3xYKqIAdukPL.jpg",
+  "overview": "《黑镜》（英语：Black Mirror）是一部由查理·布鲁克创作的英国独立单元剧，该剧展现现代社会发展，特别是对新技术利用的副作用，其中的每一集是独立的，背景通常设置在架空的现实或不久的将来，并以黑暗和讽刺的语气和或轻或重的实验感来表现剧情。",
+  "rating": 8.3,
+  "genres": [
+    "Sci-Fi & Fantasy",
+    "剧情",
+    "悬疑"
+  ],
+  "director": "",
+  "cast": [],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 7,
+  "status": "Returning Series",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

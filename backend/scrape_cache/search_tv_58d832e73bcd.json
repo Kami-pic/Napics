@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/2HtnTJLs3CDUTu6ug8rib5vNnU2.jpg",
+      "genre_ids": [
+        16,
+        80,
+        10765,
+        10759
+      ],
+      "id": 43865,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "PSYCHO-PASS サイコパス",
+      "overview": "在人类的心理状态和性格倾向都将即时的数值化的未来。人们为了实现“好的人生”的数值指标，而将所有的感情、欲望、社会病态心理倾向等记录并管理起来。判断人类心之所在的方法，则是以某些人的个人灵魂本身作为标准，而这些被作为计测值的人们，他们被称为“PSYCHO-PASS”。其中与犯罪相关的数值也用“犯罪系数”来计测，犯罪者们就根据这些数值被制裁。维持治安的警察们常常和抓捕犯人们的行动部队“执行官”、以及监视指挥执行官们的“监视官”们一起作为一支队伍执行任务。自身就有着相当高的犯罪系数、能够接近犯罪根源的搜查官才能够成为优秀的“执行官”。因为“执行官”也有着可能孕育成犯罪者的危险倾向，所以就需要对搜查行动有着冷静的判断力的精英“监视官”来监视。公安局刑事科第一分队的成员们各怀想法，虽然常常会与真正的正义相悖却不得不继续执行任务。他们的所面临的彼岸将会有着什么？",
+      "popularity": 41.0812,
+      "poster_path": "/aX6S3P8xiz9nJwXjaka5e9kT6f4.jpg",
+      "first_air_date": "2012-10-12",
+      "name": "心理测量者",
+      "vote_average": 7.725,
+      "vote_count": 453
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/n6ALajtmjH3JvlapmSlXQaBEQkq.jpg",
+      "genre_ids": [],
+      "id": 309467,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "PSYCHO-PASS サイコパス 3 FIRST INSPECTOR",
+      "overview": "",
+      "popularity": 2.0009,
+      "poster_path": "/fKHOVQMSb1Q529dnczDRaGwijB6.jpg",
+      "first_air_date": "2020-03-27",
+      "name": "PSYCHO-PASS サイコパス 3 FIRST INSPECTOR",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

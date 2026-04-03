@@ -1,0 +1,33 @@
+{
+  "tmdb_id": 648254,
+  "media_type": "movie",
+  "title": "14",
+  "original_title": "14",
+  "english_title": "14",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/g7Y48GSp4ZZuv2xKEtaLOHAkZYA.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 10.0,
+  "genres": [
+    "音乐",
+    "剧情"
+  ],
+  "director": "Hiroshi Kizu",
+  "cast": [
+    "石橋穂乃香"
+  ],
+  "runtime": 3,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Japan"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

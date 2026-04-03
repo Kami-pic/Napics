@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 58678,
+  "media_type": "movie",
+  "title": "Alarm",
+  "original_title": "Alarm",
+  "english_title": "Alarm",
+  "year": "2008",
+  "poster_url": "https://image.tmdb.org/t/p/w500/3OXaxsSvji5em07xPPYExCcfGFo.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 4.1,
+  "genres": [
+    "惊悚"
+  ],
+  "director": "Gerard Stembridge",
+  "cast": [
+    "艾丹·特纳",
+    "露丝·布拉德利",
+    "Owen Roe",
+    "Tom Hickey",
+    "Anita Reeves",
+    "Alan Martin Walsh"
+  ],
+  "runtime": 105,
+  "imdb_id": "tt1135960",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Ireland"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

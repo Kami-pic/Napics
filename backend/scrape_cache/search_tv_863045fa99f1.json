@@ -1,0 +1,65 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/Ag1FDbSLdZ3FOSkxITnrhac5We4.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 227649,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "白色城堡",
+      "overview": "毕业季，医学博士王扬鸣作为实习医生进入安康医院急诊科，被急诊主任关老大强塞给想辞职的路易做徒弟，遭到嫌弃。与王扬鸣同期入职的刘非能力超群，路易的藐视、刘非的碾压激发了王扬鸣的胜负欲。他不放过任何锻炼机会，不但成功摆脱了大家对研究型医学生的偏见，还收获了友情爱情，与路易、祖闻达和刘非组成“急诊四杰”。",
+      "popularity": 6.9645,
+      "poster_path": "/40cSyizun6yo2Zg5Q4KEQjzFbSo.jpg",
+      "first_air_date": "2023-05-31",
+      "name": "白色城堡",
+      "vote_average": 7.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/n88QwMJuyfvLmuY3h2glXUy7Z9H.jpg",
+      "genre_ids": [
+        18,
+        10765
+      ],
+      "id": 230924,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "낮에 뜨는 달",
+      "overview": "该剧讲述停住时间的男人和流逝时间的女人，往返于过去和现在的矛盾的故事，是往返于现代和三国时代的罗曼史奇幻惊悚题材。",
+      "popularity": 5.3143,
+      "poster_path": "/e1Cy5ib7NiwL4hao9h84tDKlNBN.jpg",
+      "first_air_date": "2023-11-01",
+      "name": "白昼之月",
+      "vote_average": 7.1,
+      "vote_count": 18
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6GKhYGUhkWdO7n07imPrek9MMrr.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 239487,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "고백공격",
+      "overview": "",
+      "popularity": 1.1039,
+      "poster_path": "/x1GTZN6SRr75ABMksiqyP7BcmG0.jpg",
+      "first_air_date": "2023-11-25",
+      "name": "고백공격",
+      "vote_average": 7.8,
+      "vote_count": 4
+    }
+  ]
+}

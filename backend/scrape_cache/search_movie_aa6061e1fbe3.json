@@ -1,0 +1,186 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/8x9iKH8kWA0zdkgNdpAew7OstYe.jpg",
+      "genre_ids": [
+        16,
+        10749,
+        18
+      ],
+      "id": 372058,
+      "original_language": "ja",
+      "original_title": "君の名は。",
+      "overview": "彗星降临之夜，两个生命的轨迹就此改变。高中生三叶与泷本是素不相识的陌生人，过着各自的生活。然而某夜，他们突然互换了身体——三叶在泷的身体中醒来，泷则进入了她的人生。这种奇异的现象持续随机发生，两人不得不互相迁就，调整生活节奏。出人意料的是，他们渐渐磨合出默契，通过留言、讯息，更重要的是，通过留在彼此生命中的印记建立起联结。当璀璨的彗星点亮夜空时，他们终于醒悟：渴望从这份羁绊中获得更多——一个真正见面的机会，一次真正了解彼此的相遇。他们牵起命运的丝线，试图寻找通向对方的路。然而阻隔他们的，不仅仅是距离。这份牵绊，是否足以对抗时间残酷的捉弄？抑或他们的相遇，终究只是对星辰许下的愿望？[FUNimation]",
+      "popularity": 36.2696,
+      "poster_path": "/vRQ7wpxpHt2aV8RnOkwHlOQAMKe.jpg",
+      "release_date": "2016-08-26",
+      "title": "你的名字。",
+      "video": false,
+      "vote_average": 8.478,
+      "vote_count": 12375
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fwf4L3r2ZU9ptOB9nOo5nuVLo1i.jpg",
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "id": 398818,
+      "original_language": "en",
+      "original_title": "Call Me by Your Name",
+      "overview": "在八十年代的意大利里维埃拉，每年夏天，十七岁的少年埃利奥都会跟家人在这里。今年，和他们共享假日时光的，还有来自美国的奥利弗，高大英俊热情开朗的奥利弗很快就获得了埃利奥一家人的喜爱。随着时间的推移，埃利奥和奥利弗之间渐渐产生了致命的吸引力，但性别和年龄的桎梏让他们迟迟无法跨出那关键的一步，与此同时，单纯善良的少女马奇娅也向埃利奥奉献着自己的感情和身体。最终，汹涌的激情冲破了埃利奥和奥利弗之间的防线，两人开始了一段注定不会有结果的恋情。",
+      "popularity": 13.1581,
+      "poster_path": "/7EDfu9QbGBBlPz1U0w4q0u8CeWT.jpg",
+      "release_date": "2017-10-01",
+      "title": "请以你的名字呼唤我",
+      "video": false,
+      "vote_average": 8.094,
+      "vote_count": 12652
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/rhsvTWUeH6RKXk8pQ830oBw56qb.jpg",
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "id": 719410,
+      "original_language": "zh",
+      "original_title": "刻在你心底的名字",
+      "overview": "1987 年台湾解除戒严，家汉和王柏德在家庭压力、恐同和世俗偏见的夹缝中相恋。",
+      "popularity": 4.3472,
+      "poster_path": "/6uYHgi6Po0pVzBuEQRq1ulVwuF8.jpg",
+      "release_date": "2020-09-30",
+      "title": "刻在你心底的名字",
+      "video": false,
+      "vote_average": 7.9,
+      "vote_count": 286
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18,
+        14,
+        10749
+      ],
+      "id": 553301,
+      "original_language": "en",
+      "original_title": "Your Name",
+      "overview": "据日媒、美媒官方消息，新海诚《你的名字。》改编权已被派拉蒙和坏机器人制片公司买下，两家公司将联手日本东宝株式会社把这部风靡全球的动画电影翻拍成好莱坞真人版。  　　真人版电影将由《降临》编剧埃里克·海瑟尔为其撰写剧本，J·J·艾布拉姆斯以及动画电影版制片人川村元气也会同时参与制作。",
+      "popularity": 2.2404,
+      "poster_path": null,
+      "release_date": "",
+      "title": "你的名字：特摄",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fGyH00wUMmoaTGTMViMrNHOWmFu.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 570424,
+      "original_language": "ko",
+      "original_title": "그대 이름은 장미",
+      "overview": "　　生活从来不容易，悲喜有时，只有一步步独力谱出灿烂跌宕的玫瑰人生。 年轻的玫瑰有着一个未完的歌星梦和一段无疾而终的恋爱，突如其来成为单亲妈妈，唯有咬紧牙关孤身抚养女儿。妈妈当自强，由歌厅卖唱打拼到金融投资，从不低头，多年后再遇当年情人，一切又会如何改变？",
+      "popularity": 2.192,
+      "poster_path": "/iHLbMfRoooRATEQ8IFJVUqNoh1i.jpg",
+      "release_date": "2019-01-16",
+      "title": "你的名字是玫瑰",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 9
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/5En1U4PGJ7VdTOBE71BpTeaqjlA.jpg",
+      "genre_ids": [
+        10402
+      ],
+      "id": 627611,
+      "original_language": "ja",
+      "original_title": "「君の名は。」 オーケストラコンサート",
+      "overview": "动画内容伴随着音乐的流淌缓缓铺垫开来，现场观众不仅可以欣赏到美妙的演奏，还能再度重温这段难忘的故事，可谓感动加倍。",
+      "popularity": 0.9274,
+      "poster_path": "/5DDNc7zxPS7w5IQEdJwaGl76LL0.jpg",
+      "release_date": "2017-12-05",
+      "title": "「你的名字」交响音乐会",
+      "video": true,
+      "vote_average": 8.0,
+      "vote_count": 13
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/oxorJxlrkx2Ec4xudJyzyk22Ygl.jpg",
+      "genre_ids": [
+        53
+      ],
+      "id": 65302,
+      "original_language": "pl",
+      "original_title": "Masz na imię Justine",
+      "overview": "一名与祖母生活在波兰的年轻女子陷入了爱河。她迷人的男朋友提议进行一场环欧洲旅行，通过在当地打工支付旅费。不幸的是，这个男朋友人面兽心，一到德国就把她卖作了妓女。在被控制的日子里，绑架者们试图摧毁她的心防，让她接受作为被奴役者的新生活，但她仍然坚持保持理智，一直没有放弃逃跑的念头。",
+      "popularity": 0.9675,
+      "poster_path": "/pBt0Lah4y3g3uO7AkQzCfbghebj.jpg",
+      "release_date": "2005-08-30",
+      "title": "你的名字叫贾斯汀",
+      "video": false,
+      "vote_average": 5.9,
+      "vote_count": 19
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1048567,
+      "original_language": "zh",
+      "original_title": "你的名字就是愛",
+      "overview": "",
+      "popularity": 0.5712,
+      "poster_path": null,
+      "release_date": "1969-01-01",
+      "title": "你的名字就是愛",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 844459,
+      "original_language": "zh",
+      "original_title": "你的名字叫外地人",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": "/imLMtCH60l704n9GFAEnb01t5Tr.jpg",
+      "release_date": "2003-05-05",
+      "title": "你的名字叫外地人",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 1114314,
+      "original_language": "zh",
+      "original_title": "我的名字叫李心潔《孩子，你好嗎？》",
+      "overview": "",
+      "popularity": 1.0644,
+      "poster_path": "/3HtfDXI8u7UgMKwaQk8sGXFIoji.jpg",
+      "release_date": "2023-03-31",
+      "title": "我的名字叫李心潔《孩子，你好嗎？》",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

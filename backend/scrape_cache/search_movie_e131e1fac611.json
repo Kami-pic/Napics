@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/A3XTaySQAI6p18XSKCEgRbitBwB.jpg",
+      "genre_ids": [
+        16,
+        28,
+        53,
+        80
+      ],
+      "id": 543033,
+      "original_language": "hu",
+      "original_title": "Ruben Brandt: A Gyűjtő",
+      "overview": "心理治疗师鲁本的梦境饱受「妖魔化」的名画侵扰，蒙娜丽莎、维纳斯全都成了骇人的噩梦怪物，若想一觉好眠，唯一办法是偷走所有入侵他梦里的名画。为帮助鲁本脱离梦魇，他与四名身怀绝技的病人联手组团偷遍罗浮宫、泰特现代艺术馆等各大美术馆，一场飞天遁地、瞒天过海的疯狂盗窃计画也就此展开。",
+      "popularity": 0.8688,
+      "poster_path": "/evMgVyZSLpGwYvjuqpYhxXXoniv.jpg",
+      "release_date": "2018-06-22",
+      "title": "盗梦特攻队",
+      "video": false,
+      "vote_average": 7.137,
+      "vote_count": 175
+    }
+  ]
+}

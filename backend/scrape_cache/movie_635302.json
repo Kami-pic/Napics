@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 635302,
+  "media_type": "movie",
+  "title": "鬼灭之刃剧场版：无限列车篇",
+  "original_title": "劇場版「鬼滅の刃」無限列車編",
+  "english_title": "Demon Slayer -Kimetsu no Yaiba- The Movie: Mugen Train",
+  "year": "2020",
+  "poster_url": "https://image.tmdb.org/t/p/w500/ozQvWjtC7B2KtDUEdQvUdvCzHUo.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/xPpXYnCWfjkt3zzE0dpCNME1pXF.jpg",
+  "overview": "炭治郎等人完成蝴蝶屋的训练，下一个目的地是开往黑暗的无限列车。以多人行踪不明的这辆列车为舞台，炭治郎带着祢豆子与善逸、伊之助一行人，与鬼杀队最强剑士〝柱〞其中之一炎柱炼狱杏寿郎会合，新的任务即将开始！",
+  "rating": 8.2,
+  "genres": [
+    "动画",
+    "动作",
+    "奇幻"
+  ],
+  "director": "外崎春雄",
+  "cast": [
+    "花江夏树",
+    "鬼头明里",
+    "下野纮",
+    "松冈祯丞",
+    "日野聪",
+    "樱井孝宏"
+  ],
+  "runtime": 117,
+  "imdb_id": "tt11032374",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

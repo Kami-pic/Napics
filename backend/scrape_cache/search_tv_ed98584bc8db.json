@@ -1,0 +1,28 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/1g7fMpp0c5tOlHoLMABx6LI7gMu.jpg",
+      "genre_ids": [
+        10759,
+        16,
+        18,
+        9648,
+        10765
+      ],
+      "id": 42671,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "エルフェンリート",
+      "overview": "露西生来就与常人有异，她头上长着两个犄角，生有四只隐形的手，体内蕴藏着巨大的力量，人们管她这样的孩子叫作异种人。从小就被人抛弃排挤的露西一直非常孤独，直到她遇到浩太才渡过了非常愉快的几天。然而随着体内载体的呼唤，她渐渐还是显露出杀人魔的本性，并被研究所拘捕监禁。八年后，露西从研究所里逃出来，却由于脑部重创失忆，成为“白痴少女”。此时的浩太也由于儿时的重大打击选择性失忆，两人再次相遇，浩太把露西当作陌生人收留下来。穿插着两人断断续续的回忆，故事渐渐走向了两个极端。",
+      "popularity": 15.3444,
+      "poster_path": "/3UnmNPTDMOThd8Oi9L2pEXqfO0D.jpg",
+      "first_air_date": "2004-07-25",
+      "name": "妖精的旋律",
+      "vote_average": 8.312,
+      "vote_count": 1415
+    }
+  ]
+}

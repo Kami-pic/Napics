@@ -1,0 +1,15 @@
+{
+    "prowlarr_url": "http://127.0.0.1:9696",
+    "prowlarr_api_key": "74e253788bec4fe3a68aba11581e4a34",
+    "tmdb_api_key": "271aa6d1321b4005dc7dc791e4f56e3e",
+    "qb_url": "http://127.0.0.1:8080",
+    "alist_url": "http://127.0.0.1:5244",
+    "alist_token": "alist-79cbae06-b926-4159-82ac-0c8b755bac983w7dZd4uN8fLNnRyaqRwShVAhXlZUOzS4wfFoY17Jsdz7aEvvW9WkYj9qtE8nz5r",
+    "nas_paths": [
+        "\\\\DS218play\\share\\视频\\"
+    ],
+    "exclude_dirs": ".DS_Store,",
+    "nas_path": "\\\\DS218play\\share\\视频\\",
+    "http_proxy": "http://127.0.0.1:7897",
+    "indexer_priorities": []
+}

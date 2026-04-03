@@ -1,0 +1,82 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/jlGmlFOcfo8n5tURmhC7YVd4Iyy.jpg",
+      "genre_ids": [
+        28,
+        35,
+        12
+      ],
+      "id": 436969,
+      "original_language": "en",
+      "original_title": "The Suicide Squad",
+      "overview": "被关押在美梦监狱的自杀小队成员获得一项可以减轻刑罚的新任务，前往南美洲的科多·马提斯岛国，摧毁纳粹时期遗留的约顿海姆监狱和实验室，它当前用于关押该国的政治犯并施行人体实验。执行任务期间，自杀小队遭遇巨型外星生物——海星斯塔罗，并与它发生冲突。",
+      "popularity": 12.3378,
+      "poster_path": "/9XVB5sQndDVxETunlXn2Gq5aRWW.jpg",
+      "release_date": "2021-07-28",
+      "title": "X特遣队：全员集结",
+      "video": false,
+      "vote_average": 7.465,
+      "vote_count": 9456
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        28,
+        10752
+      ],
+      "id": 445762,
+      "original_language": "ja",
+      "original_title": "望楼の決死隊",
+      "overview": "",
+      "popularity": 1.6308,
+      "poster_path": "/7lsPaqmXG3g3G7xTUYvjDBKtfz1.jpg",
+      "release_date": "1943-04-15",
+      "title": "望楼的决死队",
+      "video": false,
+      "vote_average": 5.7,
+      "vote_count": 3
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xUIeaq9NNoFZ8mBgKWUlo6ciMxt.jpg",
+      "genre_ids": [
+        28,
+        35,
+        10770
+      ],
+      "id": 486329,
+      "original_language": "en",
+      "original_title": "Crazy Famous",
+      "overview": "四个疯子飞越了蒙哥马利疯人院，去刺杀本拉登……",
+      "popularity": 0.6408,
+      "poster_path": "/4ow5UHEMiGPabl1Phna33Ttlh8s.jpg",
+      "release_date": "2017-03-17",
+      "title": "疯狂成名记",
+      "video": false,
+      "vote_average": 5.2,
+      "vote_count": 16
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        28,
+        10752
+      ],
+      "id": 98097,
+      "original_language": "tl",
+      "original_title": "Kumander Agimat",
+      "overview": "",
+      "popularity": 0.7511,
+      "poster_path": "/6mR6BgIauKDMcBKau1eS1t5mwBO.jpg",
+      "release_date": "1976-05-07",
+      "title": "Kumander Agimat",
+      "video": false,
+      "vote_average": 4.0,
+      "vote_count": 8
+    }
+  ]
+}

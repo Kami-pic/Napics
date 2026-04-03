@@ -1,0 +1,216 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/y9ekzkPFmWSqUU3Kj0wHmYUM8qu.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 63351,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Narcos",
+      "overview": "埃斯科瓦尔（瓦格纳·马拉 Wagner Moura 饰）曾是一个走私商人，机缘巧合之下开始接触毒品生意，野心勃勃的他将无法计数的毒品贩卖到美国，成为了富可敌国的大毒枭。与此同时，他集结了圈内几大巨头，成立了声名显赫的麦德林集团，一时间，埃斯科瓦尔的劲头无人能敌。墨菲（波伊德·霍布鲁克 Boyd Holbrook 饰）是美国缉毒局派往哥伦比亚的警探，他和搭档潘那（佩德罗·帕斯卡 Pedro Pascal 饰）合作，主要负责埃斯科瓦尔的案件。埃斯科瓦尔当上了议员，甚至决心竞选总统，却在国会当众受辱。之后，哥伦比亚政府试图启用引渡法案对付毒枭们，为了对抗政府，埃斯科瓦尔彻底沦为了反社会的恐怖分子，在不断壮大自己的毒品帝国的同时，用炸弹、暗杀和鲜血提醒着哥伦比亚政府，谁才是真正的老大。",
+      "popularity": 31.9038,
+      "poster_path": "/cqdbtuN2b1cqZK56LLl5cENqChC.jpg",
+      "first_air_date": "2015-08-28",
+      "name": "毒枭",
+      "vote_average": 8.073,
+      "vote_count": 3218
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/64jEzC7YeKEpnn1YwjCGRo9ZvOX.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 80968,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Narcos: Mexico",
+      "overview": "本作将聚焦于反毒战争的起源 – 墨西哥的瓜达拉哈拉贩毒集团，时间也将移前至80年代，讲述冷静﹑大胆﹑头脑清晰﹑忠于 亲友的Felix Gallardo如何把散乱的贩毒者统一起来，成为被称为「Godfather」的大毒枭。而缉毒局探员Kiki Camarena带着妻儿从加州搬到瓜达拉哈拉，但他没意料到此反毒战的危险程度，并引发了惨剧。",
+      "popularity": 25.4143,
+      "poster_path": "/gRh5FHICZh99HnDFd6bdwzClYMV.jpg",
+      "first_air_date": "2018-11-16",
+      "name": "毒枭：墨西哥",
+      "vote_average": 7.921,
+      "vote_count": 1468
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/aZFIRQR0QxIjRMHy7lxSKiug9Z2.jpg",
+      "genre_ids": [
+        18,
+        80,
+        10766
+      ],
+      "id": 63764,
+      "origin_country": [
+        "MX"
+      ],
+      "original_language": "es",
+      "original_name": "Señora Acero",
+      "overview": "一个无辜的女人成为她的丈夫的死亡，后来得知他秘密从事毒品生意。这个女人，莎拉，慢慢地开始了她自己的毒品走私生意，并成为一个她从未想过会成为的女人。莎拉无休止地斗争，以拯救她的儿子从他的严重糖尿病和反对卡特尔，而不得不处理的犯罪生活。",
+      "popularity": 22.032,
+      "poster_path": "/vXhBxsvpW2mGuXRbIK5Yazdp8Zg.jpg",
+      "first_air_date": "2014-09-23",
+      "name": "毒枭女王",
+      "vote_average": 7.825,
+      "vote_count": 650
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1QcHCReXoEIV7WKGaPSUk6ZfK17.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 43348,
+      "origin_country": [
+        "CO"
+      ],
+      "original_language": "es",
+      "original_name": "Pablo Escobar: El Patrón del Mal",
+      "overview": "故事开始于哥伦比亚的 Valle de Aburra。 巴勃罗是一个喜欢制造麻烦而不是学习的流氓。 他不想参加考试，并开始与他的兄弟 Peluche 和他的堂兄 Gonzalo 在他的社区犯罪。 成年后，他们在 Escobar 的同伙 El Alguacil 的帮助下从厄瓜多尔走私毒品到哥伦比亚，开始了他们的有组织犯罪生活。 一天，当巴勃罗和贡萨罗四处走动时，巴勃罗看到了一个名叫帕特丽夏的年轻女孩，一个漂亮的高中生。 最初美好的友谊很快就变成了一见钟情。 但是帕特里夏的弟弟法比奥不想让她和巴勃罗约会，因为他可能会对她产生不良影响。",
+      "popularity": 21.5332,
+      "poster_path": "/jZqm7HFuxfH9P0LFjQZ8nzrCUHP.jpg",
+      "first_air_date": "2012-05-28",
+      "name": "毒枭巴勃罗·埃斯科瓦尔：恶魔代言人",
+      "vote_average": 7.6,
+      "vote_count": 3682
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4kp7ZwgminnWqgFwO5QEiWS5BNa.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 71411,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "es",
+      "original_name": "El Chapo",
+      "overview": "这部剧情类剧集记录了恶名昭彰的墨西哥毒枭“矮子”华金·古斯曼崛起、被捕和逃脱的真实故事。",
+      "popularity": 10.417,
+      "poster_path": "/2ClXk4PoOGmkk676y4q6T26GJOb.jpg",
+      "first_air_date": "2017-04-23",
+      "name": "毒枭矮子",
+      "vote_average": 7.5,
+      "vote_count": 1639
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fmb8QgBVSx1lgKHbas3FNtZ9f5S.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 247830,
+      "origin_country": [
+        "IN"
+      ],
+      "original_language": "hi",
+      "original_name": "डब्बा कार्टेल",
+      "overview": "一家制药公司遭到调查，心有戚戚的五个女人随后推出含有秘制成分的“午餐”服务。",
+      "popularity": 3.9949,
+      "poster_path": "/ezT0x7ZdAjrR5mFtkNjWxOFcTIB.jpg",
+      "first_air_date": "2025-02-28",
+      "name": "毒枭煮妇",
+      "vote_average": 6.8,
+      "vote_count": 14
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kGGsdnUzbPNQPxiQqzV3tOQkM6U.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 84112,
+      "origin_country": [
+        "ES"
+      ],
+      "original_language": "es",
+      "original_name": "Hache",
+      "overview": "在巴塞罗那，埃伦娜从危险的海洛因毒枭那获得了信任和爱。与此同时，为了能最终夺取他的帝国，她不断地加强自己的能力。",
+      "popularity": 4.7689,
+      "poster_path": "/yScOKZTBlug31LF89M3Dccymw5b.jpg",
+      "first_air_date": "2019-11-01",
+      "name": "女毒枭",
+      "vote_average": 6.4,
+      "vote_count": 50
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4jTSmEGdZ77A2dP6Y08gwo52LuF.jpg",
+      "genre_ids": [
+        10759,
+        18
+      ],
+      "id": 7458,
+      "origin_country": [
+        "CO"
+      ],
+      "original_language": "es",
+      "original_name": "El Cartel de los Sapos",
+      "overview": "根据哥伦比亚前毒贩安德烈·洛佩兹（Andres Lopez）的真实故事改编，主角“草莓”马丁是一个年轻的毒贩，他见证了强大的北谷卡特尔（Norte del Valle Cartel）如何从巅峰走向覆灭。当 DEA（美国缉毒局）的压力排山倒海而来时，昔日出生入死的兄弟开始互相当“Sapo”（内鬼），为了豁免权争先恐后地向美国人出卖队友。这是一部关于**“谁先出卖谁”**的残酷生存赛。",
+      "popularity": 4.7441,
+      "poster_path": "/cSvzG2B2uafu5BoP5nt0OvrVrQG.jpg",
+      "first_air_date": "2008-06-04",
+      "name": "毒枭回忆录",
+      "vote_average": 7.5,
+      "vote_count": 593
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/tQiOR2ZjPbM4kp0B8lXjPMRGLDn.jpg",
+      "genre_ids": [
+        10759,
+        80,
+        18
+      ],
+      "id": 118241,
+      "origin_country": [
+        "FR"
+      ],
+      "original_language": "fr",
+      "original_name": "Caïd",
+      "overview": "在这部硬派的伪纪录片剧集中，两名电影制作人渗透到一个由帮派统治的街区，拍摄了一个饶舌歌手的音乐视频，并由此引爆矛盾。",
+      "popularity": 3.0211,
+      "poster_path": "/dQstisZnYgpZc8FhpnpxH3Xs1KZ.jpg",
+      "first_air_date": "2021-03-10",
+      "name": "饶舌毒枭",
+      "vote_average": 6.6,
+      "vote_count": 66
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ki2V3d7DrQ79mYWvnXjTPLCgBdW.jpg",
+      "genre_ids": [
+        18,
+        10765
+      ],
+      "id": 95281,
+      "origin_country": [
+        "ES"
+      ],
+      "original_language": "es",
+      "original_name": "S.O.Z: Soldados o Zombies",
+      "overview": "一名毒枭带着儿子从戒备森严的墨西哥监狱越狱，在边境美国一侧的一个偏远戒毒所避难，在那里他们遇到了致命的变异僵尸。",
+      "popularity": 2.5877,
+      "poster_path": "/arYdHX708nDq6oWNOSjw6NczWc5.jpg",
+      "first_air_date": "2021-08-06",
+      "name": "毒枭大战僵尸",
+      "vote_average": 7.1,
+      "vote_count": 701
+    }
+  ]
+}

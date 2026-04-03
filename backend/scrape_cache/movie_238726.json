@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 238726,
+  "media_type": "movie",
+  "title": "致命女人",
+  "original_title": "Lethal Woman",
+  "english_title": "Lethal Woman",
+  "year": "1989",
+  "poster_url": "https://image.tmdb.org/t/p/w500/iDVBICFDy7x3neTx3m7XFerIoTQ.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/i121KMXdcGmRXlF34rkEFa3bXzc.jpg",
+  "overview": "",
+  "rating": 3.2,
+  "genres": [
+    "动作",
+    "犯罪",
+    "惊悚"
+  ],
+  "director": "Christian Marnham",
+  "cast": [
+    "Merete Van Kamp",
+    "Robert Lipton",
+    "莎納·特威德",
+    "James Luisi",
+    "Larry Taylor",
+    "Deon Stewardson"
+  ],
+  "runtime": 96,
+  "imdb_id": "tt0097734",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "South Africa"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 27579,
+  "media_type": "movie",
+  "title": "美国人",
+  "original_title": "The American",
+  "english_title": "The American",
+  "year": "2010",
+  "poster_url": "https://image.tmdb.org/t/p/w500/y78XxwoXhczxEZHOvhjo343yPDk.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/tjdjDn10yDK5R7b6HdwtTASqwmE.jpg",
+  "overview": "------在《美国人》中,克鲁尼饰演一位独自行动、技术高超的杀手,名叫杰克。当杰克在瑞典完成了一个任务之后,又一个更艰巨的任务等待着他——他会被派往美国去暗杀。他对他的联系人拉里发誓,这将是他的最后一票。杰克来到意大利乡下的某个小城,享受暂时远离死亡的时光。然而,那份由比利时女人 Mathilde(斯科拉·鲁特饰,出演过《杀手没有假期》)委任的工作刻不容缓。令人惊讶的是,杰克找到了当地的好友、神父Benedetto叙旧(意大利老演员Paolo Bonacelli饰),又和当地的女人Clara(薇奥兰特·普拉西多饰)继续着浪漫的关系。但是,杰克的冒险生涯即将开始……",
+  "rating": 6.0,
+  "genres": [
+    "犯罪",
+    "剧情",
+    "惊悚"
+  ],
+  "director": "Anton Corbijn",
+  "cast": [
+    "乔治·克鲁尼",
+    "维奥兰特·普拉西多",
+    "斯科拉·鲁特",
+    "Paolo Bonacelli",
+    "约翰·莱森",
+    "伊丽娜·别尔克伦德"
+  ],
+  "runtime": 104,
+  "imdb_id": "tt1440728",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

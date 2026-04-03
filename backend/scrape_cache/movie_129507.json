@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 129507,
+  "media_type": "movie",
+  "title": "Joker",
+  "original_title": "Joker",
+  "english_title": "Joker",
+  "year": "2012",
+  "poster_url": "https://image.tmdb.org/t/p/w500/gA3xoiTWuaqEAiBXUqTv0gfZRSA.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/hduMeCHbr3ISsjyblQ2DxmTRvAb.jpg",
+  "overview": "",
+  "rating": 4.3,
+  "genres": [
+    "喜剧",
+    "科幻"
+  ],
+  "director": "Shirish Kunder",
+  "cast": [
+    "阿克谢·库玛尔",
+    "索納絲·辛哈",
+    "Shreyas Talpade",
+    "Minissha Lamba",
+    "桑杰·米什拉",
+    "Arya Babbar"
+  ],
+  "runtime": 104,
+  "imdb_id": "tt1918886",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "India"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

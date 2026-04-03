@@ -1,0 +1,32 @@
+{
+    "id": 1774671988,
+    "time": "Sat Mar 28 12:26:28 2026",
+    "label": "",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利 Chernobyl",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\切尔诺贝利S01E01.1080p.HD中英双字[最新电影www.66e.cc].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\凌晨1点23分45秒 p.HD S01E01 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\切尔诺贝利S01E02.1080p.HD中英双字[最新电影www.66e.cc].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\请保持冷静 Please Remain Calm S01E02 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\切尔诺贝利S01E03.1080p.HD中英双字[最新电影www.66e.cc].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\敞开吧，大地 Open Wide, O Earth S01E03 1080p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\切尔诺贝利S01E04.1080p.HD中英双字[最新电影www.66e.cc].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\切尔诺贝利S1\\全人类的幸福 The Happiness of All Mankind S01E04 1080p.mp4",
+            "is_dir": false
+        }
+    ]
+}

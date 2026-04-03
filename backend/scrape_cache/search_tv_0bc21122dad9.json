@@ -1,0 +1,69 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/lBoHzOgft2QfpjkVVvZCqeM4ttT.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        10759
+      ],
+      "id": 90228,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Dune: Prophecy",
+      "overview": "秘密女性组织姐妹会的成员经过身体和心灵的严苛训练，有极强大的能量，是有力的政治和社会力量。",
+      "popularity": 20.2294,
+      "poster_path": "/7KFlApfTLNMNh0y5Zp1ufsgfN0J.jpg",
+      "first_air_date": "2024-11-17",
+      "name": "沙丘：预言",
+      "vote_average": 7.3,
+      "vote_count": 545
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/e09SpH0iCVJRThzly1WqIsMt5j5.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        10759
+      ],
+      "id": 19566,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Frank Herbert's Dune",
+      "overview": "电影《沙丘魔堡》是美国的科幻电影，故事发生在一个遥远的未来世界，那时人类的文明是由帝国、垄断恒星间运输的宇宙协会、掌握行星领土的领主共同支撑。沙丹四世是已知宇宙的帝王，他凭借索多长突击队控制着帝国，使反抗势力不敢妄动。凯勒丹因具威慑力而被送到沙的行星，这里出产能让宇航员具备特殊能力的香料，大部分香料开采被他和儿子保罗所控制，并组织费瑞曼人向全宇宙进行圣战，获得帝国的绝对权力。另有游戏《沙丘魔堡》。",
+      "popularity": 7.1765,
+      "poster_path": "/iIf5XeuuBKPtG6H7MfWLirbJGrQ.jpg",
+      "first_air_date": "2000-12-03",
+      "name": "沙丘魔堡2000",
+      "vote_average": 6.8,
+      "vote_count": 362
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8tko4lM3VE6Rpye7IbilDpdHsWh.jpg",
+      "genre_ids": [
+        10765,
+        18
+      ],
+      "id": 9156,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Frank Herbert's Children of Dune",
+      "overview": "在未来的世界里，两大世仇王朝家族相互觊觎。艾崔德斯公爵遭到敌人哈肯南男爵的袭击，失去了沙丘星球的管理所有权。浩瀚广大的沙漠，几乎无人可生存，而水源是唯一上帝所赋予的最大财富。在广阔银河系帝国中，沙丘星球仍是一个非常富裕的地方。为了生存，为了能拥有更美好的生活，战争是他们唯一的选择。公爵和他的妻子及儿子保罗，深知他们抗争、叛变的时刻即将到来，因为他们即将被指派分发到一项新的任务，但未来却充满了许多无法预知及强大震荡的挑战……",
+      "popularity": 6.4684,
+      "poster_path": "/yCP8lKXBMtcG1CU9K3NsWlu1RgF.jpg",
+      "first_air_date": "2003-03-16",
+      "name": "沙丘之子",
+      "vote_average": 7.0,
+      "vote_count": 235
+    }
+  ]
+}

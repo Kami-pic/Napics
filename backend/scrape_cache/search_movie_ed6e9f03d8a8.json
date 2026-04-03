@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/k49q2roFSJtD47xQMIfqqVZfDks.jpg",
+      "genre_ids": [
+        35,
+        80,
+        53,
+        27
+      ],
+      "id": 45453,
+      "original_language": "cn",
+      "original_title": "香港奇案之強姦",
+      "overview": "表面上看来，马克（郑浩南 饰）是一名声名显赫的律师，但在私底下，他却是拥有着强奸癖好的变态狂。一次偶然中，马克在广告里看到了名为若男（邱淑贞 饰）和洁雯（吴雪雯 饰）新星，被两人的性感与魅力吸引，马克的脑袋里开始盘算起了即能满足自己欲望又能逃脱法律惩罚的罪恶勾当。若男个性独立好强，正在学校里念法律系，学习之余，她认识了黑社会老大蛋挞哥（任达华 饰）。蛋挞哥的善良和洒脱渐渐吸引了若男，两人之间的距离越来越近。然而，若男并不知道的是，就在自己和蛋挞哥打得火热之时，洁雯已经成为了马克准星里的猎物，处境分外危险。",
+      "popularity": 3.729,
+      "poster_path": "/294wZqO7amlsePQF4UAMiGggNZ4.jpg",
+      "release_date": "1993-05-27",
+      "title": "香港奇案之强奸",
+      "video": false,
+      "vote_average": 5.2,
+      "vote_count": 40
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "tmdb_id": 379346,
+  "media_type": "movie",
+  "title": "Eros",
+  "original_title": "Eros",
+  "english_title": "Eros",
+  "year": "2008",
+  "poster_url": "https://image.tmdb.org/t/p/w500/cPO5kDBjOrrBn7s7SYjG5eHFJT4.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 9.0,
+  "genres": [],
+  "director": "Megan Griffiths",
+  "cast": [
+    "Sean Nelson"
+  ],
+  "runtime": 3,
+  "imdb_id": "tt1671628",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

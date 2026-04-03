@@ -1,0 +1,31 @@
+{
+  "tmdb_id": 855104,
+  "media_type": "movie",
+  "title": "Westworld",
+  "original_title": "Westworld",
+  "english_title": "Westworld",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/8d4nZSjV268XUDRa1IHT7vIYIKQ.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/8BQz31qnlJuWHNbb80oPEkfphoi.jpg",
+  "overview": "",
+  "rating": 7.8,
+  "genres": [
+    "纪录",
+    "电视电影"
+  ],
+  "director": "Colin Carvalho Burgess",
+  "cast": [
+    "Lauren Laverne"
+  ],
+  "runtime": 60,
+  "imdb_id": "tt8214226",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/5QAc8dsyOwJBGQ71mhOLMEivOsF.jpg",
+      "genre_ids": [
+        16,
+        28,
+        878
+      ],
+      "id": 449574,
+      "original_language": "ja",
+      "original_title": "GODZILLA 怪獣惑星",
+      "overview": "地球遭到哥斯拉的毁灭，Haruo的父母被杀害，他作为被选中的一员，逃离到了外星球。但新行星并没有适合人类的生存环境，于是被选中的人类只能折返。然而回到地球后，这里已经是2万年之后的世界了。人类与哥斯拉陷入了一场你死我亡的激烈决战……",
+      "popularity": 3.5525,
+      "poster_path": "/Ak2XXreUI4HG0PrmO6QwaGrnqbT.jpg",
+      "release_date": "2017-11-17",
+      "title": "哥斯拉：怪兽行星",
+      "video": false,
+      "vote_average": 6.393,
+      "vote_count": 546
+    }
+  ]
+}

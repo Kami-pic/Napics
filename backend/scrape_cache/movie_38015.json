@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 38015,
+  "media_type": "movie",
+  "title": "老千",
+  "original_title": "타짜",
+  "english_title": "Tazza: The High Rollers",
+  "year": "2006",
+  "poster_url": "https://image.tmdb.org/t/p/w500/fYScZQpBpdeJ1Is6tj7V6yIHukW.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/v2U77ZiPcV4XZsDoagzg6ypVXUo.jpg",
+  "overview": "电影《老千》讲述的是关于“欲望”的故事，死到临头才意识到一切只是一场梦。通过赌博反映了人们的欲望，同时也告诉我们从中应该吸取的教训。",
+  "rating": 6.9,
+  "genres": [
+    "犯罪",
+    "喜剧"
+  ],
+  "director": "崔东勋",
+  "cast": [
+    "曹承佑",
+    "金惠秀",
+    "白允植",
+    "柳海真",
+    "金应洙",
+    "金相浩"
+  ],
+  "runtime": 139,
+  "imdb_id": "tt0875025",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "South Korea"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

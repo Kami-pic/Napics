@@ -1,0 +1,122 @@
+{
+    "prowlarr_url": "http://127.0.0.1:9696",
+    "prowlarr_api_key": "74e253788bec4fe3a68aba11581e4a34",
+    "tmdb_api_key": "271aa6d1321b4005dc7dc791e4f56e3e",
+    "qb_url": "http://127.0.0.1:8080",
+    "alist_url": "http://127.0.0.1:5244",
+    "alist_token": "alist-79cbae06-b926-4159-82ac-0c8b755bac983w7dZd4uN8fLNnRyaqRwShVAhXlZUOzS4wfFoY17Jsdz7aEvvW9WkYj9qtE8nz5r",
+    "nas_paths": [
+        "\\\\DS218play\\share\\\u89c6\u9891\\"
+    ],
+    "exclude_dirs": ".DS_Store,",
+    "nas_path": "\\\\DS218play\\share\\\u89c6\u9891\\",
+    "openai_api_key": "",
+    "openai_base_url": "",
+    "openai_model": "",
+    "http_proxy": "http://127.0.0.1:7897",
+    "indexer_priorities": [
+        {
+            "indexer_id": 5,
+            "name": "52BT",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 7,
+            "name": "ACG.RIP",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 8,
+            "name": "Bangumi Moe",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 6,
+            "name": "comicat",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 3,
+            "name": "LimeTorrents",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 9,
+            "name": "Mikan",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 1,
+            "name": "Nyaa.si",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [
+                "anime"
+            ],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 4,
+            "name": "The Pirate Bay",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 10,
+            "name": "U3C3",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [],
+            "supports_chinese": false
+        },
+        {
+            "indexer_id": 2,
+            "name": "YTS",
+            "priority": 50,
+            "enabled": true,
+            "preferred_types": [
+                "movie"
+            ],
+            "supports_chinese": false
+        }
+    ],
+    "search_confidence_threshold": "medium",
+    "category_tags": {
+        "\\\\DS218play\\share\\\u89c6\u9891\\\u5176\u4ed6\u89c6\u9891": "movie"
+    },
+    "search_filter": {
+        "must_include": [],
+        "must_exclude": [
+            "TS",
+            "CAM",
+            "HDTC",
+            "TC",
+            "TELECINE",
+            "HDTS"
+        ]
+    },
+    "preferred_codec": "x265",
+    "download_channel_auto": true,
+    "recycle_bin_path": "",
+    "recycle_bin_retention_days": 30
+}

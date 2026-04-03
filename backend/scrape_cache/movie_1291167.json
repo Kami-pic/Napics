@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 1291167,
+  "media_type": "movie",
+  "title": "34",
+  "original_title": "34",
+  "english_title": "34",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/xvIJMvZ8TG0VbiGR6Rx46eMDLgh.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 6.5,
+  "genres": [
+    "纪录"
+  ],
+  "director": "Michael Farrell",
+  "cast": [
+    "Len Bias",
+    "Chick Hernandez",
+    "Red Auerbach",
+    "大卫·斯特恩",
+    "Scott Van Pelt",
+    "Michael Wilbon"
+  ],
+  "runtime": 32,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/52AkwEfQiJl2HuTPMZ2yC5Bdr9I.jpg",
+      "genre_ids": [
+        80,
+        53
+      ],
+      "id": 1171145,
+      "original_language": "en",
+      "original_title": "Crime 101",
+      "overview": "　　当多年来从未失手的珠宝大盗（克里斯·海姆斯沃斯 饰）决心干票大的就金盆洗手时，人生失意的保险公司高管（哈莉·贝瑞 饰）却意外加入，两人被迫联手。与此同时，一位警探（马克·鲁法洛 饰）正通过蛛丝马迹的线索将矛头对准他们。监守自盗的内鬼，黑吃黑的争斗，交错的阴谋下谁将成为这场惊天劫案的最终赢家？\r 　　影片改编自《纽约时报》榜首畅销书作者唐·温斯洛同名小说。",
+      "popularity": 256.486,
+      "poster_path": "/cMilCixwsrrTmAjYGP6OQvSMVaU.jpg",
+      "release_date": "2026-02-11",
+      "title": "洛杉矶劫案",
+      "video": false,
+      "vote_average": 6.991,
+      "vote_count": 213
+    }
+  ]
+}

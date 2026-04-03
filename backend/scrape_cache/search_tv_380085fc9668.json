@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/asUFPHTGvdLvyyf3YxWZNvPWkoa.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "id": 61445,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "神撃のバハムート",
+      "overview": "故事发生在一个人魔神三种种族混杂的神秘世界。 过去，有着银黑色翅膀的巴哈姆特为这个世界带来濒临灭绝的危机。当时三个种族跨越隔阂通力合作，牺牲了无数的生命才把巴哈姆特封印。然后，封印的关键被一分为二，分别被魔与神两个种族掌握，这个钥匙决不能泄漏。 接下来世界经历了两千多年的和平日子。不知从何时开始，人类开始视巴哈姆特为至高无上的唯一存在。 某日，某位少女夺走了由神掌握的封印钥匙，世界的平衡由是破坏。 巴哈姆特的复活与咆啸再度把世界卷入绝望的深渊。 世界，毁灭了。 究竟谁能带来一丝希望？",
+      "popularity": 24.1755,
+      "poster_path": "/oWjLPatirGO8AxizsTujUGGHjcu.jpg",
+      "first_air_date": "2014-10-06",
+      "name": "巴哈姆特之怒",
+      "vote_average": 7.683,
+      "vote_count": 139
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/dPFWFVz2YeGIkdiF0NRzbunF5xc.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        10759
+      ],
+      "id": 84869,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "マナリアフレンズ",
+      "overview": "这里是“人”“神”“魔”各个种族混杂在一起的神秘世界密斯塔尔希亚。快活的玛纳利亚王国公主“安”，内向的龙族公主“古蕾雅”。自两人的相遇之后，玛纳利亚魔法学院的生活开始了。",
+      "popularity": 7.2349,
+      "poster_path": "/vlAxtYCmBPcJK0ymm3oqUnU8UxN.jpg",
+      "first_air_date": "2019-01-21",
+      "name": "玛娜利亚魔法学院",
+      "vote_average": 7.6,
+      "vote_count": 41
+    }
+  ]
+}

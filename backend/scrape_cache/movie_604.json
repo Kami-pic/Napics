@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 604,
+  "media_type": "movie",
+  "title": "黑客帝国2：重装上阵",
+  "original_title": "The Matrix Reloaded",
+  "english_title": "The Matrix Reloaded",
+  "year": "2003",
+  "poster_url": "https://image.tmdb.org/t/p/w500/aVAGoj2P0NVcnjKy2dxCCEh5Zza.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/ihOJcrorpDQtHTzIOrobbOhpJsj.jpg",
+  "overview": "上一部结尾，尼奥终于意识到自己的能力和使命，中弹复活后，变成了无所不能的“救世主”，他和女友崔妮蒂，舰长墨菲斯回到了人类的基地锡安，受到人们的热烈欢迎。此时，“母体”决定先下手为强，派出了两万五千只电子乌贼攻击锡安基地；墨菲斯、尼奥和崔妮蒂则再次进入“母体”，寻找“制钥者”，准备从内部破坏；而本该被尼奥消灭的特勤史密斯似乎出了点问题，脱离了“母体”的控制，拥有可怕的复制能力，阻碍尼奥他们的行动。",
+  "rating": 7.1,
+  "genres": [
+    "冒险",
+    "动作",
+    "惊悚",
+    "科幻"
+  ],
+  "director": "莉莉·沃卓斯基",
+  "cast": [
+    "基努·里维斯",
+    "劳伦斯·菲什伯恩",
+    "凯瑞-安·莫斯",
+    "雨果·维文",
+    "贾达·萍克特·史密斯",
+    "格洛丽亚·福斯特"
+  ],
+  "runtime": 138,
+  "imdb_id": "tt0234215",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

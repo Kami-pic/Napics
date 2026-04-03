@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/hWPOG1ZgJM6CVX4FbBZ04CPlGfY.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 1283856,
+      "original_language": "ja",
+      "original_title": "極道の紋章レジェンド 第十三章",
+      "overview": "",
+      "popularity": 1.4622,
+      "poster_path": "/tAMaK9K36LZ0jjVQiXSo0Ih14Qq.jpg",
+      "release_date": "2023-02-25",
+      "title": "極道の紋章レジェンド 第十三章",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

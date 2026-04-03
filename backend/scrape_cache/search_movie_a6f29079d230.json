@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/jw2FmU7RKMMkgDCshUBE9OaXuaJ.jpg",
+      "genre_ids": [
+        28,
+        16,
+        12
+      ],
+      "id": 387470,
+      "original_language": "ja",
+      "original_title": "ジョジョの奇妙な冒険 ファントム ブラッド",
+      "overview": "2007年2月17日公映，根据原作的第一部改编的剧场版动画。制作人员为第三部OVA的原班人马。由于过度改编，为了在短短1、2个小时内塞进如此多的内容导致部分角色神秘失踪：比如我们的解说员史比特瓦根先生。公映至今因票房收入惨淡而没有制作做成DVD等媒介，只有一个预告片和短短的16分钟流出画面（没有声音），是名符其实的“黑历史”。唯一的遗产是被称为DIO的角色曲的主题曲《Voodoo Kingdom》。  2023年，据传闻，本片确实有计划过发行DVD，但本片的所有材料和样片已被集英社完全回收，原因不明。",
+      "popularity": 3.0027,
+      "poster_path": "/k9568nNUbo7z81j2eYuHp0vkEy6.jpg",
+      "release_date": "2007-02-17",
+      "title": "JOJO的奇妙冒险 幻影血脉",
+      "video": false,
+      "vote_average": 6.1,
+      "vote_count": 23
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/f72Z2VbNhtVjFlkBE6oDLYXrhzF.jpg",
+      "genre_ids": [
+        28,
+        12,
+        14,
+        53
+      ],
+      "id": 431572,
+      "original_language": "ja",
+      "original_title": "ジョジョの奇妙な冒険 ダイヤモンドは砕けない 第一章",
+      "overview": "《JOJO的奇妙冒险：不灭钻石》的故事发生在上一部《星尘斗士》的剧情结束的11年后。1999年，空条承太郎为寻找外公乔瑟夫·乔斯达的私生子东方仗助来到日本M县S市杜王町，却发现仗助与其一样拥有着名为“替身”的特殊能力。以承太郎的到访为开端，发生在杜王町上有关“替身使者”们的全新故事拉开了序幕。",
+      "popularity": 3.1218,
+      "poster_path": "/cgioPVO5SAJTfD7GrgVtvd7T5Z6.jpg",
+      "release_date": "2017-08-04",
+      "title": "JOJO的奇妙冒险：不灭钻石 第一章",
+      "video": false,
+      "vote_average": 6.6,
+      "vote_count": 108
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "tmdb_id": 522708,
+  "media_type": "movie",
+  "title": "20",
+  "original_title": "20",
+  "english_title": "20",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/apc3hZh8PFchc6ARlISMGb9SF5x.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "纪录"
+  ],
+  "director": "",
+  "cast": [
+    "Kerry Wood",
+    "Chip Caray",
+    "乔·曼特尼亚",
+    "Carrie Muskat",
+    "Terry Adams",
+    "Jim Deshaies"
+  ],
+  "runtime": 47,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

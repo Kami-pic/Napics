@@ -1,0 +1,88 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16,
+        10765
+      ],
+      "id": 313304,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "Code Geass: Akito the Exiled",
+      "overview": "",
+      "popularity": 0.3882,
+      "poster_path": "/dE37aRkN2CDTvKnZSIiOYdgI0CM.jpg",
+      "first_air_date": "2012-07-16",
+      "name": "Code Geass: Akito the Exiled",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/5hS2OIuZSKGkR8R5l3bY5zh04Ce.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        10759,
+        18
+      ],
+      "id": 31724,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "コードギアス 反逆のルルーシュ",
+      "overview": "被神圣不列颠帝国侵略而亡国的日本——11区中，在生死边缘获得神秘魔女c.c.赋予的Geass力量，立志要粉碎帝国的黑色王子鲁路修·兰佩路基，与坚持公理的白色骑士枢木朱雀所掀起的巨大变化。",
+      "popularity": 39.4711,
+      "poster_path": "/4MCL2WH5NU4lwaTD7Nbfnq9oGM6.jpg",
+      "first_air_date": "2006-10-05",
+      "name": "反叛的鲁路修",
+      "vote_average": 8.352,
+      "vote_count": 857
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pSdmUGsfocf4gTyD5auC4Ccz25l.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "id": 255107,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "コードギアス 奪還のロゼ",
+      "overview": "光和七年，在被新布列塔尼亚帝国占领的合众国日本旧北海道区，有一对被称为“无名佣兵”的兄弟佣兵。哥哥阿什拥有非常优秀的运动能力和出色的噩梦机甲操控技术，弟弟罗赛则以聪明才智负责情报收集和作战指挥。\n\n由于被称为“希屯佩屏障”的难以攻破的能量屏障，第100代皇帝卡里斯·阿尔·布列塔尼亚和他手下的皇帝直属骑士艾因贝尔克，包括诺兰德等人，四年来一直阻挡着黑色骑士团的解放行动，并再次将世界陷入混乱。\n\n接受委托的罗赛和阿什与日本人抵抗组织七煌星团一起，为了夺回皇帝咲夜，向新布列塔尼亚帝国发起了挑战。",
+      "popularity": 9.0179,
+      "poster_path": "/irv0m1G1FfAwleE4wwo0a5a6amb.jpg",
+      "first_air_date": "2024-06-21",
+      "name": "反叛的鲁路修 夺还的罗赛",
+      "vote_average": 7.9,
+      "vote_count": 26
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/oIKl5zdC97NQdV6tjG7Di7HBtpF.jpg",
+      "genre_ids": [],
+      "id": 307705,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "コードギアス 星追いのアスパル",
+      "overview": "",
+      "popularity": 0.6283,
+      "poster_path": "/q7cpZcvpaFTer10iZH6wFj64a4F.jpg",
+      "first_air_date": "",
+      "name": "コードギアス 星追いのアスパル",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

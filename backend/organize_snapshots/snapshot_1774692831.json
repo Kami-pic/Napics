@@ -1,0 +1,23 @@
+{
+    "id": 1774692831,
+    "time": "Sat Mar 28 18:13:51 2026",
+    "label": "organize",
+    "summary": "整理 3 个文件 → 壳中少女：压缩 Mardock Scramble The First Compression (2010)、壳中少女：排气 Mardock Scramble The Third Exhaust (2012)、壳中少女：燃烧 Mardock Scramble The Second Combustion (2011)",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\壳中少女 Mardock Scramble\\壳中少女：压缩 Mardock Scramble The First Compression (2010).mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\壳中少女 Mardock Scramble\\壳中少女：压缩 Mardock Scramble The First Compression (2010)\\壳中少女：压缩 Mardock Scramble The First Compression (2010).mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\壳中少女 Mardock Scramble\\壳中少女：排气 Mardock Scramble The Third Exhaust (2012) 720p.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\壳中少女 Mardock Scramble\\壳中少女：排气 Mardock Scramble The Third Exhaust (2012)\\壳中少女：排气 Mardock Scramble The Third Exhaust (2012) 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\壳中少女 Mardock Scramble\\壳中少女：燃烧 Mardock Scramble The Second Combustion (2011) 720p.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\壳中少女 Mardock Scramble\\壳中少女：燃烧 Mardock Scramble The Second Combustion (2011)\\壳中少女：燃烧 Mardock Scramble The Second Combustion (2011) 720p.mp4",
+            "is_dir": false
+        }
+    ]
+}

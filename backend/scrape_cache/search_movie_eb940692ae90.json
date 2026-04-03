@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/5SgrtPH6kBmmHao0PofxpvOYfWC.jpg",
+      "genre_ids": [
+        18,
+        80,
+        53
+      ],
+      "id": 470,
+      "original_language": "en",
+      "original_title": "21 Grams",
+      "overview": "故事叙述保罗（西恩·潘饰）、杰克（班尼西欧岱托罗饰）和克莉丝汀（妮奥米·瓦兹饰）三个人，在他们的生命中短短几个月的交错，因为一场意外让他们的生活和命运结合在一起。",
+      "popularity": 3.721,
+      "poster_path": "/mJ90fpnVWiRWMsRctHUGrUlnSLF.jpg",
+      "release_date": "2003-09-06",
+      "title": "21克",
+      "video": false,
+      "vote_average": 7.32,
+      "vote_count": 3352
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/zfbuY4A9X5sTJ2bzTt84rtiDK9t.jpg",
+      "genre_ids": [
+        878,
+        53,
+        16
+      ],
+      "id": 4977,
+      "original_language": "ja",
+      "original_title": "パプリカ",
+      "overview": "千叶敦子博士白天是天才科学家，夜晚则化身为所向披靡的梦境战士“红辣椒”。在这部迷幻的科幻冒险动画中，需要集合这两个身份的力量才能拯救世界。[索尼影业经典]",
+      "popularity": 9.1733,
+      "poster_path": "/A2FxDzK0To90Iw2gQxCkyeSYO3u.jpg",
+      "release_date": "2006-10-01",
+      "title": "红辣椒",
+      "video": false,
+      "vote_average": 7.815,
+      "vote_count": 2801
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/z84nLyWnCTQcYCbjBOvydMYO5ZP.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 39388,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Femme Fatales",
+      "overview": "大尺度重口味Cinemax新剧《蛇蝎美人》（Femme Fatales）是由著名杂志《Femme Fatales》的创始人打造的一部深夜诗选剧集，故事主要描述那些强势、性感且危险的女人，是男性观看导向很强的一部剧集。所谓「诗选」意即每一集都独立成章，有独立的故事和演员，集与集之间一般没有关联。\n\n每一集中的女主人公都将找到非同寻常的方法来处理自己面临的问题，将求生的直觉和发自内心的「狡诈」结合起来。每一集中的故事都根据流行的低俗文化、黑色电影中的桥段和连环漫画改编，并将故事地点设置在极具刺激性的场景中。一个叫做Lilith（Tanit Phoenix扮演）的神秘女人将担任每一集的「解说」。\n\n尽管每一集的故事情节和演员都不相同，但少数集之间可能存在情节交互的情况。",
+      "popularity": 10.074,
+      "poster_path": "/qUE2ceDcYaz53okDNFNeLIlXaek.jpg",
+      "first_air_date": "2011-05-13",
+      "name": "蛇蝎美人",
+      "vote_average": 6.4,
+      "vote_count": 34
+    }
+  ]
+}

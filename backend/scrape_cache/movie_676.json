@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 676,
+  "media_type": "movie",
+  "title": "珍珠港",
+  "original_title": "Pearl Harbor",
+  "english_title": "Pearl Harbor",
+  "year": "2001",
+  "poster_url": "https://image.tmdb.org/t/p/w500/uMyeYnL47TZgGVhPnEp3YCsfkmR.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/kBqhOUi8gCL0jYgRIQdcl3BguVW.jpg",
+  "overview": "雷夫（本•阿弗莱克）和丹尼（乔什•哈奈特）是一对自小玩在一起的好兄弟，两人对飞行都有很大兴趣，曾一起学习过驾驶飞机，二战初期，两人又一起加入了美国空军部队。受训期间，雷夫与军中医院里的女护士伊弗琳（凯特•贝金赛尔）坠入爱河。为协助欧洲各国抵抗纳粹德国的侵略，美军决定派出精英部队前往欧洲大陆，雷夫自告奋勇前往参战，并将伊弗琳托付给丹尼照顾，不久，噩耗传来，雷夫的飞机在空战中不幸被德军击落，生还可能几乎为零。伊弗琳与丹尼在相互勉励的伤痛中，萌生爱情。令他们没想到的是，雷夫并没死去，当三人重聚首时，尴尬顿生。日军偷袭珍珠港一事帮他们解了围，雷夫与丹尼决定不做情敌做战友。",
+  "rating": 6.9,
+  "genres": [
+    "战争",
+    "爱情",
+    "历史",
+    "动作"
+  ],
+  "director": "迈克尔·贝",
+  "cast": [
+    "本·阿弗莱克",
+    "凯特·贝金赛尔",
+    "乔什·哈奈特",
+    "小库珀·古丁",
+    "乔恩·沃伊特",
+    "汤姆·塞兹摩尔"
+  ],
+  "runtime": 183,
+  "imdb_id": "tt0213149",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

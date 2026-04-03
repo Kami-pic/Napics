@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16
+      ],
+      "id": 1263462,
+      "original_language": "ja",
+      "original_title": "コードギアス 反逆のルルーシュ R2 SPECIAL EDITION ‘ZERO REQUIEM’",
+      "overview": "在皇历 2018 年，朝着世界制霸迈进的神圣布里塔尼亚帝国，再次出现了一名前恐怖分子。\r 他的名字是鲁路修。从谜之少女 C.C. 手中得到绝对服从的 Geass 后，鲁路修再次举起了反抗的旗帜。\r 殖民地日本 11 区，以及从日本出发的这片 “涟（さざなみ）”，究竟在时代的洪流中，还残留着多少人的心愿 —— 无人知晓。本作是《Code Geass 反叛的鲁路修 R2》第 1 话至第 25 话的总集特别编辑版。",
+      "popularity": 0.9361,
+      "poster_path": "/nYnr7wkwfMaOtqIzYYr4mrpDlZ9.jpg",
+      "release_date": "2009-07-24",
+      "title": "Code Geass 反叛的鲁路修R2 零之镇魂曲",
+      "video": false,
+      "vote_average": 9.0,
+      "vote_count": 4
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 223702,
+  "media_type": "movie",
+  "title": "香肠派对",
+  "original_title": "Sausage Party",
+  "english_title": "Sausage Party",
+  "year": "2016",
+  "poster_url": "https://image.tmdb.org/t/p/w500/3sObp4Jz7VcJ5y56mXyqV5J6Aei.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/hsb8nNBt3emvWqBs7Xv5IKlz6Im.jpg",
+  "overview": "故事从食物视角出发，讲述单纯的它们被采购回家，没想到会面临被生吞、活剥、碎尸的危险境遇。香肠组成逃亡小分队，誓要将秘密公布于众！",
+  "rating": 5.8,
+  "genres": [
+    "冒险",
+    "动画",
+    "喜剧",
+    "奇幻"
+  ],
+  "director": "康拉德·弗农",
+  "cast": [
+    "塞斯·罗根",
+    "克丽丝滕·威格",
+    "乔纳·希尔",
+    "比尔·哈德尔",
+    "迈克尔·塞拉",
+    "詹姆斯·弗兰科"
+  ],
+  "runtime": 89,
+  "imdb_id": "tt1700841",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

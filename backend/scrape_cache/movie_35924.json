@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 35924,
+  "media_type": "movie",
+  "title": "-30-",
+  "original_title": "-30-",
+  "english_title": "-30-",
+  "year": "1959",
+  "poster_url": "https://image.tmdb.org/t/p/w500/8IXCNAxzK6iuPG4ma43MvKqutOv.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/pARA1GCRXj4lhpZdHNI84tuj1fc.jpg",
+  "overview": "",
+  "rating": 5.8,
+  "genres": [
+    "剧情"
+  ],
+  "director": "杰克·韦伯",
+  "cast": [
+    "杰克·韦伯",
+    "William Conrad",
+    "David Nelson",
+    "Whitney Blake",
+    "Louise Lorimer",
+    "James Bell"
+  ],
+  "runtime": 96,
+  "imdb_id": "tt0052526",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

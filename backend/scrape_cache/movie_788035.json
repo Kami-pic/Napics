@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 788035,
+  "media_type": "movie",
+  "title": "My Sassy Girl",
+  "original_title": "My Sassy Girl",
+  "english_title": "My Sassy Girl",
+  "year": "2024",
+  "poster_url": "https://image.tmdb.org/t/p/w500/hdrJvKIvFtDzwLNBAlujgKJgfBD.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/t9v4ei7BA3QdohzUDq5RJv3oHmS.jpg",
+  "overview": "",
+  "rating": 7.0,
+  "genres": [
+    "喜剧",
+    "爱情",
+    "剧情"
+  ],
+  "director": "Fifth Solomon",
+  "cast": [
+    "Toni Gonzaga",
+    "佩佩·埃雷拉",
+    "Yayo Aguila",
+    "Alma Moreno",
+    "Benj Manalo",
+    "Bodjie Pascua"
+  ],
+  "runtime": 117,
+  "imdb_id": "tt30840535",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Philippines"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

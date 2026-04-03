@@ -1,0 +1,28 @@
+{
+    "id": 1774758306,
+    "time": "Sun Mar 29 12:25:06 2026",
+    "label": "organize",
+    "summary": "整理 4 个文件 → 逆局 第1季",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\03.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\逆局 第1季\\03.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\07.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\逆局 第1季\\07.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\08.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\逆局 第1季\\08.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\SP.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\逆局\\逆局 第1季\\SP.1080p.HD国语中字[66影视www.66Ys.Co].mp4",
+            "is_dir": false
+        }
+    ]
+}

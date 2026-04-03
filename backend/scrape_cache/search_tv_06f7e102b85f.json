@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/a5wsfn4iqxcaW9GQ5SU7VOjaoy3.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 304852,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "像烟花一样灿烂",
+      "overview": "十八岁宋灼灼意外穿越到千禧年，遇见少女时期的母亲宋礼花，因江熠身上的疤痕认定他就是自己生父。为改写母亲因意外致聋、被父亲抛弃的命运，宋灼灼一边极力阻挠江熠和母亲靠近，一边联合温柔学霸张望川帮助母亲实现烟花梦想。在守护母亲的过程中，宋灼灼和母亲成为了朋友，逐渐学会尊重母亲的人生选择，更惊觉自己对父亲存在巨大误会。而那个看似散漫不羁的江熠，也藏着一个不为人知的秘密。",
+      "popularity": 1.4498,
+      "poster_path": "/5Ngf6mdDY1R1lhN40PvfFWd3gnE.jpg",
+      "first_air_date": "2025-11-14",
+      "name": "像烟花一样灿烂",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/iJmGOvcIwhSm5DtbQlAMjxpdRpb.jpg",
+      "genre_ids": [
+        18,
+        10765
+      ],
+      "id": 216010,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "6秒間の軌跡～花火師・望月星太郎の憂鬱",
+      "overview": "2022年夏天，大型烟火活动因新冠疫情纷纷停办，这也让代代相传的望月烟花店生意大受影响。路不转人转，父亲望月航（桥爪功 饰）提议开放“客制化烟花”的服务，但被怕麻烦又不擅与人交流的儿子望月星太郎（高桥一生 饰）摇头拒绝。在那之后的某天，在工厂倒下的父亲留下一句“抱歉”便离世。几个月后，没想到原本应该升天的父亲，竟然若无其事地在自己面前显灵，而带着传单来找星太郎的神秘女子（本田翼 饰）又会是谁…",
+      "popularity": 2.6597,
+      "poster_path": "/rUFIrdmpJhopzmnrSeaU6ldmV7s.jpg",
+      "first_air_date": "2023-01-14",
+      "name": "6秒钟的轨迹～烟花师望月星太郎的忧郁",
+      "vote_average": 8.0,
+      "vote_count": 1
+    }
+  ]
+}

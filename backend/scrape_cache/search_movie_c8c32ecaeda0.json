@@ -1,0 +1,182 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/1VSS8owtFBcpeH2b9vWRLsH7IBv.jpg",
+      "genre_ids": [
+        99,
+        36
+      ],
+      "id": 1613335,
+      "original_language": "en",
+      "original_title": "Miracle: The Boys of '80",
+      "overview": "一支不起眼的年轻曲棍球队参加 1980 年奥运会，却出人意料地成为获胜的英雄。本片通过新的录像和当事人对亲身经历的回忆讲述这个著名的黑马故事。",
+      "popularity": 0.8114,
+      "poster_path": "/zmMlJPZremA7iSqzg3SgZTXR28Z.jpg",
+      "release_date": "2026-01-30",
+      "title": "奥运奇迹：1980 美国国家男子冰球队",
+      "video": false,
+      "vote_average": 7.3,
+      "vote_count": 12
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 940403,
+      "original_language": "zh",
+      "original_title": "博物志：中国国家博物馆100年",
+      "overview": "　　本片是中国国家博物馆纪录片《国脉》国际版。 2014年5月14日，在中国国家博物馆学术报告厅，《博物志――中国国家博物馆100年》举行首映式。  　　沈庆林、赵家英、董希文，以及博物馆早年的讲解员信立祥、马俊海……几个人物的人生轨迹，以及几个普通博物馆人的日记，围绕着中国国家博物馆百年历史上的几次大的文物征集这条线索，《博物志》通过为中国国家博物馆工作一生的博物馆人，以碎片的记忆还原国博百年历史，展现中华5000年文明史。",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "2014-05-14",
+      "title": "博物志：中国国家博物馆100年",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 978269,
+      "original_language": "zh",
+      "original_title": "National Geographic Nazi Art Theft Part 1",
+      "overview": "国家地理 窃夺艺术的纳粹 上",
+      "popularity": 0.0071,
+      "poster_path": "/p43gDjDHlBCdjotvaWanvjvd3X6.jpg",
+      "release_date": "",
+      "title": "National Geographic Nazi Art Theft Part 1",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 465998,
+      "original_language": "en",
+      "original_title": "GREAT_MIGRATIONS-Disc1",
+      "overview": "数百万只的动物，数千哩的路程，数百个故事。国家地理频道将对全世界送上此一历时3年制作的节目──以前所未见的视野记录动物迁徙的过程，横跨全球，直到目的地。国家地理投注大量资源挹注本系列的拍摄，运用高画质技术，呈现鼓舞人心，有时却令人心痛的漫长旅程；迁徙之路困难重重，为了生存仍不得不为。",
+      "popularity": 0.0071,
+      "poster_path": "/lhsgq2rMLCRPmkkcZ6gSKrg8yAM.jpg",
+      "release_date": "",
+      "title": "国家地理 大迁徙-DISC1",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ayKo9NoR9BsosIvvTFEs2Bw7LRs.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 444460,
+      "original_language": "en",
+      "original_title": "National Theatre Live: Angels In America — Part Two: Perestroika",
+      "overview": "上世纪八十年代中，美国处于列根的保守政权之下，正经历爱滋病危机。《天使在美国》正讲述在这种社会背景下，一群纽约客徘徊生与死、爱与性、天堂与地狱之间，挣扎求存、奋斗的故事。东尼．库什纳（Tony Kushner）的《天使在美国》可谓近几十年来最重要的戏剧之一。此剧共分两部分，总长逾七小时，于1992年至1993年间在伦敦英国国家剧院首演，并赢得普立兹戏剧奖等多项大奖。该剧有趣又感人，尖锐又富有深刻洞见，以充满想象力的方法，探讨爱、痛苦、疾病、死亡、信仰、政治等主题，即使在25年后的今天，仍然发人深省。",
+      "popularity": 1.1822,
+      "poster_path": "/4E3Pxcjwxsl9VNEWxriWrBvyiEC.jpg",
+      "release_date": "2017-07-27",
+      "title": "天使在美国第二部：重建",
+      "video": true,
+      "vote_average": 8.1,
+      "vote_count": 15
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/y0U6G434XjrDA9XIUZp0B78tRJR.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 444459,
+      "original_language": "en",
+      "original_title": "National Theatre Live: Angels In America — Part One: Millennium Approaches",
+      "overview": "上世纪八十年代中，美国处于列根的保守政权之下，正经历爱滋病危机。《天使在美国》正讲述在这种社会背景下，一群纽约客徘徊生与死、爱与性、天堂与地狱之间，挣扎求存、奋斗的故事。东尼．库什纳（Tony Kushner）的《天使在美国》可谓近几十年来最重要的戏剧之一。此剧共分两部分，总长逾七小时，于1992年至1993年间在伦敦英国国家剧院首演，并赢得普立兹戏剧奖等多项大奖。该剧有趣又感人，尖锐又富有深刻洞见，以充满想象力的方法，探讨爱、痛苦、疾病、死亡、信仰、政治等主题，即使在25年后的今天，仍然发人深省。本次复排版的演员阵容鼎盛，荷里活及英国剧界的一线演员纷纷登场。饰演主角普莱尔的安德鲁加菲（Andrew Garfield）曾获奥斯卡最佳演员提名，代表作包括电影《蜘蛛侠：惊世现新》（The Amazing Spider-Man）及《钢锯岭》（Hacksaw Ridge）。其他主要演员包括主演BBC剧集《宝拉》（Paula）的丹妮斯高弗（Denise Gough），曾演出《星球大战：原力觉醒》（Star Wars: The Force Awakens）的占士麦卡德（James McArdle），曾演出英国国家剧院《高校男生》（The History Boys）的罗素托维（Russell Tovey），以及演出音乐剧《金牌监制》（The Producers）和电影《假凤虚凰》(The Birdcage) 的尼芬连恩（Nathan Lane）。本剧导演玛丽安．艾略特（Marianne Elliott）是奥利花奖及东尼奖双料得主。她为英国国家剧院导演的《深夜小狗神秘习题》（The Curious Incident of the Dog in the Night-Time）及《雷霆战驹》（War Horse）都大获成功。这次，她为我们谱写了一曲感人至深的人性赞歌。",
+      "popularity": 1.436,
+      "poster_path": "/4E3Pxcjwxsl9VNEWxriWrBvyiEC.jpg",
+      "release_date": "2017-07-20",
+      "title": "天使在美国第一部：千禧年降临",
+      "video": true,
+      "vote_average": 8.1,
+      "vote_count": 17
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/dPVB14zM1KVLNtAhXxumJbHFXtg.jpg",
+      "genre_ids": [
+        28,
+        18,
+        53
+      ],
+      "id": 9798,
+      "original_language": "en",
+      "original_title": "Enemy of the State",
+      "overview": "迪恩（威尔 史密斯 Will Smith 饰）是一个家庭生活和美、前途一片光明的黑人执业律师。圣诞节前夕，迪恩遇到了一位久未谋面的朋友。从此，迪恩的生活发生了天翻地覆的变化。原来这位友人将一张记录了某个位高权重的人谋杀国会议员整个过程的光盘放进了迪恩的袋子！可怜的迪恩在毫不知情的情况下，被NSA中的害群之马严密监视，并被施加了各种各样的压力，甚至无端遭到了谋杀前女友雷切尔的起诉。迪恩迫于无奈之下，只得只身展开了逃亡、追查幕后真凶之路。",
+      "popularity": 6.9429,
+      "poster_path": "/dJs2A4tkGA5o7Wdj5MVETz7Rs5L.jpg",
+      "release_date": "1998-11-20",
+      "title": "国家公敌",
+      "video": false,
+      "vote_average": 7.1,
+      "vote_count": 4187
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/p5r5isFtPQ7NaP5J1Ze3FkiRQFA.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 1366558,
+      "original_language": "zh",
+      "original_title": "独一无二",
+      "overview": "　　17岁的女孩喻延（张婧仪 饰）与爸爸（陈明昊 饰）、妈妈（蒋勤勤 饰）、哥哥（辛云来 饰）生活在祖辈经营的喻记鱼杂铺中。作为听障家庭中唯一的听人，她自幼游走在家人的无声世界与外面的有声世界之间，已经习惯于担任桥梁和翻译器。家人的爱与依赖如藤蔓般缠绕着她，然而去往更宽广世界的渴望之火也在心里熊熊灼烧。突如其来的变故，让喻延不得不面对追寻梦想与捍卫家人的两难局面。在成长的选择中，她尝试着找寻自己，也找到能与家人分享的歌声。  　　本片改编自法国电影《贝利叶一家》。",
+      "popularity": 1.4067,
+      "poster_path": "/8pob4BXqzD6X2aL993X8L6zTGpu.jpg",
+      "release_date": "2025-05-01",
+      "title": "独一无二",
+      "video": false,
+      "vote_average": 6.7,
+      "vote_count": 6
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2wConvQ2KQFN1vDNXIeRoB0RiBV.jpg",
+      "genre_ids": [
+        99,
+        18
+      ],
+      "id": 751656,
+      "original_language": "en",
+      "original_title": "American Selfie: One Nation Shoots Itself",
+      "overview": "",
+      "popularity": 0.2372,
+      "poster_path": "/tdV2EBjrXb3KfuSDadiyd4Mzgeb.jpg",
+      "release_date": "2020-10-23",
+      "title": "美国自拍：一个国家自我抨击",
+      "video": false,
+      "vote_average": 5.0,
+      "vote_count": 3
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/gz2yJX7Th480sHbc93FUqpNOfs9.jpg",
+      "genre_ids": [
+        10402
+      ],
+      "id": 47543,
+      "original_language": "en",
+      "original_title": "Daniel Barenboim: Beethoven - Piano Concertos 1-5",
+      "overview": "",
+      "popularity": 0.1292,
+      "poster_path": "/dYci1XyOoUG25Dv1wF80PAey9wm.jpg",
+      "release_date": "2007-01-01",
+      "title": "贝多芬钢琴协奏曲全集-柏林国家管弦乐团-巴伦博伊姆",
+      "video": true,
+      "vote_average": 6.5,
+      "vote_count": 3
+    }
+  ]
+}

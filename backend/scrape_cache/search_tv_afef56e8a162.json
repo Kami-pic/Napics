@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/f1iKJev57oGim5NZKDahKEKP2sA.jpg",
+      "genre_ids": [
+        10751,
+        10764
+      ],
+      "id": 225866,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "What Am I Eating? With Zooey Deschanel",
+      "overview": "",
+      "popularity": 1.1469,
+      "poster_path": "/5GbIa5E4guFqqaEc7ZFhJF9umFN.jpg",
+      "first_air_date": "2023-05-23",
+      "name": "What Am I Eating? With Zooey Deschanel",
+      "vote_average": 6.0,
+      "vote_count": 2
+    }
+  ]
+}

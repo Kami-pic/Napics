@@ -1,0 +1,70 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/8zbAoryWbtH0DKdev8abFAjdufy.jpg",
+      "genre_ids": [
+        10765,
+        9648,
+        10759
+      ],
+      "id": 66732,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Stranger Things",
+      "overview": "1983 年，当一个小男孩莫名其妙地失踪后，他的朋友、家人和当地警察开始寻找答案时，他们都被卷入一个非同寻常的谜团，揭开了涉及秘密实验、恐怖的超自然力量以及一个奇怪的小女孩的谜团。",
+      "popularity": 163.6917,
+      "poster_path": "/2mYLTEQd1oHuXA6NICPIKX7OOvo.jpg",
+      "first_air_date": "2016-07-15",
+      "name": "怪奇物语",
+      "vote_average": 8.573,
+      "vote_count": 20903
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kDAx8SQyyxA7QinSVdxpF3kWV2s.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        9648,
+        10759
+      ],
+      "id": 224263,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Stranger Things: Tales from '85",
+      "overview": "故事设定在《怪奇物语》的第二季和第三季之间，欢迎回到1985年冬天的霍金斯，主角团将面对新的怪物和超自然之谜。",
+      "popularity": 7.0821,
+      "poster_path": "/AnVaPUXPKDNOnZbUh6b7WZ5IeMW.jpg",
+      "first_air_date": "2026-04-23",
+      "name": "Stranger Things: Tales from '85",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vOKdx9SVqay7uSRc1kwXplJgnRG.jpg",
+      "genre_ids": [
+        10767,
+        99
+      ],
+      "id": 74851,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Beyond Stranger Things",
+      "overview": "《怪奇背后》由编剧/制作人/演员Jim Rash主持，会有幕后故事，第二季分析及解答一些问题",
+      "popularity": 4.6633,
+      "poster_path": "/rHCFO8RJ3Hg6a8KjWAsvAsa38hp.jpg",
+      "first_air_date": "2017-10-27",
+      "name": "怪奇背后",
+      "vote_average": 7.4,
+      "vote_count": 118
+    }
+  ]
+}

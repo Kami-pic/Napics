@@ -1,0 +1,197 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/a0lfia8tk8ifkrve0Tn8wkISUvs.jpg",
+      "genre_ids": [
+        12,
+        14,
+        28
+      ],
+      "id": 120,
+      "original_language": "en",
+      "original_title": "The Lord of the Rings: The Fellowship of the Ring",
+      "overview": "J.R.R.托尔金的文学巨著首次以电影形式磅礴呈现——这是一场正义对抗邪恶的史诗冒险，一段关于友谊力量与个人勇气的传奇，更是一次为人类纪元开辟道路的英雄征程。",
+      "popularity": 32.2603,
+      "poster_path": "/dvNHlWMxba5f9r8xS9tILLUig8m.jpg",
+      "release_date": "2001-12-18",
+      "title": "指环王1：护戒使者",
+      "video": false,
+      "vote_average": 8.429,
+      "vote_count": 27213
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1FMnXfgPFJFWhPrCZBgXwHbwmye.jpg",
+      "genre_ids": [
+        878,
+        27,
+        28
+      ],
+      "id": 940721,
+      "original_language": "ja",
+      "original_title": "ゴジラ-1.0",
+      "overview": "战后的日本，新的恐怖崛起：哥斯拉。遭受重创的人们能否生存……更不用说反击了？",
+      "popularity": 9.8241,
+      "poster_path": "/rh9RQXZ1zCucxcr7wP5wNoKdsj.jpg",
+      "release_date": "2023-11-03",
+      "title": "哥斯拉-1.0",
+      "video": false,
+      "vote_average": 7.581,
+      "vote_count": 3054
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/zpEWFNqoN8Qg1SzMMHmaGyOBTdW.jpg",
+      "genre_ids": [
+        53,
+        80,
+        35
+      ],
+      "id": 1054867,
+      "original_language": "en",
+      "original_title": "One Battle After Another",
+      "overview": "落魄潦倒的革命者鲍勃（莱昂纳多·迪卡普里奥 饰）终日生活在草木皆兵的偏执状态，他与世隔绝，只和坚韧自立的女儿薇拉（蔡斯·英菲尼迪 饰）相依为命。然而，当鲍勃的宿敌（西恩·潘 饰）在16年后再度现身，女儿也突然失踪，这位曾经的激进分子仓促踏上了寻女之路，父女二人不得不直面他过往行为种下的恶果……",
+      "popularity": 59.2368,
+      "poster_path": "/6cjr6NL1MQC8TKgoNmagSGUu3SK.jpg",
+      "release_date": "2025-09-23",
+      "title": "一战再战",
+      "video": false,
+      "vote_average": 7.388,
+      "vote_count": 3286
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8mTHUXS3vwub5ZlovQkZ8veQUah.jpg",
+      "genre_ids": [
+        28,
+        12,
+        878
+      ],
+      "id": 330459,
+      "original_language": "en",
+      "original_title": "Rogue One: A Star Wars Story",
+      "overview": "共和体制崩塌，银河帝国的阴影笼罩着宇宙文明每一个角落。为了加强对反抗势力的镇压，塔金主义直接催生了一种足以摧毁星球的超级武器——死星的诞生，而物理科学家盖伦·厄索（麦斯·米科尔森 Mads Mikkelsen 饰）正是死星的主要设计者。厄索的女儿琴（菲丽希缇·琼斯 Felicity Jones 饰）在童年时代与父母经历了生离死别，之后她被反抗组织领袖索·格雷拉（福里斯特·惠特克 Forest Whitaker 饰）所抚养长大。成年后琴罪行累累，成为帝国的阶下囚，最终却被反抗组织救出。从格雷拉那里她得知死星的存在，并见证了一个城市的灰飞烟灭。然而义军同盟决然不信死星的存在，万般无奈琴和飞行员卡西安·安多（迭戈·鲁纳 Diego Luna 饰）等人孤身前往收藏着死星设计图的星球，攸关全宇宙命运的战争拉开了序幕……",
+      "popularity": 9.8379,
+      "poster_path": "/lhNjyPyjjHPMrIRrzIMfRBS5QeM.jpg",
+      "release_date": "2016-12-14",
+      "title": "星球大战外传1：侠盗一号",
+      "video": false,
+      "vote_average": 7.505,
+      "vote_count": 16241
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 125308,
+      "original_language": "en",
+      "original_title": "One",
+      "overview": "",
+      "popularity": 3.758,
+      "poster_path": "/oGC221dyma1fjuMvtjO1VDvwoS5.jpg",
+      "release_date": "1998-07-16",
+      "title": "One",
+      "video": false,
+      "vote_average": 8.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/uRNgkJSkNBFbbn9fPsEjDIy8Sh3.jpg",
+      "genre_ids": [
+        12,
+        14,
+        28
+      ],
+      "id": 22,
+      "original_language": "en",
+      "original_title": "Pirates of the Caribbean: The Curse of the Black Pearl",
+      "overview": "故事发生在17世纪，传说中海盗最为活跃的加勒比海。风趣迷人的杰克·斯伯洛，是活跃在加勒比海上的海盗，拥有属于自己的“黑珍珠”号海盗船。对他来说，最惬意的生活就是驾驶着“黑珍珠”号在加勒比海上游荡，自由自在的打劫过往船只。但不幸的是，他的仇敌，老谋深算的巴博萨船长偷走了他的“黑珍珠”号。",
+      "popularity": 18.3101,
+      "poster_path": "/wjtVlVdF7KQ9pnnTDHbZaFayzcf.jpg",
+      "release_date": "2003-07-09",
+      "title": "加勒比海盗1：黑珍珠号的诅咒",
+      "video": false,
+      "vote_average": 7.82,
+      "vote_count": 22007
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xyXmtuvsoM5J3yNad0nvcetpBdY.jpg",
+      "genre_ids": [
+        12,
+        14,
+        28
+      ],
+      "id": 49051,
+      "original_language": "en",
+      "original_title": "The Hobbit: An Unexpected Journey",
+      "overview": "中土最后一座矮人王国埃尔波尔，巍峨壮丽，庄严雄伟。老国王索尔积聚大量财富，却引来恶龙史茅革的觊觎和荼毒，最终导致这座城池陷落。许多年后，灰袍巫师甘道夫（伊恩·麦凯伦 Ian McKellen 饰）找到弗罗多的舅舅——霍比特人比尔博·巴金斯（马丁·弗里曼 Martin John C. Freeman 饰），邀请他加入由13名矮人组成的远征队伍。原来史茅革已多年不见声息，背负家国仇恨的矮人王子索林（理查德·阿米蒂奇 Richard Armitage 饰）希望借此机会收复故土。经过一番考虑，巴金斯决定加入。令他想不到的是，远征旅途多灾多难，与索林结下深仇大恨的苍白半兽人及其爪牙阴魂不散，更有食人鬼和石人制造的无数艰险。而在旅途中，巴金斯也意外得到了日后影响整个中土的重要宝物…",
+      "popularity": 13.4809,
+      "poster_path": "/iFC48OTg5kRK0qPLGA4T43G0moN.jpg",
+      "release_date": "2012-12-12",
+      "title": "霍比特人1：意外之旅",
+      "video": false,
+      "vote_average": 7.369,
+      "vote_count": 19452
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/15sBS390fiQDoxucuOVFNofRDk6.jpg",
+      "genre_ids": [
+        28,
+        18
+      ],
+      "id": 121823,
+      "original_language": "zh",
+      "original_title": "太极1: 从零开始",
+      "overview": "清朝中叶，内忧外患，传统崩溃，民生凋敝。小男孩杨露禅额头天生肉角、相貌奇异，却只会吃和傻笑，大家认定他这辈子只能混吃等死，唯独杨母（舒淇 饰）认为儿子露禅（袁晓超 饰）天赋异禀，将来必成大器。随着年龄增长，露禅渐渐展现异于常人的能力——对于种种拳脚招式，过目不忘，尤其是头顶肉角一旦被触动，更是力大无穷，无人能敌。高人指出，如能善用此天赋，他将成为绝顶高手，但若放任其颜色由红转黑，必有性命之虞。露禅一路颠沛流离来到陈家沟——太极拳的发源地，希望学拳保命。孰料陈家拳不传外人，所幸有神秘老人（梁家辉 饰）总在关键时刻暗中指点，露禅进步神速，令村民刮目相看。一向平静的山村，因为朝廷修筑铁道面临灭村危机。在陈家沟成长，从英国学成归国的直隶铁道总监造方子敬（彭于晏 饰），为了自己的前途，不惜牺牲乡亲的利益。玉娘（杨颖 饰）与子敬青梅竹马，面对爱人背叛，伤心欲绝，决定不惜性命保护家园。子敬率领机械怪兽“特洛伊”直捣村口，威胁村民限期搬离，否则夷为平地。露禅在神秘老人的指点下，与玉娘并肩作战，一举摧毁特洛伊，打退清兵，拯救全村。陷入疯狂的方子敬，誓言以更强大的火力报复，而玉娘也做出了一个重大决定……",
+      "popularity": 2.5726,
+      "poster_path": "/wVzxogPGPLEN1teHm1KTopcYstq.jpg",
+      "release_date": "2012-09-27",
+      "title": "太极1：从零开始",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 132
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lsnEjpculGQAj4qtMmtNXuzaUBL.jpg",
+      "genre_ids": [
+        16,
+        28,
+        35
+      ],
+      "id": 474659,
+      "original_language": "ja",
+      "original_title": "ガールズ＆パンツァー 最終章 第1話",
+      "overview": "从赌上校园存亡的对战中撃败大学生选拔队后，大洗女子学园战车道部的成员们终于迎来了平稳的冬日。但随着三年生的毕业、学生会改选、新执行部开始运转等事情，平和的大洗女子学园亦逐渐沸腾起来。而为了可顺利通过AO入试升读大学，小桃作为队长带领大洗战车道部参与冬季大会「无限轨道杯」，却没料到面对首战对手‧BC自由学园便已迎来苦战！难道美穗等人和小桃的未来到此为止了吗？胜利将降临哪一方？",
+      "popularity": 3.7818,
+      "poster_path": "/csHllAvgIK0rSL1QL1NxFgHoQ8d.jpg",
+      "release_date": "2017-12-09",
+      "title": "少女与战车 最终章 ～第1话～",
+      "video": false,
+      "vote_average": 6.7,
+      "vote_count": 29
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4nAzdcTANBPucFCoWO3eCmKuGEq.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 549610,
+      "original_language": "it",
+      "original_title": "Corti circuiti erotici Vol.1",
+      "overview": "vol.1 偷窥（VOYEUR 1999）：  一对年轻夫妇住进了一家酒店。他们开始引诱女服务员，而前台服务员则通过闭路电视观看酒店各个房间里发生的每一次性爱。只有当他勃起得厉害回到妻子身边时，我们才知道他为什么如此感兴趣。他和他非常乐意的伴侣释放出被压抑的性能量。  vol.2 瓢虫（La Coccinella）：  利维拉与丈夫结婚多年未育，只好求助人工受精。 捐精者是位中年画家。利维拉为了安全，希望见到画家并在其家里完成采精工作。 画家于是就在利维拉家的卫生间里开始艰苦的工作 一番舞弄，画家沮丧出来——没情欲，不灵啊  拿出一盘音乐带让利维拉热舞，画家自己在卫生间通过锁孔偷窥继续工作——不争气啊 。利维拉想出自己扮做色情热线女郎，再次刺激画家——还是不举  画家满脸羞愧地准备离去，利维拉在强烈的生育愿望下，只好拿出绝招了——各位都猜到绝招了吧：直接受精，呵呵——当然圆满完成了任务。  vol.3 幸福的犯罪（Benedetta trasgressione! ）：  讲述了一对离异的夫妇因偶然的机会再度相遇，再度点燃“干柴烈火”...裸女体内阴茎蓝影，是向两幕影史经典致敬：《2001太空漫游》的工具飞跃、《深喉》的火箭隐喻。",
+      "popularity": 3.6097,
+      "poster_path": "/9qFo6G8JnsUptrFPmzbJ9nuWc6i.jpg",
+      "release_date": "1998-10-10",
+      "title": "丁度·巴拉斯精选短篇集1",
+      "video": true,
+      "vote_average": 5.0,
+      "vote_count": 5
+    }
+  ]
+}

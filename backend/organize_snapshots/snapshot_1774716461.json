@@ -1,0 +1,43 @@
+{
+    "id": 1774716461,
+    "time": "Sun Mar 29 00:47:41 2026",
+    "label": "organize",
+    "summary": "整理 7 个文件 → 真探02、真探05、真探08 等7个文件夹",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季02.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探02\\【更多美剧请去www.dy131.com】真探第一季02.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季03.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探03\\【更多美剧请去www.dy131.com】真探第一季03.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季04.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探04\\【更多美剧请去www.dy131.com】真探第一季04.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季05.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探05\\【更多美剧请去www.dy131.com】真探第一季05.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季06.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探06\\【更多美剧请去www.dy131.com】真探第一季06.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季07.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探07\\【更多美剧请去www.dy131.com】真探第一季07.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\【更多美剧请去www.dy131.com】真探第一季08.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\真探S1\\真探08\\【更多美剧请去www.dy131.com】真探第一季08.mp4",
+            "is_dir": false
+        }
+    ]
+}

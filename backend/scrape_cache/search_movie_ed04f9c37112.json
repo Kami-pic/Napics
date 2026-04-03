@@ -1,0 +1,174 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/5fo05TlTNdKtPDYQYccVuTGrGvD.jpg",
+      "genre_ids": [
+        10402
+      ],
+      "id": 84144,
+      "original_language": "en",
+      "original_title": "Audioslave: Audioslave",
+      "overview": "",
+      "popularity": 0.4731,
+      "poster_path": "/vFSjTWTkoaG20Wq0Un5dztCkTzR.jpg",
+      "release_date": "2003-09-15",
+      "title": "Audioslave: Audioslave",
+      "video": true,
+      "vote_average": 9.5,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6MeeqHlQl4fNvPkwveLqTo22Crl.jpg",
+      "genre_ids": [
+        10402
+      ],
+      "id": 765281,
+      "original_language": "en",
+      "original_title": "Audioslave - Live at Rock am Ring",
+      "overview": "",
+      "popularity": 0.2883,
+      "poster_path": "/qBQHoAy5IbBI5jUyUuWYhfchC5u.jpg",
+      "release_date": "2003-06-07",
+      "title": "Audioslave - Live at Rock am Ring",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 197173,
+      "original_language": "en",
+      "original_title": "Audioscopiks",
+      "overview": "",
+      "popularity": 0.1959,
+      "poster_path": "/e3jGE8aVKHspxiBdLISrECIsKl0.jpg",
+      "release_date": "1935-12-26",
+      "title": "Audioscopiks",
+      "video": false,
+      "vote_average": 5.3,
+      "vote_count": 12
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ghRWREJBhKlmaKfhhQsTTZPGZUE.jpg",
+      "genre_ids": [
+        10402
+      ],
+      "id": 55417,
+      "original_language": "en",
+      "original_title": "Audioslave - Live in Cuba",
+      "overview": "",
+      "popularity": 0.1756,
+      "poster_path": "/oIlUpw0z8m1lq7NATWOm5RsWUAy.jpg",
+      "release_date": "2005-10-11",
+      "title": "Audioslave - Live in Cuba",
+      "video": true,
+      "vote_average": 7.6,
+      "vote_count": 9
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 254415,
+      "original_language": "en",
+      "original_title": "The New Audioscopiks",
+      "overview": "",
+      "popularity": 0.0891,
+      "poster_path": "/6vDsZ9ZqMV15GBB7RTKGTjwCR2v.jpg",
+      "release_date": "1938-01-16",
+      "title": "The New Audioscopiks",
+      "video": false,
+      "vote_average": 6.5,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        10402
+      ],
+      "id": 1529335,
+      "original_language": "en",
+      "original_title": "Audioslave: Live at Montreux Jazz Festival",
+      "overview": "",
+      "popularity": 0.1112,
+      "poster_path": "/9mW70miUwjWvVHuDENRlHJIPmJC.jpg",
+      "release_date": "2005-07-05",
+      "title": "Audioslave: Live at Montreux Jazz Festival",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1181416,
+      "original_language": "pt",
+      "original_title": "Bizarros Áudios",
+      "overview": "",
+      "popularity": 0.0168,
+      "poster_path": null,
+      "release_date": "2023-09-07",
+      "title": "Bizarros Áudios",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/s4QdMIU24EPuauRuj9Y7cfbZsHu.jpg",
+      "genre_ids": [],
+      "id": 1195760,
+      "original_language": "en",
+      "original_title": "Dolby Atmos HD Demo:  Audiosphere",
+      "overview": "",
+      "popularity": 0.0143,
+      "poster_path": "/oneb7uyWPfZ0J9sDG0Zb5QfXvh5.jpg",
+      "release_date": "",
+      "title": "Dolby Atmos HD Demo:  Audiosphere",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1440957,
+      "original_language": "fr",
+      "original_title": "Audiospection",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "",
+      "title": "Audiospection",
+      "video": true,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1578588,
+      "original_language": "es",
+      "original_title": "Los Audios de Abril",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "2025-11-12",
+      "title": "Los Audios de Abril",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

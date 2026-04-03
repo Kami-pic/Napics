@@ -1,0 +1,35 @@
+{
+  "tmdb_id": 461956,
+  "media_type": "movie",
+  "title": "48",
+  "original_title": "48",
+  "english_title": "48",
+  "year": "2017",
+  "poster_url": "https://image.tmdb.org/t/p/w500/luJj8nhIp94eiOxQLBbysi9PiWJ.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 1.0,
+  "genres": [
+    "剧情",
+    "喜剧"
+  ],
+  "director": "Vladimir Mitrevski",
+  "cast": [
+    "Dimitrija Doksevski",
+    "Сара Климоска",
+    "Goran Stojanovski"
+  ],
+  "runtime": 19,
+  "imdb_id": "tt7008332",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Macedonia"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

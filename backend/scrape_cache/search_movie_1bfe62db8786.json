@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/gtQaq8HNSJByLXqs8vwDHabnP4p.jpg",
+      "genre_ids": [
+        16,
+        28,
+        14,
+        53
+      ],
+      "id": 1490213,
+      "original_language": "ja",
+      "original_title": "鬼滅の刃 遊郭決戦編",
+      "overview": "在《刀匠的里篇》的放送之前，决定在周六的高级版中放送《游郭篇》的特别编辑版！  炭治郎们与音柱·宇髓天元相遇，以游郭为舞台描绘新任务的“游郭篇”，与“游郭潜入篇”“游郭决战篇”连续两周播出。",
+      "popularity": 2.8926,
+      "poster_path": "/i9f306nVIMIgdkMiisy2psdyDpb.jpg",
+      "release_date": "2023-03-01",
+      "title": "鬼灭之刃：游郭决战篇",
+      "video": false,
+      "vote_average": 9.2,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/wDIovch81JP7v6xHPeyYl7HArgB.jpg",
+      "genre_ids": [
+        16,
+        28,
+        14,
+        53
+      ],
+      "id": 1519421,
+      "original_language": "ja",
+      "original_title": "鬼滅の刃 遊郭潜入編",
+      "overview": "在无限列车事件后四个月，执行完任务的灶门炭治郎与祢豆子回到蝴蝶屋，偶遇企图强行带走神崎葵的音柱·宇髄天元。天元在炭治郎请求下放走葵，随后答应炭治郎、我妻善逸与嘴平伊之助的要求，让三人代替葵潜入吉原游郭，分头找出因潜入调查恶鬼的行动而失踪不明的妻子雏鹤、牧绪和须磨。",
+      "popularity": 1.7732,
+      "poster_path": "/vKn3aMdI5vyHA9GgTBgzOmErLsV.jpg",
+      "release_date": "2025-05-23",
+      "title": "鬼灭之刃 游郭潜入篇",
+      "video": false,
+      "vote_average": 10.0,
+      "vote_count": 2
+    }
+  ]
+}

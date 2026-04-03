@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/eIzZbii038RzFgKMHIJZEekONfa.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 207484,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Outlander: Blood of My Blood",
+      "overview": "该剧为《古战场传奇》衍生前传剧集，围绕杰米的父母布莱恩·弗雷泽与艾伦·麦肯齐，以及克莱尔的父母亨利·比肖普与朱莉娅·莫里斯顿的爱情故事展开。从第一次世界大战的英格兰到18世纪的苏格兰高地，追溯这两对命运交织的恋人的相识、相知与情感抉择。他们的故事不仅揭示了主剧中主角命运的起点，也深刻展现了爱与信念在动荡时代中的力量。",
+      "popularity": 12.1032,
+      "poster_path": "/z5iW51VQe9GCGhMMeKdmQL3jgCg.jpg",
+      "first_air_date": "2025-08-08",
+      "name": "古战场传奇：吾血之亲",
+      "vote_average": 8.5,
+      "vote_count": 77
+    }
+  ]
+}

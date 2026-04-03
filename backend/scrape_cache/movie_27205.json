@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 27205,
+  "media_type": "movie",
+  "title": "盗梦空间",
+  "original_title": "Inception",
+  "english_title": "Inception",
+  "year": "2010",
+  "poster_url": "https://image.tmdb.org/t/p/w500/89W962aAnPS3N3BdKgy2BvUhnCh.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
+  "overview": "道姆·柯布与同事阿瑟和纳什在一次针对日本能源大亨齐藤（渡边谦 饰）的盗梦行动中失败，反被齐藤利用。齐藤威逼利诱因遭通缉而流亡海外的柯布帮他拆分他竞争对手的公司，采取极端措施在其唯一继承人罗伯特·费希尔的深层潜意识中种下放弃家族公司、自立门户的想法。为了重返美国，柯布偷偷求助于岳父迈尔斯，吸收了年轻的梦境设计师艾里阿德妮、梦境演员艾姆斯和药剂师约瑟夫加入行动。在一层层递进的梦境中，柯布不仅要对付费希尔潜意识的本能反抗，还必须直面已逝妻子梅尔的处处破坏，实际情况远比预想危险得多……",
+  "rating": 8.4,
+  "genres": [
+    "动作",
+    "科幻",
+    "冒险"
+  ],
+  "director": "克里斯托弗·诺兰",
+  "cast": [
+    "莱昂纳多·迪卡普里奥",
+    "约瑟夫·高登-莱维特",
+    "渡边谦",
+    "汤姆·哈迪",
+    "艾利奥特·佩吉",
+    "迪利普·劳"
+  ],
+  "runtime": 148,
+  "imdb_id": "tt1375666",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

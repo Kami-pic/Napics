@@ -1,0 +1,34 @@
+{
+  "tmdb_id": 467214,
+  "media_type": "movie",
+  "title": "The Dreamers",
+  "original_title": "The Dreamers",
+  "english_title": "The Dreamers",
+  "year": "1985",
+  "poster_url": "https://image.tmdb.org/t/p/w500/icREGGzlK4irhE4uGbBXlimbfv7.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 5.0,
+  "genres": [
+    "纪录",
+    "剧情"
+  ],
+  "director": "奥逊·威尔斯",
+  "cast": [
+    "奥逊·威尔斯",
+    "奥雅·科达尔"
+  ],
+  "runtime": 23,
+  "imdb_id": "tt1934355",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

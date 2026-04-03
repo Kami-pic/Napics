@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/z2RumCOIZ6HO3oMvfINzZlFnPAw.jpg",
+      "genre_ids": [
+        10765,
+        16,
+        18
+      ],
+      "id": 890,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "新世紀エヴァンゲリオン",
+      "overview": "突袭世界的大灾难“第二次冲击”后，世界在废墟之上重建。14 岁的少年碇真嗣被父亲碇元渡叫到第 3 新东京市。本以为能见到父亲迎接的他，却见到名为“ 使徒”的巨大生物与军队交火。危急之下，特务机关 NERV 的葛成美里将真嗣救下，并将其带往碇元渡所统领的 NERV 总部。但迎接真嗣的，却是是父亲冷酷地命令：驾驶称为“EVA”的巨大人型机器人与使徒战斗。本已表示拒绝的真嗣，看到重伤的替补驾驶员绫波丽后，决定遵从父亲的命令。就这样，从未受过作战训练的真嗣，准备驾驶 EVA 初号机迎战使徒。 不断袭来的使徒，身份不明的绫波丽，从德国来的驾驶员惣流·明日香·兰格蕾，14 岁的少年要面对远超自己能力的挑战。而碇元渡不动声色地观察一切，一个称为“人类补完计划”的神秘计划正在按照他的计划实现。",
+      "popularity": 29.8371,
+      "poster_path": "/cDxbgU4k5e9Pup9y5ydfTjQmv8y.jpg",
+      "first_air_date": "1995-10-04",
+      "name": "新世纪福音战士",
+      "vote_average": 8.564,
+      "vote_count": 2022
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2yKVIQ9xVKkvsmF4qYjXZPXntAX.jpg",
+      "genre_ids": [
+        16
+      ],
+      "id": 99639,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ぷちえゔぁ",
+      "overview": "故事发生在一所名叫第3新东京世立NERV学园中，校长是严肃又寡言的碇原度（立木文彦 配音）。作为校长的儿子，碇真嗣（绪方惠美 配音）感到压力很大。于此同时，来自外国的红发转学生明日香（宫村优子 配音），分裂成三个、以姐妹的形式出场的凌波丽（林原惠美 配音）都给碇真嗣的学校生活带来了翻天覆地的变化。此外，在原作中高大帅气的初号机，也将以娇小可爱的形象，作为学院的一份子出现在动画中。 动画以《新世界福音战士》中的角色为原型，一改原作沉重严肃的气氛，描述了轻松愉快的校园生活。制作方首次采用了3D的Q版造型，配以实景背景和2D拼接，造就了多元化的绘画风格。",
+      "popularity": 5.8593,
+      "poster_path": "/eK8hiOYwnQTtN9Tw0s2DIjmiR6g.jpg",
+      "first_air_date": "2007-03-20",
+      "name": "EVA爆笑学园",
+      "vote_average": 5.0,
+      "vote_count": 11
+    }
+  ]
+}

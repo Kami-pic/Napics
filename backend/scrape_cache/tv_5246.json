@@ -1,0 +1,30 @@
+{
+  "tmdb_id": 5246,
+  "media_type": "tv",
+  "title": "Godzilla",
+  "original_title": "Godzilla",
+  "english_title": "Godzilla",
+  "year": "1978",
+  "poster_url": "https://image.tmdb.org/t/p/w500/mnd1AQqxFwhnVYbw0toQ2D8PCH1.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/xak4LyR9fFsuDk3fWMube0tDM7x.jpg",
+  "overview": "",
+  "rating": 7.9,
+  "genres": [
+    "家庭",
+    "动画",
+    "动作冒险"
+  ],
+  "director": "",
+  "cast": [],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 2,
+  "status": "Ended",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,150 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/6aeS8BAGkXDNosuVpUv1KsqQSpd.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 993107,
+      "original_language": "fr",
+      "original_title": "Christmas Carole",
+      "overview": "1966年阿涅斯·瓦尔达项目中的35毫米测试场景。发行商和制片方对此并不满意。三个朋友试图通过为咖啡馆装饰圣诞橱窗来挣钱。这是一个大致改编自狄更斯作品的道德寓言故事。",
+      "popularity": 0.6865,
+      "poster_path": "/lMYbKCg6sM5NxMMcLjY5N5iy6e0.jpg",
+      "release_date": "1966-01-01",
+      "title": "圣诞卡罗尔",
+      "video": false,
+      "vote_average": 6.7,
+      "vote_count": 3
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/o0ghC4XMIMdbRBXIqSvnPrxwj3W.jpg",
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "id": 258480,
+      "original_language": "en",
+      "original_title": "Carol",
+      "overview": "故事发生在1950年代的纽约，两位背景迥异的女性陷入了爱恋的漩涡。二十多岁的年轻女孩特芮丝·贝利维特是曼哈顿百货公司的售货员，渴望着更充实的人生，这时她遇见了卡萝尔——一位被困在无爱婚姻中的迷人女性。两人间即刻迸发的吸引力使初遇时的纯真渐褪，情感纽带日益加深。当卡萝尔挣脱婚姻束缚时，她与特芮丝的亲密关系以及和挚友艾比的密切往来被丈夫察觉，他试图以母亲监护权相要挟。随着卡萝尔离开舒适家园与特芮丝共赴旅途，一场内在的自我发现之旅与她崭新的生命空间悄然重合。[TWC]",
+      "popularity": 6.8289,
+      "poster_path": "/arBVphxQGlBapqAtZJVlNyzp5rz.jpg",
+      "release_date": "2015-11-20",
+      "title": "卡罗尔",
+      "video": false,
+      "vote_average": 7.498,
+      "vote_count": 3929
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/sx1BDjVhGKuq6QvDp2i0OVYJxOU.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 414202,
+      "original_language": "fr",
+      "original_title": "Carole Matthieu",
+      "overview": "伊莎贝尔·阿佳妮将重返荧屏，出演由路易-朱利安·珀蒂导演的电视电影《卡罗尔·马蒂厄》。这是阿佳妮与Arte电视台继2008年《裙角飞扬的日子》之后的又一次合作。  阿佳妮饰演的角色生活在一个职员饱受性骚扰之苦的社会环境中，本片也将致力于推动类似问题的解决。本片的制片公司是Elemiah films。",
+      "popularity": 0.3918,
+      "poster_path": "/yCJcDCerV1svBmQB4to1D8YH5Bm.jpg",
+      "release_date": "2016-08-25",
+      "title": "卡罗尔·马蒂厄",
+      "video": false,
+      "vote_average": 5.8,
+      "vote_count": 14
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 351160,
+      "original_language": "es",
+      "original_title": "Emmanuelle y Carol",
+      "overview": "",
+      "popularity": 0.409,
+      "poster_path": "/81WR3RkQhQpbDJRV0OxqWpoHjZw.jpg",
+      "release_date": "1978-10-18",
+      "title": "艾曼妞和卡罗尔",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 6
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/keYgbYrPi8hD6Qx5gWUsvm9maX5.jpg",
+      "genre_ids": [
+        28,
+        14,
+        16
+      ],
+      "id": 166787,
+      "original_language": "ja",
+      "original_title": "Carol",
+      "overview": "在1991的英国伦敦，一位平凡少女「卡罗尔」的身边开始发生了奇怪的事情，包括英国的象徵大笨钟在内，许多的声音都消失了。某天半夜，她跑进学校播放自己喜爱的黑胶唱片，但却突然进入了另一个异世界，在那里她遇见了两名男子，三人展开了一段冒险故事……",
+      "popularity": 1.8802,
+      "poster_path": "/vfi2JWeZ0MqqlquZWcoiwZmxQ6J.jpg",
+      "release_date": "1990-03-21",
+      "title": "卡罗尔",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jJDzYHKegaAXpNfwlE4XhxlFD1Z.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 580073,
+      "original_language": "fr",
+      "original_title": "Delphine et Carole, insoumuses",
+      "overview": "女演员德尔芬·塞里格和录像艺术家卡罗尔·罗索普洛斯的会面将我们带到20世纪70年代女权主义的中心。她们手中拿着摄像机，用傲慢、不妥协和幽默进行激进的斗争。",
+      "popularity": 0.6379,
+      "poster_path": "/rtT2UlBVXcE8RzPwu4YmJVCs3mb.jpg",
+      "release_date": "2020-01-14",
+      "title": "德菲因与卡罗尔：反叛缪斯",
+      "video": false,
+      "vote_average": 6.5,
+      "vote_count": 14
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/rhFLOAKpn4FtH2t6FwhBLrQ8b0H.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 110703,
+      "original_language": "en",
+      "original_title": "Cool It, Carol!",
+      "overview": "一对天真的夫妇为了在伦敦成人娱乐文化中取得成功而离开了他们的小镇。",
+      "popularity": 0.4893,
+      "poster_path": "/AtA3Fwck26BpX28YYOZyJlolkAU.jpg",
+      "release_date": "1970-12-01",
+      "title": "卡罗尔！",
+      "video": false,
+      "vote_average": 5.4,
+      "vote_count": 17
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1652407,
+      "original_language": "zh",
+      "original_title": "Dialogue entre la cheffe opératrice Caroline Champetier et Wouter Hessels à la Cinémathèque royale de Belgique",
+      "overview": "这是一场在比利时皇家电影资料馆举办的公开对谈活动实录，不是剧情片，也不是安东尼奥尼的作品。  内容围绕：  卡罗琳・尚珀蒂耶作为女摄影师的职业生涯  她与多位重要导演的合作经验  电影摄影的光影、构图、现场工作方式  女性在电影摄影行业的位置与经历  整场对谈以专业、沉静、电影创作本体为核心，是面向电影从业者与影迷的深度交流。",
+      "popularity": 0.0431,
+      "poster_path": null,
+      "release_date": "",
+      "title": "比利时皇家电影资料馆：女摄影师卡罗琳・尚珀蒂耶与沃特・赫塞尔斯对谈",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 75077,
+  "media_type": "movie",
+  "title": "墓地惊魂",
+  "original_title": "Necropolis",
+  "english_title": "Necropolis",
+  "year": "1986",
+  "poster_url": "https://image.tmdb.org/t/p/w500/sVY1TUU0uktvkRHLlTpiTDeit8.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/c0sqIBlZxagZsjL7iudYpP261lB.jpg",
+  "overview": "",
+  "rating": 3.4,
+  "genres": [
+    "恐怖"
+  ],
+  "director": "Bruce Hickey",
+  "cast": [
+    "LeeAnne Baker",
+    "Jacquie Fitz",
+    "Michael Conte",
+    "William K. Reed",
+    "Paul Ruben",
+    "Andrew Bausili"
+  ],
+  "runtime": 77,
+  "imdb_id": "tt0091617",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

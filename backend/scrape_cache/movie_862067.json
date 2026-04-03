@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 862067,
+  "media_type": "movie",
+  "title": "26",
+  "original_title": "26",
+  "english_title": "26",
+  "year": "2021",
+  "poster_url": "https://image.tmdb.org/t/p/w500/9gscXVxAn9OO0xamtSQShAz7G6F.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/hu5KpzZYVzad0qU2UsKuXVfoOn5.jpg",
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "剧情"
+  ],
+  "director": "Ana Lambarri",
+  "cast": [
+    "Alba Galocha",
+    "Aia Kruse",
+    "Marta Romero",
+    "Ángela Cervantes",
+    "Eduardo Rosa",
+    "Violeta Orgaz"
+  ],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Spain"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

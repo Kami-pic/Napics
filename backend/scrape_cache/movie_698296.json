@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 698296,
+  "media_type": "movie",
+  "title": "The Art of 'Spirited Away'",
+  "original_title": "The Art of 'Spirited Away'",
+  "english_title": "The Art of 'Spirited Away'",
+  "year": "2003",
+  "poster_url": "https://image.tmdb.org/t/p/w500/x1iaVnI4mTaETwAKTLyIAKFwQSJ.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 8.0,
+  "genres": [
+    "纪录",
+    "动画"
+  ],
+  "director": "Brent Zacky",
+  "cast": [
+    "Steve Alpert",
+    "Jerry Beck",
+    "Dave Bossert",
+    "Hendel Butoy",
+    "戴维·蔡斯",
+    "Pam Coats"
+  ],
+  "runtime": 15,
+  "imdb_id": "tt0371545",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Japan"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

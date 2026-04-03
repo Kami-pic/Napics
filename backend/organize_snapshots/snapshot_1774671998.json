@@ -1,0 +1,57 @@
+{
+    "id": 1774671998,
+    "time": "Sat Mar 28 12:26:38 2026",
+    "label": "",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者 Watchmen",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E01.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\夏日已至，冰块将尽 It's Summer and We're Running Out of Ice S01E01 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E02.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\科曼奇人的娴熟马术 Martial Feats of Comanche Horsemanship S01E02 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E03.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\她被太空垃圾杀死 She Was Killed by Space Junk S01E03 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E04.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\如果你不喜欢我的故事，自己去写 If You Don't Like My Story, Write Your Own S01E04 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E05.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\不再惧怕闪电 Little Fear of Lightning S01E05 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E06.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\这无与伦比的生命 This Extraordinary Being S01E06 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E07.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\近乎虔诚的敬畏 An Almost Religious Awe S01E07 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E08.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\神遇阿巴尔 A God Walks into Abar S01E08 720p.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\守望者.Watchmen.S01E09.END.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\守望者S1\\看它们如何飞行 See How They Fly S01E09 720p.mp4",
+            "is_dir": false
+        }
+    ]
+}

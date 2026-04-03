@@ -1,0 +1,96 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/r0Kj74YA82KCSLNUsx2CMT3soyX.jpg",
+      "genre_ids": [
+        28,
+        12,
+        80
+      ],
+      "id": 382996,
+      "original_language": "en",
+      "original_title": "Death in the Desert",
+      "overview": "戴维斯和她的女友一起来到赌城拉斯维加斯淘金，她们当掉了身上的值钱物价到赌场赌，赌输了之后准备在赌城谋生，她们做了夜场的钢管舞女郎。偶然的机会戴维斯被赌城大老板雷看上，随后她不再跳舞成了他的情人，到处的跟他寻欢作乐。雷有个矿，专门用于为他开采白银，运送到外面卖钱。一次偶然机会戴维斯遇到了年轻的矿工，她和他有了私情。她常常私下约会矿工。雷后来失去了遗产，庄园也被卖掉，一天早晨被发现已经在家中死亡了。戴维斯拿到了雷留给他的财产，和矿工在一起。故事是一个三角恋的爱情，但是却也物欲世界的写照，最后雷的死亡也是一种解脱，他撞见了女友的奸情，同时也遭遇了财产的化为乌有，直到最后暴毙在家中。大家觉得是戴维斯害了雷，但对于雷始终解脱。",
+      "popularity": 0.6512,
+      "poster_path": "/5C4dOChU6Ihk1dZDUJmPqcMvPfz.jpg",
+      "release_date": "2015-10-09",
+      "title": "死亡沙漠",
+      "video": false,
+      "vote_average": 3.4,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1317352,
+      "original_language": "en",
+      "original_title": "Death in the Desert",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "",
+      "title": "Death in the Desert",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/rYbNRHWIkYXU0oQPjEHFZ2rsRwV.jpg",
+      "genre_ids": [
+        99,
+        80
+      ],
+      "id": 1502944,
+      "original_language": "en",
+      "original_title": "Death in the Desert: The Nurse Helen Mystery",
+      "overview": "",
+      "popularity": 0.0714,
+      "poster_path": "/stBsfyXLyQHuMzgK0FCKd9UfUpB.jpg",
+      "release_date": "2025-06-23",
+      "title": "Death in the Desert: The Nurse Helen Mystery",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8UKPQj9bbnfTS0PUCjDVHzTzNnu.jpg",
+      "genre_ids": [
+        10749,
+        53
+      ],
+      "id": 374909,
+      "original_language": "ko",
+      "original_title": "짓2 : 붉은 낙타",
+      "overview": "男主角结婚前一天，前女友来拜访他，两人来到了旅馆，彼此痴迷对方发生了关系，后男主角离奇死亡在洗手间，女主角打发走了来旅馆找男主角的未婚妻，清理好旅馆了女主角离开······后来，女主角被爱慕者差点在浴室里被勒死······",
+      "popularity": 0.7782,
+      "poster_path": "/tZb4Q6ZZ7wAPoRof1CYXO8dA13o.jpg",
+      "release_date": "2015-08-06",
+      "title": "勾当2：红色骆驼",
+      "video": false,
+      "vote_average": 4.0,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/h8Roy9zjHGyeU0KFTgeoNKXTzTX.jpg",
+      "genre_ids": [
+        28
+      ],
+      "id": 200619,
+      "original_language": "it",
+      "original_title": "Strategia per una missione di morte",
+      "overview": "",
+      "popularity": 0.3484,
+      "poster_path": "/js3kYEWe4Yb4pxIguNamC3zafWr.jpg",
+      "release_date": "1979-06-26",
+      "title": "死亡解救行动",
+      "video": false,
+      "vote_average": 2.6,
+      "vote_count": 5
+    }
+  ]
+}

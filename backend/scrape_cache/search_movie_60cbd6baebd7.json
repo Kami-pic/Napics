@@ -1,0 +1,202 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/tSPT36ZKlP2WVHJLM4cQPLSzv3b.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 238,
+      "original_language": "en",
+      "original_title": "The Godfather",
+      "overview": "40年代的美国，“教父”维托·唐·柯里昂是黑手党柯里昂家族的首领，带领家族从事非法的勾当，但同时他也是许多弱小平民的保护神，深得人们爱戴。因为拒绝了毒枭索洛索的毒品交易要求，柯里昂家族和纽约其他几个黑手党家族的矛盾激化、圣诞前夕，索洛索劫持了“教父”的参谋汤姆，并派人暗杀“教父”；因为内奸的出卖，“教父”的大儿子逊尼被仇家杀害；小儿子麦克也被卷了进来，失去爱妻。黑手党家族之间的矛盾越来越白热化。年老的“教父”面对丧子之痛怎样统领全局？黑手党之间的仇杀如何落幕？谁是家族的内奸？谁又能够成为新一代的“教父”？血雨腥风和温情脉脉，在这部里程碑式的黑帮史诗巨片里真实上演。",
+      "popularity": 36.8172,
+      "poster_path": "/y03tzUKvkRCYwJ5NWys4W4bnS9m.jpg",
+      "release_date": "1972-03-14",
+      "title": "教父",
+      "video": false,
+      "vote_average": 8.686,
+      "vote_count": 22652
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kGzFbGhp99zva6oZODW5atUtnqi.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 240,
+      "original_language": "en",
+      "original_title": "The Godfather Part II",
+      "overview": "作为《教父》的续篇，影片延续了科莱昂家族两代权力交替的史诗。科波拉在第二部分中讲述了两条故事线：由罗伯特·德尼罗以非凡演技演绎的年轻教父维托的根源与崛起，以及迈克尔（阿尔·帕西诺饰）作为新任教父的上位之路。",
+      "popularity": 23.0083,
+      "poster_path": "/4J8jUmjgKPggRPJqqdkjWCj2k0D.jpg",
+      "release_date": "1974-12-20",
+      "title": "教父2",
+      "video": false,
+      "vote_average": 8.572,
+      "vote_count": 13717
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/uDRJEqbeNm1Rsvd6qQayhXcit2E.jpg",
+      "genre_ids": [
+        28,
+        27,
+        878
+      ],
+      "id": 491113,
+      "original_language": "en",
+      "original_title": "The God of Death",
+      "overview": "",
+      "popularity": 0.392,
+      "poster_path": "/9Ceuk5767gQLEsiMESrsqCsjYoZ.jpg",
+      "release_date": "2017-12-06",
+      "title": "The God of Death",
+      "video": true,
+      "vote_average": 3.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/gvLG3Fnznkxl4SmYfcK8gUuqxM8.jpg",
+      "genre_ids": [
+        28,
+        12,
+        878
+      ],
+      "id": 823464,
+      "original_language": "en",
+      "original_title": "Godzilla x Kong: The New Empire",
+      "overview": "继上一次的怪兽高燃对战之后，金刚和哥斯拉将再度联手对抗一个潜伏在世界中的巨大威胁，并逐步探索这些巨兽们的起源以及骷髅岛等地的奥秘。同时，上古之战的面纱也将会被揭晓，而正是那场战斗创造出了这些超凡的生物，并深刻影响了人类世界的命运。",
+      "popularity": 14.5685,
+      "poster_path": "/aN3JrkooSviHmiwFxjOSmuTZtga.jpg",
+      "release_date": "2024-03-27",
+      "title": "哥斯拉大战金刚2：帝国崛起",
+      "video": false,
+      "vote_average": 7.047,
+      "vote_count": 4563
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        27,
+        35,
+        18,
+        53
+      ],
+      "id": 530379,
+      "original_language": "en",
+      "original_title": "The God Inside My Ear",
+      "overview": "经历了奇特而突然的分手与男友后，Elizia发现阴谋，奇怪的声音和可怕的幻象的世界。",
+      "popularity": 0.1039,
+      "poster_path": "/jhsHDgKctCna8bcNi7wtClmwiBz.jpg",
+      "release_date": "2018-06-24",
+      "title": "The God Inside My Ear",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8zhviPFJx25k8PbUOUL5sLOy9XE.jpg",
+      "genre_ids": [
+        80,
+        18,
+        53
+      ],
+      "id": 242,
+      "original_language": "en",
+      "original_title": "The Godfather Part III",
+      "overview": "转眼间已经是 1979 年，第二代教父麦克·柯里昂到了垂暮之年，为了灵魂的救赎，麦克慢慢结束家族的黑道事业，转投正当生意。麦克的儿子托尼酷爱艺术，无意接手家族事业，迈克尔决定让大哥逊尼的私生子，火爆好色的文森继承家业，当第三代教父。麦克的爱女玛丽和文森相恋，遭到父亲的反对，父女渐渐疏远。为了使家族资产合法化，麦克通过在梵蒂冈教廷的关系网，准备投资“屹立”集团，却遭到敌人的暗中阻挠，教皇的去世也让事情更加扑朔迷离。麦克无奈之下，只能重新选择用暴力解决问题，他的亲人也被卷入了这场血雨腥风。",
+      "popularity": 10.5193,
+      "poster_path": "/p72l3ooMr3FWACrVxMJ1nXqWYr6.jpg",
+      "release_date": "1990-12-25",
+      "title": "教父3",
+      "video": false,
+      "vote_average": 7.418,
+      "vote_count": 6768
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/mzRJpkWPjXdXak0WCc8ZxVH4hug.jpg",
+      "genre_ids": [
+        878,
+        28
+      ],
+      "id": 373571,
+      "original_language": "en",
+      "original_title": "Godzilla: King of the Monsters",
+      "overview": "五年前的“旧金山事件”虽已平息，但是帝王组织对泰坦巨兽的研究从未停止。这一日，位于61号基地的巨兽摩斯拉破茧而出。艾玛·罗素博士利用手中的声波设备与暴走的摩斯拉建立联系，可是突然闯入的雇佣兵却将一切引向不可预测的方向。原来劫走艾玛的艾伦，试图借助声波设备唤醒正沉睡在冰川中的远古巨兽基多拉。另一方面，芹泽博士辗转找到马克 ，希望他能一同救回马克的前妻——艾玛博士。然而事态逐渐失控，在人类欲望的趋势下，巨兽相继苏醒，更大的灾难笼罩在地球上空……",
+      "popularity": 10.4333,
+      "poster_path": "/6w07oz0dyKYe3TLICneVnd9w0CQ.jpg",
+      "release_date": "2019-05-29",
+      "title": "哥斯拉2：怪兽之王",
+      "video": false,
+      "vote_average": 6.687,
+      "vote_count": 6628
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/b1L7qevxiVpkVFq4dmdQPGFPWH0.jpg",
+      "genre_ids": [
+        27,
+        80,
+        18,
+        14
+      ],
+      "id": 836225,
+      "original_language": "en",
+      "original_title": "The Exorcism of God",
+      "overview": "故事讲述彼得·威廉姆斯神父的他被一个他试图驱除的恶魔附身，最终犯下了最可怕的亵渎罪，18年后，他的罪的后果将再次困扰他，展开与内心邪恶最伟大的斗争。",
+      "popularity": 5.8842,
+      "poster_path": "/8JdFrfh4eaSP59w15LIps8tZ9In.jpg",
+      "release_date": "2022-03-11",
+      "title": "上帝的驱魔",
+      "video": false,
+      "vote_average": 7.094,
+      "vote_count": 1143
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kQV9sV0IbastbU5FYxuYwxfMawz.jpg",
+      "genre_ids": [
+        35,
+        28,
+        14
+      ],
+      "id": 594767,
+      "original_language": "en",
+      "original_title": "Shazam! Fury of the Gods",
+      "overview": "比利·巴特森和其他孩子们虽然获得了超凡的神力和成人的外表，但仍处在青春期的他们还在学习如何平衡内心与外在的不同。但是当阿特拉斯的女儿——复仇三女神来到地球，寻找很久以前被偷走的神力时，比利·巴特森和家人们将为了守护他们的超能力、生命以及整个世界的命运而展开一场激战。",
+      "popularity": 6.3772,
+      "poster_path": "/AipSNcJQmMDs9VsYufCcNbZmTSm.jpg",
+      "release_date": "2023-03-15",
+      "title": "雷霆沙赞！众神之怒",
+      "video": false,
+      "vote_average": 6.429,
+      "vote_count": 3579
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3gzI0UrLqIR9D40qshwduhGZCp3.jpg",
+      "genre_ids": [
+        28,
+        35
+      ],
+      "id": 8393,
+      "original_language": "en",
+      "original_title": "The Gods Must Be Crazy",
+      "overview": "　　广袤无垠的非洲大陆，现代文明与原始社会和谐共存。在离现代大都市六千公里的卡拉哈里沙漠腹地，生活着仍未受到外来文明影响的布须曼人。他们刀耕火种，狩猎农作，过着与世无争、敬畏自然的平静生活。某天，一支来自现代文明的可乐瓶打乱了他们一成不变的日子。最先发现瓶子的基（N!xau 饰）将其带回部落，族人惊叹可乐瓶子的完美构造和繁多的用途，认为这是上帝赐予他们的礼物。可是兴奋的心情很快为别样的情绪所取代，习惯了平等共有的族人开始想要将瓶子据为己有，矛盾悄然而生。基不愿看到族人发生争吵与殴斗，于是决定将可乐瓶还给上帝，只为恢复曾经平静快乐的生活……",
+      "popularity": 4.6561,
+      "poster_path": "/mEECufjJu7pr6xh4oJuA7pM0b1v.jpg",
+      "release_date": "1980-09-10",
+      "title": "上帝也疯狂",
+      "video": false,
+      "vote_average": 7.3,
+      "vote_count": 1292
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 244748,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "",
+      "popularity": 43.0102,
+      "poster_path": null,
+      "release_date": "1992-01-01",
+      "title": "Swan Song",
+      "video": false,
+      "vote_average": 6.8,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4iMURVQCxjyMH8Vr1Wd3GCsxE06.jpg",
+      "genre_ids": [
+        18,
+        878
+      ],
+      "id": 765245,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "在不久的将来，卡梅隆被诊断出患有绝症。他被告知有一个实验性的解决方案，可以通过他的努力，让他的妻子和儿子免受悲痛。",
+      "popularity": 2.6081,
+      "poster_path": "/m4FimqdBvhQS0w6lOxyGFTVwutb.jpg",
+      "release_date": "2021-12-17",
+      "title": "天鹅挽歌",
+      "video": false,
+      "vote_average": 7.125,
+      "vote_count": 583
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/sSinyqGb3sXrOeYWjjJM8RG1iPs.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 794602,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "一个小镇的养老院里有一个张扬的退休理发师帕特，他的一个客户临终前的愿望是让他为她设计终极发型。这是一个滑稽的万花筒般的情感之旅。",
+      "popularity": 1.2291,
+      "poster_path": "/tf63pGGx3qdCj11xqJ8Ae3scTb.jpg",
+      "release_date": "2021-08-06",
+      "title": "绝唱",
+      "video": false,
+      "vote_average": 6.9,
+      "vote_count": 64
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        28,
+        18,
+        10770
+      ],
+      "id": 238240,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "",
+      "popularity": 0.8827,
+      "poster_path": "/qYjH1krJkn9aG8ZDQ27m7gxCDK.jpg",
+      "release_date": "1980-02-08",
+      "title": "Swan Song",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        36
+      ],
+      "id": 1121236,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "聚焦于18世纪古典音乐作曲家彼得·柴可夫斯基的批判性失败、因其性取向而遭受的迫害以及神秘的死亡。",
+      "popularity": 0.5231,
+      "poster_path": null,
+      "release_date": "",
+      "title": "天鹅之歌",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16
+      ],
+      "id": 1520161,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "",
+      "popularity": 0.5434,
+      "poster_path": "/yDUvCDxaeFZcDq7Qjfgy4y7pZT3.jpg",
+      "release_date": "2014-04-03",
+      "title": "Swan Song",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 628745,
+      "original_language": "ja",
+      "original_title": "SWAN SONG",
+      "overview": "",
+      "popularity": 0.3972,
+      "poster_path": "/coJIc3xUignj7NS8Cj6bp6hyKbC.jpg",
+      "release_date": "2018-01-26",
+      "title": "SWAN SONG",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/s0dYbqrULsHtHTbXbY8U37EQoCD.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 1157092,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "",
+      "popularity": 0.5898,
+      "poster_path": "/5JUovIllVZ96UzXsvz7TRSkDR6f.jpg",
+      "release_date": "2023-09-22",
+      "title": "Swan Song",
+      "video": false,
+      "vote_average": 9.2,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 1524316,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "",
+      "popularity": 0.1986,
+      "poster_path": null,
+      "release_date": "1938-01-01",
+      "title": "Swan Song",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 386926,
+      "original_language": "en",
+      "original_title": "Swan Song",
+      "overview": "",
+      "popularity": 0.1778,
+      "poster_path": "/95brUXBCwr4tbMycjtR56XwpTMy.jpg",
+      "release_date": "2009-01-01",
+      "title": "Swan Song",
+      "video": false,
+      "vote_average": 2.0,
+      "vote_count": 1
+    }
+  ]
+}

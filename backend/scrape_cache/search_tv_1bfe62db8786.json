@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/u42yXAgr3uDcywhyImFbgwUXwAz.jpg",
+      "genre_ids": [
+        16
+      ],
+      "id": 317316,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "鬼滅の刃 遊郭編",
+      "overview": "鬼灭之刃游郭篇故事剧情将从《鬼灭之刃无限列车篇》失去炎柱后做为开端，以日本花街为舞台，而最让人期待的音柱、堕姬即将在鬼灭第二季登场！",
+      "popularity": 1.2559,
+      "poster_path": "/2M9xTr9Oh9WAdKRicyuhkGF1pVV.jpg",
+      "first_air_date": "",
+      "name": "鬼灭之刃：游郭篇",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3GQKYh6Trm8pxd2AypovoYQf4Ay.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "id": 85937,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "鬼滅の刃",
+      "overview": "时值日本大正时期。\n\n传说太阳下山后，有恶鬼出没吃人。亦有猎鬼人斩杀恶鬼、保护人们。\n\n卖炭少年炭治郎，他那平凡而幸福的日常生活，在家人遭到恶鬼袭击的那一天发生了剧变。母亲与四个弟弟妹妹惨遭杀害，而与他一起生还的妹妹祢豆子亦异变成凶暴的鬼。\n\n在猎鬼人的指引下，立志成为猎鬼人的炭治郎与变成鬼却尚存理智的祢豆子踏上了旅程。通过艰苦的剑术修行与赌命试炼，炭治郎成为了猎鬼人组织“鬼杀队”的一员。\n\n为了让妹妹祢豆子变回人类，为了讨伐杀害家人的恶鬼，为了斩断悲伤的连锁，少年与鬼的战斗不曾停歇。\n\n幸福被破坏之时，总是弥漫着鲜血的味道。纵然我身俱灭，定将恶鬼斩杀！血风剑戟冒险谭，开幕！",
+      "popularity": 21.6881,
+      "poster_path": "/tZ0yGfG4EIox7bYJTxAtqUhoOmR.jpg",
+      "first_air_date": "2019-04-06",
+      "name": "鬼灭之刃",
+      "vote_average": 8.633,
+      "vote_count": 7118
+    }
+  ]
+}

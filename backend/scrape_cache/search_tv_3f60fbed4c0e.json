@@ -1,0 +1,79 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/kb4pLM7mZG6El7Wckz0bRmV1VTP.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 100755,
+      "origin_country": [
+        "HK"
+      ],
+      "original_language": "zh",
+      "original_name": "新金瓶梅",
+      "overview": "清河县是一个地处偏远的小县城，西门庆（单立文 饰）风流成性，贪婪狂妄，只要是他想要得到的东西，无论使用怎样的手段都要得逞。某日，西门庆看上了武大郎（林国印 饰）之妻潘金莲（杨思敏 饰），被潘金莲的美貌所吸引的西门庆联手王婆（曾亚君 饰）从中作梗，最终抱得美人归。之后，武大郎找西门庆算账，不仅被其打成重伤，并且最终命丧黄泉。狡猾的西门庆将杀人的罪名栽赃到了武大郎的弟弟武松（顾冠中 饰）头上，使得武松被打入了大牢发配边疆。而潘金莲早已对正直勇敢的武松芳心暗许，为了救心目中的大英雄，她不得不答应了西门庆各种荒淫无耻的要求，进入了西门府，加入了西门庆家众女子间明争暗斗的队伍之中。",
+      "popularity": 7.7072,
+      "poster_path": "/fV2Wd4Z9hBlmJ1tDEzU1rOGqfWk.jpg",
+      "first_air_date": "1996-03-08",
+      "name": "新金瓶梅",
+      "vote_average": 8.2,
+      "vote_count": 11
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/rhYtR3Umixo3zaNK9kfNkspuez7.jpg",
+      "genre_ids": [],
+      "id": 243887,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "千禧金瓶梅",
+      "overview": "1999年上映的香港拍的情色电影，导演叶天行，主演八两金、郭维达、王书麒、姜皓文、顾冠忠、大崎成美。改编自明朝兰陵笑笑生《金瓶梅》",
+      "popularity": 0.9943,
+      "poster_path": "/naTJV8HfAEPUOtRP3jw83a5ymVG.jpg",
+      "first_air_date": "1999-07-14",
+      "name": "千禧金瓶梅",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 285891,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "细说《金瓶梅》——吸奇侠",
+      "overview": "最后的吸吸里人，细料《金瓶梅》中散落在各处的精华片段。",
+      "popularity": 0.1365,
+      "poster_path": "/zlyBrjxo28c0AJBcn37mfmXk7tA.jpg",
+      "first_air_date": "2024-02-06",
+      "name": "细说《金瓶梅》——吸奇侠",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 305693,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "风流戏王",
+      "overview": "顺治年间，天下初定。朝代更迭之际，上演几多良臣奸佞、才子佳人的悲欢离合。江南才子李渔（焦恩俊 饰）醉心戏剧，其所编排的戏剧和调教的伶人，一时间在达官显贵的圈子里风头正劲，备受追捧。可因为一出《首阳山》，触痛了降清将领洪承畴（雷恪生 饰）的软肋，由此李渔遭到连番构陷，乃至撰写淫书《金瓶梅》以及摇动明朝士人思想的罪名也被按在他的头上。另一方面，为寻找新戏的主角，李渔偶然邂逅已经遁入空门的李香君（宁静 饰）。几经劝说，香君答应出演白娘子，二人之间的好感也慢慢加深。\n\n　　与此同时，远在京城的隆格格（戴娇倩 饰）也耳闻李渔大名，对这位才子产生了好感……",
+      "popularity": 0.0143,
+      "poster_path": "/tlfYvJQ8CQx9YPr0O3ojDBgFtTd.jpg",
+      "first_air_date": "2006-07-01",
+      "name": "风流戏王",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

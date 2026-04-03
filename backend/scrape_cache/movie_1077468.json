@@ -1,0 +1,35 @@
+{
+  "tmdb_id": 1077468,
+  "media_type": "movie",
+  "title": "Eighty-Six",
+  "original_title": "Eighty-Six",
+  "english_title": "Eighty-Six",
+  "year": "2012",
+  "poster_url": "https://image.tmdb.org/t/p/w500/9rDLXBj34UrwUrKC0GK754ceO9u.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 6.0,
+  "genres": [
+    "科幻",
+    "动画",
+    "冒险"
+  ],
+  "director": "SumikoOneeSan",
+  "cast": [
+    "Noireloupgarou",
+    "LnB9",
+    "TheTigerwolf55",
+    "RabeDesGottes"
+  ],
+  "runtime": 12,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

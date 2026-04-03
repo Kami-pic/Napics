@@ -1,0 +1,194 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/fMfZ3CCUxyctaAAxkD5VxiwoSPs.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 102495,
+      "origin_country": [],
+      "original_language": "ar",
+      "original_name": "27",
+      "overview": "",
+      "popularity": 0.1288,
+      "poster_path": "/eM05nlaKizEI3Id0htnk9S7FFt0.jpg",
+      "first_air_date": "2020-04-24",
+      "name": "27",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/k9aeRlKAb6d5eHCG3MjCdee1XXM.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 209920,
+      "origin_country": [
+        "BR"
+      ],
+      "original_language": "pt",
+      "original_name": "Oscar Freire 279",
+      "overview": "",
+      "popularity": 0.7057,
+      "poster_path": "/eLhGKXZjfSRLNFBcSp9TPrCz34E.jpg",
+      "first_air_date": "2014-04-02",
+      "name": "Oscar Freire 279",
+      "vote_average": 6.5,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pbks23UphENJnk0BMNtGoIhyyP8.jpg",
+      "genre_ids": [
+        9648,
+        80
+      ],
+      "id": 87717,
+      "origin_country": [
+        "GE"
+      ],
+      "original_language": "ka",
+      "original_name": "27 დრაკონი",
+      "overview": "",
+      "popularity": 0.558,
+      "poster_path": "/kagzDwWf0aIZezkUY9ERsrZajkN.jpg",
+      "first_air_date": "2003-07-17",
+      "name": "27 დრაკონი",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/yIzg4KkZpQMniZR1xfcWsbYTz2.jpg",
+      "genre_ids": [
+        9648,
+        18
+      ],
+      "id": 158402,
+      "origin_country": [
+        "RS"
+      ],
+      "original_language": "sr",
+      "original_name": "Blok 27",
+      "overview": "",
+      "popularity": 0.4122,
+      "poster_path": "/ylDtGkaNEsdpl9EU2fTrPSWvtTn.jpg",
+      "first_air_date": "2022-02-19",
+      "name": "Blok 27",
+      "vote_average": 7.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 242048,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ザ・ベストテン(1983年1月27日放送)",
+      "overview": "",
+      "popularity": 0.5928,
+      "poster_path": null,
+      "first_air_date": "",
+      "name": "ザ・ベストテン(1983年1月27日放送)",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 305596,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "27A",
+      "overview": "",
+      "popularity": 0.4812,
+      "poster_path": null,
+      "first_air_date": "2025-10-22",
+      "name": "27A",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 38217,
+      "origin_country": [],
+      "original_language": "en",
+      "original_name": "Par 27",
+      "overview": "",
+      "popularity": 0.0703,
+      "poster_path": null,
+      "first_air_date": "",
+      "name": "Par 27",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/wTBK9MwummOuwG0QeK9DoslWO0s.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 316522,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Class of 27",
+      "overview": "",
+      "popularity": 0.2031,
+      "poster_path": "/tcQi141HvMF9T7zCyMnGZ3gfBQo.jpg",
+      "first_air_date": "2025-05-20",
+      "name": "Class of 27",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 203871,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "UFC 275 Embedded",
+      "overview": "",
+      "popularity": 0.0352,
+      "poster_path": null,
+      "first_air_date": "2022-06-06",
+      "name": "UFC 275 Embedded",
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 201528,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "UFC 274 Embedded",
+      "overview": "",
+      "popularity": 0.0377,
+      "poster_path": null,
+      "first_air_date": "2022-05-02",
+      "name": "UFC 274 Embedded",
+      "vote_average": 5.0,
+      "vote_count": 1
+    }
+  ]
+}

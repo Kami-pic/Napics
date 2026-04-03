@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/9bp9cVuqmZUAVfTpCxiPIpC5ACS.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 71347,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "엽기적인 그녀",
+      "overview": "该剧改编自同名韩国电影《我的野蛮女友》，以朝鲜时代为背景，主要讲述了自尊心非常强的挑剔男和问题少女之间发生的浪漫故事",
+      "popularity": 7.0931,
+      "poster_path": "/rajd9ho62H8SFki1MmO6Kag3MXY.jpg",
+      "first_air_date": "2017-05-29",
+      "name": "我的野蛮女友",
+      "vote_average": 6.2,
+      "vote_count": 37
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ar9vbvgTKoxZCHR35mZpv7PYwGD.jpg",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 5585,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "猟奇的な彼女",
+      "overview": "　　相貌平平的真崎三朗（草剪刚 饰）是某大学海洋生物学科的普通讲师，这一天他刚刚被女友三振出局。在落寞的回家路上，三朗偶然帮助了因醉酒而差点滑倒的美丽女孩高见凛子（田中丽奈 饰）。奇妙的因缘就此展开，当然对一向唯唯诺诺的三朗来说，或者也可以算作一段磨难的开始。凛子全然没有传统女性的温良恭俭让，她大声说话，肆意爆粗，还经常烂醉如泥。当然其美貌容颜也惹来三朗的同期数岛健作（谷原章介 饰）的追求，而夹在凛子以及青梅竹马浅仓南（松下奈绪 饰）之间的三朗滋味儿也并不好受。野蛮女友突然加到，三朗的爱情之路一波三折……  　　本片改编自韩国同名经典电影。",
+      "popularity": 2.551,
+      "poster_path": "/k6yivUGMR161AJvLgFnAkcFI879.jpg",
+      "first_air_date": "2008-04-20",
+      "name": "我的野蛮女友",
+      "vote_average": 9.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 277066,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "我的野蛮女友",
+      "overview": "苏小七发现男朋友徐凯出轨，去酒店抓奸却走错门意外碰到了江泽，两人纠缠一番倒在门外，却碰上男友和小三，男友出言挑衅，江泽故意与苏小七演戏刺激男友，苏小七抢走男友手上的房卡进入房间，丢下江泽离开。江泽爷爷装病逼迫江泽妥协，苏小七也接到爷爷电话被通知定下了娃娃亲，苏小七在餐厅被陈沐蝶挑衅，苏小七气不过出手打伤陈沐蝶，在警察局里苏小七没有办法，只能让刚结婚的老公江泽来接人，江泽认出苏小七就是酒店里遇到的女生，苏小七对江泽不一般的态度，让江泽对苏小七起了兴趣，苏小七回到家中，妈妈张春梅十分不满意苏爷爷让苏小七嫁给江泽这个穷小子。苏小七上班迟到不小心碰到文敏，对方宣称自己是未来的总裁夫人，故意为难苏小七，苏小七出手解决找茬的保安，震惊众人，这件事情被江泽知道，让王助理去给苏小七撑腰。",
+      "popularity": 0.0,
+      "poster_path": "/6W8rHB2IB7ZOQwQmODPORhBibWK.jpg",
+      "first_air_date": "2024-07-23",
+      "name": "我的野蛮女友",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

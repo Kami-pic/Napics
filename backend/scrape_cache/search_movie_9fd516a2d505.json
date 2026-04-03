@@ -1,0 +1,185 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/nofXR1TN1vgGjdfnwGQwFaAWBaY.jpg",
+      "genre_ids": [
+        35,
+        18,
+        10749
+      ],
+      "id": 313369,
+      "original_language": "en",
+      "original_title": "La La Land",
+      "overview": "心怀演员梦想的米娅在试镜间隙为电影明星端送拿铁，而执着于爵士乐的塞巴斯汀则在昏暗酒吧靠弹奏钢琴曲勉强度日。然而当事业渐有起色，两人不得不做出抉择，这些决定逐渐磨损着他们如薄纱般的恋情，那些曾奋力彼此守护的梦想，此刻却可能将彼此撕裂。",
+      "popularity": 18.1791,
+      "poster_path": "/wEOWf7ahe1yeDkng1AxIcuIXcB.jpg",
+      "release_date": "2016-12-01",
+      "title": "爱乐之城",
+      "video": false,
+      "vote_average": 7.897,
+      "vote_count": 17942
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 691191,
+      "original_language": "en",
+      "original_title": "LA LA Land",
+      "overview": "",
+      "popularity": 1.0252,
+      "poster_path": "/nmdBXLTDzTaWzxcY32vz8CSpzbQ.jpg",
+      "release_date": "2008-03-07",
+      "title": "LA LA Land",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/qaZ8CXv0thtQqZGRNbHuuZ9NlgT.jpg",
+      "genre_ids": [
+        18,
+        35,
+        10749
+      ],
+      "id": 105789,
+      "original_language": "en",
+      "original_title": "Going Down in La-La Land",
+      "overview": "梦想成为明星的亚当（Matthew Ludwinski 饰）来到洛杉矶，因人生路不熟在制作公司做兼职，很快花光周身积蓄。山穷水尽的他遇到淫媒问价，战战兢兢的踏上了皮肉生涯路，不但要满足好色监制，更被吸粉摄影师哄骗上手。一次亚当到比佛利山的豪宅为深柜大明星约翰（Michael Medico 饰）提供上门服务，两人情不自禁的爱上对方。约翰以请助手为名“包养”了亚当。甘愿被爱奴役的亚当，一步步迷失在五光十色的花花世界，载沉载浮，如痴如梦......",
+      "popularity": 1.1943,
+      "poster_path": "/tbgH8Fn3DPJzF5E7uxyjLAoPKIT.jpg",
+      "release_date": "2011-05-01",
+      "title": "浮沉洛杉矶",
+      "video": false,
+      "vote_average": 5.7,
+      "vote_count": 52
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3sx25w8xK3YlGK53iKPniifU4P8.jpg",
+      "genre_ids": [
+        99,
+        10402
+      ],
+      "id": 381083,
+      "original_language": "en",
+      "original_title": "Gary Numan: Android In La La Land",
+      "overview": "",
+      "popularity": 0.2532,
+      "poster_path": "/1ZCglhextcg9Yc3PeFhIqW1hYPE.jpg",
+      "release_date": "2016-03-14",
+      "title": "Gary Numan: Android In La La Land",
+      "video": false,
+      "vote_average": 7.2,
+      "vote_count": 11
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 720687,
+      "original_language": "en",
+      "original_title": "Notre-Dame-des-Landes, la reconquête",
+      "overview": "",
+      "popularity": 0.3613,
+      "poster_path": "/mtGe2QOwLbrihsjpbyMbiR8XRHj.jpg",
+      "release_date": "2019-09-16",
+      "title": "Notre-Dame-des-Landes, la reconquête",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 578370,
+      "original_language": "en",
+      "original_title": "El indefinido. La crítica de La la land",
+      "overview": "",
+      "popularity": 0.0256,
+      "poster_path": "/oBMbXTSpvVomZsIefDPjyME6f2I.jpg",
+      "release_date": "2017-02-27",
+      "title": "El indefinido. La crítica de La la land",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 743876,
+      "original_language": "es",
+      "original_title": "El Milagro y el valor de la vida: Landriscina, Favaloro y Menapace",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": "/xHv4fyt79sFddc2GccCRwBKw5dS.jpg",
+      "release_date": "1997-12-05",
+      "title": "El Milagro y el valor de la vida: Landriscina, Favaloro y Menapace",
+      "video": true,
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 480219,
+      "original_language": "fr",
+      "original_title": "L'héroïque lande - La frontière brûle",
+      "overview": "",
+      "popularity": 0.1725,
+      "poster_path": "/fOSQDBcO3qzbvIsoF7J32VPQnj0.jpg",
+      "release_date": "2018-04-11",
+      "title": "L'héroïque lande - La frontière brûle",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1258979,
+      "original_language": "fr",
+      "original_title": "DEMAIN S'ENTÊTE sur la ZAD de Notre Dame des Landes",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "",
+      "title": "DEMAIN S'ENTÊTE sur la ZAD de Notre Dame des Landes",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jS6MK4wDXU1WjorZ25c4WlfwWub.jpg",
+      "genre_ids": [
+        80,
+        10770,
+        18
+      ],
+      "id": 594446,
+      "original_language": "de",
+      "original_title": "Steirerkreuz",
+      "overview": "",
+      "popularity": 0.6742,
+      "poster_path": "/vmiub9x1AGn29yXpC41LH67Sa6i.jpg",
+      "release_date": "2019-12-03",
+      "title": "Steirerkreuz",
+      "video": false,
+      "vote_average": 6.7,
+      "vote_count": 9
+    }
+  ]
+}

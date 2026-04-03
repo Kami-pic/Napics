@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/tFUolWDR3XzfBpXyuhizTImqDeK.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 856156,
+      "original_language": "en",
+      "original_title": "The Re-Education of Molly Singer",
+      "overview": "",
+      "popularity": 0.8289,
+      "poster_path": "/zCF5HpbSjMELIYiV9aZKY9ka4Jq.jpg",
+      "release_date": "2023-09-29",
+      "title": "The Re-Education of Molly Singer",
+      "video": false,
+      "vote_average": 5.6,
+      "vote_count": 51
+    }
+  ]
+}

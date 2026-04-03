@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/bEmPrq7Y4MubVATOCtOacY3eXQ5.jpg",
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "id": 152584,
+      "original_language": "fr",
+      "original_title": "La Vie d'Adèle - Chapitres 1 et 2",
+      "overview": "这部以斑斓色彩与炽热情感震撼戛纳电影节的爱情之作，勇敢探索了一位年轻女性初恋与情欲觉醒的历程。影片由惊艳的新人演员阿黛尔·埃克阿库波洛斯饰演一名高中生，她出乎自己意料地陷入与二十多岁的艺术系女生（蕾雅·赛杜 饰）的炽热恋情。在导演阿布戴尔·马吉德·柯西胥的执导下，这部细节精微、情感亲密的史诗作品，细腻捕捉了青春情欲的奔放绽放。它不仅俘获了全球观众，更被广泛视为新世纪具有定义意义的爱情故事。[标准收藏]",
+      "popularity": 4.6248,
+      "poster_path": "/91HShIW5eyI4lBa6XxVi5opTx35.jpg",
+      "release_date": "2013-10-09",
+      "title": "阿黛尔的生活",
+      "video": false,
+      "vote_average": 7.07,
+      "vote_count": 4832
+    }
+  ]
+}

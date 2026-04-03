@@ -1,0 +1,59 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/c6wTuTMEl0ffnZyzozNiw08Ocnl.jpg",
+      "genre_ids": [
+        27,
+        35,
+        18
+      ],
+      "id": 32629,
+      "original_language": "cn",
+      "original_title": "滿清十大酷刑",
+      "overview": "屠户葛小大（黄光亮 饰）的惨死让其妻小白菜（翁虹 饰）成为了最可疑的嫌犯，她被人检举同杨乃武（吴启华 饰）有着不正当的男女关系，葛小大之死系两人合谋而为，巡抚刘锡彤（卢雄 饰）接下了这一宗环环相扣错综复杂的案件。刘锡彤不敢招惹身为举人的杨乃武，于是将全部“火力”对准了楚楚可怜的小白菜，在严刑逼供之下，小白菜坦白了她和杨乃武之间的过往。原来，曾经的杨乃武和小白菜心心相惜郎情妾意，无奈杨乃武已经有了正室詹氏（程迷 饰），两人只得把浓浓爱意隐藏在心底。之后，小白菜在无意之间撞破了詹氏同巡抚之子的奸情，为了销毁证据，狡猾的詹氏将小白菜五花大绑，逼迫她同葛小大成亲，小白菜最惨淡的一段时光就此拉开序幕。",
+      "popularity": 5.394,
+      "poster_path": "/5cVIW1OnFeJMMLCSiNwpIZm2p1n.jpg",
+      "release_date": "1994-05-19",
+      "title": "满清十大酷刑",
+      "video": false,
+      "vote_average": 5.7,
+      "vote_count": 71
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/va8cOLpo9DTfYtJxUOSPKqrppcK.jpg",
+      "genre_ids": [
+        18,
+        53
+      ],
+      "id": 39390,
+      "original_language": "cn",
+      "original_title": "滿清十大酷刑之赤裸凌遲",
+      "overview": "在马新贻（郑浩南 饰）的祭台下，赤裸的凶手黄莲（甄楚倩 饰）惨被凌迟。事缘马与莲兄及未婚夫不打不相识，马、莲更互相倾慕。原来马为两江提督，表面正人君子，却趁机向莲嫂加以淫辱，莲目睹一切…",
+      "popularity": 3.4449,
+      "poster_path": "/pS9YgrPOA4GdoTL1yyN7s5vxtdp.jpg",
+      "release_date": "1998-09-18",
+      "title": "满清十大酷刑之赤裸凌迟",
+      "video": false,
+      "vote_average": 3.8,
+      "vote_count": 24
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/m8pYLAMPx4mQ6HmXzQyS9tqKsfk.jpg",
+      "genre_ids": [],
+      "id": 1549349,
+      "original_language": "zh",
+      "original_title": "满清十大酷刑2：赤祼凌迟",
+      "overview": "",
+      "popularity": 0.0214,
+      "poster_path": "/trZ65cUYgnYArgnrzgUa6SzDTdp.jpg",
+      "release_date": "",
+      "title": "满清十大酷刑2：赤祼凌迟",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

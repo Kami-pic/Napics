@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 492027,
+  "media_type": "movie",
+  "title": "(09)",
+  "original_title": "(09)",
+  "english_title": "(09)",
+  "year": "2014",
+  "poster_url": "https://image.tmdb.org/t/p/w500/aWhUdjBmvi9telRLMKgHfIJlWLt.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 3.0,
+  "genres": [
+    "恐怖",
+    "惊悚"
+  ],
+  "director": "Javier Aguirrezabal G.",
+  "cast": [
+    "Juanita Ringeling",
+    "Ramón Llao",
+    "Isidora Cabezón",
+    "卡塔琳娜·萨维德拉",
+    "Catalina González"
+  ],
+  "runtime": 90,
+  "imdb_id": "tt2405820",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Chile"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,43 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/x0OUrM9qlzgl1izJ5ZAZ7WQQFjl.jpg",
+      "genre_ids": [
+        10402,
+        36,
+        18
+      ],
+      "id": 280011,
+      "original_language": "zh",
+      "original_title": "潘金蓮",
+      "overview": "　　潘金莲天生丽质，自小被卖作丫鬟，后被逼嫁丑汉武大郎为妻。大郎弟松天生神勇，以醉打白额虎扬名，莲见松高大英俊，竟向他大胆示爱，松严词拒绝，并为避嫌,远走他方。\r 　　富商西门庆见莲貌美，收买淫媒王婆引莲入圈套。莲恼松不解温柔，毅然与庆通奸，庆为绝后患，接纳王奸计，毒杀大郎。松得悉兄长遇害，往杀奸夫淫妇，为兄报仇。\r 　　改编自[明]施耐庵《水浒传》。彩色综艺体弧形阔银幕影片。",
+      "popularity": 1.4222,
+      "poster_path": "/kV3gn0etzUsCy7qMdkTl3rGOSKk.jpg",
+      "release_date": "1964-04-09",
+      "title": "潘金莲",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/i5ZN2nNH9Q4TjjOGjZnb6KA37sr.jpg",
+      "genre_ids": [
+        18,
+        36
+      ],
+      "id": 191295,
+      "original_language": "zh",
+      "original_title": "少女潘金蓮",
+      "overview": "潘金莲（黄美贞 饰）被余氏送给了又矮又胖的烧饼小贩武大郎做他的妻子，潘金莲却喜欢上了武大郎的弟弟武松。之后，在王婆（金仁淑 饰）的穿针引线下，潘金莲勾搭上了风流成性的西门庆（单立文 饰），某日，武大郎于无意之中撞破了两人的奸情。  　　为了保守秘密，潘金莲和西门庆联手毒杀了武大郎，之后，潘金莲名正言顺的嫁入了西门庆家中，做了他的小妾。婚后，西门庆依旧不改四处沾花惹草的本性，最终因为纵欲过度丢掉了性命，然而，早在此之前，潘金莲就勾搭上了西门庆的女婿，事情最终败露，潘金莲被西门大娘卖给了王婆。王婆唯利是图，只将潘金莲视为摇钱树，而得之武大郎死讯的武松决心替哥哥报仇。",
+      "popularity": 2.4976,
+      "poster_path": "/7dwj4yeUd95ZLjavBmuiMuQLGvX.jpg",
+      "release_date": "1994-06-22",
+      "title": "少女潘金莲",
+      "video": false,
+      "vote_average": 4.8,
+      "vote_count": 6
+    }
+  ]
+}

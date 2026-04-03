@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/znD0HjrgzbB5sM1R842wv1p8Xqj.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 1283854,
+      "original_language": "ja",
+      "original_title": "極道の紋章 レジェンド 第十二章",
+      "overview": "",
+      "popularity": 0.9381,
+      "poster_path": "/6yAe62GG1MQ6skNYDNKqBNceOpB.jpg",
+      "release_date": "2022-12-25",
+      "title": "極道の紋章 レジェンド 第十二章",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

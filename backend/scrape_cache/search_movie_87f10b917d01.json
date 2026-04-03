@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16,
+        35,
+        878
+      ],
+      "id": 580333,
+      "original_language": "ja",
+      "original_title": "超電影版SDガンダム三国伝 Brave Battle Warriors",
+      "overview": "《超电影版sd高达三国传》是以人气高达系列出发的高达拟人化作品，作品主要讲述SD高达在他们特定的世界里的战斗故事。  SD高达是以人气高达系列出发的高达拟人化作品，作品主要讲述SD高达在他们特定的世界里的战斗故事。本次的剧场版以“三国志”为基础，讲述在传说中的大陆三璃纱，义勇军刘备高达，关羽高达，张飞高达的战斗故事。",
+      "popularity": 1.0656,
+      "poster_path": "/sow8oeZ9sjwC5rbuEkFtl57rjpr.jpg",
+      "release_date": "2010-02-27",
+      "title": "超电影版SD高达三国传",
+      "video": false,
+      "vote_average": 6.1,
+      "vote_count": 47
+    }
+  ]
+}

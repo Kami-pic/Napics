@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/pbtBKHFiapyeZzG3RE12gkKevfw.jpg",
+      "genre_ids": [
+        28,
+        878,
+        16
+      ],
+      "id": 1405206,
+      "original_language": "ja",
+      "original_title": "アルドノア・ゼロ（Re+）",
+      "overview": "",
+      "popularity": 1.4518,
+      "poster_path": "/kD5c6wRX0RhSXMiJg2WiM2jwPXy.jpg",
+      "release_date": "2025-02-28",
+      "title": "アルドノア・ゼロ（Re+）",
+      "video": false,
+      "vote_average": 6.2,
+      "vote_count": 4
+    }
+  ]
+}

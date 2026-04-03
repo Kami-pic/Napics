@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 715222,
+  "media_type": "movie",
+  "title": "27",
+  "original_title": "27",
+  "english_title": "27",
+  "year": "2025",
+  "poster_url": "https://image.tmdb.org/t/p/w500/cb0GYjhRnvcNsIvhaIGPKhJA1ZZ.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/lBvfh2hj6eAMtFCGcIbdB5JZCC8.jpg",
+  "overview": "",
+  "rating": 7.9,
+  "genres": [
+    "动画"
+  ],
+  "director": "Flóra Anna Buda",
+  "cast": [
+    "Stork Natasa",
+    "Fekete Ádám",
+    "Farkas Franciska",
+    "Szabó Simon",
+    "Eva Kennedi",
+    "Márk Kaszás"
+  ],
+  "runtime": 11,
+  "imdb_id": "tt13021784",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "France",
+    "Hungary"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

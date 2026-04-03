@@ -1,0 +1,35 @@
+{
+  "tmdb_id": 944401,
+  "media_type": "movie",
+  "title": "狗神",
+  "original_title": "Dogman",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/1syIFn41GC3qNl3dxRvNe5T9NjO.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/nvW0QfRJ7ga9TK8DKwBfAPA8ywP.jpg",
+  "overview": "被暴戾的父亲伤害并被囚禁在狗笼中生活数年的道格，长大后只能与他的数百只狗相互陪伴。然而命运对他的摧残从未停止，在经历了家庭、爱情、生存的一系列痛苦打击后，道格化身为最危险艳丽的“狗神”杀手，和他的狗群一起，向所有伤害过他的人发起了绝不饶恕的复仇与反抗......",
+  "rating": 7.9,
+  "genres": [
+    "动作",
+    "剧情",
+    "犯罪"
+  ],
+  "director": "吕克·贝松",
+  "cast": [
+    "卡莱伯·兰德里·琼斯",
+    "乔尼卡·T·吉布斯",
+    "克里斯托弗·德纳姆",
+    "克莱门斯·希克",
+    "约翰·查尔斯·阿吉拉尔",
+    "格蕾丝·帕尔玛"
+  ],
+  "runtime": 114,
+  "imdb_id": "tt17009348",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

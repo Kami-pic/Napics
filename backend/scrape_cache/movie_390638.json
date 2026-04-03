@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 390638,
+  "media_type": "movie",
+  "title": "BBStory: An American Film Renaissance",
+  "original_title": "BBStory: An American Film Renaissance",
+  "english_title": "BBStory: An American Film Renaissance",
+  "year": "2010",
+  "poster_url": "https://image.tmdb.org/t/p/w500/l0V2f9nJsawkp670zkZgtMHAHV1.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/dyTceUWwH9EhDWkO0y8Z9udKFr3.jpg",
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "纪录"
+  ],
+  "director": "Greg Carson",
+  "cast": [
+    "Fred Roos",
+    "Micky Dolenz",
+    "艾伦·伯斯汀",
+    "Richard Schickel",
+    "Bob Rafelson",
+    "彼得·波格丹诺维奇"
+  ],
+  "runtime": 47,
+  "imdb_id": "tt4331792",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

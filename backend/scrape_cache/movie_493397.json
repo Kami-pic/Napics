@@ -1,0 +1,36 @@
+{
+  "tmdb_id": 493397,
+  "media_type": "movie",
+  "title": "Paprika",
+  "original_title": "Paprika",
+  "english_title": "Paprika",
+  "year": "2018",
+  "poster_url": "https://image.tmdb.org/t/p/w500/4pDR74lCUfRzX4rFVwkgwRgBVZz.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/caa8ealOOudDEMl2iifww7F0x0f.jpg",
+  "overview": "",
+  "rating": 10.0,
+  "genres": [
+    "喜剧"
+  ],
+  "director": "Ybao Benedetti",
+  "cast": [
+    "维多利亚·阿夫里尔",
+    "让-巴蒂斯特·莫尼耶",
+    "Julien Cafaro",
+    "Prisca Demarez",
+    "Jules Dousset"
+  ],
+  "runtime": 113,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "France"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

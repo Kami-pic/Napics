@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/ahSGkcH1QmrxmNJxY9nAOzIjjfA.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        18,
+        10765
+      ],
+      "id": 42830,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "精霊の守り人",
+      "overview": "在一个和人类社会并行存在的精灵世界，那里的水精灵一百年产一次卵，新孵化的卵化身为精灵继续庇护人类社会的繁衍生息。\n\n这一次第二皇子查克姆被选为水之精灵守护人，担负起精灵和人类的双重命运。然而由于人类社会的传史错误，查克姆被视为不祥之物的附身，遭到皇族的秘密追杀。女保镖巴鲁萨成为他的监护人，带着皇子在民间谋生，躲避杀害。\n\n离水之精灵的卵孵化的日子越来越近，皇子的命运也越来越危机重重。精灵世界的土精灵食卵者正四处寻找守护人，将他撕开吃掉。年仅十几岁的查克姆和巴鲁萨建立起深刻的感情，彼此视为亲人。他们该怎么面对命运的考验呢？背负起责任，勇敢向前！",
+      "popularity": 10.2395,
+      "poster_path": "/rsn6ukPDA0NRt8qIilAFY59fhHn.jpg",
+      "first_air_date": "2007-04-07",
+      "name": "精灵守护者",
+      "vote_average": 7.8,
+      "vote_count": 65
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/5YNNKZtBLZJlaFiWQmFGnX0SVUc.jpg",
+      "genre_ids": [
+        10759,
+        18
+      ],
+      "id": 70934,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "精霊の守り人",
+      "overview": "一次偶然机会，女保镖巴尔莎救下了落入河中的新龙勾皇国王子查穆。将查穆带回宫殿的巴尔莎却被告知赶快带他逃走。查穆身上带有精灵之卵，但却被称为魔物，因而被人追杀。巴尔莎带着查穆一路逃命，并教会了他守身之术。距离精灵之卵的孵化日期越来越近，他们的命运将迎来怎样的考验呢？",
+      "popularity": 7.7147,
+      "poster_path": "/bt1Y13Kkxx0hthFfAza7HkLSfFH.jpg",
+      "first_air_date": "2016-03-19",
+      "name": "精灵守护者",
+      "vote_average": 7.7,
+      "vote_count": 11
+    }
+  ]
+}

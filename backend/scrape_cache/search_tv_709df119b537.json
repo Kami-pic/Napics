@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/nBrkOZyI75artyizuBFeya48KbO.jpg",
+      "genre_ids": [
+        16,
+        10765
+      ],
+      "id": 86831,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Love, Death & Robots",
+      "overview": "融合恐怖、想象力和美，从揭示古老的邪恶力量到喜剧般的末日，剧集以标志性的巧思和创造性的视觉效果，为观众带来令人震惊的奇幻、恐怖和科幻短篇故事。",
+      "popularity": 43.102,
+      "poster_path": "/ooSYCehJ3nJh3UywyKSmHXALDyA.jpg",
+      "first_air_date": "2019-03-15",
+      "name": "Love, Death & Robots",
+      "vote_average": 8.21,
+      "vote_count": 3920
+    }
+  ]
+}

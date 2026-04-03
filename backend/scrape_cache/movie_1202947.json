@@ -1,0 +1,30 @@
+{
+  "tmdb_id": 1202947,
+  "media_type": "movie",
+  "title": "64",
+  "original_title": "64",
+  "english_title": "64",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/mQ2Nv7skcIA5aOr6Uqq0Ov2m25m.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "纪录"
+  ],
+  "director": "James Hankins",
+  "cast": [
+    "Dali de Saint Paul"
+  ],
+  "runtime": 52,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

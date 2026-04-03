@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/lBQZZdVY8j4wjaOf7VWg9AmCjPK.jpg",
+      "genre_ids": [
+        9648
+      ],
+      "id": 296494,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "反转21克",
+      "overview": "治安署协查员宋星野在调查老城命案受警花尚薇阻止，意外发现战友黄海被追杀。为调查真相，宋星野与助理詹娜破解数据、与尚薇策应突袭，终曝光黑幕挫败政变。借大小姐赵晴云暗中助力，将真相公之于众。",
+      "popularity": 0.8072,
+      "poster_path": "/ep7IYrCA233ePgMzTx5Z0pGcAat.jpg",
+      "first_air_date": "2025-07-23",
+      "name": "反转21克",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

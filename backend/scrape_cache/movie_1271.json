@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 1271,
+  "media_type": "movie",
+  "title": "300勇士",
+  "original_title": "300",
+  "english_title": "300",
+  "year": "2007",
+  "poster_url": "https://image.tmdb.org/t/p/w500/2YRNOdQMcWT9FhM7HijY9bIvJSl.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/lgBZlJ1LHQel5nneNQMoesmvc7l.jpg",
+  "overview": "这部电影描述了人类史上最残酷的战争之一：温泉关之战。公元前 480 年，波斯国王薛西斯一世（罗德里格·桑托罗 Rodrigo Santoro 饰）亲率 30 万大军征战希腊。希腊各个城邦迅速派出军队结成了联军，准备抵御波斯军队的入侵。防线的最前线设在希腊的温泉关，此处由斯巴达 城的国王列奥尼达（杰拉德·巴特勒 Gerard Butler 饰）率领本城 300 精兵和联军 4000 余人镇守。由于叛徒的出卖，希腊军队被波斯军队抄到了身后形成围剿之势。列奥尼达为了保存联军实力，让联军首先撤退，自己率领 300 精兵死守温泉关断后。数以十万波斯大军浩浩汤汤蜂拥而至，自知必死的斯巴达士兵反而士气高涨，在战斗中爆发出惊人的战力。整个战争整整持续了 2 天，最后列奥尼达和他的 300 精兵全部阵亡，而波斯军队则损失了 20000 多士兵，薛西斯一世的两个兄弟也在此役中战死……",
+  "rating": 7.2,
+  "genres": [
+    "动作",
+    "冒险",
+    "战争"
+  ],
+  "director": "扎克·施奈德",
+  "cast": [
+    "杰拉德·巴特勒",
+    "琳娜·海蒂",
+    "多米尼克·韦斯特",
+    "大卫·文翰",
+    "文森特·里根",
+    "迈克尔·法斯宾德"
+  ],
+  "runtime": 117,
+  "imdb_id": "tt0416449",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

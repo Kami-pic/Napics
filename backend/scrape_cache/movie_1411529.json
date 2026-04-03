@@ -1,0 +1,37 @@
+{
+  "tmdb_id": 1411529,
+  "media_type": "movie",
+  "title": "飞行家",
+  "original_title": "飞行家",
+  "year": "2026",
+  "poster_url": "https://image.tmdb.org/t/p/w500/4MCXfUEaIDLLZew1JQg817fqyb0.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/c3D2Rkj9YJK23oC7QsLicDF02HC.jpg",
+  "overview": "李明奇（蒋奇明 饰），一个沉迷飞行的东北犟种，为了爱人决定认命回到地面，把梦想锁进工具箱底。可生活的难题从四面八方奔涌而来，将他们逼至绝境，唯一的生机，竟是他那被嘲笑了半辈子的飞行梦。一个怪人，一家亲人，一群朋友——他们共同押上所有，凝聚成托举的长风。为了托起沉甸甸的生活，李明奇再次从高空一跃而下，对命运做出勇敢反击！",
+  "rating": 6.0,
+  "genres": [
+    "剧情",
+    "喜剧"
+  ],
+  "director": "鹏飞",
+  "cast": [
+    "蒋奇明",
+    "李雪琴",
+    "董宝石",
+    "姜武",
+    "杨玏",
+    "蒋易"
+  ],
+  "runtime": 122,
+  "imdb_id": "tt34386745",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "China"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

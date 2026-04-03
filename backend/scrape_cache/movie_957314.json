@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 957314,
+  "media_type": "movie",
+  "title": "乘客",
+  "original_title": "The Passenger",
+  "english_title": "The Passenger",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/4elVCxpRBcqVLPEI2sDC4fIa0Mt.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/tkNwAiWE9hbiJUUwz42jU2dbWfi.jpg",
+  "overview": "一个男人被迫面对他的恐惧和麻烦的过去。他必须找到一种方法在一场杀戮狂欢中生存下去",
+  "rating": 6.2,
+  "genres": [
+    "惊悚",
+    "剧情"
+  ],
+  "director": "卡特·史密斯",
+  "cast": [
+    "凯尔·加尔纳",
+    "约翰尼·贝希托尔德",
+    "丽莎·丽贝卡·威尔",
+    "威廉·斯劳特",
+    "马修·劳雷亚诺",
+    "乔丹·雪莉"
+  ],
+  "runtime": 94,
+  "imdb_id": "tt21979910",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

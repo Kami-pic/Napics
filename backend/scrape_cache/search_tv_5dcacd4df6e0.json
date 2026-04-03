@@ -1,0 +1,109 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg",
+      "genre_ids": [
+        18,
+        80
+      ],
+      "id": 1396,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Breaking Bad",
+      "overview": "新墨西哥州的高中化学老师沃尔特·H·怀特是拮据家庭的唯一经济来源。他大半生安分守己，兢兢业业，却在50岁生日之际突然得知自己罹患肺癌晚期的噩耗，原本便不甚顺意的人生顿时雪上加霜。为了保障怀孕的妻子斯凯勒和残疾的儿子小沃特能在自己死后衣食无忧，沃尔特决意铤而走险。他主动找到曾经的学生、而今的毒贩小混混杰西·平克曼谈合作，并运用娴熟高超的化学技术提炼出高纯度冰毒交给后者贩售。孰料事态的发展却在平克曼带回毒品供销商疯狂小八及其表弟后急转直下，沃尔特的人生也由此彻底步向失控。他被迫开始了教书与制毒的双重生活，逐渐坠落至万劫不复的深渊。",
+      "popularity": 114.5678,
+      "poster_path": "/rqliuvX7NdknSHu5qaSDfESplQi.jpg",
+      "first_air_date": "2008-01-20",
+      "name": "绝命毒师",
+      "vote_average": 8.94,
+      "vote_count": 17420
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35,
+        80,
+        18
+      ],
+      "id": 297997,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Breaking Bad: Original Minisodes",
+      "overview": "",
+      "popularity": 0.1724,
+      "poster_path": "/fFNbRUleJQ9GkCfJunU4yXuNbma.jpg",
+      "first_air_date": "2009-02-17",
+      "name": "Breaking Bad: Original Minisodes",
+      "vote_average": 6.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 308197,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Breaking Bad - E01-dj smith",
+      "overview": "",
+      "popularity": 0.0214,
+      "poster_path": null,
+      "first_air_date": "",
+      "name": "Breaking Bad - E01-dj smith",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18,
+        9648
+      ],
+      "id": 232533,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "绝命卦师",
+      "overview": "明朝“土木堡”事件期间，皇帝亲征边疆离宫后，后宫诡异事件频发，修仙道士天目瞳(张晓晨饰)受命入宫捉妖办案，探案中与太监小蘑菇(张浩然饰)、锦衣卫女首领云湘蓉(卢蒽洁饰)三人之间产生的爱恨情仇。",
+      "popularity": 1.3305,
+      "poster_path": "/n8dKkbPkdEPFCFmjNvrUl1gUAYr.jpg",
+      "first_air_date": "2016-04-11",
+      "name": "绝命卦师",
+      "vote_average": 7.5,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pXdkJvhBcPf8oEj831ASMkLPXKT.jpg",
+      "genre_ids": [
+        16,
+        80,
+        35,
+        10751
+      ],
+      "id": 302540,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Bad Guys: The Series",
+      "overview": "在这群最受欢迎的恶棍成为\"坏蛋联盟\"之前，他们不过是一群努力打响名号的小混混。为了成为史上最猖狂的罪犯，大坏狼立志要带领团队登上《六点新闻》\"头号通缉榜\"的榜首，为此策划了一系列惊天劫案......只可惜这群家伙，偏偏连使坏都不太在行。这群坏蛋当初做了哪些作奸犯科的坏事？打开这部背景设定在热门电影系列之前的爆笑前传剧集寻找答案吧。",
+      "popularity": 6.7777,
+      "poster_path": "/vWULYz6Pp5vDevVVBawVDZcgKJh.jpg",
+      "first_air_date": "2025-11-06",
+      "name": "坏蛋联盟：闯关大行动",
+      "vote_average": 6.5,
+      "vote_count": 33
+    }
+  ]
+}

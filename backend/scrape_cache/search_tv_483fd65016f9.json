@@ -1,0 +1,66 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/sS2VqNOVJBH7pffXprgnpZT8YIc.jpg",
+      "genre_ids": [
+        10751,
+        18
+      ],
+      "id": 41346,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "どんど晴れ",
+      "overview": "NHK的第76部晨间剧。她的名字叫做夏美（给嘉爱未饰演），个性开朗乐观，喜欢与人互动。夏美的家中在横滨经营法式甜点，虽然店面不大，但她觉得全家人团结一心，共同追求梦想，是人生最幸福的事。夏美和男友柾树（内田朝阳饰演）已论及婚嫁，人生看似一切顺遂。但是有一天，男友却突然提出分手，要回老家继承旅馆“加贺美屋”。\n\n位于盛冈的“加贺美屋”，是一间历史悠久的名旅馆，代代由老板娘守护至今。大老板娘香津乃是柾树的奶奶，把柾树一手带大。如今大老板娘却病倒了，并希望柾树回来继承家业。\n\n所以夏美带著莫大的决心，毅然决然来到未婚夫的老家：“加贺美屋”，从零开始学习当老板娘。夏美从最基本的工作开始，拍马屁、铺床、端盘、提行李……，虽然远比想像中辛苦，她也认真修行绝不认输。\n\n在加贺美屋这个大家庭中，夏美深得大老板娘的喜爱，却也因此受到别人排挤。虽然旅馆之路漫长而艰辛，坚强的夏美仍积极面对所有考验。从甜点师傅到旅馆之嫁，夏美能成为人人崇敬的老板娘吗？",
+      "popularity": 6.3372,
+      "poster_path": "/58zem5t88f4355IZBrCJ4XKYWAm.jpg",
+      "first_air_date": "2007-04-02",
+      "name": "旅馆之嫁",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jK2NFzV1AmBqvyTX1IDmzG0TtzT.jpg",
+      "genre_ids": [
+        80
+      ],
+      "id": 46069,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "パーフェクト・ブルー",
+      "overview": "德国牧羊犬玛莎（船越英一郎 配音）曾经是一条立过赫赫功勋的警犬，而今退役的玛莎成为莲见家的一员。莲见家的男主人生前是一位报社记者，后来却神秘死于某事件。现如今，女主人杏子（财前直见 饰）继承并经营着专门服务于女性的莲见侦探事务所，包括长女加代子（泷本美织 饰）在内，调查员君冢奈奈（平山绫 饰）、长岛桃子（白鸟久美子 饰）、三浦美智子（根岸季衣 饰）等全由女性组成。从玛莎的视角为基准，现代都市繁荣的表象下，一桩桩令人心寒的案件接连上演。何为真相？何为谎言？",
+      "popularity": 1.4667,
+      "poster_path": "/mhPwjLw4oqXj2Lg741daeQJOLRA.jpg",
+      "first_air_date": "2012-10-08",
+      "name": "完美的蓝",
+      "vote_average": 6.5,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pv49gBHvLtSgSipjIaK0wwrRlnl.jpg",
+      "genre_ids": [
+        99,
+        16
+      ],
+      "id": 132131,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "パーフェクトブルー講座",
+      "overview": "《未麻的部屋》导演今敏给学生开的大师课，讲解他第一部动画电影不同的意义。",
+      "popularity": 0.3514,
+      "poster_path": "/jI2Qu1FDrLwNfpWLVHzQXL490b1.jpg",
+      "first_air_date": "2008-02-29",
+      "name": "未麻的部屋：讲座",
+      "vote_average": 9.0,
+      "vote_count": 1
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "tmdb_id": 1053950,
+  "media_type": "movie",
+  "title": "白",
+  "original_title": "白",
+  "english_title": "White",
+  "year": "2022",
+  "poster_url": "https://image.tmdb.org/t/p/w500/59hFMYlEU9FiSfPVCfQuWRORqan.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "动画"
+  ],
+  "director": "Ao Chen",
+  "cast": [],
+  "runtime": 8,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "China",
+    "United Kingdom"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

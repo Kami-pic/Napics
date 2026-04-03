@@ -1,0 +1,73 @@
+{
+    "id": 1774716479,
+    "time": "Sun Mar 29 00:47:59 2026",
+    "label": "organize",
+    "summary": "整理 13 个文件 → 纸牌屋",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E01.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E01.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E02.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E02.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E03.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E03.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E04.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E04.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E05.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E05.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E06.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E06.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E07.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E07.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E08.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E08.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E09.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E09.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E10.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E10.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E11.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E11.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E12.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E12.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\第一季\\纸牌屋.House.Of.Cards.2013.S01E13.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "new_path": "\\\\DS218play\\share\\视频\\电视剧\\纸牌屋\\纸牌屋.House.Of.Cards.2013.S01E13.Chi_Eng.HR-BluRay.AC3.1024X512.x264-YYeTs人人影视.mkv",
+            "is_dir": false
+        }
+    ]
+}

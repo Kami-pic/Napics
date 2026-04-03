@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/tx4QtrZ1K2C2qOjnfGOMrUv6MGv.jpg",
+      "genre_ids": [
+        53,
+        80
+      ],
+      "id": 14365,
+      "original_language": "en",
+      "original_title": "Killing Me Softly",
+      "overview": "爱丽丝（海瑟•格拉汉姆 Heather Graham 饰）和克劳斯（乌尔里奇•汤姆森 Ulrich Thomsen 饰）的婚姻关系名存实亡，一次偶然的机会，她邂逅了性格粗放的男子亚当（约瑟夫•费因斯 Joseph Fiennes 饰），两个人迅速堕入爱河，从性欲的满足到情感的依赖，她无法自拔。为此，爱丽丝终于跟丈夫摊牌，一直被蒙在鼓里的克劳斯暴跳如雷，两人于是离婚。后来，爱丽丝从闺蜜口中得知，克劳斯一直割舍不下自己，心中稍有悔意，但她还是发现了前夫跟闺蜜同居的事实，极为愤怒。爱丽丝答应了亚当的求婚请求。但对于他的火暴脾气，她还是心存芥蒂，幸好其姐狄波拉（娜塔莎• 麦克艾霍恩 Natascha McElhone 饰）帮忙安抚，爱丽丝才逐渐平静。在交流中，她从狄波拉那里看到了亚当雪山攀岩的照片，并意外发现了丈夫不可告人的秘密……",
+      "popularity": 2.59,
+      "poster_path": "/xgnYKh8Q90fMe3pli37e6J46dsU.jpg",
+      "release_date": "2002-05-10",
+      "title": "温柔地杀我",
+      "video": false,
+      "vote_average": 5.579,
+      "vote_count": 361
+    }
+  ]
+}

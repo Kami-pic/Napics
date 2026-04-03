@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/gCmfeKmEAZBP5gcXpiqb0gii9rS.jpg",
+      "genre_ids": [
+        27,
+        53,
+        35
+      ],
+      "id": 1198994,
+      "original_language": "en",
+      "original_title": "Send Help",
+      "overview": "当求生变成猎杀，谁会是最终的幸存者？ 一架飞机失事后，作为同事的两名幸存者被困在荒岛上。他们必须放下过往恩怨、共同求生，但最终演变成一场不安又黑色幽默的意志与智慧对决……",
+      "popularity": 170.3145,
+      "poster_path": "/f8c4HHITyez7RiA7pCLxI5cZQQU.jpg",
+      "release_date": "2026-01-22",
+      "title": "请求救援",
+      "video": false,
+      "vote_average": 7.085,
+      "vote_count": 768
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/nk8d3sG4ODp68U1CV0eh12E6Q8W.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 77826,
+      "origin_country": [
+        "IT"
+      ],
+      "original_language": "it",
+      "original_name": "SKAM Italia",
+      "overview": "《羞耻意大利版》是由Ludovico Di Martino执导，Federico Cesari、Ludovico Tersigni主演的一部电视剧。",
+      "popularity": 12.3036,
+      "poster_path": "/9XOJpyalPs43SuU9hbcvKnAwKPs.jpg",
+      "first_air_date": "2018-03-29",
+      "name": "羞耻（意大利版）",
+      "vote_average": 7.3,
+      "vote_count": 86
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/rtMPDlUDXbIAcewFbYsa1nbuo0j.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 78508,
+      "origin_country": [
+        "DE"
+      ],
+      "original_language": "de",
+      "original_name": "DRUCK",
+      "overview": "《压力Druck》翻拍自挪威经典青春教育剧《羞耻SKAM》，主要讲述了Hanna与男友Jonas之间的爱情与成长，以及Hanna与Mia、Amira、Alex、Kiki五个女孩之间的相识相知。",
+      "popularity": 13.1355,
+      "poster_path": "/tnqOWEj9qmVPJphIzQ1HFOo9lwU.jpg",
+      "first_air_date": "2018-03-23",
+      "name": "羞耻（德国版）",
+      "vote_average": 8.4,
+      "vote_count": 25
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jIOFY8ZLtfjupbSEEvxxAAMcYhI.jpg",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 85213,
+      "origin_country": [
+        "BE"
+      ],
+      "original_language": "nl",
+      "original_name": "wtFOCK",
+      "overview": "wtFOCK（也称为Skam比利时），是比利时国际翻拍的挪威Skam。第一集于2018年10月播出，是第七部国际翻拍。",
+      "popularity": 12.2586,
+      "poster_path": "/xU34Cum8V8nJS3UuwwgKziNDREQ.jpg",
+      "first_air_date": "2018-10-06",
+      "name": "羞耻（比利时版）",
+      "vote_average": 8.4,
+      "vote_count": 18
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/d92qTJea9EYXnQBcOtAjlYDVjOW.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 76880,
+      "origin_country": [
+        "FR"
+      ],
+      "original_language": "fr",
+      "original_name": "SKAM France",
+      "overview": "SKAM法国版改编自挪威系列剧《SKAM》，该剧讲述了高中生的日常生活和他们所面临的问题。每一季的情节都围绕着不同的中心人物和特定主题。第一季聚焦Emma Borgès，第二季为Manon Demissy，第三季是Lucas Lallement，第四季为Imane Bakhellal。SKAM法国版的第五、第六、第七、第八和第九季（围绕Arthur Broussard、Lola Lecomte、Tiffany Prigent、Bilal Cherif和Maya Etienne等角色）并不是基于原版。",
+      "popularity": 12.3424,
+      "poster_path": "/bSARTbOpPqGz11tUaJ9M4p07xrt.jpg",
+      "first_air_date": "2018-02-09",
+      "name": "羞耻（法国版）",
+      "vote_average": 8.2,
+      "vote_count": 49
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vHLF4DtO3y058kvqYdNNP6rbi6m.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 65320,
+      "origin_country": [
+        "NO"
+      ],
+      "original_language": "no",
+      "original_name": "SKAM",
+      "overview": "在奥斯陆 Hartvig Nissens 上高中的一群年轻人的青春故事，每一季变换一个主角。",
+      "popularity": 6.3454,
+      "poster_path": "/mkgQX2mRSn7aDSlFtnpUtNintbA.jpg",
+      "first_air_date": "2015-09-25",
+      "name": "羞耻",
+      "vote_average": 8.2,
+      "vote_count": 738
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/hrVF15fXneZcLwXO861j7Q32BgB.jpg",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 82424,
+      "origin_country": [
+        "ES"
+      ],
+      "original_language": "es",
+      "original_name": "SKAM España",
+      "overview": "挪威原作《SKAM》一样，第一季是以Eva Vázquez Villanueva为主角来展开的，故事发生在秋天，描述Eva和Jorga之间充满混乱与谎言的爱情，以及与Nora（Noora）、Cris（Chris）、Viri（Vlide）、Amira（Sana）五个女孩之间的友情。",
+      "popularity": 7.8485,
+      "poster_path": "/sNqZzxDi7IaU3DBrsVud56iLn92.jpg",
+      "first_air_date": "2018-09-16",
+      "name": "羞耻（西班牙版）",
+      "vote_average": 7.7,
+      "vote_count": 500
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/wTGGtHvCaTRS2p2ctRTuD56GKax.jpg",
+      "genre_ids": [
+        18,
+        10766
+      ],
+      "id": 263208,
+      "origin_country": [
+        "HR"
+      ],
+      "original_language": "hr",
+      "original_name": "SRAM",
+      "overview": "该剧以克罗地亚首都萨格勒布为背景，将于2024年秋季开始在HRT1上播出。",
+      "popularity": 4.4012,
+      "poster_path": "/vbZo4jf52J0UhrBVSMbejKok4V3.jpg",
+      "first_air_date": "2024-10-27",
+      "name": "羞耻(克罗地亚版)",
+      "vote_average": 8.1,
+      "vote_count": 9
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/zU1pZdkJhF9JMJsEVRh94O5jb2O.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 78923,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "SKAM Austin",
+      "overview": "Facebook预订挪威热剧《羞耻》美国翻拍版。西蒙·富勒将参与制作该剧。届时该剧将在Facebook的原创剧集平台上线，预计将会在2018年。",
+      "popularity": 2.4219,
+      "poster_path": "/d21FNYyswEeatqNUp3rez1mHczk.jpg",
+      "first_air_date": "2018-04-27",
+      "name": "羞耻（美版）",
+      "vote_average": 6.2,
+      "vote_count": 13
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3tAGy6yyrmGEJNNKiTxHstQpPsy.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 82948,
+      "origin_country": [
+        "NL"
+      ],
+      "original_language": "nl",
+      "original_name": "SKAM NL",
+      "overview": "本剧讲述了荷兰乌得勒支一所中学里一群青少年的故事。",
+      "popularity": 2.4205,
+      "poster_path": "/zOtpVvvlpkYjvMlLAogwS1oS3Nf.jpg",
+      "first_air_date": "2018-09-16",
+      "name": "羞耻（荷兰版）",
+      "vote_average": 7.6,
+      "vote_count": 11
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/7uuegMSiPnFsMHtahsbzegPCQIq.jpg",
+      "genre_ids": [
+        10764
+      ],
+      "id": 95183,
+      "origin_country": [
+        "AR"
+      ],
+      "original_language": "es",
+      "original_name": "No hay tiempo para la vergüenza",
+      "overview": "讲述古怪的时装设计师圣地亚哥·阿耳特弥斯的生活和冒险经历。",
+      "popularity": 0.7322,
+      "poster_path": "/wFAHO3otAhiJ2KlgZWsa79StB9U.jpg",
+      "first_air_date": "2019-11-19",
+      "name": "无暇羞愧",
+      "vote_average": 6.0,
+      "vote_count": 2
+    }
+  ]
+}

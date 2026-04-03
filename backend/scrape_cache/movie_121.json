@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 121,
+  "media_type": "movie",
+  "title": "指环王2：双塔奇兵",
+  "original_title": "The Lord of the Rings: The Two Towers",
+  "english_title": "The Lord of the Rings: The Two Towers",
+  "year": "2002",
+  "poster_url": "https://image.tmdb.org/t/p/w500/ychqojA94mwdskXIIVmDyrfxwXl.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/kWYfW2Re0rUDE6IHhy4CRuKWeFr.jpg",
+  "overview": "在J.R.R.托尔金史诗三部曲的第二篇章中，护戒同盟队面对难以想象的敌军与诡谲阴谋，同时见证了远古奇迹与同胞未觉醒的力量。",
+  "rating": 8.4,
+  "genres": [
+    "冒险",
+    "奇幻",
+    "动作"
+  ],
+  "director": "彼得·杰克逊",
+  "cast": [
+    "伊利亚·伍德",
+    "伊恩·麦克莱恩",
+    "维果·莫特森",
+    "西恩·奥斯汀",
+    "安迪·瑟金斯",
+    "约翰·里斯-戴维斯"
+  ],
+  "runtime": 235,
+  "imdb_id": "tt0167261",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "New Zealand",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

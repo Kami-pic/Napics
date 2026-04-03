@@ -1,0 +1,172 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/d8exIcsKXIJXEprwnmWWMAzDApd.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 890978,
+      "original_language": "el",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.4553,
+      "poster_path": "/mWW53XGo52Y1IdOgXgaDG2puXXk.jpg",
+      "release_date": "2022-06-02",
+      "title": "18",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 538070,
+      "original_language": "en",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.7767,
+      "poster_path": "/m9pKorM8eJuK6dBfveQ44eyGPvY.jpg",
+      "release_date": "2018-07-03",
+      "title": "18",
+      "video": true,
+      "vote_average": 9.5,
+      "vote_count": 2
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 259491,
+      "original_language": "en",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0903,
+      "poster_path": null,
+      "release_date": "2014-03-16",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/si7ItbbPSw6KYQhLx3hHggJu98a.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 1364755,
+      "original_language": "bg",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0966,
+      "poster_path": "/48xpFWDQxbyCiwSVxc3QndcjhJW.jpg",
+      "release_date": "2016-01-01",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 615296,
+      "original_language": "pt",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0723,
+      "poster_path": "/lyW0NZBHvExuRMo2HkBX3tS2axi.jpg",
+      "release_date": "2019-04-30",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8U75x9yptAzEJPNSNOrY5qvYQ3g.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 1657345,
+      "original_language": "en",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0545,
+      "poster_path": "/12CXdqFmTesxFbTENgz7BGtGIZE.jpg",
+      "release_date": "2026-04-18",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1317720,
+      "original_language": "lv",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0461,
+      "poster_path": "/lokwZP17Zaex8ZxIhodX7UYRrDN.jpg",
+      "release_date": "2023-03-09",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1170825,
+      "original_language": "xx",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0286,
+      "poster_path": null,
+      "release_date": "2023-08-05",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 732677,
+      "original_language": "ru",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": "/otuJpFbGufmaQII021P6sdOVvIq.jpg",
+      "release_date": "2019-12-12",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 415610,
+      "original_language": "en",
+      "original_title": "18",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": null,
+      "release_date": "",
+      "title": "18",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "tmdb_id": 567909,
+  "media_type": "movie",
+  "title": "52",
+  "original_title": "52",
+  "english_title": "52",
+  "year": "2011",
+  "poster_url": "https://image.tmdb.org/t/p/w500/9PK8Xqdmn3OxSBFkEx7fb9cCWv4.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/xsL1HUSGoyn0UmB5cj8TmYRwhaR.jpg",
+  "overview": "",
+  "rating": 1.0,
+  "genres": [
+    "喜剧"
+  ],
+  "director": "Josh Levy",
+  "cast": [
+    "斯科特·汤普森"
+  ],
+  "runtime": 4,
+  "imdb_id": "tt1731651",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

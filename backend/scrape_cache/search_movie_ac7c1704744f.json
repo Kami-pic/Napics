@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/rQaHA74pevnGsxcKGaoZVGWe9TC.jpg",
+      "genre_ids": [
+        16,
+        10751,
+        35,
+        14,
+        18,
+        10402
+      ],
+      "id": 508442,
+      "original_language": "en",
+      "original_title": "Soul",
+      "overview": "乔·加德纳是一位中学乐队老师，他获得了毕生难逢的机会——在纽约最好的爵士俱乐部演奏。但一次小小的失误将他从纽约街头带到了一个奇幻之境“生之来处”。这是一个新生灵魂在前往地球之前获得个性、怪癖和兴趣的地方。决心重返自己生活的乔，与一个名叫22的早熟灵魂结成了伙伴。22始终无法理解人类生活的吸引力。当乔拼命试图向22展示生命的精彩之处时，他或许也将发现一些关于生命最重要问题的答案。",
+      "popularity": 10.0784,
+      "poster_path": "/yhyY94umEO1XkaxJAZJSMJk9hgt.jpg",
+      "release_date": "2020-12-25",
+      "title": "心灵奇旅",
+      "video": false,
+      "vote_average": 8.093,
+      "vote_count": 11288
+    }
+  ]
+}

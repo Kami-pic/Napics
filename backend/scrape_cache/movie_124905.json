@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 124905,
+  "media_type": "movie",
+  "title": "哥斯拉",
+  "original_title": "Godzilla",
+  "english_title": "Godzilla",
+  "year": "2014",
+  "poster_url": "https://image.tmdb.org/t/p/w500/zZcpMXkLPOhd7wy66U4m2RR6yvY.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/cHvwgJPaT59H1HiQsvBrGD5I46g.jpg",
+  "overview": "拥有幸福美满生活的大兵福德·布罗迪内心隐藏着一个挥之不去的阴影。15年前，他和父亲乔伊、母亲桑德拉生活在日本。父母供职于一座大型核电站。就在福德的爸爸生日当天，一场突如其来的灾难摧毁了核电站，他的母亲在灾难中丧生，语焉不详的政府隐瞒真相，以防止核辐射的名义封锁了该地区。但是乔伊却从种种异状觉察到反常之处，十五年来他一直试图揭开当天的灾难之谜，终于发现这一切都是由一只如山一般巨大的怪兽所引起。怪兽哥斯拉从沉睡中苏醒，令人难以预测的灾难席卷而来……",
+  "rating": 6.4,
+  "genres": [
+    "动作",
+    "剧情",
+    "科幻"
+  ],
+  "director": "加里斯·爱德华斯",
+  "cast": [
+    "亚伦·泰勒-约翰逊",
+    "伊丽莎白·奥尔森",
+    "朱丽叶·比诺什",
+    "布莱恩·克兰斯顿",
+    "渡边谦",
+    "莎莉·霍金斯"
+  ],
+  "runtime": 123,
+  "imdb_id": "tt0831387",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

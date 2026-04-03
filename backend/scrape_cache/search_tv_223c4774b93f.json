@@ -1,0 +1,81 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/i4OrYbHKhKnueBDrR9B8gbrcnhm.jpg",
+      "genre_ids": [
+        80,
+        9648
+      ],
+      "id": 129063,
+      "origin_country": [
+        "TW"
+      ],
+      "original_language": "zh",
+      "original_name": "逆局",
+      "overview": "没有破绽的犯罪手法，查无凶手的连续杀人案…！一桩桩悬案迫使警方与罪犯不得不携手合作，深入命案现场与凶手博弈对决，为死者伸张正义。双雄联手出击的强强对决，却让这场魔鬼交易暗潮汹涌，即将引发另一波更大的致命危机！",
+      "popularity": 7.858,
+      "poster_path": "/jusTI390ZH1Zo3FAySqaPRk1Xud.jpg",
+      "first_air_date": "2021-09-03",
+      "name": "逆局",
+      "vote_average": 7.5,
+      "vote_count": 20
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 302177,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "开局被卖，我在王府开启逆袭之路",
+      "overview": "贫女叶大妮为给弟妹治病卖身广陵王府，为避祸扮丑却被世子选中。她天生神力与聪慧意外吸引世子。王府姨娘觊觎世子之位暗下杀手，叶大妮数次相救，赐名 “狸奴”。她凭智谋助世子化解王府女眷纷争，世子亦倾心维护，让这个贫女逐渐赢得青睐与爱意。",
+      "popularity": 0.0071,
+      "poster_path": "/sVrmKdRLserT2OjScLF9UAkOJXv.jpg",
+      "first_air_date": "2025-10-01",
+      "name": "开局被卖，我在王府开启逆袭之路",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 317618,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "开局全家剩我一个男人，且看我逆天改命",
+      "overview": "《开局全家剩我一个男人，且看我逆天改命》是由镜语新篇制作的短剧，于2026年2月5日在中国大陆首播，主演包括马昂、吴昊、池信子。  该剧讲述林墨穿成镇国将军府六子，遇天塌大祸，父兄遭毒计战死，全家被诬通敌，女帝一道圣旨满门流放绝域黑风城；只剩林墨和五位貌美寡嫂相依为命，林墨觉醒开支散叶系统，从此崛起守护嫂子并带林家走上巅峰。 [2]截至2026年2月28日，热力值为952.6万。",
+      "popularity": 0.0404,
+      "poster_path": "/6y2FL4aBszv9JiBMxiybaMGAfGV.jpg",
+      "first_air_date": "2026-02-05",
+      "name": "开局全家剩我一个男人，且看我逆天改命",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/440RZ3NQn4HWV3wHmfAyyjQw8XO.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 316001,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "뒤집기 한판",
+      "overview": "梦想成为国家柔道代表的俊宇，在一场比赛中被如彗星般出现的敏宰瞬间击败。然而，比失败的愤怒更复杂的是，他回忆起敏宰的触碰时，心中涌起一股莫名的兴奋。第二天，俊宇向敏宰发起挑战，要求再战一场。随着比赛的进行，俊宇越来越被敏宰深深吸引！",
+      "popularity": 0.2061,
+      "poster_path": "/lz6b6nrjZhLAOBPI8buzuKipXmp.jpg",
+      "first_air_date": "2025-04-01",
+      "name": "一本！逆转一击",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/7WlsAV9SrybVUo74f61hOxSm9j3.jpg",
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "id": 179641,
+      "original_language": "fr",
+      "original_title": "Chloé",
+      "overview": "母亲发生争执后。16岁的克洛伊无处可去在街上闲逛。她后来遇见了迈克，一个迷人的年轻男子。但迈克其实是一个皮条客……",
+      "popularity": 1.8331,
+      "poster_path": "/fAV5MWvJqiH8plcVUgbRXVFr8q6.jpg",
+      "release_date": "1996-06-11",
+      "title": "克洛伊",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 23
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/yo7rPvwjHHYDM1bw4OgTZJY6QYP.jpg",
+      "genre_ids": [
+        18,
+        53,
+        9648
+      ],
+      "id": 28211,
+      "original_language": "en",
+      "original_title": "Chloe",
+      "overview": "丈夫戴维（连姆·尼森）错过了从纽约回家的航班，当然也赶不上妻子凯瑟琳（朱莉安·摩尔）为他准备的惊喜派对了，凯瑟琳只好咽下自己的失望和怀疑，独自去向等待着的宾客们解释。 　　第二天早上，她读到了丈夫以前的女学生发给戴维的短信后，凯瑟琳的恐惧开始增长，她开始怀疑丈夫是不是出轨了。她和戴维是很一对令人艳羡的夫妻，凯瑟琳是医生，戴维是音乐教授，他们还有一个17岁的儿子迈克尔（马克斯·希尔莱耶），对于外人来说他们什么都有了－－事业、金钱和家庭。但是由于他们各自的职业的性质，并且要养育孩子，他们的婚姻生活存在很多压力。而且因为、、由于缺乏沟通和亲热，他们的关系已经大不如前了。 　　在惊喜派对两周后，凯瑟琳和戴维在和朋友们吃晚餐。凯瑟琳中途去洗手间的时候碰到了迷人的年轻女郎克洛伊（阿曼达·塞弗里德），后来她们开始了简短的联系。回到餐桌旁，凯瑟琳看到克洛伊在玩“指出谁是妓女”的游戏，她饶有兴趣地看着克洛伊如何去接近一位年老的生意人。在回家路上凯瑟琳终于忍不住问起戴维他是不是故意留在纽约不回家，戴维极力否认，但凯瑟琳知道他撒谎了。 　　凯瑟琳对于戴维出轨的怀疑越来越深，她找到了克洛伊，雇佣她来测试大卫是否忠实。她们定期会面交流情况，克洛伊对自己和戴维每次相见的细枝末节毫无隐瞒，这终于点燃了凯瑟琳嫉妒的火花，也唤醒了她内心深处潜藏的对戴维的深情。在一家色情网站上看到克洛伊的资料之后，凯瑟琳意识到她正在一步步把她的家庭置于危险的境地－－现在要阻止克洛伊，她还来得及吗？",
+      "popularity": 4.5089,
+      "poster_path": "/rQsFmvUKQU8mbkwRDcRIkNs0xSF.jpg",
+      "release_date": "2010-02-25",
+      "title": "克洛伊",
+      "video": false,
+      "vote_average": 6.13,
+      "vote_count": 1847
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/q4xc8D8qm2LILF4j7BfrB0pP3ai.jpg",
+      "genre_ids": [
+        27,
+        53
+      ],
+      "id": 1654715,
+      "original_language": "en",
+      "original_title": "The Summoning of Chloe Kane",
+      "overview": "",
+      "popularity": 0.0843,
+      "poster_path": "/meJkZV4DPkt5QODp7tQv8vO9iPD.jpg",
+      "release_date": "2026-03-03",
+      "title": "The Summoning of Chloe Kane",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

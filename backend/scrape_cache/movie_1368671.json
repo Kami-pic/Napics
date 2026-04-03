@@ -1,0 +1,33 @@
+{
+  "tmdb_id": 1368671,
+  "media_type": "movie",
+  "title": "Days",
+  "original_title": "Days",
+  "english_title": "Days",
+  "year": "1981",
+  "poster_url": "https://image.tmdb.org/t/p/w500/sRs2R6qI9C3Liv3hWrQTdmoSqqp.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 0.0,
+  "genres": [],
+  "director": "Michael Rolfe",
+  "cast": [
+    "Anna Calder-Marshall",
+    "Peter Blake",
+    "Alec Linstead",
+    "Hilary Mason",
+    "Amanda Wissler",
+    "Jane Galloway"
+  ],
+  "runtime": 0,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

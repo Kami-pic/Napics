@@ -1,0 +1,31 @@
+{
+  "tmdb_id": 1107264,
+  "media_type": "movie",
+  "title": "Libres",
+  "original_title": "Libres",
+  "english_title": "Libres",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/gD2YVL5mPBgxznXioAiLRByZ0dS.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/3TR8o9wkjzLb5PwtfKwDOOMVl9t.jpg",
+  "overview": "",
+  "rating": 7.4,
+  "genres": [
+    "纪录"
+  ],
+  "director": "Santos Blanco",
+  "cast": [],
+  "runtime": 108,
+  "imdb_id": "tt26342123",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Spain"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null,
+  "seasons_info": []
+}

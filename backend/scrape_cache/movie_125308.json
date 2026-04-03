@@ -1,0 +1,33 @@
+{
+  "tmdb_id": 125308,
+  "media_type": "movie",
+  "title": "One",
+  "original_title": "One",
+  "english_title": "One",
+  "year": "1998",
+  "poster_url": "https://image.tmdb.org/t/p/w500/oGC221dyma1fjuMvtjO1VDvwoS5.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 8.0,
+  "genres": [],
+  "director": "Tony Barbieri",
+  "cast": [
+    "Jason Cairns",
+    "Kane Picoy",
+    "Autumn Macintosh",
+    "Edward Lynch",
+    "Gabrielle Ruvolo",
+    "Paul Herman"
+  ],
+  "runtime": 102,
+  "imdb_id": "tt0142735",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

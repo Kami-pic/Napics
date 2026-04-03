@@ -1,0 +1,90 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/jLE5bsPA9xOKzBWOaOmKbp1DWQS.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        18
+      ],
+      "id": 71024,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Castlevania",
+      "overview": "吸血鬼猎人英勇作战，解救被德古拉控制的怪兽围困的城市。本剧由经典电子游戏《恶魔城》系列改编。",
+      "popularity": 16.9348,
+      "poster_path": "/ubDtIBwdS9b29sBofAkqWz3PqkT.jpg",
+      "first_air_date": "2017-07-07",
+      "name": "恶魔城",
+      "vote_average": 8.257,
+      "vote_count": 1511
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1swj9HxDkjzsO3yHlSwRA38hMFN.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        18
+      ],
+      "id": 123548,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Castlevania: Nocturne",
+      "overview": "革命席卷法国，里希特·贝尔蒙奋力守护家族遗产，并阻止冷酷无情、利欲熏心的吸血鬼统治者崛起。",
+      "popularity": 11.0743,
+      "poster_path": "/4XJwo95ktJ7xupw1bCMuP91kyYr.jpg",
+      "first_air_date": "2023-09-28",
+      "name": "恶魔城：夜曲",
+      "vote_average": 7.855,
+      "vote_count": 259
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/FTePL7vKrRFVfCbVgQIDXAzSec.jpg",
+      "genre_ids": [
+        16,
+        10765
+      ],
+      "id": 78081,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Constantine: City of Demons",
+      "overview": "约翰·康斯坦丁凭借着对黑暗艺术的神秘知识和邪恶的机智，打响了这场战争。他的灵魂已经被诅咒到地狱，他会尽一切努力去保护无辜的人。在正义与邪恶的平衡线上，Constantine运用他的技能去面对威胁我们世界的超自然恐怖，并将他们送回属于他们的地方。在那之后，谁知道…也许他和他的灵魂终究还是有希望的。",
+      "popularity": 4.1408,
+      "poster_path": "/63z8WKZg8mCDuxxlwhMhzH5A0jo.jpg",
+      "first_air_date": "2018-03-24",
+      "name": "康斯坦丁：恶魔之城",
+      "vote_average": 7.241,
+      "vote_count": 108
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/gRd7yxwJC0O9NwwJvRcdj6VfaU6.jpg",
+      "genre_ids": [
+        35,
+        10765
+      ],
+      "id": 218582,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "勇者ヨシヒコと悪霊の鍵",
+      "overview": "距离魔王被义彦（山田孝之 饰）、团丈（宅麻伸 饰）、美列布（穆罗刚 饰）和阿紫（木南晴夏 饰）一行人打败后，已经过去了百年，曾经的勇者们早已经化作了白骨，为了纪念他们的壮举，村民们特地为他们修缮了奢华的陵墓。好景不长，魔王的封印再度被解开，人间即将面临毁灭的危机，可是村中却再无能够独当一面的勇者站出来为民除害，无奈下，佛祖（佐藤二朗 饰）只得将英勇的四人复活，命其再度踏上冒险的旅途。\n\n好友相见固然高兴，可是等级早已归零的他们能够担负起这艰巨的任务吗？为了打败魔王，义彦一行人必须找到传说中的恶灵之匙，可是跟随着佛祖模棱两可的指引，他们似乎离真相越来越远了。时间渐渐紧迫起来，这样真的没问题吗？加油啊，义彦",
+      "popularity": 2.7395,
+      "poster_path": "/i6C9mi7YDEyd3ICuhkhQ1eFC8UQ.jpg",
+      "first_air_date": "2012-10-12",
+      "name": "勇者义彦与恶灵之钥",
+      "vote_average": 7.7,
+      "vote_count": 3
+    }
+  ]
+}

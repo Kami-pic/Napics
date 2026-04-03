@@ -1,0 +1,33 @@
+{
+  "tmdb_id": 987470,
+  "media_type": "movie",
+  "title": "白色轿车里的女人",
+  "original_title": "하얀 차를 탄 여자",
+  "year": "2025",
+  "poster_url": "https://image.tmdb.org/t/p/w500/scdb6c8wnlnwbXMmLhvH5D9cvcY.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/2RgHNI8ZAeaGnqcaXrDCWpj7R13.jpg",
+  "overview": "",
+  "rating": 6.3,
+  "genres": [
+    "惊悚",
+    "悬疑"
+  ],
+  "director": "高慧真",
+  "cast": [
+    "郑丽媛",
+    "李姃垠",
+    "张真熙",
+    "康正祐",
+    "이휘종"
+  ],
+  "runtime": 108,
+  "imdb_id": "tt21983828",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

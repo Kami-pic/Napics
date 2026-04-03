@@ -1,0 +1,194 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 521975,
+      "original_language": "en",
+      "original_title": "The American",
+      "overview": "凯瑞·福永导演的电影新作《美国人》，确定将由杰克·吉伦哈尔出演美国传奇音乐家伦纳德·伯恩斯坦。伯恩斯坦25岁就被任命为纽约爱乐团助理指挥，后来担任交响乐团音乐总监长达11年，同时负责举办了纽约、伦敦、米兰等地的爱乐团交响音乐会。他曾经为《西区故事》《码头风云》等经典电影创作配音，后一部电影也为他赢得了奥斯卡的提名。伯恩斯坦一生曾获得过11座艾美奖，1985年格莱美授予他终生成就奖。《美国人》这部电影将会在这个月的戛纳电影节举办的电影市场上寻找发行方，影片将会在今年秋天开始拍摄。",
+      "popularity": 0.0727,
+      "poster_path": null,
+      "release_date": "",
+      "title": "美国人",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99,
+        36
+      ],
+      "id": 618904,
+      "original_language": "en",
+      "original_title": "The Amish",
+      "overview": "这部影片以细致入微的方式展现了当代阿米什人的信仰与生活，探讨了这种封闭的社群文化如何在世界上最开放、最个人主义的社会之一中蓬勃发展。对于一个根植于过去的社群来说，未来将会如何？我们对阿米什人的迷恋又反映了哪些深刻的美国价值观？",
+      "popularity": 0.4595,
+      "poster_path": "/8KjJrOjQvu82qFI0a5rs1reZhgT.jpg",
+      "release_date": "2012-02-28",
+      "title": "美国历史：阿米什人",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pC2aIp0D6iV2yKo5UWljQc9x4Hj.jpg",
+      "genre_ids": [
+        10749,
+        10402
+      ],
+      "id": 524499,
+      "original_language": "en",
+      "original_title": "An American in Paris: The Musical",
+      "overview": "浪漫之都巴黎，成为战后艺术、友谊和爱情故事的背景，一位美国士兵与美丽而年轻的舞者在这里相遇……  格什温兄弟的《一个美国人在巴黎》是一段浪漫的巴黎旅行中诞生的交响诗，亦曾是经典奥斯卡获奖歌舞片，音乐剧版由英国皇家歌剧院著名编舞克里斯多夫·威尔顿操刀，纽约城市芭蕾舞团前首席罗伯特·费尔柴尔德和利安娜·考普领衔，带来无与伦比的视听盛宴， 狂揽托尼奖与奥利弗奖的同时，破纪录获得28家英国主流媒体五星好评。",
+      "popularity": 0.7027,
+      "poster_path": "/zuScwB902EQ73RCQf529m6t5UmD.jpg",
+      "release_date": "2018-04-16",
+      "title": "一个美国人在巴黎",
+      "video": true,
+      "vote_average": 7.7,
+      "vote_count": 13
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kHY1w1UcGpHjhnkU5xAecVaHxRX.jpg",
+      "genre_ids": [
+        18,
+        10752,
+        10749
+      ],
+      "id": 94732,
+      "original_language": "en",
+      "original_title": "The Little American",
+      "overview": "",
+      "popularity": 0.4848,
+      "poster_path": "/AsGF6EA8Z86ep0BNrxHWAkuyLBT.jpg",
+      "release_date": "1917-07-12",
+      "title": "小小美国人",
+      "video": false,
+      "vote_average": 6.3,
+      "vote_count": 20
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/tjdjDn10yDK5R7b6HdwtTASqwmE.jpg",
+      "genre_ids": [
+        80,
+        18,
+        53
+      ],
+      "id": 27579,
+      "original_language": "en",
+      "original_title": "The American",
+      "overview": "------在《美国人》中,克鲁尼饰演一位独自行动、技术高超的杀手,名叫杰克。当杰克在瑞典完成了一个任务之后,又一个更艰巨的任务等待着他——他会被派往美国去暗杀。他对他的联系人拉里发誓,这将是他的最后一票。杰克来到意大利乡下的某个小城,享受暂时远离死亡的时光。然而,那份由比利时女人 Mathilde(斯科拉·鲁特饰,出演过《杀手没有假期》)委任的工作刻不容缓。令人惊讶的是,杰克找到了当地的好友、神父Benedetto叙旧(意大利老演员Paolo Bonacelli饰),又和当地的女人Clara(薇奥兰特·普拉西多饰)继续着浪漫的关系。但是,杰克的冒险生涯即将开始……",
+      "popularity": 4.524,
+      "poster_path": "/y78XxwoXhczxEZHOvhjo343yPDk.jpg",
+      "release_date": "2010-08-31",
+      "title": "美国人",
+      "video": false,
+      "vote_average": 5.974,
+      "vote_count": 1490
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99,
+        10402
+      ],
+      "id": 48011,
+      "original_language": "en",
+      "original_title": "Such Hawks Such Hounds: Scenes from the American Hard Rock Underground",
+      "overview": "这样的老鹰这样的猎犬探索音乐和地下大约1970-2007美国硬摇滚音乐家，重点是在最近几年形成归类的声音的丰富的肢体迷幻和70年代原金属衍生的风格。",
+      "popularity": 0.2077,
+      "poster_path": "/yBzSO6vDKVg9zw4qjA1z8Ddbq9V.jpg",
+      "release_date": "2008-03-01",
+      "title": "美国地下石人厄运金属",
+      "video": false,
+      "vote_average": 7.7,
+      "vote_count": 8
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/7eaLWxA98VoqtaYIli6DOVURHsm.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 339976,
+      "original_language": "en",
+      "original_title": "American Woman",
+      "overview": "宾夕法尼亚州一个小镇上，一位年轻的祖母在女儿失踪后抚养她女儿的孩子。一直以来，人们都在拼命寻找她。",
+      "popularity": 1.951,
+      "poster_path": "/jNK6NoDOJIC70abBGFITXcyO88n.jpg",
+      "release_date": "2018-06-07",
+      "title": "美国女人",
+      "video": false,
+      "vote_average": 6.335,
+      "vote_count": 164
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lWkd9Nqz9zxMaJXSiY9E2veHmYk.jpg",
+      "genre_ids": [
+        53,
+        18
+      ],
+      "id": 53650,
+      "original_language": "en",
+      "original_title": "The Ugly American",
+      "overview": "　　这部充满人性省思的政治影片，是改编自威廉李德（William J. Lederer）与尤金波迪克（Eugene Burdick）合著的同名小说，听说这本小说是促使甘乃迪总统成立海外和平部队的幕后推手。\r 　　乔治．英格鲁德执导。美泰合作开发高速公路遭共产党挑拔停工，并因沙卡人死亡而导致泰国境内暴动。美改派麦奎（马龙．白兰度饰）出使泰国，麦与当地革命英雄狄扬（冈田英次饰）为多年好友，狄扬主张沙卡由沙卡人自己作主，并反对首相昆西之独裁而广得人心。麦奎不满狄扬反美并误以为狄是共产党的一派，而苏俄、中共与北沙卡却极力拉拢无条件支持狄扬。昆西向麦奎告白，狄扬其实并非共党，只是受共党利用将遭刺杀，并愿与狄扬合作促成民主，但是狄扬还是遭到不幸，临终前令手下与昆西合作共求民主。本片在越南情势动荡时推出，颇见其现实意义，在表现人物心理活动上的描写十分细致，主题曲也颇能震动人心。",
+      "popularity": 2.4178,
+      "poster_path": "/hEBolqvaIRMRBtryWnFBn9ljE7I.jpg",
+      "release_date": "1963-04-02",
+      "title": "丑陋的美国人",
+      "video": false,
+      "vote_average": 6.6,
+      "vote_count": 34
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/cgbA6GnXlHTj7WzovsfL7bumB1X.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 59969,
+      "original_language": "fr",
+      "original_title": "La Belle Américaine",
+      "overview": "",
+      "popularity": 0.7215,
+      "poster_path": "/zyYTH4t5fEf66fpSP9L2vBIeebI.jpg",
+      "release_date": "1961-09-29",
+      "title": "美国美人",
+      "video": false,
+      "vote_average": 5.9,
+      "vote_count": 62
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vDpeXIKjUmKLivxrPE8WNeRsgBH.jpg",
+      "genre_ids": [
+        18,
+        10749,
+        10752
+      ],
+      "id": 85514,
+      "original_language": "en",
+      "original_title": "The Quiet American",
+      "overview": "一位天真的年轻美国人，一位愤世嫉俗的老英国外交官在1952年越南和一个美丽的年轻女孩的政治上存在分歧。",
+      "popularity": 1.1653,
+      "poster_path": "/67Ks7m063DsocmWmo2DyTSuFXZr.jpg",
+      "release_date": "1958-02-08",
+      "title": "安静的美国人",
+      "video": false,
+      "vote_average": 5.7,
+      "vote_count": 33
+    }
+  ]
+}

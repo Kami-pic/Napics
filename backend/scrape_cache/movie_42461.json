@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 42461,
+  "media_type": "movie",
+  "title": "红字",
+  "original_title": "Der scharlachrote Buchstabe",
+  "english_title": "Der scharlachrote Buchstabe",
+  "year": "1973",
+  "poster_url": "https://image.tmdb.org/t/p/w500/uW5uZ4KJcopHBjUYAk2hnFzjjsR.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/mpEySWm3VVp2HuMx7c5W07cSVzP.jpg",
+  "overview": "　　故事发生在17世纪中叶的美国，美丽的海丝特（森塔·伯格 Senta Berger 饰）遵循丈夫罗杰（汉斯·克里斯蒂安·布勒希 Hans Christian Blech 饰）的指示，只身一人来到了一座地处偏远的小镇生活，在这里，海斯特邂逅了名为亚瑟（洛乌·卡斯特尔 Lou Castel 饰）的牧师。海斯特和亚瑟之间产生了非常猛烈的化学反应，可是海斯特碍于自己已婚的身份，而亚瑟亦被自己牧师的职业所束缚，两人间虽然电光火石，但发乎情止于理，都没有进一步的举动。\r 　　直到有一天，海瑟特得知罗杰在一场海难之中死去了，恢复了自由之身的她对亚瑟的感情终于如同决堤的潮水一般，将所有的理智淹没了。之后，海斯特怀上了亚瑟的孩子，她遭到了逮捕，并冠以通奸罪的罪名，然而为了保全亚瑟，海斯特无论如何也不肯供出孩子父亲的名字。",
+  "rating": 5.3,
+  "genres": [
+    "历史",
+    "剧情",
+    "电视电影"
+  ],
+  "director": "维姆·文德斯",
+  "cast": [
+    "森塔·伯格",
+    "Hans Christian Blech",
+    "洛乌·卡斯特尔",
+    "Rüdiger Vogler",
+    "Yelena Samarina",
+    "Yella Rottländer"
+  ],
+  "runtime": 90,
+  "imdb_id": "tt0069228",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Germany",
+    "Spain"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

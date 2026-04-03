@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/p2eZlGwd8OjkWpwD2hSoBiIlHBZ.jpg",
+      "genre_ids": [
+        16,
+        18,
+        9648
+      ],
+      "id": 117933,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "サマータイムレンダ",
+      "overview": "听闻自己的青梅竹马——小舟潮的死讯后，网代慎平回到了阔别两年的故乡，和歌山市的日都岛。出席葬礼时，慎平的挚友菱形窗向他吐露：“潮的死有他杀的可能性。”甚至连潮的妹妹泠也说，潮是被杀害的。在日都岛上流传着这样一个传说：看到与自己一样的“影子”的人就会死去。而在潮死去之前，泠说她曾看到过潮的“影子”……",
+      "popularity": 32.6146,
+      "poster_path": "/llEfmcMmO3TuvGf3BUR3foQO7W1.jpg",
+      "first_air_date": "2022-04-15",
+      "name": "夏日重现",
+      "vote_average": 8.1,
+      "vote_count": 166
+    }
+  ]
+}

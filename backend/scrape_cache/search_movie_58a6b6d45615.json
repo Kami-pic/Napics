@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/hsb8nNBt3emvWqBs7Xv5IKlz6Im.jpg",
+      "genre_ids": [
+        12,
+        16,
+        35,
+        14
+      ],
+      "id": 223702,
+      "original_language": "en",
+      "original_title": "Sausage Party",
+      "overview": "故事从食物视角出发，讲述单纯的它们被采购回家，没想到会面临被生吞、活剥、碎尸的危险境遇。香肠组成逃亡小分队，誓要将秘密公布于众！",
+      "popularity": 7.0335,
+      "poster_path": "/3sObp4Jz7VcJ5y56mXyqV5J6Aei.jpg",
+      "release_date": "2016-07-11",
+      "title": "香肠派对",
+      "video": false,
+      "vote_average": 5.753,
+      "vote_count": 7668
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/jL3G2f8uNCFejJRlIqCzRp8Y7eV.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 10802,
+      "original_language": "en",
+      "original_title": "Showgirls",
+      "overview": "诺密（伊丽莎白·伯克利 Elizabeth Berkley 饰）是一名性感漂亮的女郎，年轻的她来到拉斯维加斯淘金，希望在这里能找到令她立足的工作。没想到，刚到此地，便被小混混骗走了行李，身无分文的她遇见了化妆师克里斯特（吉娜·格申 Gina Gershon 饰），两人一见如故结下了深厚的友谊。诺密发现，想在拉斯维加斯得到一个饭碗实在是太难了，热爱舞蹈的她最后决定加入当地最有名的艳舞团队。经过层层选拔，诺密得到了她的角色，而一旦开始涉入这个复杂的声色世界中，她沦陷的速度就再也不会停止。本来自尊自重的诺密，居然也开始为了向上发展而出卖自己的肉体。诺密越来越有名，但她和克里斯特的距离也越来越远。为了弥补这段友情，诺密安排了克里斯特和她的偶像歌手见面，没想到看似偶像实则禽兽，克里斯特惨遭凌辱住进医院，也击碎了诺密关于名声和金钱的最后的幻觉",
+      "popularity": 7.2567,
+      "poster_path": "/r7URmY57yVKSvca7Pmp1W5kULK1.jpg",
+      "release_date": "1995-09-22",
+      "title": "艳舞女郎",
+      "video": false,
+      "vote_average": 5.574,
+      "vote_count": 1361
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/YX2gVErKiV2EdVVP7Epxzjq61Z.jpg",
+      "genre_ids": [],
+      "id": 980046,
+      "original_language": "cn",
+      "original_title": "都巿情缘之艳舞女郎",
+      "overview": "　　Sukie（草止纯饰）原本是个上空女郎，为了帮助男朋友Dick还债，决定利用自己完美无瑕的胴体，去跳脱衣女郎， 作为一个艺人· Sukie接受查理（曹查理饰）耐心训练，朝夕相处下，互生情愫· 查理因而放弃前女友思思（欧阳凯旋饰），和 Sukie发展一段爱情与欲情的亲密肉体关系·然而好景不常, Sukie被栽赃陷害, 艺团老板公子轩(Dick Yip饰)大怒下, 除暴行强奸Sukie,更胁迫她成为他的情妇, 但一直对Sukie保护有加的黑帮浪子(唐文龙饰), 即时伸出援手，帮助Sukie.... 情与欲不断在众人之中发展，不停在升华爆发.......一个中日混血儿，被逼迫出卖身躯与尊严的凄美故事。",
+      "popularity": 0.9827,
+      "poster_path": "/xRkmPKHquIcVX29CypE2ZM773en.jpg",
+      "release_date": "2003-08-02",
+      "title": "都市情缘之艳舞女郎",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/eCBHvjYcvqQMLmMt3Nz4aiLRKcm.jpg",
+      "genre_ids": [
+        35,
+        18,
+        10749,
+        53
+      ],
+      "id": 94042,
+      "original_language": "en",
+      "original_title": "Showgirls 2: Penny's from Heaven",
+      "overview": "拉斯维加斯脱衣舞娘 Penny Slot (Rena Riffel) 踏上了成为舞蹈电视节目明星舞者的冒险之旅。她眼中满是星辰，试图在彩虹尽头找到那罐金子，却在一个比罪恶之城更邪恶的小镇上发现了危险。然后浪漫将她引向她的明星，名望和财富梦想的道路。但每一个转折处都潜伏着危险，而 Penny Slot 则被充满诱惑和诱惑的危险三角恋所吸引。佩妮的长期未婚夫/男友詹姆斯·“吉米”·史密斯（格伦·普卢默饰）警告她，如果她想成为一名真正的舞者，她需要接受正式的技术训练，所以佩妮听从了他的建议，开始上芭蕾舞课并练习她皮克转身。但是，她必须付出代价。成功是要付出代价的，在每一个可以想象的层面上都要做出牺牲，这一切都归结为......你想要它有多糟糕？",
+      "popularity": 0.9513,
+      "poster_path": "/xhZxSR3FS026SPf644d3KYHfiu1.jpg",
+      "release_date": "2011-11-08",
+      "title": "艳舞女郎2：竹篙天堂",
+      "video": false,
+      "vote_average": 3.8,
+      "vote_count": 42
+    }
+  ]
+}

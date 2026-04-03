@@ -1,0 +1,215 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/lBoHzOgft2QfpjkVVvZCqeM4ttT.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        10759
+      ],
+      "id": 90228,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Dune: Prophecy",
+      "overview": "秘密女性组织姐妹会的成员经过身体和心灵的严苛训练，有极强大的能量，是有力的政治和社会力量。",
+      "popularity": 20.2294,
+      "poster_path": "/7KFlApfTLNMNh0y5Zp1ufsgfN0J.jpg",
+      "first_air_date": "2024-11-17",
+      "name": "沙丘：预言",
+      "vote_average": 7.3,
+      "vote_count": 545
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/e09SpH0iCVJRThzly1WqIsMt5j5.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        10759
+      ],
+      "id": 19566,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Frank Herbert's Dune",
+      "overview": "电影《沙丘魔堡》是美国的科幻电影，故事发生在一个遥远的未来世界，那时人类的文明是由帝国、垄断恒星间运输的宇宙协会、掌握行星领土的领主共同支撑。沙丹四世是已知宇宙的帝王，他凭借索多长突击队控制着帝国，使反抗势力不敢妄动。凯勒丹因具威慑力而被送到沙的行星，这里出产能让宇航员具备特殊能力的香料，大部分香料开采被他和儿子保罗所控制，并组织费瑞曼人向全宇宙进行圣战，获得帝国的绝对权力。另有游戏《沙丘魔堡》。",
+      "popularity": 7.1765,
+      "poster_path": "/iIf5XeuuBKPtG6H7MfWLirbJGrQ.jpg",
+      "first_air_date": "2000-12-03",
+      "name": "沙丘魔堡2000",
+      "vote_average": 6.8,
+      "vote_count": 362
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8tko4lM3VE6Rpye7IbilDpdHsWh.jpg",
+      "genre_ids": [
+        10765,
+        18
+      ],
+      "id": 9156,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Frank Herbert's Children of Dune",
+      "overview": "在未来的世界里，两大世仇王朝家族相互觊觎。艾崔德斯公爵遭到敌人哈肯南男爵的袭击，失去了沙丘星球的管理所有权。浩瀚广大的沙漠，几乎无人可生存，而水源是唯一上帝所赋予的最大财富。在广阔银河系帝国中，沙丘星球仍是一个非常富裕的地方。为了生存，为了能拥有更美好的生活，战争是他们唯一的选择。公爵和他的妻子及儿子保罗，深知他们抗争、叛变的时刻即将到来，因为他们即将被指派分发到一项新的任务，但未来却充满了许多无法预知及强大震荡的挑战……",
+      "popularity": 6.4684,
+      "poster_path": "/yCP8lKXBMtcG1CU9K3NsWlu1RgF.jpg",
+      "first_air_date": "2003-03-16",
+      "name": "沙丘之子",
+      "vote_average": 7.0,
+      "vote_count": 235
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vTR8pydbV91kcyMxRABiiFsZZwb.jpg",
+      "genre_ids": [
+        80,
+        18,
+        9648
+      ],
+      "id": 126074,
+      "origin_country": [
+        "BE",
+        "DE",
+        "FR"
+      ],
+      "original_language": "de",
+      "original_name": "Sophie Cross - Gefährliche Dünen",
+      "overview": "",
+      "popularity": 3.6842,
+      "poster_path": "/29ukrDuPOUiPpu6mcN1IIywnUUK.jpg",
+      "first_air_date": "2021-05-23",
+      "name": "Sophie Cross - Gefährliche Dünen",
+      "vote_average": 6.9,
+      "vote_count": 14
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/rQyazKHjsRzZwojsZpDk85ANhoK.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 136216,
+      "origin_country": [
+        "FR"
+      ],
+      "original_language": "fr",
+      "original_name": "H24 - 24 heures dans la vie d'une femme",
+      "overview": "",
+      "popularity": 3.9773,
+      "poster_path": "/ihDGeS7Awn69LrmheANmhH988vL.jpg",
+      "first_air_date": "2021-10-23",
+      "name": "H24 - 24 heures dans la vie d'une femme",
+      "vote_average": 3.6,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jNosWTyZBfMqvLt3dpCcbJKQoty.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 106885,
+      "origin_country": [
+        "FR"
+      ],
+      "original_language": "fr",
+      "original_name": "Les derniers jours d'une icône",
+      "overview": "",
+      "popularity": 1.4296,
+      "poster_path": "/8w0HanX6n43Std0QiR85mwr9xju.jpg",
+      "first_air_date": "2007-08-13",
+      "name": "Les derniers jours d'une icône",
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1ABbv2VYdLd0WLyarmYfIUA5xuh.jpg",
+      "genre_ids": [
+        16,
+        35
+      ],
+      "id": 15911,
+      "origin_country": [
+        "CA",
+        "FR"
+      ],
+      "original_language": "fr",
+      "original_name": "Les aventures d'une mouche",
+      "overview": "",
+      "popularity": 1.3469,
+      "poster_path": "/23sd8isfXKTIe4aMEiIeaOxyP81.jpg",
+      "first_air_date": "2000-09-03",
+      "name": "Les aventures d'une mouche",
+      "vote_average": 5.6,
+      "vote_count": 10
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/l6bFb6gurrDwja9w7wcyhZPBBpG.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 86046,
+      "origin_country": [
+        "CA"
+      ],
+      "original_language": "fr",
+      "original_name": "Le temps d'une paix",
+      "overview": "",
+      "popularity": 2.0447,
+      "poster_path": "/9ohxN0ekXsLzKgOG9op46axpyEY.jpg",
+      "first_air_date": "1980-10-29",
+      "name": "Le temps d'une paix",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jxr1PbQlU4JjWhMUPIcTtvQBipU.jpg",
+      "genre_ids": [
+        80
+      ],
+      "id": 219558,
+      "origin_country": [
+        "DE"
+      ],
+      "original_language": "de",
+      "original_name": "Dünentod – Ein Nordsee-Krimi",
+      "overview": "特立独行的 Tjark Wolf在东弗里斯兰崎岖的地形中展开调查。在他身边的是警察局长Femke Folkmer，他们自然而然地组成了一对看似不太搭的调查组合，一起在北海沿岸的可怕案件，标志着他们在一系列谋杀案中合作的开始，也就此把他们推向极限，甚至有些超越极限。",
+      "popularity": 1.5807,
+      "poster_path": "/sx4oKERqm7h4lRYddVAbbY0jWQp.jpg",
+      "first_air_date": "2023-01-31",
+      "name": "北海犯罪故事",
+      "vote_average": 5.0,
+      "vote_count": 6
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/nufJBgjSTxC3lrZErTEm4dSw0vi.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 92774,
+      "origin_country": [
+        "CA"
+      ],
+      "original_language": "fr",
+      "original_name": "Au volant d'une belle cubaine",
+      "overview": "",
+      "popularity": 0.5373,
+      "poster_path": "/4nlNQSJVAcwDnmXkCk7bPBFshP3.jpg",
+      "first_air_date": "2019-10-14",
+      "name": "Au volant d'une belle cubaine",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 290098,
+  "media_type": "movie",
+  "title": "小姐",
+  "original_title": "아가씨",
+  "english_title": "The Handmaiden",
+  "year": "2016",
+  "poster_url": "https://image.tmdb.org/t/p/w500/4XSCTGx7qAkvcrFXMjrM1SpGPu0.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/3upEZ0ltY7WwOSFVXrtiP34D48p.jpg",
+  "overview": "故事背景设定在1930年代日本占领时期的朝鲜。新人女仆淑熙受雇服侍日本贵族秀子，后者与专横的舅舅居住在一座偏僻的乡间大宅中。然而女仆怀揣秘密：她实为一名扒手，受假冒日本伯爵的骗子招募，企图助其引诱小姐私奔，夺取财产后将秀子关进疯人院。计划似乎顺利进行，直到淑熙与秀子之间萌生了意料之外的情愫。",
+  "rating": 8.2,
+  "genres": [
+    "惊悚",
+    "剧情",
+    "爱情"
+  ],
+  "director": "朴赞郁",
+  "cast": [
+    "金敏喜",
+    "金泰梨",
+    "河正宇",
+    "赵震雄",
+    "金海淑",
+    "文素利"
+  ],
+  "runtime": 145,
+  "imdb_id": "tt4016934",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "South Korea"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

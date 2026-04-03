@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/9Sz85jzgFAt2NUWV6e9AfJUSRkM.jpg",
+      "genre_ids": [
+        10759,
+        16,
+        18,
+        80
+      ],
+      "id": 12598,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "BLACK LAGOON",
+      "overview": "冈岛绿郎是一位普通的日本公司职员，在一次运送公司违法资料的途中被绑票，期间向公司求助时被公司抛弃，而后开始在一个名为黑礁商会的佣兵船队里做见习水手。故事的地点设在一个虚构的泰国海滨城市——罗阿那普拉（Roanapur）。黑礁商会的雇主多为聚集在罗阿那普拉的各个黑帮势力，任务一般是在海上运送各种各样的“货物”或协助别人逃跑。黑礁商会主要的运输工具是一艘配备鱼雷的海上快艇。",
+      "popularity": 34.7748,
+      "poster_path": "/PTmMkCIMZ8m0Dc1FtEkVRZ12r3.jpg",
+      "first_air_date": "2006-04-09",
+      "name": "黑礁",
+      "vote_average": 8.0,
+      "vote_count": 507
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/95Vot3A7D3njNdOpiCsSaygpygb.jpg",
+      "genre_ids": [
+        10759,
+        80,
+        16,
+        18
+      ],
+      "id": 254198,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "Black Lagoon: Roberta's Blood Trail",
+      "overview": "黑礁将以OVA形式推出第三季，剧情主要以洛夫雷斯家族的女佣、前任哥伦比亚革命军的恐怖份子“弗罗伦西亚的猎犬”-罗贝尔塔为主线，收养她的洛夫雷斯家族主人在一起由NSA策划的爆炸中死亡，罗贝尔特为了展开复仇再次走上了血路。6月26日ova1初回放送公开，官网：http://www.blacklagoon.jp/。",
+      "popularity": 3.3749,
+      "poster_path": "/kdLLOA72JDVs1pLeBN95rRQY91b.jpg",
+      "first_air_date": "2010-07-07",
+      "name": "黑礁：罗贝尔特的复仇",
+      "vote_average": 6.8,
+      "vote_count": 24
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/2WCpiFmRqXyu5y7WoZjEa3CJbiI.jpg",
+      "genre_ids": [
+        16,
+        18,
+        10751
+      ],
+      "id": 682012,
+      "original_language": "fr",
+      "original_title": "Amélie et la métaphysique des tubes",
+      "overview": "对于爱美丽来说，世界是一个令人困惑又安宁的谜团，直到一次与巧克力的奇妙邂逅点燃了她强烈的好奇心。随着她对家中女佣西尾小姐产生深厚依恋，爱美丽不仅发现了大自然的奇迹，也窥见了这个外国人家庭在战后日本田园诗般生活表象之下隐藏的情感真相。",
+      "popularity": 7.0431,
+      "poster_path": "/uSDivMwl8EPKfUFx2YpUfPSxb9R.jpg",
+      "release_date": "2025-06-25",
+      "title": "你好，爱美丽",
+      "video": false,
+      "vote_average": 7.989,
+      "vote_count": 136
+    }
+  ]
+}

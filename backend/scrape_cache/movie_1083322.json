@@ -1,0 +1,28 @@
+{
+  "tmdb_id": 1083322,
+  "media_type": "movie",
+  "title": "Pluto",
+  "original_title": "Pluto",
+  "english_title": "Pluto",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/iqVDFYuqD2csZD8ErkWKRwb6zkf.jpg",
+  "backdrop_url": null,
+  "overview": "",
+  "rating": 7.0,
+  "genres": [],
+  "director": "Renzo Carbonera",
+  "cast": [
+    "Andrea Pennacchi"
+  ],
+  "runtime": 0,
+  "imdb_id": "tt15975992",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 235092,
+  "media_type": "movie",
+  "title": "The Boys",
+  "original_title": "The Boys",
+  "english_title": "The Boys",
+  "year": "1962",
+  "poster_url": "https://image.tmdb.org/t/p/w500/7kty7AcQm6Czk8UFKC2MCinxKjN.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/7La8bi8kahq0QrfTWkJRR7gaUOP.jpg",
+  "overview": "",
+  "rating": 7.8,
+  "genres": [
+    "犯罪",
+    "剧情"
+  ],
+  "director": "西德尼·J·弗里尔",
+  "cast": [
+    "Richard Todd",
+    "Robert Morley",
+    "达德利·萨顿",
+    "罗纳德·莱西",
+    "Jess Conrad",
+    "Tony Garnett"
+  ],
+  "runtime": 123,
+  "imdb_id": "tt0054697",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null,
+  "seasons_info": []
+}

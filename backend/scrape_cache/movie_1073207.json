@@ -1,0 +1,33 @@
+{
+  "tmdb_id": 1073207,
+  "media_type": "movie",
+  "title": "01",
+  "original_title": "01",
+  "english_title": "01",
+  "year": "2023",
+  "poster_url": "https://image.tmdb.org/t/p/w500/nBzqrtypSMUjhn3Z3a3tV6bzAcl.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/jABOG8lL2NUE6x4Pur1mU14v8C4.jpg",
+  "overview": "",
+  "rating": 0.0,
+  "genres": [
+    "爱情",
+    "剧情"
+  ],
+  "director": "César Faber",
+  "cast": [
+    "César Faber"
+  ],
+  "runtime": 10,
+  "imdb_id": "",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Netherlands"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

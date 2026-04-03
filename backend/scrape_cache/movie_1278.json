@@ -1,0 +1,41 @@
+{
+  "tmdb_id": 1278,
+  "media_type": "movie",
+  "title": "戏梦巴黎",
+  "original_title": "The Dreamers",
+  "english_title": "The Dreamers",
+  "year": "2003",
+  "poster_url": "https://image.tmdb.org/t/p/w500/o8aQUCICSDIauqKGOzdVY9djLS3.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/vaRCS4CCFXcWz1j9GKd6rGLsQQ2.jpg",
+  "overview": "1968年法国学运前夕，孪生姐弟伊莎贝拉（伊娃•格林）和雷奥（路易斯•加瑞尔）因为电影，与来自美国的留学生马休（迈克尔•皮特）成为好朋友。姐弟两人将马休带到家中做客时，马休得到两人同是大学教授的父母的喜爱，住进他们家中，慢慢地，他喜欢上伊莎贝拉。  学运开始后大学停课，三个年轻人因无所事事在房间里玩起有关电影导演和台词的游戏，游戏进行当中，伊莎贝拉知晓马休对她有意思，联合雷奥要求马休与她做爱，自此，由于父母出门度假，三人开始了如伊甸园般的日子，马休也慢慢发现伊莎贝拉和雷奥有不伦恋情，三人关系开始发生微妙的变化，而外面正如火如荼进行着的学运，似乎与他们无关。",
+  "rating": 7.2,
+  "genres": [
+    "剧情",
+    "爱情"
+  ],
+  "director": "贝纳尔多·贝托鲁奇",
+  "cast": [
+    "迈克尔·皮特",
+    "伊娃·格林",
+    "路易斯·加雷尔",
+    "安娜·钱瑟勒",
+    "罗宾·雷努奇",
+    "琼-皮尔里·卡尔弗恩"
+  ],
+  "runtime": 109,
+  "imdb_id": "tt0309987",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "France",
+    "Italy",
+    "United Kingdom",
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

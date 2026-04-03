@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/d5KadFqzjnT4jkjxcdOkcvaCGLx.jpg",
+      "genre_ids": [
+        10759,
+        18,
+        16,
+        10765
+      ],
+      "id": 211057,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ベルセルク 黄金時代篇 MEMORIAL EDITION",
+      "overview": "孤独的雇佣兵格斯在一片百年战争肆虐的土地上旅行。他在战斗中的凶猛和技巧吸引了格里菲斯的注意，他是一群被称为鹰之团的雇佣兵的领袖。勇者成为格里菲斯最亲密的盟友和知己，但尽管他们取得了所有的胜利，勇者开始质疑自己为什么要为另一个人统治自己王国的梦想而战斗。勇者不知道，格里菲斯不屈不挠的野心即将赋予他们俩可怕的命运。",
+      "popularity": 8.3367,
+      "poster_path": "/nBfvjoAeEBGaMA5W4vUrvTmSSHe.jpg",
+      "first_air_date": "2022-10-02",
+      "name": "剑风传奇 黄金时代篇",
+      "vote_average": 8.8,
+      "vote_count": 116
+    }
+  ]
+}

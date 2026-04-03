@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1609036,
+      "original_language": "zh",
+      "original_title": "笑神穷不怕",
+      "overview": "影片讲述相声始祖朱绍文（武宾 饰）在清末不畏强权，坎坷的艺术人生。相声祖师爷朱绍文在天桥下根据字意谈古论今说笑话，每解释完一个字定能使人发笑。王府的格格爱上了朱绍文，却遭到王爷的反对，被许配到将军府。王爷处处刁难陷害朱绍文，可朱绍文还是因相声红遍了北京城，被老佛爷封为天桥八大怪之首……\r 　　本片运用演艺与事件相结合的手法，集喜剧、爱情、动作、传统文化于一身，再现相声这一门传统艺术的起源，活灵活现的展示了相声行业公认的祖师爷—朱绍文坎坷的艺术人生",
+      "popularity": 0.0,
+      "poster_path": "/eGSa790XoOoronBKTMDUxh1ubBJ.jpg",
+      "release_date": "2018-11-21",
+      "title": "笑神穷不怕",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pEMPwgmSGc7XE0A6BI0l4VBSpaJ.jpg",
+      "genre_ids": [
+        28,
+        14
+      ],
+      "id": 679925,
+      "original_language": "zh",
+      "original_title": "御天神兽之穷奇降世",
+      "overview": "",
+      "popularity": 0.6558,
+      "poster_path": "/wJmeJv3xDLBqttAwMcXUOGa08kF.jpg",
+      "release_date": "2020-02-25",
+      "title": "御天神兽之穷奇降世",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

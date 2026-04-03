@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/lIzz0om5v86hqqQm54pT2Rci67E.jpg",
+      "genre_ids": [
+        16,
+        18
+      ],
+      "id": 69292,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "クズの本懐",
+      "overview": "花火与小麦看似理想中的情侣，但实际上两人只是为了无法实现的恋情，而烦恼的“契约恋人”。并过著将对方当作所爱之人，互相感受温暖的日子。不断为了重要的人而感到受伤的，青涩青春模样。比谁都更加单纯却更加扭曲的，纯爱故事。",
+      "popularity": 8.1929,
+      "poster_path": "/5ahZFMSFjSxZuy2d0FvblhiCFTW.jpg",
+      "first_air_date": "2017-01-13",
+      "name": "人渣的本愿",
+      "vote_average": 6.4,
+      "vote_count": 112
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fo2n69P5c8c4FScikpeFu4B1ydr.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 69812,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "クズの本懐",
+      "overview": "故事讲述安乐冈花火（吉本实忧）和粟屋麦（樱田通）表面上一对理想的高中生情侣，内里却是各自喜欢别人。花火喜欢钟井鸣海（水田航生），二人是青梅竹马，他对花火来说就像哥哥，现在是花火的班主任。粟屋喜欢的是校内的音乐老师皆川茜（逢泽莉娜），然而鸣海却喜欢她。花火和粟屋因为同病相怜，产生了和对方相近的感觉，于是成为「契约恋人」，互相安慰取暖。池上纱理依演花火的好友绘鸠早苗，1月18日首播！动画版1月12日，实现日剧动画同步播放的计划。",
+      "popularity": 4.6867,
+      "poster_path": "/5mWIOx752EEtId2dndMvYSvDe4J.jpg",
+      "first_air_date": "2017-01-18",
+      "name": "人渣的本愿真人版",
+      "vote_average": 5.3,
+      "vote_count": 19
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/hO7KbdvGOtDdeg0W4Y5nKEHeDDh.jpg",
+      "genre_ids": [
+        80,
+        53,
+        18
+      ],
+      "id": 475557,
+      "original_language": "en",
+      "original_title": "Joker",
+      "overview": "亚瑟·弗兰克是一个依靠扮演小丑赚取营生的普通人，患有精神疾病的他和母亲一同住在哥谭市的一座公寓里，幻想成为脱口秀演员的亚瑟为了这个目标而努力的生活着，但是现实却屡次击败他的梦想，亚瑟渐渐地变得越来越癫狂，某天在地铁上，亚瑟为了自保杀害了几名嘲笑他的人，同时，一个疯狂的想法在亚瑟心灵萌发……  在看似和平的哥谭市，即将发生翻天覆地的巨变。",
+      "popularity": 51.2377,
+      "poster_path": "/joQvXavVUfIiPbJHEdWLB7LVYqy.jpg",
+      "release_date": "2019-10-01",
+      "title": "小丑",
+      "video": false,
+      "vote_average": 8.1,
+      "vote_count": 27459
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vMlvY7LnQ0shJ1stHgIMiTr5bxq.jpg",
+      "genre_ids": [
+        18,
+        10749
+      ],
+      "id": 837528,
+      "original_language": "da",
+      "original_title": "Jokeren",
+      "overview": "",
+      "popularity": 0.6845,
+      "poster_path": "/2pOfACKcbfgSd07LiEz5NsmWQ5M.jpg",
+      "release_date": "1928-03-10",
+      "title": "小丑",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4kOCUpStJiTqd9QvdYwgqVrvpBh.jpg",
+      "genre_ids": [
+        35,
+        18,
+        14
+      ],
+      "id": 808482,
+      "original_language": "en",
+      "original_title": "The People's Joker",
+      "overview": "这部电影讲述了一位有性别认同困扰、渴望成为小丑的人，与法西斯主义的披风斗士战斗的故事。它以独特的视角展现了跨性别者在喜剧领域的成长与挣扎，同时融入了对社会现实的深刻思考。影片在 2022 年 9 月 10 日的多伦多电影节上映，引起了广泛关注。电影中使用了 Todd Phillip 的奥斯卡提名电影《小丑》2019 版的片段，以及过去的小丑和其他有小丑形象的电影素材，还包括在全球疫情期间由小团队拍摄的新场景，以及来自三大洲的 150 多名被隔离的动画师、音乐家、电影制作人和演员远程合作的成果，其中大多数人是同性恋或跨性别者。",
+      "popularity": 1.0147,
+      "poster_path": "/80yak1h7YcNpMOsfSbThfwKYKK4.jpg",
+      "release_date": "2024-04-05",
+      "title": "人民小丑",
+      "video": false,
+      "vote_average": 6.595,
+      "vote_count": 44
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/cpbBMHo2stHDbe7slFtAYaVIYTi.jpg",
+      "genre_ids": [
+        27
+      ],
+      "id": 675256,
+      "original_language": "en",
+      "original_title": "ClownDoll",
+      "overview": "",
+      "popularity": 0.4403,
+      "poster_path": "/leU6vXERusvx5wsuziYp2nkfmMd.jpg",
+      "release_date": "2020-12-22",
+      "title": "小丑娃娃",
+      "video": false,
+      "vote_average": 4.0,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/AVWlQpVhpudyFsSh3OQIieHHYf.jpg",
+      "genre_ids": [
+        18,
+        80,
+        53
+      ],
+      "id": 889737,
+      "original_language": "en",
+      "original_title": "Joker: Folie à Deux",
+      "overview": "“小丑”亚瑟被捕入狱后，开始接受心理治疗，他在精神病院中遇到崇拜他的“病人”哈莉·奎茵，两人也在途中发展一场极度危险又扭曲的浪漫恋情。",
+      "popularity": 9.9011,
+      "poster_path": "/6VFHNJ5yWQRL30wMA72WIPbpaFw.jpg",
+      "release_date": "2024-10-01",
+      "title": "小丑2: 双重妄想",
+      "video": false,
+      "vote_average": 5.4,
+      "vote_count": 2839
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/tiWwyqMEGxW3fO8LvrLqk3iBZy0.jpg",
+      "genre_ids": [
+        18,
+        10749,
+        10402
+      ],
+      "id": 21466,
+      "original_language": "hi",
+      "original_title": "मेरा नाम जोकर",
+      "overview": "",
+      "popularity": 0.9844,
+      "poster_path": "/eSvT4HWv7GrGDpVn6XlSge6Wxf9.jpg",
+      "release_date": "1970-12-18",
+      "title": "我叫小丑",
+      "video": false,
+      "vote_average": 7.373,
+      "vote_count": 71
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/cpsCU7XJ3GbyqK4oa34pYsCAycU.jpg",
+      "genre_ids": [
+        16,
+        28,
+        878,
+        53
+      ],
+      "id": 16234,
+      "original_language": "en",
+      "original_title": "Batman Beyond: Return of the Joker",
+      "overview": "　　岁月不饶人，长期以来守护高谭市的布鲁斯·韦恩也逃不过时间的无情魔掌，逐渐步入迟暮之年，而他的死对头小丑决定趁此大好时机准备大闹高谭市。但新任蝙蝠侠泰瑞早已作好万全准备，就等著他自投罗网；在了解前任蝙蝠侠布鲁斯和小丑最后一次对决的情况后，泰瑞更决心要为良师讨回公道，将小丑永远赶出高谭市！面对诡计多端的邪恶匪徒，新上任的超级英雄即将大展伸手，带给忠实影迷不一样的蝙蝠侠。",
+      "popularity": 2.6525,
+      "poster_path": "/cY30YkhK84E18ROghF4osi67EYT.jpg",
+      "release_date": "2000-12-12",
+      "title": "未来蝙蝠侠：小丑归来",
+      "video": false,
+      "vote_average": 7.34,
+      "vote_count": 1180
+    }
+  ]
+}

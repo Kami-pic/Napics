@@ -1,0 +1,48 @@
+{
+    "id": 1774712188,
+    "time": "Sat Mar 28 23:36:28 2026",
+    "label": "organize",
+    "summary": "整理 8 个文件 → 恶魔城第1季&第2季 TV",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E01.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E01.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E02.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E02.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E03.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E03.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E04.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E04.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E05.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E05.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E06.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E06.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E07.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E07.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城.Castlevania.S02E08.中英字幕.WEBrip.720P-人人影视.mp4",
+            "new_path": "\\\\DS218play\\share\\视频\\动画番\\恶魔城第1季&第2季\\恶魔城第1季&第2季 TV\\恶魔城.Castlevania.S02E08.中英字幕.WEBrip.720P-人人影视.mp4",
+            "is_dir": false
+        }
+    ]
+}

@@ -1,0 +1,187 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/6OoC3Fq70bx09FvOos78nnakrZX.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 50270,
+      "original_language": "it",
+      "original_title": "Paprika",
+      "overview": "女孩蜜玛为了帮未婚夫筹款，自愿去当两周的妓女，然后他们就可以结婚了。她化名“红辣椒”，第一次接客，遇见的一个水手就让她高潮了。妓院的老板和其他妓女也很喜欢她。她在妓院成了红人。一次她和水手吃饭的时候发现她的未婚夫是个骗子，她对未来的理想破灭了。每次她想退出不当妓女的时候，命运总不随她意。她辗转到了罗马、马赛、佛罗伦萨、米兰，此时意大利正酝酿法律要关掉国内所有的妓院。“红辣椒”最后嫁给了一个老伯爵做了伯爵夫人。而关闭妓院的法律也通过了，她第一次接客的妓院也要关闭了。",
+      "popularity": 2.224,
+      "poster_path": "/h9n9icL3iqaVyw9t9JQaaPhfrsn.jpg",
+      "release_date": "1991-02-13",
+      "title": "红辣椒",
+      "video": false,
+      "vote_average": 7.132,
+      "vote_count": 573
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/caa8ealOOudDEMl2iifww7F0x0f.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 493397,
+      "original_language": "fr",
+      "original_title": "Paprika",
+      "overview": "",
+      "popularity": 0.538,
+      "poster_path": "/4pDR74lCUfRzX4rFVwkgwRgBVZz.jpg",
+      "release_date": "2018-04-03",
+      "title": "Paprika",
+      "video": false,
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 315646,
+      "original_language": "de",
+      "original_title": "Paprika",
+      "overview": "",
+      "popularity": 0.2065,
+      "poster_path": null,
+      "release_date": "1959-03-28",
+      "title": "Paprika",
+      "video": false,
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 1179987,
+      "original_language": "it",
+      "original_title": "Paprika",
+      "overview": "",
+      "popularity": 0.2332,
+      "poster_path": "/i6l1wgR6inLOBpg3TdrAj0Oo7ic.jpg",
+      "release_date": "1933-11-01",
+      "title": "Paprika",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 539832,
+      "original_language": "fr",
+      "original_title": "Paprika",
+      "overview": "",
+      "popularity": 0.1501,
+      "poster_path": null,
+      "release_date": "1933-12-01",
+      "title": "Paprika",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 492038,
+      "original_language": "de",
+      "original_title": "Paprika",
+      "overview": "",
+      "popularity": 0.2186,
+      "poster_path": "/xrTbwqIwy3fJRWo289JUq75oYWX.jpg",
+      "release_date": "1932-11-04",
+      "title": "Paprika",
+      "video": false,
+      "vote_average": 5.0,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ovlm20KIaOlNJ0E3ACDDQTcfoBL.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 350565,
+      "original_language": "it",
+      "original_title": "Crema, cioccolata e... Paprika",
+      "overview": "",
+      "popularity": 0.4728,
+      "poster_path": "/a19JDUGmWYllOAS45KAzbaJ0XfY.jpg",
+      "release_date": "1981-08-15",
+      "title": "Crema, cioccolata e... Paprika",
+      "video": false,
+      "vote_average": 3.5,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6k36SDbjS1XNTpPxQlO0f8sYzeM.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 302737,
+      "original_language": "de",
+      "original_title": "Popcorn und Paprika",
+      "overview": "",
+      "popularity": 0.2284,
+      "poster_path": "/9FHufZB1BdnYUbNwzN8IW75VT4H.jpg",
+      "release_date": "1984-01-01",
+      "title": "Popcorn und Paprika",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35
+      ],
+      "id": 180693,
+      "original_language": "en",
+      "original_title": "Zeb vs. Paprika",
+      "overview": "",
+      "popularity": 0.4485,
+      "poster_path": "/fdowvdJVjEu5WpDiyLaKefuPrBM.jpg",
+      "release_date": "1924-03-16",
+      "title": "Zeb vs. Paprika",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        35,
+        27,
+        28,
+        12
+      ],
+      "id": 952054,
+      "original_language": "en",
+      "original_title": "Anal Paprika 3: Menage-A-Death",
+      "overview": "",
+      "popularity": 0.2164,
+      "poster_path": "/hncPjNJdEPc1rydemEcjUQ71kak.jpg",
+      "release_date": "2001-05-06",
+      "title": "肛门辣椒3：产妇-A-死亡",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

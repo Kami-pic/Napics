@@ -1,0 +1,44 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/dg3OindVAGZBjlT3xYKqIAdukPL.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        9648
+      ],
+      "id": 42009,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Black Mirror",
+      "overview": "《黑镜》（英语：Black Mirror）是一部由查理·布鲁克创作的英国独立单元剧，该剧展现现代社会发展，特别是对新技术利用的副作用，其中的每一集是独立的，背景通常设置在架空的现实或不久的将来，并以黑暗和讽刺的语气和或轻或重的实验感来表现剧情。",
+      "popularity": 86.9713,
+      "poster_path": "/cF9V4PXhgRztl7g7nOJqFHvgeHT.jpg",
+      "first_air_date": "2011-12-04",
+      "name": "黑镜",
+      "vote_average": 8.283,
+      "vote_count": 6067
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 262508,
+      "origin_country": [
+        "CN"
+      ],
+      "original_language": "zh",
+      "original_name": "暗黑荣耀之镜子知道答案",
+      "overview": "岑妍为替哥哥复仇，从而进入盛世集团，明面上以爱为饵引诱宋凌尘，实则暗地里调查哥哥前女友白曼婷致使哥哥去世的真相和搜集罪证，后因朝夕相处中，宋凌尘日久生情爱上岑妍而帮助她寻找真相。俩人逐渐确定对彼此的感情，相互扶持。最终白曼婷被绳之以法，连同背后的势力连根拔起，一网打尽。豪门复仇记!正义虽然会迟到但决不会缺席。",
+      "popularity": 0.0168,
+      "poster_path": "/o56E4ZTLvnlMmRNIgk5w4zEg3zK.jpg",
+      "first_air_date": "2024-08-23",
+      "name": "暗黑荣耀之镜子知道答案",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/7OedxK0BvSKJ0ZWCPRYADViTBx6.jpg",
+      "genre_ids": [
+        28,
+        12,
+        878
+      ],
+      "id": 1228710,
+      "original_language": "en",
+      "original_title": "Star Wars: The Mandalorian and Grogu",
+      "overview": "“曼达洛人”丁·贾伦和“尤达宝宝”古古的星际冒险全面升级，“此乃正道”的誓言响彻宇宙，原力将继续与你同在。",
+      "popularity": 7.1184,
+      "poster_path": "/cafHjxEvhslX9MpBMxmPWxC5GWB.jpg",
+      "release_date": "2026-05-20",
+      "title": "曼达洛人与古古",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

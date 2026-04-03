@@ -1,0 +1,28 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/rrQJwg3jFQasEilhmq8TMpGocb1.jpg",
+      "genre_ids": [
+        35,
+        878,
+        16,
+        10770,
+        28,
+        12,
+        14
+      ],
+      "id": 51888,
+      "original_language": "en",
+      "original_title": "Robot Chicken: Star Wars Episode III",
+      "overview": "　　Robot Chicken是04年开始在美国卡通有线电视网中播放的玩偶动画。故事由一只与本片同名的Robot Chicken开篇，这只不幸的小鸡遭遇了严重的车祸，后被一个疯狂的科学家Fritz Huhnmorder(\"Huhnm??rder\" 是德语\"杀鸡的人\"的意思\")组装成半鸡半机器的怪物。之后疯子科学家像发条橙(Clockwork Orange)里的情节一样给Robot Chicken用电视节目洗脑。不过本剧主要以Robot Chicken看到的电视节目为中心，恶搞热门的时事新闻 电视 电影和明星。如果各位穷极无聊，想找点乐子的话，千万不要错过Robot Chicken。",
+      "popularity": 1.2163,
+      "poster_path": "/htL6wH77hfO1N97n6MOwt9AD1oB.jpg",
+      "release_date": "2010-12-19",
+      "title": "机器肉鸡：星战特辑第三集",
+      "video": false,
+      "vote_average": 7.4,
+      "vote_count": 161
+    }
+  ]
+}

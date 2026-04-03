@@ -1,0 +1,214 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 94595,
+      "origin_country": [],
+      "original_language": "en",
+      "original_name": "Phantom",
+      "overview": "",
+      "popularity": 0.0143,
+      "poster_path": "/sjfV0ozaid5eFJCzIVyQzEwLw0P.jpg",
+      "first_air_date": "2019-03-11",
+      "name": "Phantom",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/lnHFty7PsAnizaNjb509Kps6qeP.jpg",
+      "genre_ids": [
+        16,
+        35,
+        10765,
+        10759
+      ],
+      "id": 2309,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Danny Phantom",
+      "overview": "一个14岁的孩子获得了鬼魂的力量，并用它们来拯救世界",
+      "popularity": 19.0017,
+      "poster_path": "/pBUOFBmZLaIxzjDjQP7d3QZrd4w.jpg",
+      "first_air_date": "2004-04-03",
+      "name": "幻影丹尼",
+      "vote_average": 8.317,
+      "vote_count": 1150
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/nENnpKGM074iKNmaBq1LppNAaLT.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        18
+      ],
+      "id": 31692,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "KURAU Phantom Memory",
+      "overview": "天箕博士是一位量子物理学家,他和他的研究队伍在进行一次原子撞击试验时,突然有两束光芒从试验装置中射出,并且击中了来参观的天箕博士的女儿库拉乌（12岁）.女孩的身体被当场分解,而后又在光芒中重新恢复成人形.博士赶忙停止试验确认女儿的安危,但眼前的库拉乌却说出了\"我名叫RYNAX\"\n\n故事会从试验事故10年后开始,博士的女儿库拉乌凭借寄宿在体内的神奇力量成为了暗中维护社会治安的特别谍报员中的佼佼者,但22岁那天,库拉乌的体内出现了一个被她自己称呼为\"对\"的女孩,还保持着库拉乌12岁的形态.更有组织对库拉乌的奇异功能发生兴趣,想方设法劫持她.",
+      "popularity": 12.2384,
+      "poster_path": "/f5v386giaPRNsuowWCTdwyVLTp.jpg",
+      "first_air_date": "2004-06-24",
+      "name": "库拉乌 幻之记忆",
+      "vote_average": 7.3,
+      "vote_count": 11
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3j5rPzvsTUM42hvXE0t0w7hQ2Op.jpg",
+      "genre_ids": [
+        16,
+        9648,
+        18
+      ],
+      "id": 34152,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ブギーポップは笑わない Boogiepop Phantom",
+      "overview": "校园中流传着关于身着奇装异服的“死神”——Boogiepop的传说。他是否与近日一连串的失踪事件有关呢？又或者，只是又一个供放学的小女生们在夏天傍晚打发无聊的市井故事？城之内从小梦想成为受人尊敬的英雄。然而中学时突然降临的疾病使他不可能在仍何体育运动方面得到发展，而一直坚强地守护他的母亲也在五年前为连续杀人犯所杀。光柱降临的那一夜他得到了奇异的能力——能够看见啃食人心灵的虫子。恐惧、内疚、自责——这些名为“不愉快记忆”的虫子成为他的美食，令他欲罢不能。然而失去后悔之心的人什么也不会学到，与痛苦一同消逝的还有珍贵的记忆。城之内心中也很清楚自己并非是做着救世主的工作，一面将他人的心虫当作美味食尽，一面任由自己的心为虫所啃食，直到“死神”出现将他带走。信奉着“帕诺奴的世界爱”的友人在五年前成为连续杀人案的受害者。自那以后，有藤美铃一直致力于向身边的人推广“接受世界、肯定世界”的“帕诺奴思想”。然而，美铃推崇的所谓“世界爱”，并不是帕诺奴的世界爱。她并非接受这个世界，而只是接受了朋友的死而已，为的是从这“毫无道理可言”的世界中保护自己——在“死神”无情的揭露之下，美铃的世界开始崩溃……",
+      "popularity": 11.5201,
+      "poster_path": "/rkJsGLs0LGMtvzy7SJgLhtGwLoM.jpg",
+      "first_air_date": "2000-01-06",
+      "name": "不吉波普不笑 幻影死神",
+      "vote_average": 6.7,
+      "vote_count": 38
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6LYKYZmQ1qRLbRD8PPzc1PUMbvP.jpg",
+      "genre_ids": [
+        16,
+        10765
+      ],
+      "id": 2017,
+      "origin_country": [
+        "FR",
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Phantom 2040",
+      "overview": "",
+      "popularity": 6.1298,
+      "poster_path": "/p5JzhfWxUAZZZWhcdWNnWjKI1vc.jpg",
+      "first_air_date": "1994-09-18",
+      "name": "Phantom 2040",
+      "vote_average": 6.0,
+      "vote_count": 18
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/zIML9hklxKu9qbESWrSPwD25f4H.jpg",
+      "genre_ids": [
+        10751,
+        35,
+        10765
+      ],
+      "id": 106292,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Julie and the Phantoms",
+      "overview": "该剧讲述少女茱莉在帮助幽灵三人组“魅影男孩”实现乐队夙愿的同时，也找到了自己对音乐和生活的热情所在！",
+      "popularity": 5.7094,
+      "poster_path": "/m6uNY62Rx6gpUkC7urCOrOTlaj2.jpg",
+      "first_air_date": "2020-09-10",
+      "name": "茱莉与魅影男孩",
+      "vote_average": 8.4,
+      "vote_count": 619
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/pwkFQiwelJuDEFUJLIRFy2hpfYV.jpg",
+      "genre_ids": [
+        9648,
+        18
+      ],
+      "id": 47439,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Phantom of the Opera",
+      "overview": "",
+      "popularity": 2.5608,
+      "poster_path": "/ixAHRt5w3bj6QDBkp68YXeZHqAb.jpg",
+      "first_air_date": "1990-03-18",
+      "name": "The Phantom of the Opera",
+      "vote_average": 7.3,
+      "vote_count": 43
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xWZsBLc6dK3lO6EBwiCpaGZdC6z.jpg",
+      "genre_ids": [
+        10751
+      ],
+      "id": 210694,
+      "origin_country": [
+        "CA"
+      ],
+      "original_language": "en",
+      "original_name": "Phantom Pups",
+      "overview": "小男孩和家人搬进了一个鬼屋，在那里他遇到了三只可爱的幽灵小狗，并试图将它们复活。",
+      "popularity": 2.6521,
+      "poster_path": "/kqGRszJ2JyXtRTVDmGGyrwM0sJD.jpg",
+      "first_air_date": "2022-09-30",
+      "name": "幽灵狗狗",
+      "vote_average": 8.0,
+      "vote_count": 64
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kE97zLjKTJ8aNr4V0g6nM9ZnclB.jpg",
+      "genre_ids": [
+        16
+      ],
+      "id": 10481,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Funky Phantom",
+      "overview": "",
+      "popularity": 2.141,
+      "poster_path": "/cDlHGv6ajkAQBdjYPDUwb2LgzwY.jpg",
+      "first_air_date": "1971-09-11",
+      "name": "The Funky Phantom",
+      "vote_average": 5.6,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6vjBw0ZcfqpGWdpdEFpCht4UxOP.jpg",
+      "genre_ids": [
+        10759,
+        80,
+        18
+      ],
+      "id": 37939,
+      "origin_country": [
+        "CA"
+      ],
+      "original_language": "en",
+      "original_name": "The Phantom",
+      "overview": "400年前，沃克家唯一的一个孩子从海盗“辛格兄弟会”的屠刀之下死里逃生，并意外获得了一件刀枪不入的战衣，从此，专门惩奸除恶的“幻影侠”诞生了。一晃眼已是二十一世纪，克里斯（莱安·卡勒斯 Ryan Carnes 饰）是沃克家的第二十一代传人，为了躲避辛格兄弟会的追杀，他不得不离开了家乡，跟随养父母来到了美国。\n\n　　长大之后，克里斯成为了一名法学院的学生，然而，将做律师视为毕生理想的他怎么也无法想到的是，自己即将肩负起整个家族的使命，成为新一代“幻影侠”。在颅骨洞里，克里斯得到了家族中代代相传的战衣，与此同时，辛格兄弟会的成员们杀害了克里斯的养父母，还将下一个目标放在了克里斯的女友蕾妮（卡梅隆·古德曼 Cameron Goodman 饰）的身上。",
+      "popularity": 2.4354,
+      "poster_path": "/ftBDlvKR52E5cMP3OLFE1f5Jk9r.jpg",
+      "first_air_date": "2009-12-22",
+      "name": "幻影侠",
+      "vote_average": 5.0,
+      "vote_count": 42
+    }
+  ]
+}

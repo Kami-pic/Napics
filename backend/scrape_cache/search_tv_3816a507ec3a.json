@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/7uo7KovUgmAH45FnuCXy21ZOGfz.jpg",
+      "genre_ids": [
+        16,
+        35
+      ],
+      "id": 20710,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Angry Kid",
+      "overview": "",
+      "popularity": 5.4447,
+      "poster_path": "/3HLZMo4dzc1PfXzuof5sPr1lI7g.jpg",
+      "first_air_date": "2000-05-08",
+      "name": "Angry Kid",
+      "vote_average": 8.4,
+      "vote_count": 5
+    }
+  ]
+}

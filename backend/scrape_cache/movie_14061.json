@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 14061,
+  "media_type": "movie",
+  "title": "爱的边缘",
+  "original_title": "The Edge of Love",
+  "english_title": "The Edge of Love",
+  "year": "2008",
+  "poster_url": "https://image.tmdb.org/t/p/w500/uo7ZDvipL2OZu6G44hDP0sjDZ9n.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/fiRxDoAHRLko3ycPtw1EeWaKxTQ.jpg",
+  "overview": "故事背景设置在1940年代的伦敦，这是一个战火纷飞与床第之间的爱情故事。聚焦天才诗人托马斯与他生命中两个重要的女人难解的三人关系。",
+  "rating": 6.2,
+  "genres": [
+    "剧情",
+    "历史",
+    "爱情"
+  ],
+  "director": "约翰·梅伯里",
+  "cast": [
+    "凯拉·奈特莉",
+    "西耶娜·米勒",
+    "马修·瑞斯",
+    "基利安·墨菲",
+    "Lisa Stansfield",
+    "理查德·迪兰"
+  ],
+  "runtime": 110,
+  "imdb_id": "tt0819714",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United Kingdom"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

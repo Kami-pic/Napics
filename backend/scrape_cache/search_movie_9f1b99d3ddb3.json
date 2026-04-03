@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/7aW9IZjpsoTXYEARlnOvTtl6EBr.jpg",
+      "genre_ids": [
+        18,
+        10749
+      ],
+      "id": 1391,
+      "original_language": "es",
+      "original_title": "Y tu mamá también",
+      "overview": "这部由奥斯卡获奖导演阿方索·卡隆执导的爆款公路喜剧，巧妙融合了直白露骨的题材与真挚的情感温度，实属影坛罕见。盖尔·加西亚·贝纳尔与迭戈·卢纳凭借此片跃升国际影星，二人饰演两个来自不同阶层、血气方刚的墨西哥城少年，当他们的女友飞往意大利度夏后，他们在婚礼上邂逅了一位美艳的西班牙熟女并被其迷住。当她答应陪同两人前往遥远的海滩旅行时，三人在旅途中逐渐形成了一种愈发浓烈而亲密的关系，最终让彼此的身心都彻底袒露。本片由摄影大师埃曼纽尔·卢贝兹基以优雅灵动的镜头执镜，本片以既诙谐又动人的方式审视了人类欲望的本质。",
+      "popularity": 6.0587,
+      "poster_path": "/a87k2dfqhJi7QbOWOiQWTThyDYK.jpg",
+      "release_date": "2001-06-08",
+      "title": "你妈妈也一样",
+      "video": false,
+      "vote_average": 7.4,
+      "vote_count": 1709
+    }
+  ]
+}

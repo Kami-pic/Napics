@@ -1,0 +1,39 @@
+{
+  "tmdb_id": 2362,
+  "media_type": "movie",
+  "title": "西部世界",
+  "original_title": "Westworld",
+  "english_title": "Westworld",
+  "year": "1973",
+  "poster_url": "https://image.tmdb.org/t/p/w500/bxsWSazzS8Nww5G0oTlujqBmxCO.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/m9K8LWrIuujCvYW9c7SgIOSOOj1.jpg",
+  "overview": "在遥远的未来，一座巨型高科技成人乐园Delos建成，其中有西部世界，罗马世界，中世纪世界三大主题版块的机器人世界，它提供给游客杀戮与性欲的满足，而这座巨大机械乐园的后台监控渐渐失去了对机器人的控制，游客被机器人杀死，所有想逃离者都被锁定……",
+  "rating": 6.8,
+  "genres": [
+    "冒险",
+    "科幻",
+    "西部"
+  ],
+  "director": "迈克尔·克莱顿",
+  "cast": [
+    "尤·伯连纳",
+    "Richard Benjamin",
+    "詹姆斯·布洛林",
+    "Norman Bartold",
+    "艾伦·奥本海默",
+    "Victoria Shaw"
+  ],
+  "runtime": 89,
+  "imdb_id": "tt0070909",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

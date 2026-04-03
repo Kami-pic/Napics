@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        16,
+        27
+      ],
+      "id": 48270,
+      "original_language": "en",
+      "original_title": "Bingo",
+      "overview": "在一个老旧舞台的正中央，椅子上坐着一个身着T恤唯唯诺诺的小男人。就在此时，光着脑袋的小丑走来过来，他拿着烟卷，看起来如此漫不经心。小丑和男人打招呼，并管他叫“小丑宾果（Bingo）”，小男人试图否认，但是小丑的脑袋逐渐变大，而且似乎十分愤怒，不断强调“你就是小丑宾果”。话音刚落，一个女人出现，宣布奏响音乐。马戏团风格的音乐停止后，接二连三怪人出现，都把小男人叫成“小丑宾果”。周而复始，乏味压抑，小男人的内心有些动摇，“也许我就是宾果，小丑宾果。”本片根据戏剧《Disregard This Play》改编。",
+      "popularity": 0.1008,
+      "poster_path": "/zuJOaDfgXFI12jUbltBw9C002Rw.jpg",
+      "release_date": "1998-10-01",
+      "title": "小丑宾果",
+      "video": false,
+      "vote_average": 6.0,
+      "vote_count": 12
+    }
+  ]
+}

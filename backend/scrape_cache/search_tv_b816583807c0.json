@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/NNC08YmJFFlLi1prBkK8quk3dp.jpg",
+      "genre_ids": [
+        10759,
+        10765,
+        18
+      ],
+      "id": 84773,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Lord of the Rings: The Rings of Power",
+      "overview": "强大的力量锻造成型，王国辉煌崛起又陨落成尘，让人意想不到的英雄遭受考验，而强大的反派势要让整个世界蒙上黑暗。\n\n一组为人熟悉的人物和全新的角色，他们必须对抗邪恶势力在中土世界再度崛起。从迷雾山脉的最深处、林顿壮丽的森林、努曼诺尔的海岛王国到地图的最边缘，这些领土和角色将联手创造传奇，即使他们不在人世后仍流芳百世。\n\n本剧设定在托尔金的《霍比特人》和《指环王》事件前的数千年，将带领观众回到那个年代。",
+      "popularity": 41.4302,
+      "poster_path": "/sWDtPJHjQkFkdROEpYaQFFULRZl.jpg",
+      "first_air_date": "2022-09-01",
+      "name": "指环王：力量之戒",
+      "vote_average": 7.242,
+      "vote_count": 3629
+    }
+  ]
+}

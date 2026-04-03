@@ -1,0 +1,38 @@
+{
+  "tmdb_id": 1198994,
+  "media_type": "movie",
+  "title": "请求救援",
+  "original_title": "Send Help",
+  "english_title": "Send Help",
+  "year": "2026",
+  "poster_url": "https://image.tmdb.org/t/p/w500/f8c4HHITyez7RiA7pCLxI5cZQQU.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/fBh0OlTY5XSHuFrQ7ylXHniwg9s.jpg",
+  "overview": "当求生变成猎杀，谁会是最终的幸存者？ 一架飞机失事后，作为同事的两名幸存者被困在荒岛上。他们必须放下过往恩怨、共同求生，但最终演变成一场不安又黑色幽默的意志与智慧对决……",
+  "rating": 7.0,
+  "genres": [
+    "恐怖",
+    "惊悚",
+    "喜剧"
+  ],
+  "director": "萨姆·莱米",
+  "cast": [
+    "瑞秋·麦克亚当斯",
+    "迪伦·奥布莱恩",
+    "Edyll Ismail",
+    "丹尼斯·海斯伯特",
+    "沙维尔·塞缪尔",
+    "吴育刚"
+  ],
+  "runtime": 113,
+  "imdb_id": "tt8036976",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null,
+  "seasons_info": []
+}

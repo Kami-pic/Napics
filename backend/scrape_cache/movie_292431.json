@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 292431,
+  "media_type": "movie",
+  "title": "爱恋",
+  "original_title": "Love",
+  "english_title": "Love",
+  "year": "2015",
+  "poster_url": "https://image.tmdb.org/t/p/w500/uc7ASg5JhTmDQOuColvxmNaTi7P.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/7y9lSMcr3QbChUhSIiJ01WV2aPc.jpg",
+  "overview": "Murphy是个住在巴黎的电影学院学生，说一口英语。在巴黎他遇到了Electra，和她迅速擦出了爱的火花。可Murphy并不是一个传统的人，这位电影学院学生还经常和一位邻居Omi约会，Omi后来怀孕生下一个孩子然后就失踪了……",
+  "rating": 6.5,
+  "genres": [
+    "剧情",
+    "爱情"
+  ],
+  "director": "加斯帕尔·诺埃",
+  "cast": [
+    "卡尔·葛鲁斯曼",
+    "Aomi Muyock",
+    "Klara Kristin",
+    "Ugo Fox",
+    "Juan Saavedra",
+    "加斯帕尔·诺埃"
+  ],
+  "runtime": 134,
+  "imdb_id": "tt3774694",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "Belgium",
+    "France",
+    "Brazil"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

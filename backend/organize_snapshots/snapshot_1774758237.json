@@ -1,0 +1,28 @@
+{
+    "id": 1774758237,
+    "time": "Sun Mar 29 12:23:57 2026",
+    "label": "organize",
+    "summary": "整理 4 个文件 → Angry Kid Peter Lord (2000)、The God of Death Konstantin Bronzit (2017)、Color Dream no 246 Michael Theodore (2006) 等4个文件夹",
+    "ops": [
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Angry Kid Peter.Lord (2000).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Angry Kid Peter Lord (2000)\\Angry Kid Peter.Lord (2000).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Color Dream no. 246 Michael.Theodore (2006).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Color Dream no 246 Michael Theodore (2006)\\Color Dream no. 246 Michael.Theodore (2006).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Play Matt.Abbiss (2018).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\Play Matt Abbiss (2018)\\Play Matt.Abbiss (2018).avi",
+            "is_dir": false
+        },
+        {
+            "old_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\The God of Death Konstantin.Bronzit (2017).avi",
+            "new_path": "\\\\DS218play\\share\\视频\\动画电影\\动画短片合集\\The God of Death Konstantin Bronzit (2017)\\The God of Death Konstantin.Bronzit (2017).avi",
+            "is_dir": false
+        }
+    ]
+}

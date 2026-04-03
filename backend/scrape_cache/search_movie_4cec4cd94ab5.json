@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/va8cOLpo9DTfYtJxUOSPKqrppcK.jpg",
+      "genre_ids": [
+        18,
+        53
+      ],
+      "id": 39390,
+      "original_language": "cn",
+      "original_title": "滿清十大酷刑之赤裸凌遲",
+      "overview": "在马新贻（郑浩南 饰）的祭台下，赤裸的凶手黄莲（甄楚倩 饰）惨被凌迟。事缘马与莲兄及未婚夫不打不相识，马、莲更互相倾慕。原来马为两江提督，表面正人君子，却趁机向莲嫂加以淫辱，莲目睹一切…",
+      "popularity": 3.6819,
+      "poster_path": "/pS9YgrPOA4GdoTL1yyN7s5vxtdp.jpg",
+      "release_date": "1998-09-18",
+      "title": "满清十大酷刑之赤裸凌迟",
+      "video": false,
+      "vote_average": 3.8,
+      "vote_count": 24
+    }
+  ]
+}

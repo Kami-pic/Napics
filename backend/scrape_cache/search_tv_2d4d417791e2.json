@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/xIBS2ZIvQZbf6xBMzCi3ml2FSyp.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        35
+      ],
+      "id": 154494,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "リコリス・リコイル",
+      "overview": "平稳的日子――其实暗藏着秘密防范犯罪的秘密组织――“DA（Direct Attack）”。作为特工的少女们“LYCORIS”。有着历代最强的LYCORIS之称的・锦木千束、优秀的LYCORIS・井之上泷奈，在咖啡厅“LycoReco”支部工作。这里接受的订单从订购咖啡和甜点，到照顾小孩、代购、面向外国人的日语老师等请放心交给“LycoReco”自由自在的乐天派、和平主义的千束与沉着冷静系、效率主义的泷奈二人跌宕起伏的混乱日常正式上演！",
+      "popularity": 20.0615,
+      "poster_path": "/aVsZrFbsSEiYxWLHQHDvs6Vdt30.jpg",
+      "first_air_date": "2022-07-02",
+      "name": "莉可丽丝",
+      "vote_average": 8.1,
+      "vote_count": 202
+    }
+  ]
+}

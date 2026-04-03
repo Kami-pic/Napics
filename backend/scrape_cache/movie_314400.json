@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 314400,
+  "media_type": "movie",
+  "title": "吾血之血",
+  "original_title": "Sangue del mio sangue",
+  "english_title": "Sangue del mio sangue",
+  "year": "2015",
+  "poster_url": "https://image.tmdb.org/t/p/w500/7egcd4X15UC9K1Dwxkhp4Aqpleq.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/7UkXgjp9HgXZhcCQ57TjgrmRW8a.jpg",
+  "overview": "百年前，士兵费德里科在博比奥，被一名修女诱惑，百年后，调查员费德里科来到博比奥，发现这里住着一位只在夜间活动的老爷子。",
+  "rating": 5.7,
+  "genres": [
+    "历史",
+    "剧情"
+  ],
+  "director": "马可·贝罗奇奥",
+  "cast": [
+    "Roberto Herlitzka",
+    "Pier Giorgio Bellocchio",
+    "Lidiya Liberman",
+    "阿尔芭·罗尔瓦赫",
+    "Federica Fracassi",
+    "阿尔贝托·克拉科"
+  ],
+  "runtime": 106,
+  "imdb_id": "tt2922590",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "France",
+    "Italy",
+    "Switzerland"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

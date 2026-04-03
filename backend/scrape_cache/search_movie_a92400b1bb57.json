@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/q3j4OQFFDKM6fdQt9gE56kfDBNG.jpg",
+      "genre_ids": [
+        16,
+        878,
+        28,
+        12
+      ],
+      "id": 536115,
+      "original_language": "ja",
+      "original_title": "GODZILLA 星を喰う者",
+      "overview": "地球联盟的衰落，让晴生开始考虑转投艾克西夫，后者的死之信徒将召唤出能毁灭世界的怪物。",
+      "popularity": 3.7233,
+      "poster_path": "/b9NbMBSi4ilQE8PMupta1l8BBcj.jpg",
+      "release_date": "2018-11-09",
+      "title": "哥斯拉：噬星者",
+      "video": false,
+      "vote_average": 6.519,
+      "vote_count": 397
+    }
+  ]
+}

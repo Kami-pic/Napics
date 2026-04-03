@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/v2U77ZiPcV4XZsDoagzg6ypVXUo.jpg",
+      "genre_ids": [
+        80,
+        35
+      ],
+      "id": 38015,
+      "original_language": "ko",
+      "original_title": "타짜",
+      "overview": "电影《老千》讲述的是关于“欲望”的故事，死到临头才意识到一切只是一场梦。通过赌博反映了人们的欲望，同时也告诉我们从中应该吸取的教训。",
+      "popularity": 2.7788,
+      "poster_path": "/fYScZQpBpdeJ1Is6tj7V6yIHukW.jpg",
+      "release_date": "2006-09-28",
+      "title": "老千",
+      "video": false,
+      "vote_average": 6.9,
+      "vote_count": 99
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/tW8H0Bn1vptVAS2SZASmkkl2K5P.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 290865,
+      "original_language": "ko",
+      "original_title": "타짜: 신의 손",
+      "overview": "《老千2》是2006年上映的《老千》的续集，当年《老千》在韩国动员了684万名观众，导演崔东勋和主演曹承佑都备受瞩目，曹承佑更是一跃成为忠武路（韩国电影界的代称）的“票房良药”。影片讲述了赌场高手们在赌桌前一掷千金的紧张故事，上映时曾引起媒体间的热议，幽默中不失冷静细腻的镜头风格令人印象深刻。而姜炯哲导演的《老千2》将会以何种方式与观众见面也成为了焦点。",
+      "popularity": 4.8009,
+      "poster_path": "/6o6zBn4pUiUM9eb5Tn5BE8sWFDF.jpg",
+      "release_date": "2014-09-03",
+      "title": "老千2：神之手",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 97
+    }
+  ]
+}

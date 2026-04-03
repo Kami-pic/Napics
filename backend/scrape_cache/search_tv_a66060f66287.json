@@ -1,0 +1,44 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/zeS2V8lDvzIM3PWSbTlyw2d5QA1.jpg",
+      "genre_ids": [
+        10762
+      ],
+      "id": 84437,
+      "origin_country": [
+        "FR"
+      ],
+      "original_language": "fr",
+      "original_name": "Paprika",
+      "overview": "皮皮和丫丫是一对可爱的双胞胎兄妹，哥哥皮皮懂事又理性，妹妹丫丫却活泼又调皮，他们的共同点是爱体验新鲜事，并且对身边的好朋友非常贴心友好。每一天，皮皮和丫丫都会经历一次有趣的事，有制作创意冰激凌，有举行唱歌比赛，也有为了帮助好朋友找回好心情而做出一番奇妙搞笑的事来。无论皮皮和丫丫在哪里，都会给大家带去欢笑和乐趣。片子里还会出现大脚哥、可爱的云朵胖胖、憨厚的岩伯伯等造型创意的形象，深受孩子们的喜爱。",
+      "popularity": 1.1705,
+      "poster_path": "/w7PSvKlkgAh6IsTIxNmRKTWtO1i.jpg",
+      "first_air_date": "2018-11-01",
+      "name": "皮皮和丫丫",
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/td4pd1rRUU0YjzHwboy43hfZjvE.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 242240,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Superhot: The Spicy World of Pepper People",
+      "overview": "超级辣的辣椒最近很火，但有些人只是尝试辣味，而另一些人却一生都在追求火热的感觉。《超级辣》带你进入辣椒爱好者的狂野世界，这些自称辣椒头的人已经吃下了辣椒药丸，想要探索这条火辣之路的尽头。",
+      "popularity": 1.599,
+      "poster_path": "/5aho0N5jD2cL80FVkmsViFhkahL.jpg",
+      "first_air_date": "2024-01-22",
+      "name": "无辣不欢：风靡世界的辣椒",
+      "vote_average": 6.7,
+      "vote_count": 3
+    }
+  ]
+}

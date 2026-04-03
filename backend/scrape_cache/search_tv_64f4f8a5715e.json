@@ -1,0 +1,171 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/xak4LyR9fFsuDk3fWMube0tDM7x.jpg",
+      "genre_ids": [
+        10751,
+        16,
+        10759
+      ],
+      "id": 5246,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Godzilla",
+      "overview": "",
+      "popularity": 3.8905,
+      "poster_path": "/mnd1AQqxFwhnVYbw0toQ2D8PCH1.jpg",
+      "first_air_date": "1978-09-09",
+      "name": "Godzilla",
+      "vote_average": 7.857,
+      "vote_count": 28
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/nU5YaWbnF4dmdpSQz06Dn2uL0Hk.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10762
+      ],
+      "id": 11100,
+      "origin_country": [
+        "US",
+        "JP"
+      ],
+      "original_language": "en",
+      "original_name": "Godzilla: The Series",
+      "overview": "《酷斯拉》上映后，许多欧美影迷给了它一个绰号：GINO，意思是“GodzillaInNameOnly”。延续电影的剧情，美日的两家公司共同制作了《哥斯拉：动画系列》，总共两季，亚洲区HBO曾在2000年播出过中文字幕版。在此系列中，尼克·塔特普洛斯意外发现了那颗没有被摧毁的蛋，刚好此时蛋孵化了，刚出生的哥斯拉因为对尼克不小心沾到哥斯拉蛋的羊水产生了铭印而亲近他，后来更和主角们一起帮人类对抗接踵而来的其他变种怪兽。动画版的哥斯拉和电影版的不太一样，因为要面对多种不一样的怪物，就要拥有强大的力量，制作公司刻意使动画版的哥斯拉近似原版的哥斯拉，所以让它也可以吐出强力的热线，拥有日版一般坚硬的皮肤，导弹之类的武器已经无法伤他分毫。动画的剧情走向很好，对人类内心的黑暗也进行了刻画。比起索尼电影版《酷斯拉》更受原著迷的认同。",
+      "popularity": 7.6001,
+      "poster_path": "/elcF4hnfQ4tx0lmW9tGKDsI3Vct.jpg",
+      "first_air_date": "1998-09-12",
+      "name": "哥斯拉 末世龙战",
+      "vote_average": 7.956,
+      "vote_count": 148
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3W73glLBKpicnkOnOrR4S3L8Qjd.jpg",
+      "genre_ids": [
+        10765
+      ],
+      "id": 227078,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Godzilla Tales",
+      "overview": "",
+      "popularity": 0.0934,
+      "poster_path": "/4yyVGSNI5wB301Czj0RAUd4WBK3.jpg",
+      "first_air_date": "2020-09-30",
+      "name": "Godzilla Tales",
+      "vote_average": 10.0,
+      "vote_count": 4
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/nhpCCGHQW9A8ufFkD9S3XaS7HXK.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765,
+        9648
+      ],
+      "id": 111177,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ゴジラS.P＜シンギュラポイント＞",
+      "overview": "在工厂工作的有川润，因为某间无人居住的洋房有着神秘气息而前往调查。与此同时，在研究虚构生物的研究生神野铭，前往管理局调查接收到的神秘讯号。两人在完全不同的场所，完全不同的原因所展开的调查，却听到了同样的歌声，歌声将两人关联，牵扯进难以想像的事件中，最终两人可以携手共同推翻人类本无法避免的未来灾难吗？",
+      "popularity": 18.9704,
+      "poster_path": "/hq1BZePCenctSGB2MCfQ121wt4e.jpg",
+      "first_air_date": "2021-04-01",
+      "name": "哥斯拉：奇点",
+      "vote_average": 7.3,
+      "vote_count": 158
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/eeM3vC21ob1iD2n9ca65fmOasJu.jpg",
+      "genre_ids": [
+        16,
+        35,
+        10762,
+        10765
+      ],
+      "id": 221725,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ちびゴジラの逆襲",
+      "overview": "有一天，住在怪物岛的小哥斯拉发现一只被冲到海滩上的小机甲哥斯拉。他们的相遇标志着这些独特的小怪兽开始了超出人类理解的日常生活!",
+      "popularity": 6.7176,
+      "poster_path": "/be7uDWl2vWMX5OeAA8S6FNCT5Ei.jpg",
+      "first_air_date": "2023-04-01",
+      "name": "小哥斯拉的逆袭",
+      "vote_average": 7.2,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/gXQK1w3bkpxj3dlz7CHiy2mzkhA.jpg",
+      "genre_ids": [
+        10762,
+        10765
+      ],
+      "id": 12966,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ゴジラアイランド",
+      "overview": "",
+      "popularity": 8.6646,
+      "poster_path": "/xoGsLiaZYfxoXW9VNkQmxnP43RO.jpg",
+      "first_air_date": "1997-10-06",
+      "name": "ゴジラアイランド",
+      "vote_average": 8.4,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 306969,
+      "origin_country": [
+        "JP",
+        "TH"
+      ],
+      "original_language": "ja",
+      "original_name": "ゴジラ新作アニメシリーズ",
+      "overview": "",
+      "popularity": 0.0431,
+      "poster_path": null,
+      "first_air_date": "",
+      "name": "ゴジラ新作アニメシリーズ",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/RsnPgDsXkv9v7W9ipE7T5NvRZW.jpg",
+      "genre_ids": [],
+      "id": 102627,
+      "origin_country": [],
+      "original_language": "en",
+      "original_name": "すすめ！ゴジランド",
+      "overview": "",
+      "popularity": 0.0429,
+      "poster_path": "/gFiQJ6aopowokXu5clMsmRy4fzA.jpg",
+      "first_air_date": "1993-12-30",
+      "name": "すすめ！ゴジランド",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

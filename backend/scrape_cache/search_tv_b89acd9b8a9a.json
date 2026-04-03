@@ -1,0 +1,40 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 228899,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "竹内朱莉卒業直前！アンジュルム 「アイノケダモノ／同窓生」発売記念スペシャル",
+      "overview": "",
+      "popularity": 0.0071,
+      "poster_path": null,
+      "first_air_date": "2023-06-19",
+      "name": "竹内朱莉卒業直前！アンジュルム 「アイノケダモノ／同窓生」発売記念スペシャル",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 216589,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "アンジュルム竹内朱莉デビュー11周年記念特番！朝まで生竹内！2～石田と岸本と～ 完全版",
+      "overview": "",
+      "popularity": 0.0143,
+      "poster_path": null,
+      "first_air_date": "2022-12-21",
+      "name": "アンジュルム竹内朱莉デビュー11周年記念特番！朝まで生竹内！2～石田と岸本と～ 完全版",
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

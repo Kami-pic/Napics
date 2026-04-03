@@ -1,0 +1,181 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/cvenzPOcYthevmYvy0WX4pZ2RNp.jpg",
+      "genre_ids": [
+        10749,
+        18,
+        9648,
+        14
+      ],
+      "id": 2044,
+      "original_language": "en",
+      "original_title": "The Lake House",
+      "overview": "女医生凯特（桑德拉•布洛克 饰）因为工作繁忙，搬离了郊外的河边小屋。临走时她在信箱里放了一封信，希望下一位住客能帮忙处理信件。不久，她来到了旧址，发现信箱里面有一封来自建筑师亚历克斯（基努•里维斯 饰）的来信。然而更让她意外的是，这竟然是一封来自两年前的信。凯特试着写了一封回信，放在信箱里，希望亚历克斯能够给他新地址。亚历克斯是个建筑师，这幢湖边小屋就出自他的手笔。然而他的作品总也得不到赏识。独自生活在小屋中的亚历克斯朋友不多，生活平静得孤独。不过在信箱中发现一封来自未来的信时，他发现原来一切还不是那么糟糕。他与凯特渐渐成为了笔友，两年的时间界线似乎并不存在，他们如同普通人一样进行各种交流，比如亚历克斯会将自己的看过的书打包放在小屋的阁楼中，而凯特则会在阁楼中找到那些东西。随着爱情的滋生，亚历克斯决定与凯特见面，但是他们谁也不知道，这场跨越了时空的爱情会带来什么……",
+      "popularity": 4.329,
+      "poster_path": "/kgrsfBlVwBXKMVdKyzodYXiYAq5.jpg",
+      "release_date": "2006-06-16",
+      "title": "触不到的恋人",
+      "video": false,
+      "vote_average": 7.0,
+      "vote_count": 2946
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        10749
+      ],
+      "id": 830531,
+      "original_language": "en",
+      "original_title": "The Lake House",
+      "overview": "",
+      "popularity": 0.5186,
+      "poster_path": "/qbsZnW0bbbYcRXQrNzZdEJQnRaZ.jpg",
+      "release_date": "2020-07-09",
+      "title": "The Lake House",
+      "video": false,
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 993456,
+      "original_language": "en",
+      "original_title": "The Lake House",
+      "overview": "",
+      "popularity": 0.0,
+      "poster_path": null,
+      "release_date": "",
+      "title": "The Lake House",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/uXr4YaND76FYLlRXlGQa4GHeIDQ.jpg",
+      "genre_ids": [
+        27,
+        53
+      ],
+      "id": 433651,
+      "original_language": "en",
+      "original_title": "House by the Lake",
+      "overview": "",
+      "popularity": 0.8323,
+      "poster_path": "/gpD7I2bwcZSbIBfmLbQBj2PQtmZ.jpg",
+      "release_date": "2017-10-10",
+      "title": "湖边的房子",
+      "video": false,
+      "vote_average": 3.9,
+      "vote_count": 10
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1boPSOJj0ciDLSV2V4qQy2FIUkg.jpg",
+      "genre_ids": [
+        18,
+        53
+      ],
+      "id": 32941,
+      "original_language": "en",
+      "original_title": "The House Across the Lake",
+      "overview": "",
+      "popularity": 0.5512,
+      "poster_path": "/xNbER9xrXtNtJPUKBOGvzruWGYO.jpg",
+      "release_date": "1954-04-16",
+      "title": "热浪",
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 27
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        99
+      ],
+      "id": 922223,
+      "original_language": "en",
+      "original_title": "What Happens at the Lake House",
+      "overview": "",
+      "popularity": 0.7121,
+      "poster_path": "/bXYha3ZWGPixTUsdBkMOxZXMdUV.jpg",
+      "release_date": "2021-10-05",
+      "title": "What Happens at the Lake House",
+      "video": false,
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1284443,
+      "original_language": "de",
+      "original_title": "The House By The Lake",
+      "overview": "",
+      "popularity": 0.0575,
+      "poster_path": "/4JTRw9q2DVegN7e32p54w2qJeF4.jpg",
+      "release_date": "2024-01-20",
+      "title": "The House By The Lake",
+      "video": false,
+      "vote_average": 10.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1450641,
+      "original_language": "en",
+      "original_title": "The House On The Lake",
+      "overview": "",
+      "popularity": 0.1157,
+      "poster_path": "/uCmoBZnbo6WfdImT4yxilMEpA1H.jpg",
+      "release_date": "2024-09-13",
+      "title": "The House On The Lake",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 901539,
+      "original_language": "en",
+      "original_title": "Nightmares",
+      "overview": "",
+      "popularity": 0.3742,
+      "poster_path": "/iq6ZCQCt1wxoG73SDFTbinVtp45.jpg",
+      "release_date": "",
+      "title": "Nightmares",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 735905,
+      "original_language": "de",
+      "original_title": "Haus im See",
+      "overview": "",
+      "popularity": 0.3217,
+      "poster_path": "/3yGW3MlvFce1gZOdPCbPYoEGxMj.jpg",
+      "release_date": "2011-10-26",
+      "title": "Haus im See",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

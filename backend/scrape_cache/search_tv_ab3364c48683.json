@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/rrREM1cowfMZ8SmrJ9KCFO3y4j6.jpg",
+      "genre_ids": [
+        10765,
+        18,
+        16,
+        10759
+      ],
+      "id": 204154,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Scavengers Reign",
+      "overview": "本剧是对2016年动画短片《拾荒者》概念的拓展。在一艘星际货运飞船受损后，船员发现他们被困在了一个美丽但让人难以应付的陌生星球上。在这里，他们必须存活得足够久，才有机会逃离或获救。当幸存者们努力寻找被击落的船只和失踪的船员时，他们的新家展现出一个充满敌意的世界，这个世界可以在没有人类干扰的情况下蓬勃发展。",
+      "popularity": 10.4913,
+      "poster_path": "/dzkmTcqPAmkuJXk5OrDTEfwd6hY.jpg",
+      "first_air_date": "2023-10-19",
+      "name": "拾荒者统治",
+      "vote_average": 8.477,
+      "vote_count": 373
+    }
+  ]
+}

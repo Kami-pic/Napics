@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/52C5LxFmg4z0dSUUbYnLhJij0Jv.jpg",
+      "genre_ids": [
+        10764
+      ],
+      "id": 110381,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "The Real Housewives of Salt Lake City",
+      "overview": "",
+      "popularity": 6.9934,
+      "poster_path": "/1tQ2wVVKoma672CxE2kfl9oxHR8.jpg",
+      "first_air_date": "2020-11-11",
+      "name": "盐湖城娇妻",
+      "vote_average": 6.0,
+      "vote_count": 22
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/176pi3j0nOxGNfKOnPN079Qs9Nq.jpg",
+      "genre_ids": [
+        10764
+      ],
+      "id": 229394,
+      "origin_country": [
+        "CA"
+      ],
+      "original_language": "en",
+      "original_name": "Renovation, Inc: The Lake House",
+      "overview": "",
+      "popularity": 0.1082,
+      "poster_path": "/k7BdOgqGt2NUPeWtLvq0eaI2WLu.jpg",
+      "first_air_date": "2021-08-29",
+      "name": "Renovation, Inc: The Lake House",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/b3hdJntLeXIPQxF0aOauNfMcD1x.jpg",
+      "genre_ids": [
+        10764
+      ],
+      "id": 225438,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Fixer Upper: The Lakehouse",
+      "overview": "",
+      "popularity": 0.9885,
+      "poster_path": "/8dJYUux9n1WGvKRQG6DWoFWgLFq.jpg",
+      "first_air_date": "2024-06-02",
+      "name": "Fixer Upper: The Lakehouse",
+      "vote_average": 7.0,
+      "vote_count": 2
+    }
+  ]
+}

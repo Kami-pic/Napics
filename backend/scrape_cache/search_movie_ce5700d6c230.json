@@ -1,0 +1,149 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 259658,
+      "original_language": "en",
+      "original_title": "Summer with the Ghosts",
+      "overview": "",
+      "popularity": 0.4964,
+      "poster_path": "/vrSdvb4rzHQTfQLP9Rrpfd1nwN5.jpg",
+      "release_date": "2003-09-25",
+      "title": "Summer with the Ghosts",
+      "video": false,
+      "vote_average": 4.0,
+      "vote_count": 6
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 1413469,
+      "original_language": "en",
+      "original_title": "Our Summer''s Ghosts",
+      "overview": "",
+      "popularity": 0.0531,
+      "poster_path": "/gv05sGF85l1klRbaYlwHgTIapn0.jpg",
+      "release_date": "",
+      "title": "Our Summer''s Ghosts",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/gxaOeIwvAFr4XzDrCi1sAt6C46E.jpg",
+      "genre_ids": [
+        53
+      ],
+      "id": 656220,
+      "original_language": "en",
+      "original_title": "A Summer Story: The Ghost",
+      "overview": "",
+      "popularity": 0.0143,
+      "poster_path": "/vl0cJQkoHEkA23fVXKHkTQB7nJQ.jpg",
+      "release_date": "",
+      "title": "A Summer Story: The Ghost",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xXliNn9WUSqv5MkjrwD3cp1xXNr.jpg",
+      "genre_ids": [
+        16,
+        18,
+        9648,
+        14
+      ],
+      "id": 798544,
+      "original_language": "ja",
+      "original_title": "サマーゴースト",
+      "overview": "“知道夏日幽灵吗？”通过网络相识的高中生，友也、葵、凉。据称，都市传说中被称作“夏日幽灵”的是一位年轻女性的幽灵，只要燃放烟花她就会现身。无法迈向心仪人生的“友也”，寻找不到容身之处的\"葵\"，美好未来不翼而飞的\"凉\"，他们分别有着必须见到夏日幽灵的理由。在生与死交织的夏夜，三人各自的思虑会迈向何方呢？",
+      "popularity": 3.3077,
+      "poster_path": "/5SlXacj4F5RdLRL8GFusdk1KybB.jpg",
+      "release_date": "2021-11-12",
+      "title": "夏日幽灵",
+      "video": false,
+      "vote_average": 7.221,
+      "vote_count": 154
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        18
+      ],
+      "id": 804953,
+      "original_language": "cn",
+      "original_title": "七月燒衣",
+      "overview": "",
+      "popularity": 0.2712,
+      "poster_path": "/dpruAYkh29aXpvYjRslMxcmTrXC.jpg",
+      "release_date": "2016-05-14",
+      "title": "七月燒衣",
+      "video": false,
+      "vote_average": 5.0,
+      "vote_count": 1
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kzl0xCTx2ON8mFXBeWpNarQzdkM.jpg",
+      "genre_ids": [
+        10749,
+        35,
+        27
+      ],
+      "id": 445247,
+      "original_language": "en",
+      "original_title": "Wild Spirit",
+      "overview": "",
+      "popularity": 0.3969,
+      "poster_path": "/2WAMpXeFgi0Celb4DszN3Mi3jof.jpg",
+      "release_date": "2003-12-01",
+      "title": "Wild Spirit",
+      "video": false,
+      "vote_average": 3.1,
+      "vote_count": 7
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        27
+      ],
+      "id": 1302724,
+      "original_language": "ja",
+      "original_title": "恐すぎる監視カメラ 2022 夏 非常事態の霊街編",
+      "overview": "",
+      "popularity": 0.0239,
+      "poster_path": "/bcMKIkV2h5YRSlBdfSH3Vp2l66A.jpg",
+      "release_date": "2022-07-06",
+      "title": "恐すぎる監視カメラ 2022 夏 非常事態の霊街編",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [
+        27
+      ],
+      "id": 1302616,
+      "original_language": "ja",
+      "original_title": "【放送禁止】恐すぎるテレビ心霊動画 2019夏 総集編 最恐心霊決定版 24連発",
+      "overview": "",
+      "popularity": 0.0168,
+      "poster_path": "/6DJLs27WF6HKfK0bY0yuIYcu7Qw.jpg",
+      "release_date": "2019-07-02",
+      "title": "【放送禁止】恐すぎるテレビ心霊動画 2019夏 総集編 最恐心霊決定版 24連発",
+      "video": false,
+      "vote_average": 0.0,
+      "vote_count": 0
+    }
+  ]
+}

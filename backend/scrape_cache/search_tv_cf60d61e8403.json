@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/jLE5bsPA9xOKzBWOaOmKbp1DWQS.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        18
+      ],
+      "id": 71024,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Castlevania",
+      "overview": "吸血鬼猎人英勇作战，解救被德古拉控制的怪兽围困的城市。本剧由经典电子游戏《恶魔城》系列改编。",
+      "popularity": 16.9348,
+      "poster_path": "/ubDtIBwdS9b29sBofAkqWz3PqkT.jpg",
+      "first_air_date": "2017-07-07",
+      "name": "恶魔城",
+      "vote_average": 8.257,
+      "vote_count": 1511
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1swj9HxDkjzsO3yHlSwRA38hMFN.jpg",
+      "genre_ids": [
+        16,
+        10765,
+        18
+      ],
+      "id": 123548,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Castlevania: Nocturne",
+      "overview": "革命席卷法国，里希特·贝尔蒙奋力守护家族遗产，并阻止冷酷无情、利欲熏心的吸血鬼统治者崛起。",
+      "popularity": 11.0743,
+      "poster_path": "/4XJwo95ktJ7xupw1bCMuP91kyYr.jpg",
+      "first_air_date": "2023-09-28",
+      "name": "恶魔城：夜曲",
+      "vote_average": 7.855,
+      "vote_count": 259
+    }
+  ]
+}

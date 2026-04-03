@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 13274,
+  "media_type": "movie",
+  "title": "最终幻想7：终极指令",
+  "original_title": "ラストオーダー -ファイナルファンタジーVII-",
+  "english_title": "Final Fantasy VII: Last Order",
+  "year": "2005",
+  "poster_url": "https://image.tmdb.org/t/p/w500/sJtM6wQOSYaCSOxccOp4aEfifsv.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/pDwQIMQPO0PHa8s0Q0NHYMWOZIB.jpg",
+  "overview": "本故事是同名电视游戏《最终幻想Ⅶ》的外传式动画，是2005年时，随《最终幻想Ⅶ：圣子降临》电影DVD的豪华版附带的一段特典动画。  本故事分为两大部分，一部分是以曾的视觉来讲述故事，另一部分则是以扎克斯的视觉来讲述故事。曾的视觉是以5年前的尼布尔海姆事件为基础，讲述萨菲罗斯屠杀尼布尔海姆村民，扎克斯与其对战不敌被打倒，而克劳德则在萨菲罗斯不备时偷袭从而将其打伤，不过最后被萨菲罗斯打成重伤，不过遭到克劳德反击的萨菲罗斯最终逃走。而扎克斯的视觉是以尼布尔海姆事件5年后，扎克斯逃亡开始讲述，扎克斯将严重魔光中毒的克劳德带走。",
+  "rating": 6.6,
+  "genres": [
+    "动作",
+    "冒险",
+    "动画",
+    "奇幻",
+    "科幻",
+    "剧情"
+  ],
+  "director": "浅香守生",
+  "cast": [
+    "铃村健一",
+    "森川智之",
+    "樱井孝宏",
+    "伊藤步",
+    "诹访部顺一",
+    "藤原启治"
+  ],
+  "runtime": 25,
+  "imdb_id": "tt0489134",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null
+}

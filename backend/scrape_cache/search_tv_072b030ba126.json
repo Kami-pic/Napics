@@ -1,0 +1,207 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/bgo1ixOB2U6hxl8Og2TZritWKaD.jpg",
+      "genre_ids": [
+        10763
+      ],
+      "id": 651,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "60 Minutes",
+      "overview": "《60分钟》是由美国哥伦比亚广播公司（CBS）制作的新闻杂志节目，由唐·休伊特（Don Hewitt）于1968年9月24日创立并担任执行制片人，其名称源自休伊特提案报告中的\"60分钟\"核心概念。节目采用每小时三段独立新闻深度报道（各13分钟）和1个新闻评论版块（4分钟）的结构，总时长60分钟，1975年起固定于每周日晚间黄金时段播出。\n\n该节目首创\"严肃新闻娱乐化\"理念，通过平衡硬核调查与通俗叙事，既展现原子弹实验室的机密档案，也探索名人衣橱的趣味细节。以资深记者团队为核心，历任主持人包括迈克·华莱士、丹·拉瑟、哈里·里森纳等，内容聚焦揭露社会集团或组织损害公众利益的隐私，通过故事化叙事、精致影像语言形成独特风格。",
+      "popularity": 50.8014,
+      "poster_path": "/hqsJOrlmItlYJRZ6VEb7YnvGGup.jpg",
+      "first_air_date": "1968-09-24",
+      "name": "60分钟",
+      "vote_average": 6.6,
+      "vote_count": 79
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/e8CLiuaGAMOhpheVmuRWP0vm0sl.jpg",
+      "genre_ids": [
+        35,
+        18
+      ],
+      "id": 1691,
+      "origin_country": [
+        "US"
+      ],
+      "original_language": "en",
+      "original_name": "Studio 60 on the Sunset Strip",
+      "overview": "《日落大道60号》是由Aaron Sorkin担任编剧的喜剧类电视剧，阿曼达·皮特、马修·派瑞等主演。该剧主要讲述了新任命的执行总裁乔丹无奈之下找到黄金搭档马特和丹尼，挽救一个节目的故事。该剧于2006年在美国年首播。",
+      "popularity": 11.1366,
+      "poster_path": "/h05qDtY2W0uPOTp6Z1mUgBDrFl6.jpg",
+      "first_air_date": "2006-09-18",
+      "name": "日落大道60号",
+      "vote_average": 7.4,
+      "vote_count": 129
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 35113,
+      "origin_country": [
+        "CZ"
+      ],
+      "original_language": "cs",
+      "original_name": "60",
+      "overview": "",
+      "popularity": 0.2397,
+      "poster_path": null,
+      "first_air_date": "1996-01-03",
+      "name": "60",
+      "vote_average": 0.0,
+      "vote_count": 0
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6jvYqedVtORnCwX3U5HUD2VKr00.jpg",
+      "genre_ids": [
+        18,
+        80,
+        9648,
+        10768
+      ],
+      "id": 86824,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "60일, 지정생존자",
+      "overview": "　　《60天，指定幸存者》在原版主要故事情节的基础上，加入了更多有关韩国国情的元素。这是一个关于政治家的故事，他突然从环境部长晋升到了总统，因为在国会上发生的一次爆炸中，排在他前面的总统候选人都罹难身亡。朴木镇原本是位科学家，如今身为政客的他必须努力融入政坛。在朴木镇代任总统的 60 天中，尽管经验不足并且不情不愿，他还是想努力揭开袭击背后的真相。",
+      "popularity": 4.2472,
+      "poster_path": "/l6O61Jo2jSdioKKDDGNQpDCxlGJ.jpg",
+      "first_air_date": "2019-07-01",
+      "name": "60天，指定幸存者",
+      "vote_average": 7.9,
+      "vote_count": 42
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/wPb2uc2I22RNeP44LAuvDiqJ84e.jpg",
+      "genre_ids": [
+        9648
+      ],
+      "id": 89538,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "60 誤判対策室",
+      "overview": "石川智健同名小说改编，讲述主角有马英治（馆广）过去在负责的案件中让无罪的人陷入冤罪，一直抱着要赎罪的想法来到退休前。某天他在居酒屋听到两位客人在谈论杀人的犯罪，因此怀疑名为古内博文的死刑犯是含冤，于是在「误判对策室」开始进行调查，然而古内的死刑执行日期逼近……",
+      "popularity": 2.3602,
+      "poster_path": "/xtPfwXU6lGuUyhKWQCaiM3As7ii.jpg",
+      "first_air_date": "2018-05-06",
+      "name": "60误判对策室",
+      "vote_average": 7.2,
+      "vote_count": 3
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/vmh1xnROcnDYBcbaz17WT4iNxin.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 249548,
+      "origin_country": [
+        "CO"
+      ],
+      "original_language": "es",
+      "original_name": "Secuestro del vuelo 601",
+      "overview": "飞机被劫持，机组人员和地勤人员与袭击者展开紧张激烈的谈判，两名乘务员必须与对方斗智斗勇。根据真人真事改编。",
+      "popularity": 2.8098,
+      "poster_path": "/h8Evhh2Tn7SQ5IApzHiu76Ng5Yv.jpg",
+      "first_air_date": "2024-04-10",
+      "name": "凶劫601航班",
+      "vote_average": 8.0,
+      "vote_count": 41
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/66opTecYXhT41JlPwYwq20b9356.jpg",
+      "genre_ids": [
+        35
+      ],
+      "id": 233428,
+      "origin_country": [
+        "RO"
+      ],
+      "original_language": "ro",
+      "original_name": "Lasă-mă, îmi place ! Camera 609",
+      "overview": "主角们误入爱河，导致了多米诺骨牌式的尴尬局面和喜剧局面。通过特殊的遗嘱条件获得的一大笔遗产，引发了竞争者之间悲喜剧的竞争。",
+      "popularity": 2.834,
+      "poster_path": "/87JsGpORz2Y0YGlgdMuZHrdLVYt.jpg",
+      "first_air_date": "2023-08-25",
+      "name": "来吧，我喜欢！609 室",
+      "vote_average": 6.2,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/22l43UfopsxtSaKMIWeeSIjjpaZ.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 58468,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Attenborough: 60 Years in the Wild",
+      "overview": "为纪念大卫.爱登堡爵士（Sir David Attenborough）从事野外生物考察和献身生态电视片创作60周年，BBC公司推出《大卫爱登堡野外探索60年》系列。  　　作为一位世界知名的自然史学、生物学家和生态纪录片制作人，大卫.爱登堡创作了一系列具有热烈反响的电视片。特别是2001年那部纵览海洋世界的《蓝色星球》，更是在世界各地广受欢迎。在进行拍摄的50年间，大卫.爱登堡和他的同事们以勇敢的冒险精神，和对科学探索孜孜不倦的热情，深入全球每个角落，为获取最广泛，详尽的资料，拍摄了许多令人惊叹的珍贵镜头。这些花费大量时间，资金和精力制作的纪录片，内容涉及科学，历史，文化和环保各个领域，以揭示物种起源，探索生物进化，研究人与环境的协调发展为目的，具有严肃的科学，教育意义。同时，利用令人难以相信的拍摄技巧和唯美的艺术手段所创作出的精彩画面，又不失大众观赏的娱乐价值。  　　在近二十部电视系列片中，每部作品都因内容丰富奇特，画面精致壮观，叙述简洁生动而吸引观众。这些宝贵的精神财富不仅以极高的收视率创造了电视史上前所未有的神话，而且也为大卫.爱登堡赢得无数的奖项和荣誉。现在他制作的电视片已成为众多生态，影视爱好者观赏、收藏的顶级佳作，同样在学术上也是各院校，科研机构用于教学和研究的必备资料。",
+      "popularity": 0.8687,
+      "poster_path": "/cptFb42RkP8uVxQB75dFoI9q2YP.jpg",
+      "first_air_date": "2012-11-16",
+      "name": "大卫爱登堡野外探索60年",
+      "vote_average": 7.4,
+      "vote_count": 5
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xqrNccLfZypZvaAOEuIHPWgfDCw.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 24400,
+      "origin_country": [
+        "GB"
+      ],
+      "original_language": "en",
+      "original_name": "Deadly 60",
+      "overview": "",
+      "popularity": 1.1489,
+      "poster_path": "/9OhUIi351RejCO4ddjsIbtDu6Ke.jpg",
+      "first_air_date": "2009-05-28",
+      "name": "致命的60种生物",
+      "vote_average": 7.4,
+      "vote_count": 9
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/643KVhKR2MWgMO13xQRHAd0CyP5.jpg",
+      "genre_ids": [
+        10765,
+        18
+      ],
+      "id": 316600,
+      "origin_country": [
+        "KR"
+      ],
+      "original_language": "ko",
+      "original_name": "내 남자친구는 600살",
+      "overview": "六百年前的朝鲜王朝，王子谦（车晸优 饰）被诬陷为逆贼，被逼至死亡边缘后跳入湖中失去意识。醒来时，他发现自己身处2025年的韩国一间浴室。房东兼生存能力满级的电视剧PD秀贤（郑艺娜 饰）震惊于家中出现的神秘男子。然而房租突然翻倍的现实让她不得不妥协，决定与来自朝鲜的王子一起赚钱，两人意外的同居生活由此开始。",
+      "popularity": 0.5051,
+      "poster_path": "/zBmMkoznjKgeFf3N5WZ0FT5Vxtw.jpg",
+      "first_air_date": "2025-12-30",
+      "name": "我的男朋友600岁",
+      "vote_average": 7.0,
+      "vote_count": 1
+    }
+  ]
+}
