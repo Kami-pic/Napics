@@ -1,3 +1,4 @@
+import os
 import requests
 import time
 import logging
@@ -277,3 +278,32 @@ class QBittorrentClient:
         except Exception as e:
             print(f"qBittorrent error: {e}")
             return False
+
+    def get_torrent_files(self, hash: str) -> List[str]:
+        """获取种子内所有文件的相对路径（qB 的 name 字段）。
+        
+        注意：不再拼绝对路径，因为 qB 的 save_path 可能是 Docker/NAS 视角的路径，
+        和 Windows 本机路径不一致。由调用方用 task.save_path 拼接真实路径。
+        """
+        try:
+            if not self._login():
+                return []
+            r = self.session.get(f"{self.url}/api/v2/torrents/files?hash={hash}", timeout=5)
+            if r.status_code != 200:
+                return []
+            files = r.json()
+            
+            result = []
+            for f in files:
+                name = f.get("name", "")
+                if name:
+                    result.append(name)
+            
+            print(f"[qB] get_torrent_files: hash={hash}, count={len(result)}")
+            if result:
+                print(f"[qB]   first 3: {result[:3]}")
+            return result
+        except Exception as e:
+            print(f"[qB] get_torrent_files error: {e}")
+            return []
+

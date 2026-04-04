@@ -94,54 +94,16 @@ def _get_recycle_bin() -> RecycleBin:
     return _recycle_bin
 
 def _get_file_relocator() -> FileRelocator:
-    """懒加载文件归位器，注入 V3 流水线函数。"""
+    """懒加载文件归位器，注入异步整理流水线函数。"""
     global _file_relocator
     if _file_relocator is None:
         _file_relocator = FileRelocator(
             recycle_bin=_get_recycle_bin(),
-            run_pipeline_fn=_run_v3_pipeline_internal,
+            run_pipeline_fn=organize_full, # 直接注入异步函数
         )
     return _file_relocator
 
-def _run_v3_pipeline_internal(
-    path: str, dry_run: bool = True, use_ai: bool = False,
-    category_hint: str = "", action_plan: dict = None,
-) -> dict:
-    """V3 流水线内部调用封装（非 HTTP，直接调用 organize_full 的核心逻辑）。
 
-    FileRelocator 通过此函数调用 V3，避免循环导入和 HTTP 开销。
-    """
-    import asyncio
-
-    # organize_full 是 async 函数，需要在同步上下文中调用
-    class _FakeRequest:
-        """模拟 FastAPI Request 对象，传递 action_plan。"""
-        async def json(self):
-            if action_plan:
-                return {"action_plan": action_plan}
-            return {}
-
-    loop = None
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    if loop.is_running():
-        # 已在异步上下文中，创建新线程运行
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            new_loop = asyncio.new_event_loop()
-            future = pool.submit(
-                new_loop.run_until_complete,
-                organize_full(path, dry_run=dry_run, use_ai=use_ai, request=_FakeRequest())
-            )
-            return future.result(timeout=300)
-    else:
-        return loop.run_until_complete(
-            organize_full(path, dry_run=dry_run, use_ai=use_ai, request=_FakeRequest())
-        )
 
 def _tmdb_client():
     """统一创建 TMDBClient，自动带 proxy"""
@@ -2887,7 +2849,7 @@ def organize_structure(path: str, dry_run: bool = True):
 
 @app.post("/organize/full")
 async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
-                        request: Request = None):
+                        request: Request = None, whitelist: List[str] = None):
     """V3 入口 B：一键完全整理（两段式提交）。
     dry_run=True：推演模式，返回 Action Plan（严禁任何文件系统写操作）。
     dry_run=False：确权执行，接收前端回传的 action_plan 直接执行。
@@ -2928,11 +2890,11 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
             "scrape_issues": len(report.get("scrape_issues", [])),
         }
 
-        # Step 3 推演：刮削计算（查 TMDB + 建映射表 + 计算 plan，不写 NFO）
+        # Step 3 推演：刮削计算（只读）
         if client:
             scrape_result = scraper.scrape_folder(
                 path, client, force=True, folder_type=folder_type,
-                dry_run=True, use_ai=use_ai
+                dry_run=True, use_ai=use_ai, whitelist=whitelist
             )
             result["tmdb_match"] = scrape_result.get("tmdb_match", {})
             result["plan"] = scrape_result.get("plan", [])
@@ -3917,6 +3879,144 @@ def get_organize_history_detail(snapshot_id: int):
 def check_blacklist(url: str):
     """检查种子是否在黑名单中"""
     return {"blocked": torrent_bl.is_blocked(url)}
+
+
+class RelocateRequest(BaseModel):
+    task_id: str
+    auto_replace: bool = False
+
+class ExecuteRelocateRequest(BaseModel):
+    task_id: str
+    plan: dict
+
+@app.post("/organize/dry-run")
+async def organize_dry_run(req: RelocateRequest):
+    """阶段一：整理替换探测（原地识别模式）"""
+    import traceback
+    try:
+        dm = _get_download_manager()
+        task = dm.get_task(req.task_id)
+        if not task:
+            return {"status": "failed", "message": f"任务不存在: {req.task_id}", "coexist_pairs": []}
+            
+        # 获取新资源白名单
+        new_files = []
+        if task.downloader_hash:
+            try:
+                clients = get_clients()
+                qb = clients.get("qb")
+                if qb:
+                    new_files = qb.get_torrent_files(task.downloader_hash)
+            except Exception as qe:
+                print(f"[DryRun] qB 获取文件列表失败: {qe}")
+        
+        print(f"\n[DryRun] task={task.media_name}, save_path={task.save_path}, hash={task.downloader_hash}, whitelist={len(new_files)}")
+        
+        rel = _get_file_relocator()
+        res = await rel.relocate(task, new_files_whitelist=new_files)
+
+        print(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
+
+        if res.status == "awaiting_confirm":
+            return {
+                "status": "awaiting_confirm",
+                "message": "发现库中存量旧版本，建议执行整理替换",
+                "coexist_pairs": [p.dict() for p in res.coexist_pairs],
+                "plan": res.action_plan
+            }
+        
+        if res.status == "failed":
+            return {"status": "failed", "message": f"探测失败: {res.error}", "coexist_pairs": []}
+        
+        # 无冲突，直接入库记录
+        if res.status == "archived":
+            dm.archive_task(task.id)
+            
+        return {"status": res.status, "message": "未发现冲突，已完成标准化归档", "coexist_pairs": []}
+    except Exception as e:
+        traceback.print_exc()
+        return {"status": "failed", "message": f"服务端异常: {e}", "coexist_pairs": []}
+
+
+@app.post("/organize/execute")
+async def organize_execute(req: ExecuteRelocateRequest):
+    """阶段二：执行整理替换。包含：清理旧资源 -> 新资源整理 -> 重新刮削"""
+    dm = _get_download_manager()
+    task = dm.get_task(req.task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+        
+    rel = _get_file_relocator()
+    # 注入白名单到 plan 中，供 confirm_replace 使用
+    # 这样 confirm_replace 就不需要重新查白名单了
+    if task.downloader_hash:
+        clients = get_clients()
+        qb = clients.get("qb")
+        if qb:
+            req.plan["whitelist"] = qb.get_torrent_files(task.downloader_hash)
+
+    execute_res = await rel.confirm_replace(task, req.plan)
+    
+    if execute_res.success:
+        dm.archive_task(task.id)
+        
+    return {"status": execute_res.status, "message": execute_res.error or "整理替换任务执行完毕"}
+
+@app.post("/organize/archive-both")
+async def organize_archive_both(req: ExecuteRelocateRequest):
+    """阶段二：执行共存归档。包含：旧资源封箱 -> 新资源原样归档"""
+    dm = _get_download_manager()
+    task = dm.get_task(req.task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+        
+    rel = _get_file_relocator()
+    
+    # 重新探测冲突以获取旧资源列表
+    new_files = []
+    if task.downloader_hash:
+        clients = get_clients()
+        qb = clients.get("qb")
+        if qb:
+            new_files = qb.get_torrent_files(task.downloader_hash)
+            
+    res = await rel.relocate(task, new_files_whitelist=new_files)
+    
+    execute_res = await rel.archive_both(task, res.coexist_pairs)
+    
+    if execute_res.success:
+        dm.archive_task(task.id)
+        
+    return {"status": execute_res.status, "message": execute_res.error or "共存归档任务执行完毕"}
+
+@app.post("/organize/purge-old")
+async def organize_purge_old(task_id: str):
+    """辅助：只清理旧数据。回收所有非新资源文件。"""
+    dm = _get_download_manager()
+    task = dm.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+        
+    new_files = []
+    if task.downloader_hash:
+        clients = get_clients()
+        qb = clients.get("qb")
+        if qb:
+            new_files = qb.get_torrent_files(task.downloader_hash)
+    
+    if not new_files:
+        return {"status": "failed", "message": "无法识别新任务文件，为防误删，停止清理"}
+
+    rel = _get_file_relocator()
+    # 执行推演探测旧资源
+    res = await rel.relocate(task, new_files_whitelist=new_files)
+    if res.coexist_pairs:
+        # 回收旧资源
+        for pair in res.coexist_pairs:
+            rel._recycle_old_files(pair, task.id)
+        return {"status": "ok", "message": f"已清理 {len(res.coexist_pairs)} 组旧存量数据"}
+        
+    return {"status": "ok", "message": "未发现需要清理的旧数据"}
 
 
 if __name__ == "__main__":

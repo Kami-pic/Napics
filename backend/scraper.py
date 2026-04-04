@@ -350,7 +350,8 @@ def _is_category_folder(folder_name: str, video_files: list) -> bool:
 
 def scrape_folder(folder_path: str, tmdb_client_instance, force: bool = False,
                   folder_type: str = None, depth: int = 0, max_depth: int = 2,
-                  dry_run: bool = False, use_ai: bool = False) -> Dict:
+                  dry_run: bool = False, use_ai: bool = False,
+                  whitelist: List[str] = None) -> Dict:
     """刮削一个文件夹。folder_type 由流水线传入，不传则保底调 classify_folder。
     根据 folder_type 分发：movie→_scrape_movie, tv→_scrape_tv_v3, collection→_scrape_collection
     dry_run=True 时只计算 plan 不落盘（仅 tv 类型支持）。
@@ -384,14 +385,14 @@ def scrape_folder(folder_path: str, tmdb_client_instance, force: bool = False,
     elif folder_type == "tv":
         return _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                              tmdb_client_instance, force, depth, max_depth, proxy, results,
-                             dry_run=dry_run, use_ai=use_ai)
+                             dry_run=dry_run, use_ai=use_ai, whitelist=whitelist)
     elif folder_type == "movie":
         return _scrape_movie(folder_path, folder_name, video_files,
-                             tmdb_client_instance, force, proxy, results)
+                             tmdb_client_instance, force, proxy, results, whitelist=whitelist)
     else:
         if video_files:
             return _scrape_movie(folder_path, folder_name, video_files,
-                                 tmdb_client_instance, force, proxy, results)
+                                 tmdb_client_instance, force, proxy, results, whitelist=whitelist)
         results["self"] = {"status": "empty", "data": None}
         return results
 
@@ -510,7 +511,7 @@ def _scrape_collection(folder_path, folder_name, subdirs, video_files,
 
 def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                   tmdb_client_instance, force, depth, max_depth, proxy, results,
-                  dry_run=False, use_ai=False):
+                  dry_run=False, use_ai=False, whitelist=None):
     """V3 确权式 TV 刮削。
     三步：确定 TMDB ID → 建绝对集数映射表 → 遍历视频计算/写 episode.nfo。
     dry_run=True 时只计算 plan 不落盘。
@@ -649,6 +650,49 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
         return vids
 
     all_videos = _collect_videos(folder_path)
+    
+    # ── 如果有白名单，只保留白名单中的文件 ──
+    if whitelist:
+        w_set = set()
+        w_basenames = set() # 兜底逻辑：只看文件名
+        
+        folder_base_norm = os.path.normpath(folder_path).lower()
+        folder_parent, folder_last = os.path.split(folder_base_norm)
+        
+        for p in whitelist:
+            # 1. 强制标准化分隔符：处理来自 qB 的 / (Unix)
+            p_sep = p.replace("/", os.sep).replace("\\", os.sep)
+            p_norm = os.path.normpath(p_sep)
+            
+            # 记录文件名作为兜底
+            w_basenames.add(os.path.basename(p_norm).lower())
+            
+            # 2. 智能路径拼合（与 file_relocator.py 逻辑对照）
+            if os.path.isabs(p_norm):
+                abs_p = p_norm
+            else:
+                parts = p_norm.split(os.sep)
+                if len(parts) > 1 and parts[0].lower() == folder_last.lower():
+                    # 去除重复根目录：如果种子里的第一级目录名和保存目录名一样
+                    abs_p = os.path.join(folder_path, *parts[1:])
+                    print(f"[DEBUG_WHITELIST] Overlap Stripped in scraper: '{parts[0]}', Final: {abs_p}")
+                else:
+                    abs_p = os.path.join(folder_path, p_norm)
+            
+            w_set.add(os.path.normpath(abs_p).lower())
+            
+        # 过滤策略：精准路径匹配优先，文件名匹配作为极其备用的参考（防止目录层级错乱）
+        filtered_videos = []
+        for v in all_videos:
+            v_norm = os.path.normpath(v).lower()
+            v_base = os.path.basename(v_norm)
+            if v_norm in w_set:
+                filtered_videos.append(v)
+            elif v_base in w_basenames:
+                # 如果全路径匹配不到，但文件名在白名单里，且是在 folder_path 下，
+                # 说明可能是目录层级识别偏差（常见于各系统对种子解压结果的微差），采纳。
+                filtered_videos.append(v)
+        all_videos = filtered_videos
 
     for vpath in all_videos:
         vname = os.path.basename(vpath)
@@ -857,7 +901,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
 
 
 def _scrape_tv(folder_path, folder_name, subdirs, video_files,
-               tmdb_client_instance, force, depth, max_depth, proxy, results):
+               tmdb_client_instance, force, depth, max_depth, proxy, results, whitelist=None):
     """TV 类型：写 tvshow.nfo + 递归季目录 + 分集 episode.nfo。"""
     from organizer import _is_season_dir, _extract_season_number
     from analyzer import _clean_filename_for_folder
@@ -934,9 +978,15 @@ def _scrape_tv(folder_path, folder_name, subdirs, video_files,
                 print(f"[Scrape] Season {season_num} failed: {e}")
     
     if video_files and tv_tmdb_id:
+        # 规范化白名单路径方便对比
+        w_set = {os.path.normpath(p).lower() for p in whitelist} if whitelist else None
         from tmdb_client import parse_filename as _pf
         for vf in video_files:
             vf_path = os.path.join(folder_path, vf)
+            # 检查白名单
+            full_vf = os.path.normpath(os.path.abspath(vf_path))
+            if w_set is not None and full_vf.lower() not in w_set:
+                continue
             parsed = _pf(vf)
             ep_num = parsed.get("episode")
             s_num = parsed.get("season") or 1
@@ -961,7 +1011,7 @@ def _scrape_tv(folder_path, folder_name, subdirs, video_files,
 
 
 def _scrape_movie(folder_path, folder_name, video_files,
-                  tmdb_client_instance, force, proxy, results):
+                  tmdb_client_instance, force, proxy, results, whitelist=None):
     """单部电影：写 movie.nfo + poster。"""
     if not force:
         existing = read_nfo(folder_path)
@@ -973,9 +1023,18 @@ def _scrape_movie(folder_path, folder_name, video_files,
     result = _search_tmdb(folder_name, tmdb_client_instance)
     
     if not result.tmdb_id and video_files:
+        # 规范化白名单路径方便对比
+        w_set = {os.path.normpath(p.replace("/", os.sep).replace("\\", os.sep)).lower() for p in whitelist} if whitelist else None
+
         from analyzer import _clean_filename_for_folder
         import re as _re
         for vf in video_files[:3]:
+            # 检查白名单
+            vf_path = os.path.join(folder_path, vf)
+            full_vf = os.path.normpath(os.path.abspath(vf_path))
+            if w_set is not None and full_vf.lower() not in w_set:
+                continue
+
             vc = _clean_filename_for_folder(vf)
             if not vc or len(vc) < 2: continue
             ve = _re.findall(r'[A-Za-z][A-Za-z\s\':.\-]{3,}', vc)
