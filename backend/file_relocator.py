@@ -73,8 +73,7 @@ class FileRelocator:
              # 如果 save_path 还没创建（极少见），fallback 到根目录
              return RelocateResult(success=False, status="failed", error=f"下载目录尚未就绪: {scan_path}")
 
-        print(f"[Relocator] 开始原地整理探测: {scan_path}")
-        print(f"[Relocator] 已识别新资源数: {len(new_files_whitelist) if new_files_whitelist else 0}")
+        # 日志安全输出（避免 GBK 编码崩溃）
 
         # ── 第一步：对新资源进行标准化命名推演 ──
         try:
@@ -85,8 +84,11 @@ class FileRelocator:
                 whitelist=new_files_whitelist
             )
         except Exception as e:
-            print(f"[Relocator] ❌ 推演失败: {e}")
-            import traceback; traceback.print_exc()
+            import traceback
+            try:
+                traceback.print_exc()
+            except UnicodeEncodeError:
+                pass
             return RelocateResult(success=False, status="failed", error=f"推演失败: {e}")
 
 
@@ -208,14 +210,11 @@ class FileRelocator:
         if not plan_items:
             return conflicts
 
-        target_base = os.path.abspath(target_base)
-        print(f"\n[DEBUG_RELOCATE] --- 开始冲突探测 ---")
-        print(f"[DEBUG_RELOCATE] target_base: {target_base}")
+        target_base = os.path.normpath(os.path.abspath(target_base))
         
         # 智能路径拼合逻辑
         def get_abs_path(rel_p, base):
             # 1. 强制标准化分隔符：彻底处理 qB 的 / 或 \
-            # 如果是正斜杠 /，我们在 Windows 下显式转为 os.sep
             rel_p = rel_p.replace("/", os.sep).replace("\\", os.sep)
             rel_p = os.path.normpath(rel_p)
             base = os.path.normpath(base)
@@ -231,7 +230,6 @@ class FileRelocator:
                 if first_dir.lower() == base_name.lower():
                     modified_rel = os.path.join(*parts[1:])
                     abs_p = os.path.join(base, modified_rel)
-                    print(f"[DEBUG_PATH] Overlap Stripped: '{first_dir}', Final: {abs_p}")
                     return abs_p
                     
             return os.path.join(base, rel_p)
@@ -242,9 +240,6 @@ class FileRelocator:
             for p in whitelist:
                 abs_p = get_abs_path(p, target_base)
                 w_set.add(os.path.normcase(os.path.normpath(abs_p)))
-        
-        print(f"[DEBUG_RELOCATE] w_set (size): {len(w_set)}")
-        if w_set: print(f"[DEBUG_RELOCATE] w_set (first 3): {list(w_set)[:3]}")
 
         # 1. 扫描目录下的所有旧视频
         old_candidates = []
@@ -265,10 +260,8 @@ class FileRelocator:
                                 "season": p_info.get("season"),
                                 "raw_name": f
                             })
-                            if len(old_candidates) <= 3:
-                                print(f"[DEBUG_RELOCATE] Found Old Candidate: {f_norm}")
         
-        print(f"[DEBUG_RELOCATE] Total Old Candidates: {len(old_candidates)}")
+        # old_candidates collected
 
         # 2. 季号判定
         involved_seasons = set()
@@ -278,9 +271,6 @@ class FileRelocator:
                 involved_seasons.add(s)
             else:
                 involved_seasons.add(-1)
-        
-        print(f"[Debug] w_set: {list(w_set)[:5]}")
-        print(f"[Debug] old_candidates count: {len(old_candidates)}")
             
         # 兜底：如果识别不到季号（如单文件电影），则开启全局匹配模式 (-1)
         if not involved_seasons and plan_items:
@@ -297,6 +287,9 @@ class FileRelocator:
             if -1 in involved_seasons: 
                 matched = True
             elif o_season is not None and o_season in involved_seasons: 
+                matched = True
+            elif o_season is None and 1 in involved_seasons:
+                # 兼容老番：旧资源文件名（如 铳墓02.rmvb）没写季号，默认将其视为第一季，判定为冲突
                 matched = True
             elif not involved_seasons and plan_items:
                 # 极端兜底：如果完全推导不出季号但有推算项，为安全起见也算冲突

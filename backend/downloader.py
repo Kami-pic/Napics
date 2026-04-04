@@ -279,11 +279,11 @@ class QBittorrentClient:
             print(f"qBittorrent error: {e}")
             return False
 
-    def get_torrent_files(self, hash: str) -> List[str]:
-        """获取种子内所有文件的相对路径（qB 的 name 字段）。
+    def get_torrent_files(self, hash: str) -> List[dict]:
+        """获取种子内所有文件的信息（相对路径 + 大小）。
         
-        注意：不再拼绝对路径，因为 qB 的 save_path 可能是 Docker/NAS 视角的路径，
-        和 Windows 本机路径不一致。由调用方用 task.save_path 拼接真实路径。
+        返回 [{"name": "相对路径", "size_bytes": 字节数}, ...]
+        注意：不拼绝对路径，由调用方用 task.save_path 拼接。
         """
         try:
             if not self._login():
@@ -297,11 +297,14 @@ class QBittorrentClient:
             for f in files:
                 name = f.get("name", "")
                 if name:
-                    result.append(name)
+                    result.append({
+                        "name": name,
+                        "size_bytes": f.get("size", 0),
+                    })
             
             print(f"[qB] get_torrent_files: hash={hash}, count={len(result)}")
             if result:
-                print(f"[qB]   first 3: {result[:3]}")
+                print(f"[qB]   first 3: {[r['name'] for r in result[:3]]}")
             return result
         except Exception as e:
             print(f"[qB] get_torrent_files error: {e}")

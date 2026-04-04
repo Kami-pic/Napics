@@ -774,6 +774,15 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                 skip_reason = "无法提取集号"
                 method = "regex_failed"
 
+        # 构建标准化预览文件名（仅用于 UI 展示，不影响实际操作）
+        ext = os.path.splitext(vname)[1]
+        if mapped_season is not None and mapped_episode is not None and showtitle:
+            std_name = f"{showtitle} - S{mapped_season:02d}E{mapped_episode:02d}{ext}"
+        elif mapped_season is not None and showtitle:
+            std_name = f"{showtitle} - S{mapped_season:02d}{ext}"
+        else:
+            std_name = vname  # 无法标准化，保留原名
+
         # 构建 plan item
         item = {
             "original_path": vpath,
@@ -788,7 +797,8 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             "scraped_title": showtitle,
             "episode_title": "",
             "target_season_dir": f"Season {mapped_season:02d}" if mapped_season is not None else None,
-            "target_path": os.path.join(folder_path, f"Season {mapped_season:02d}", vname) if mapped_season is not None else vpath,
+            "target_filename": std_name,
+            "target_path": os.path.join(folder_path, f"Season {mapped_season:02d}", std_name) if mapped_season is not None else vpath,
             "target_shadow_name": None,
             "actions": [],
             "skip_reason": skip_reason,
@@ -800,6 +810,12 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                 ep_detail = tmdb_client_instance.get_episode_detail(tmdb_id, mapped_season, mapped_episode)
                 if ep_detail and ep_detail.episode_title:
                     item["episode_title"] = ep_detail.episode_title
+                    # 更新标准化名称：加入分集标题
+                    std_name = f"{showtitle} - S{mapped_season:02d}E{mapped_episode:02d} - {ep_detail.episode_title}{ext}"
+                    # 清理文件名中不合法的字符
+                    std_name = "".join(c for c in std_name if c not in r'\/:*?"<>|').strip()
+                    item["target_filename"] = std_name
+                    item["target_path"] = os.path.join(folder_path, f"Season {mapped_season:02d}", std_name)
             except Exception:
                 pass  # 404 等错误 → 简化 NFO
 
@@ -814,6 +830,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             item["actions"] = ["write_episode_nfo", "move_to_season", "write_shadow"]
 
         plan.append(item)
+
 
     # ── 第四步：落盘（仅 dry_run=False）──
     if not dry_run:

@@ -6,7 +6,17 @@ import shutil
 import requests
 import re
 import subprocess
+import sys
 from typing import List, Optional, Dict
+
+# 强制重配置 Windows 端的 stdout 编码，防止 GBK 崩溃
+if sys.platform == "win32":
+    try:
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    except Exception:
+        pass
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -3899,43 +3909,63 @@ async def organize_dry_run(req: RelocateRequest):
         if not task:
             return {"status": "failed", "message": f"任务不存在: {req.task_id}", "coexist_pairs": []}
             
-        # 获取新资源白名单
-        new_files = []
+        # 获取新资源文件列表（含大小）
+        file_info_list = []   # [{name, size_bytes}, ...]
         if task.downloader_hash:
             try:
                 clients = get_clients()
                 qb = clients.get("qb")
                 if qb:
-                    new_files = qb.get_torrent_files(task.downloader_hash)
+                    file_info_list = qb.get_torrent_files(task.downloader_hash)
             except Exception as qe:
                 print(f"[DryRun] qB 获取文件列表失败: {qe}")
         
-        print(f"\n[DryRun] task={task.media_name}, save_path={task.save_path}, hash={task.downloader_hash}, whitelist={len(new_files)}")
+        # 提取纯路径名作为白名单
+        new_files = [f["name"] for f in file_info_list]
+        
+        try:
+            print(f"\n[DryRun] task={task.media_name}, save_path={task.save_path}, whitelist={len(new_files)}")
+        except UnicodeEncodeError:
+            print("\n[DryRun] task=<UnicodeName>, whitelist=", len(new_files))
         
         rel = _get_file_relocator()
         res = await rel.relocate(task, new_files_whitelist=new_files)
 
-        print(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
+        try:
+            print(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
+        except UnicodeEncodeError:
+            print(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}")
 
         if res.status == "awaiting_confirm":
             return {
                 "status": "awaiting_confirm",
                 "message": "发现库中存量旧版本，建议执行整理替换",
                 "coexist_pairs": [p.dict() for p in res.coexist_pairs],
-                "plan": res.action_plan
+                "plan": res.action_plan,
+                "new_files_all": file_info_list,  # 完整文件列表（含字幕等）供 UI 展示
             }
         
         if res.status == "failed":
             return {"status": "failed", "message": f"探测失败: {res.error}", "coexist_pairs": []}
         
-        # 无冲突，直接入库记录
         if res.status == "archived":
-            dm.archive_task(task.id)
+            # 探测阶段禁止自动归档，仅返回状态供 UI 提示
+            pass
             
-        return {"status": res.status, "message": "未发现冲突，已完成标准化归档", "coexist_pairs": []}
+        return {"status": res.status, "message": "未发现冲突，可直接归档", "coexist_pairs": []}
     except Exception as e:
-        traceback.print_exc()
-        return {"status": "failed", "message": f"服务端异常: {e}", "coexist_pairs": []}
+        tb = traceback.format_exc()
+        try:
+            print(tb)
+        except UnicodeEncodeError:
+            # 安全打印以防 gbk 错误
+            pass
+        # 截取 traceback 最后 3 行供前端显示
+        tb_lines = tb.strip().split("\n")
+        tb_tail = "\n".join(tb_lines[-3:])
+        return {"status": "failed", "message": f"服务端异常: {e}\n\n{tb_tail}", "coexist_pairs": []}
+
+
 
 
 @app.post("/organize/execute")
@@ -3953,7 +3983,8 @@ async def organize_execute(req: ExecuteRelocateRequest):
         clients = get_clients()
         qb = clients.get("qb")
         if qb:
-            req.plan["whitelist"] = qb.get_torrent_files(task.downloader_hash)
+            file_info = qb.get_torrent_files(task.downloader_hash)
+            req.plan["whitelist"] = [f["name"] for f in file_info]
 
     execute_res = await rel.confirm_replace(task, req.plan)
     

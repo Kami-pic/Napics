@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/6GuqUJ33BnWDAoVPZP55gDr5G55.jpg",
+      "genre_ids": [
+        28,
+        53,
+        10402,
+        27
+      ],
+      "id": 1084187,
+      "original_language": "en",
+      "original_title": "Pretty Lethal",
+      "overview": "五个芭蕾舞者去参加比赛，却遭遇公车坠毁，被困在一家偏远旅馆中，遭遇杀身之祸，必须用自己的舞技逃脱危机。",
+      "popularity": 268.3482,
+      "poster_path": "/hOWBt0j7ccH09hglIcQKeTbj85E.jpg",
+      "release_date": "2026-03-13",
+      "title": "索命舞娘",
+      "video": false,
+      "vote_average": 6.9,
+      "vote_count": 175
+    }
+  ]
+}

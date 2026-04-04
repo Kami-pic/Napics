@@ -1,0 +1,40 @@
+{
+  "tmdb_id": 1316092,
+  "media_type": "movie",
+  "title": "呼啸山庄",
+  "original_title": "\"Wuthering Heights\"",
+  "english_title": "\"Wuthering Heights\"",
+  "year": "2026",
+  "poster_url": "https://image.tmdb.org/t/p/w500/cRgLp1jyRDTeHcHFUNZvFF2hRTp.jpg",
+  "backdrop_url": "https://image.tmdb.org/t/p/w1280/vSQSYd2zZTqc0zmHImwWEGGluMI.jpg",
+  "overview": "　　故事以十八世纪英格兰北部的约克郡荒原为背景，围绕恩萧家族和林顿家族之间紧张而又具有破坏性的关系，讲述恩萧先生收养的孤儿希斯克利夫和恩萧先生的女儿凯瑟琳之间充满激情和悲剧的爱情故事。",
+  "rating": 6.5,
+  "genres": [
+    "爱情",
+    "剧情"
+  ],
+  "director": "Emerald Fennell",
+  "cast": [
+    "玛格特·罗比",
+    "雅各布·艾洛蒂",
+    "周洪",
+    "艾莉森·奥利弗",
+    "沙扎德·拉蒂夫",
+    "Martin Clunes"
+  ],
+  "runtime": 136,
+  "imdb_id": "tt32897959",
+  "total_seasons": 0,
+  "status": "",
+  "season_number": 0,
+  "episode_count": 0,
+  "air_date": "",
+  "countries": [
+    "United States of America",
+    "United Kingdom"
+  ],
+  "episode_number": 0,
+  "episode_title": "",
+  "still_url": null,
+  "seasons_info": []
+}

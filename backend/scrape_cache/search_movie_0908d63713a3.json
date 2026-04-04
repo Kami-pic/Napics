@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/qnTdOizsXBzYu3uIbfhHSfE29TE.jpg",
+      "genre_ids": [
+        28,
+        35,
+        27
+      ],
+      "id": 1292695,
+      "original_language": "en",
+      "original_title": "They Will Kill You",
+      "overview": "一个从事打扫工作的女子为纽约一座摩天大楼中的富人家工作，却被告知这里有一个供奉撒旦的邪教，每个月要杀一个人作为祭品，“今晚，选中了你……”",
+      "popularity": 47.3598,
+      "poster_path": "/4qTTIh9OXaye99qMeocIOoPzaOJ.jpg",
+      "release_date": "2026-03-25",
+      "title": "杀的就是你",
+      "video": false,
+      "vote_average": 6.593,
+      "vote_count": 86
+    }
+  ]
+}

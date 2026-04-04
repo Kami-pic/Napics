@@ -447,6 +447,11 @@ class DownloadManager:
                     break
         self._save_now()
 
+    def archive_task(self, task_id: str):
+        """标记任务为已归档。"""
+        self.update_status(task_id, "archived")
+
+
     def delete_task(self, task_id: str) -> bool:
         """删除任务记录（仅删除记录，不影响已下载文件）。"""
         with self._lock:

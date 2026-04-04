@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/uNToXatdunyvWXyXMrTI1nLvh6r.jpg",
+      "genre_ids": [
+        35,
+        878,
+        80
+      ],
+      "id": 1115544,
+      "original_language": "en",
+      "original_title": "Mike & Nick & Nick & Alice",
+      "overview": "两个黑帮大佬和他心爱的女人，度过人生中最玩命的一夜求生战。一部“时光机”的出现，令这一夜瞬间变成时空错乱的闹剧……",
+      "popularity": 363.9071,
+      "poster_path": "/tGfRTox6Z8VDLeMSogqxvAsqE7C.jpg",
+      "release_date": "2026-03-14",
+      "title": "我当你兄弟",
+      "video": false,
+      "vote_average": 6.764,
+      "vote_count": 125
+    }
+  ]
+}

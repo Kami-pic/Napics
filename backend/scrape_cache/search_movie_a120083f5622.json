@@ -2,7 +2,7 @@
   "results": [
     {
       "adult": false,
-      "backdrop_path": "/73BClq9FOcrWrutnpiqhCNEWEwJ.jpg",
+      "backdrop_path": "/a9IQXoYCpsjqTOKXRTw1osLd5il.jpg",
       "genre_ids": [
         18,
         10749,
@@ -12,13 +12,13 @@
       "original_language": "en",
       "original_title": "Hamnet",
       "overview": "16世纪末期，彼时还未成名的威廉·莎士比亚（保罗·麦斯卡 饰）以教授拉丁语为生，为偿还父亲债务而奔波。他与在森林长大、性格奔放不羁的“女巫之女”艾格尼丝（杰西·巴克利 饰）相遇，被对方身上蓬勃的生命力深深吸引，随即陷入热恋。两人深知家族不会认可这段关系，便私下结合，不久后长女苏珊娜（博德希·蕾·布里纳希 饰）降生，他们的婚姻也因此被世俗接纳。后来艾格尼丝怀上双胞胎，却被婆婆要求在室内分娩，被迫切断与自然的联结。最终她顺利诞下儿子哈姆奈特（雅各比·尤佩 饰）与女儿珠迪丝（奥利维娅·莱恩斯 饰）。此后，莎士比亚前往伦敦追寻剧作家的梦想，艾格尼丝则留在家中抚养孩子。不幸的是，哈姆奈特夭折，这给夫妻二人带来沉重打击。莎士比亚将满腔悲痛倾注于创作，写出经典悲剧《哈姆雷特》，还亲自在剧中饰演哈姆雷特父亲的鬼魂；艾格尼丝则在伦敦环球剧院的舞台下，默默宣泄内心的哀伤。",
-      "popularity": 32.16,
+      "popularity": 25.2883,
       "poster_path": "/ufdPQfqNxsHwsDvpj1gOHdo2Nbb.jpg",
       "release_date": "2025-11-26",
       "title": "哈姆奈特",
       "video": false,
-      "vote_average": 7.712,
-      "vote_count": 1114
+      "vote_average": 7.723,
+      "vote_count": 1162
     }
   ]
 }

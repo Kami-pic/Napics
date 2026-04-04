@@ -612,11 +612,12 @@ def _extract_english_from_filename(raw_name: str) -> str:
 
 def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = True,
                             library_data: List[Dict] = None, folder_type: str = None,
-                            category_hint: str = "") -> List[Dict]:
+                            category_hint: str = "", whitelist: List[str] = None) -> List[Dict]:
     """统一重命名：文件夹 + 内部视频文件
     folder_type: 由流水线传入，不传则保底调 classify_folder
     category_hint: 一级分类目录名，传给 classify_folder
     dry_run=True 时只返回预览，不实际执行
+    whitelist: 如果提供，则只对名单内的文件生成重命名计划
     """
     results = []
     video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
@@ -717,9 +718,16 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
                 })
     
     # 2. 重命名内部视频文件
+    # 规范化白名单路径方便对比
+    w_set = {os.path.normpath(p).lower() for p in whitelist} if whitelist else None
+
     for item in sorted(os.listdir(folder_path)):
-        full = os.path.join(folder_path, item)
+        full = os.path.normpath(os.path.abspath(os.path.join(folder_path, item)))
         if not os.path.isfile(full) or os.path.splitext(item)[1].lower() not in video_exts:
+            continue
+        
+        # 白名单过滤：如果提供了白名单且当前文件不在名单内，跳过（它是老兵）
+        if w_set is not None and full.lower() not in w_set:
             continue
         
         ext = os.path.splitext(item)[1]
