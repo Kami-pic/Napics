@@ -25,7 +25,34 @@ backend/posters/
 backend/*_report.txt
 *.log
 
-# User Data / Settings (if needed, adjust accordingly)
-# backend/recycle_bin/
-# backend/recycle_bin.json
-# backend/config.json
+# 数据库/缓存文件（运行时生成，不入库）
+backend/scrape_cache/
+backend/download_tasks.json
+backend/download_tasks.json.tmp
+backend/analysis_cache.json
+backend/media_library.json
+backend/config.json
+backend/config.json.bak
+backend/config.json.refactor.bak
+backend/media_library.json.bak
+backend/media_library.json.refactor.bak
+backend/torrent_blacklist.json
+backend/excluded_paths.json
+backend/no_scrape.json
+backend/folder_types.json
+backend/organize_snapshots/
+backend/recycle_bin/
+
+# 备份文件
+backend/main.py.old
+backend/main.py.refactor_backup
+backend/config_manager.py.old
+
+# Gemini 废弃的重构目录
+backend/app/
+
+# 根目录临时文件
+scrape_cache/
+media_library.json
+black_lagoon_report.txt
+debug_log.txt

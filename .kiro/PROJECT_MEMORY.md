@@ -5,7 +5,17 @@ NAS 影视媒体库管理工具。前端 Next.js 16 + React 19 + Tailwind CSS 4�
 扫描 NAS 视频、刮削元数据、智能整理、搜索升级资源、发现新影片、批量管理。
 
 ## 后端核心模块 (backend/)
-- `main.py` — FastAPI 入口，树构建，所有 API
+- `main.py` — FastAPI 入口（67 行薄壳），注册所有路由
+- `shared.py` — 全局单例 + 共享辅助函数（config_m, shadow_m, get_clients 等）
+- `routes/library.py` — 媒体库 CRUD + 扫描同步 + 目录树
+- `routes/scrape.py` — 刮削、海报、影子名、索引器管理
+- `routes/organize.py` — 整理流水线、分析、重命名、归位替换
+- `routes/search.py` — BT 搜索 + 网盘搜索 + Alist 转存
+- `routes/download.py` — 下载管理、批量搜索、任务同步
+- `routes/config.py` — 配置管理、缓存、过滤规则、备份恢复
+- `routes/discover.py` — 豆瓣热门、TMDB 详情、新增影片
+- `routes/system.py` — 回收站、黑名单、分析报告、重启
+- `routes/tools.py` — 批量管理、AI 建议、播放、回滚
 - `tmdb_client.py` — TMDB 刮削（ScrapeResult 含 seasons_info），parse_filename（含 absolute_episode）
 - `scraper.py` — NFO 读写 + 海报下载 + 递归刮削 + `_scrape_tv_v3` 确权式刮削
 - `organizer.py` — 文件夹分类 + 重命名 + 文件包裹 + `reorganize_seasons_by_nfo`
@@ -102,7 +112,9 @@ NAS 影视媒体库管理工具。前端 Next.js 16 + React 19 + Tailwind CSS 4�
 ## 启动脚本
 - `start.bat` / `stop.bat` — 只管前后端（不动 Alist/qB/Prowlarr）
 - `start_all.bat` / `stop_all.bat` — 全部服务
-- `restart.bat` — 一键重启前后端
+- `restart.bat` — 一键重启前后端（支持 silent 参数，API 调用时不弹浏览器）
+- 后端启动：`cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000`
+- 前端重启按钮（左下角齿轮）调用 `/api/system/restart` → 执行 `restart.bat silent`
 
 ## 下一步待做（TODO 在 .kiro/docs/auto-replace-todo.md）
 - 下载完成自动替换闭环：实时刷新 → 一键替换 → 自动整理开关
@@ -115,6 +127,18 @@ NAS 影视媒体库管理工具。前端 Next.js 16 + React 19 + Tailwind CSS 4�
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - V3 架构：`.kiro/docs/organize-guide-v3.md`
 - 整理 TODO：`.kiro/docs/organize-todo.md`
+
+## 后端模块化重构记录（2026-04-09）
+- 旧 main.py（4163 行单文件）拆分为 67 行入口 + 9 个路由模块 + shared.py
+- 拆分脚本：`backend/_refactor_main.py`（可重复运行）
+- 验证脚本：`backend/_verify_all_apis.py`（15 个端点全量验证）
+- 旧文件备份：`backend/main.py.refactor_backup`
+- 路由文件：`backend/routes/{library,scrape,organize,search,download,config,discover,system,tools}.py`
+- 共享层：`backend/shared.py`（单例初始化 + 辅助函数）
+- 104 个路由路径完全不变，前端零改动
+- Gemini 之前做的不完整重构（`backend/app/` 目录）已废弃但保留，不影响运行
+- 前端重启按钮修复：后端调用 `restart.bat silent`，前端轮询 `http://localhost:8000/` 等待恢复
+- 前端 api.ts 中 Gemini 错误的 `/api/v1/xxx` 路径已全部改回旧路径
 
 ## 已知问题与经验教训
 - Prowlarr 本地连接必须禁用系统代理

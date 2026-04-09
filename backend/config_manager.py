@@ -31,6 +31,8 @@ class AppConfig(BaseModel):
     prowlarr_api_key: str = ""
     tmdb_api_key: str = ""
     qb_url: str = "http://127.0.0.1:8080"
+    qb_username: str = "admin"
+    qb_password: str = ""
     alist_url: str = "http://127.0.0.1:5244"
     alist_token: str = ""
     nas_paths: List[str] = ["C:\\Users\\shenq\\Videos"]
@@ -49,14 +51,18 @@ class AppConfig(BaseModel):
     download_channel_auto: bool = True            # 下载通道自动推荐
     recycle_bin_path: str = ""                    # 回收站目录路径
     recycle_bin_retention_days: int = 30           # 回收站保留天数
+    player_path: str = "C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini64.exe"  # 本地播放器路径
     # 二期新增
     sort_weights: SortWeightsConfig = SortWeightsConfig()  # 种子排序权重
     torrent_blacklist: List[str] = []             # 无效种子黑名单（download_url）
     torrent_blacklist_updated: str = ""           # 黑名单最后更新时间
 
 class ConfigManager:
-    def __init__(self, config_path: str = "config.json"):
-        self.config_path = config_path
+    def __init__(self, config_path: str = None):
+        # 强制使用绝对路径锁定 backend 目录
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.config_path = config_path or os.path.join(base_dir, "config.json")
+        self.lib_path = os.path.join(base_dir, "media_library.json")
         self._config = self.load()
 
     def load(self) -> AppConfig:
@@ -79,10 +85,9 @@ class ConfigManager:
         return self._config
 
     def load_library(self) -> List[dict]:
-        lib_path = "media_library.json"
-        if os.path.exists(lib_path):
+        if os.path.exists(self.lib_path):
             try:
-                with open(lib_path, "r", encoding="utf-8", errors="replace") as f:
+                with open(self.lib_path, "r", encoding="utf-8", errors="replace") as f:
                     return json.load(f)
             except json.JSONDecodeError:
                 # JSON 损坏，尝试备份

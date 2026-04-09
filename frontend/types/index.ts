@@ -44,11 +44,15 @@ export interface AppConfig {
   prowlarr_api_key: string;
   tmdb_api_key: string;
   qb_url: string;
+  qb_username?: string;
+  qb_password?: string;
   alist_url: string;
   alist_token: string;
   nas_paths: string[];
   nas_path?: string; // 兼容旧配置
   exclude_dirs: string;
+  http_proxy?: string;
+  player_path?: string;
   openai_api_key?: string;
   openai_base_url?: string;
   openai_model?: string;

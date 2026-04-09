@@ -13,13 +13,16 @@ interface SettingsModalProps {
   setPaths: (p: string[]) => void;
 }
 
-const FIELDS: { label: string; key: string; desc: string; link?: boolean }[] = [
+const FIELDS: { label: string; key: string; desc: string; link?: boolean; type?: string }[] = [
   { label: "Prowlarr 地址", key: "prowlarr_url", desc: "BT/PT 全网聚合搜索后台", link: true },
   { label: "Prowlarr API Key", key: "prowlarr_api_key", desc: "Settings → General 获取" },
   { label: "TMDB API Key", key: "tmdb_api_key", desc: "影视封面和标准化标题" },
   { label: "qBittorrent 地址", key: "qb_url", desc: "触发 BT 下载", link: true },
+  { label: "qBittorrent 用户名", key: "qb_username", desc: "Web UI 登录用户名" },
+  { label: "qBittorrent 密码", key: "qb_password", desc: "Web UI 登录密码", type: "password" },
   { label: "Alist 地址", key: "alist_url", desc: "网盘转存", link: true },
   { label: "Alist Token", key: "alist_token", desc: "管理后台 → 生成 Token" },
+  { label: "播放器路径", key: "player_path", desc: "本地视频播放器可执行文件路径" },
   { label: "AI Base URL", key: "openai_base_url", desc: "如 https://api.openai.com/v1" },
   { label: "AI API Key", key: "openai_api_key", desc: "LLM 接口密钥" },
   { label: "AI 模型", key: "openai_model", desc: "如 gpt-4o / deepseek-chat" },
@@ -105,6 +108,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 </div>
                 <p className="text-xs text-slate-600 mt-0.5 mb-1.5">{f.desc}</p>
                 <input value={val} onChange={e => setConfig({ ...config, [f.key]: e.target.value })}
+                  type={f.type || "text"}
                   className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
               </div>
             );

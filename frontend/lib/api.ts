@@ -14,7 +14,6 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   getConfig: () => request<AppConfig>(`${BASE_URL}/config`),
-
   saveConfig: (config: AppConfig) => request<any>(`${BASE_URL}/config`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -28,7 +27,7 @@ export const api = {
   scan: (path: string, signal?: AbortSignal) =>
     fetch(`${BASE_URL}/scan?path=${encodeURIComponent(path)}`, { signal }),
 
-  search: (query: string) => request<any>(`${BASE_URL}/search?query=${encodeURIComponent(query)}`),
+  search: (query: string) => request<any>(`${BASE_URL}/api/search?query=${encodeURIComponent(query)}`),
 
   // 增强搜索（含回退链+二次匹配+全局过滤）
   searchEnhanced: (query: string, options?: {
@@ -118,7 +117,7 @@ export const api = {
     const res = await fetch(`${BASE_URL}/scrape/upload-poster?path=${encodeURIComponent(path)}${coverParam}`, { method: "POST", body: form });
     return res.json();
   },
-  getLocalPoster: (path: string, cover: boolean = false) => `${BASE_URL}/scrape/poster?path=${encodeURIComponent(path)}${cover ? "&cover=true" : ""}`,
+  getLocalPoster: (path: string, cover: boolean = false) => `${BASE_URL}/movie/poster?path=${encodeURIComponent(path)}${cover ? "&cover=true" : ""}`,
 
   setPosterFromUrl: (path: string, url: string, cover: boolean = false) => request<any>(`${BASE_URL}/scrape/poster-url?path=${encodeURIComponent(path)}&url=${encodeURIComponent(url)}&cover=${cover}`, { method: "POST" }),
 
@@ -342,4 +341,5 @@ export const api = {
     }),
 
   alistMounts: () => request<any>(`${BASE_URL}/alist/mounts`),
+  restartSystem: () => request<any>(`${BASE_URL}/api/system/restart`, { method: "POST" }),
 };

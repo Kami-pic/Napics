@@ -14,6 +14,7 @@ import time
 import uuid
 import shutil
 import threading
+import requests
 from datetime import datetime
 from typing import List, Optional, Dict
 from pydantic import BaseModel
@@ -293,9 +294,10 @@ class DownloadManager:
             else:
                 task.eta = ""
 
-            # 状态判定
-            qb_state = t.get("state", "")
-            if task.progress >= 1.0 or qb_state in ("uploading", "stalledUP", "pausedUP", "forcedUP", "queuedUP"):
+            # 状态判定：增加对 100% 进度和 pausedUP 等状态的保底判定
+            qb_state = t.get("state", "").lower()
+            completed_states = ("uploading", "stalledup", "pausedup", "forcedup", "queuedup", "finished", "seeding")
+            if task.progress >= 1.0 or any(s in qb_state for s in completed_states):
                 task.status = "completed"
                 task.progress = 1.0
                 task.speed = ""

@@ -14,7 +14,8 @@ NFO 回收精准狙击规则：
 
 import os
 import glob
-from typing import List, Optional
+import time
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 
 from download_manager import DownloadTask
@@ -244,22 +245,56 @@ class FileRelocator:
         # 1. 扫描目录下的所有旧视频
         old_candidates = []
         if os.path.isdir(target_base):
-            for root, _, files in os.walk(target_base):
+            for root, dirs, files in os.walk(target_base):
                 norm_root = os.path.normpath(root).lower()
                 if any(x in norm_root for x in [".recycle", "$recycle.bin", "#recycle", "@recycle"]): continue
                 if "[旧资源备份]" in root: continue
                 
+                # 1.1 扫描散装视频文件
                 for f in files:
                     if os.path.splitext(f)[1].lower() in _VIDEO_EXTS:
                         f_path = os.path.abspath(os.path.join(root, f))
                         f_norm = os.path.normcase(os.path.normpath(f_path))
                         if f_norm not in w_set:
                             p_info = parse_filename(f)
+                            # 如果文件就在 target_base 下，或者它是我们要找的旧版本
                             old_candidates.append({
                                 "path": f_path,
                                 "season": p_info.get("season"),
-                                "raw_name": f
+                                "raw_name": f,
+                                "is_folder": False
                             })
+                
+                # 1.2 扫描非白名单子目录（仅在 target_base 第一层级或深层，如果它们包含视频）
+                # 注意：os.walk 里的 dirs 是相对于 root 的子目录列表
+                from organizer import _is_ignorable_subdir
+                for d in dirs:
+                    d_path = os.path.abspath(os.path.join(root, d))
+                    d_norm = os.path.normcase(os.path.normpath(d_path))
+                    
+                    # 排除隐藏目录、忽略名单目录和已经在白名单里的新兵目录
+                    if d.startswith('.') or _is_ignorable_subdir(d) or d_norm in w_set:
+                        continue
+                        
+                    # 检查该目录是否包含视频，如果包含，则视为潜在冲突旧版本
+                    has_video = False
+                    try:
+                        for item in os.listdir(d_path):
+                            if os.path.splitext(item)[1].lower() in _VIDEO_EXTS or os.path.isdir(os.path.join(d_path, item)):
+                                has_video = True
+                                break
+                    except Exception: pass
+                    
+                    if has_video:
+                        # 尝试从目录名识别季号，帮助更精准的冲突匹配
+                        from organizer import _extract_season_number
+                        s_num = _extract_season_number(d)
+                        old_candidates.append({
+                            "path": d_path,
+                            "season": s_num,
+                            "raw_name": d,
+                            "is_folder": True
+                        })
         
         # old_candidates collected
 

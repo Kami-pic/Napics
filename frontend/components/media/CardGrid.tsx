@@ -533,7 +533,8 @@ function CardPoster({ name, path, cacheKey = 0, cover = false }: { name: string;
   const [stage, setStage] = useState<"local" | "remote" | "done">("local");
   const bust = cacheKey ? `&_t=${cacheKey}` : "";
   const coverParam = cover ? "&cover=true" : "";
-  const localSrc = path ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/scrape/poster?path=${encodeURIComponent(path)}${coverParam}${bust}` : null;
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const localSrc = path ? `${API_BASE}/movie/poster?path=${encodeURIComponent(path)}${coverParam}${bust}` : null;
 
   // cacheKey 变化时重置状态（刮削/删除后刷新）
   useEffect(() => {
@@ -555,7 +556,7 @@ function CardPoster({ name, path, cacheKey = 0, cover = false }: { name: string;
             setStage("done");
             api.readScrape(path, true).then(r => {
               if (r.status === "ok" && r.data?.poster_url) {
-                const proxyUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/proxy/image?url=${encodeURIComponent(r.data.poster_url)}`;
+                const proxyUrl = `${API_BASE}/proxy/image?url=${encodeURIComponent(r.data.poster_url)}`;
                 setRemoteSrc(proxyUrl);
                 setStage("remote");
                 setLoaded(false);

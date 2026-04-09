@@ -13,11 +13,13 @@ import scraper
 
 _IGNORE_SUBDIRS = {
     # 字幕
-    'subs', 'subtitles', 'sub', 'subtitle',
+    'subs', 'subtitles', 'sub', 'subtitle', 'fonts', 'font',
     # 花絮/附属（Plex/Emby 保留字）
     'extras', 'extra', 'bonus', 'featurettes', 'featurette',
     'behind the scenes', 'deleted scenes', 'interviews', 'scenes',
     'shorts', 'trailers', 'trailer', 'other',
+    # 资源包/扫图/CD
+    'scans', 'scan', 'cd', 'cds', 'ost', 'soundtrack', 'booklet', 'artbook', 'covers', 'cover',
     # 系统目录
     'sample', 'samples',
     '@eadir', '#recycle', '.ds_store',

@@ -210,7 +210,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
               {(["", "downloading", "completed", "awaiting_confirm", "failed"] as StatusFilter[]).map(s => (
                 <button key={s} onClick={() => setFilter(s)}
                   className={`px-3 py-1 rounded-lg text-[11px] transition-colors ${filter === s ? "bg-blue-600 text-white" : "bg-white/[0.04] text-slate-500 hover:text-slate-300"}`}>
-                  {s === "" ? "全部" : STATUS_LABELS[s]?.label || s}
+                  {s === "" ? "全部" : (s === "downloading" ? "活跃中" : STATUS_LABELS[s]?.label || s)}
                 </button>
               ))}
             </div>
@@ -247,14 +247,15 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                         <button onClick={() => handleDelete(task.id)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-400">✕</button>
                       </div>
                     </div>
-                    {task.status === "downloading" && (
+                    {/* 只要任务活跃或有进度，就显示进度条 */}
+                    {(["downloading", "unknown", "lost"].includes(task.status) || (task.status === "completed" && task.progress < 1)) && (
                       <div className="mt-3">
                         <div className="w-full bg-white/[0.06] rounded-full h-1 overflow-hidden sm:h-1.5">
                           <div className="bg-blue-500 h-full transition-all" style={{ width: `${task.progress * 100}%` }} />
                         </div>
                         <div className="flex justify-between mt-1 text-[9px] text-slate-500 font-mono">
                           <span>{(task.progress * 100).toFixed(1)}%</span>
-                          <span>{task.speed} / {task.eta}</span>
+                          <span>{task.speed || "等待中"} / {task.eta || "--:--"}</span>
                         </div>
                       </div>
                     )}

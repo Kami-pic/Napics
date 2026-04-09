@@ -8,7 +8,7 @@ import re
 import requests
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from tmdb_client import ScrapeResult
 
 # ── NFO 读取 ──
@@ -681,18 +681,21 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             
             w_set.add(os.path.normpath(abs_p).lower())
             
-        # 过滤策略：精准路径匹配优先，文件名匹配作为极其备用的参考（防止目录层级错乱）
-        filtered_videos = []
-        for v in all_videos:
-            v_norm = os.path.normpath(v).lower()
-            v_base = os.path.basename(v_norm)
-            if v_norm in w_set:
-                filtered_videos.append(v)
-            elif v_base in w_basenames:
-                # 如果全路径匹配不到，但文件名在白名单里，且是在 folder_path 下，
-                # 说明可能是目录层级识别偏差（常见于各系统对种子解压结果的微差），采纳。
-                filtered_videos.append(v)
-        all_videos = filtered_videos
+        if not w_set:
+            # 如果白名单提供了但最终计算结果为空，说明路径匹配全军覆没。
+            # 为了防止“新文件栏为空”的问题，此时回退到不使用白名单。
+            pass
+        else:
+            # 过滤策略：精准路径匹配优先，文件名匹配作为极其备用的参考（防止目录层级错乱）
+            filtered_videos = []
+            for v in all_videos:
+                v_norm = os.path.normpath(v).lower()
+                v_base = os.path.basename(v_norm)
+                if v_norm in w_set:
+                    filtered_videos.append(v)
+                elif v_base in w_basenames:
+                    filtered_videos.append(v)
+            all_videos = filtered_videos
 
     for vpath in all_videos:
         vname = os.path.basename(vpath)

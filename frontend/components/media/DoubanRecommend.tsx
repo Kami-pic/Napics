@@ -29,7 +29,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 /** 豆瓣代理 URL 需要拼上后端地址 */
 function proxyUrl(url: string): string {
   if (!url) return "";
-  if (url.startsWith("/proxy/")) return `${BASE_URL}${url}`;
+  if (url.startsWith("/proxy/")) return `${BASE_URL}/proxy${url.replace("/proxy/", "/")}`;
   if (url.includes("doubanio.com")) return `${BASE_URL}/proxy/image?url=${encodeURIComponent(url)}`;
   return url;
 }

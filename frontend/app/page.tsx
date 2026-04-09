@@ -118,7 +118,7 @@ export default function Home() {
           {/* 第一排：标题+统计 | 下载管理、扫描、表单管理、设置 */}
           <Header stats={stats} onOpenSettings={() => setShowSettings(true)}
             scanning={scanning} onStartScan={handleStartScan} onStopScan={stopScan}
-            onNavigateHome={() => { if (fileTree) navigateTo(fileTree); }}
+            onNavigateHome={() => { navigateTo(null as any); if (fileTree) navigateTo(fileTree); }}
             onOpenDownloads={() => setShowDownloadManager(true)}
             syncMsg={syncMsg} syncing={syncing} />
 

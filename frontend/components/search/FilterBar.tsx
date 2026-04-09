@@ -145,7 +145,7 @@ interface FilterBarProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
   onClear: () => void;
-  availableIndexers: string[];
+  availableIndexers?: string[];
 }
 
 // ── 索引器多选组件 ──
@@ -222,7 +222,7 @@ export default function FilterBar({ filters, onChange, onClear, availableIndexer
   return (
     <div className="flex flex-wrap items-end gap-3">
       <IndexerSelect
-        options={availableIndexers}
+        options={availableIndexers || []}
         selected={filters.indexers}
         onChange={(v) => set("indexers", v)}
       />
