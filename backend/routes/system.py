@@ -178,22 +178,28 @@ def save_config(new_config: dict):
 
 @router.post("/api/system/restart")
 async def restart_system():
-    """重启前后端服务 — 调用项目根目录的 restart.bat"""
+    """重启后端服务 — 启动新的 uvicorn 进程后退出当前进程"""
     def do_restart():
         time.sleep(0.3)  # 让响应先发回前端
-        # restart.bat 在项目根目录（backend 的上一级）
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        bat_path = os.path.join(project_root, "restart.bat")
-        if not os.path.exists(bat_path):
-            # 兜底：只重启后端
-            bat_path = os.path.join(project_root, "backend", "_restart_backend.bat")
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(backend_dir)  # routes/ → backend/
+        log_path = os.path.join(backend_dir, "backend.log")
+        log_file = open(log_path, "a", encoding="utf-8")
+        # 用 CREATE_NEW_PROCESS_GROUP 让新进程独立于当前进程树
+        flags = 0
+        if sys.platform == "win32":
+            flags = subprocess.CREATE_NEW_PROCESS_GROUP
         subprocess.Popen(
-            ["cmd", "/c", bat_path, "silent"],
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
-            cwd=project_root,
+            [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"],
+            cwd=backend_dir,
+            stdout=log_file,
+            stderr=log_file,
+            creationflags=flags,
+            close_fds=True,
         )
+        time.sleep(0.5)
         os._exit(0)
 
     threading.Thread(target=do_restart).start()
-    return {"message": "正在重启前后端，约 5-8 秒后自动恢复..."}
+    return {"message": "正在重启后端，约 3-5 秒后自动恢复..."}
 

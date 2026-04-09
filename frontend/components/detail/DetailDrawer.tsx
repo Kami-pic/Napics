@@ -426,7 +426,7 @@ function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: { node:
       )}
       {/* 刮削内容：只在末端刮削单元（movie/tv/season）时显示 */}
       {!isAggregate && scrapeLoading && <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-500/10 border border-blue-500/20"><div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" /><span className="text-xs text-blue-400">正在刮削...</span></div>}
-      {!isAggregate && scrapeStatus === "success" && !scrapeLoading && scrape && scrape.tmdb_id > 0 && <><div className="text-xs text-green-400/70">✓ {scrape.title || "已匹配"}</div><ScrapeInfo data={scrape} /></>}
+      {!isAggregate && scrapeStatus === "success" && !scrapeLoading && scrape && (scrape.tmdb_id > 0 || scrape.title) && <><div className="text-xs text-green-400/70">✓ {scrape.title || "已匹配"}</div><ScrapeInfo data={scrape} /></>}
       {!isAggregate && confidence && <ConfidenceBadge confidence={confidence} pendingConfirm={pendingConfirm} onConfirm={() => setPendingConfirm(false)} onReject={() => { setPendingConfirm(false); }} />}
       {/* movie 类型显示视频级标准名，tv/season 显示文件夹级标准名 */}
       {folderType === "movie" && node.videos[0] && (
@@ -1093,7 +1093,7 @@ function ShadowNameSection({ path, video, folderName, folderShadowName, onRefres
   );
 }
 function ScrapeInfo({ data }: { data: ScrapeResult }) {
-  if (!data.tmdb_id) return null;
+  if (!data.tmdb_id && !data.title) return null;
   return (
     <div className="space-y-3">
       <div>
@@ -1138,7 +1138,7 @@ function useScrape(name: string, path: string, autoScrape: boolean = false, noFa
   const reload = useCallback((): Promise<void> => {
     if (!path) return Promise.resolve();
     return api.readScrape(path, noFallback).then(r => {
-      if (r.status === "ok" && r.data?.tmdb_id) { setData(r.data); setStatus("success"); }
+      if (r.status === "ok" && (r.data?.tmdb_id || r.data?.title)) { setData(r.data); setStatus("success"); }
       else { setData(null); setStatus("not_found"); }
     }).catch(() => { setData(null); setStatus("failed"); });
   }, [path]);
@@ -1148,7 +1148,7 @@ function useScrape(name: string, path: string, autoScrape: boolean = false, noFa
     let cancelled = false;
     // 如果缓存中有有效数据，直接用缓存
     const c = getCached(path || name);
-    if (c.scrapeData?.tmdb_id) {
+    if (c.scrapeData?.tmdb_id || c.scrapeData?.title) {
       setData(c.scrapeData); setStatus("success");
       return;
     }
@@ -1165,7 +1165,7 @@ function useScrape(name: string, path: string, autoScrape: boolean = false, noFa
         if (path) {
           const r = await api.readScrape(path, noFallback);
           if (cancelled) return;
-          if (r.status === "ok" && r.data?.tmdb_id) {
+          if (r.status === "ok" && (r.data?.tmdb_id || r.data?.title)) {
             setData(r.data); setStatus("success");
             return;
           }

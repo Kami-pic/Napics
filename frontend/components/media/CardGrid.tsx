@@ -534,7 +534,7 @@ function CardPoster({ name, path, cacheKey = 0, cover = false }: { name: string;
   const bust = cacheKey ? `&_t=${cacheKey}` : "";
   const coverParam = cover ? "&cover=true" : "";
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const localSrc = path ? `${API_BASE}/movie/poster?path=${encodeURIComponent(path)}${coverParam}${bust}` : null;
+  const localSrc = path ? `${API_BASE}/scrape/poster?path=${encodeURIComponent(path)}${coverParam}${bust}` : null;
 
   // cacheKey 变化时重置状态（刮削/删除后刷新）
   useEffect(() => {

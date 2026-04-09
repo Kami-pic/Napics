@@ -117,7 +117,7 @@ export const api = {
     const res = await fetch(`${BASE_URL}/scrape/upload-poster?path=${encodeURIComponent(path)}${coverParam}`, { method: "POST", body: form });
     return res.json();
   },
-  getLocalPoster: (path: string, cover: boolean = false) => `${BASE_URL}/movie/poster?path=${encodeURIComponent(path)}${cover ? "&cover=true" : ""}`,
+  getLocalPoster: (path: string, cover: boolean = false) => `${BASE_URL}/scrape/poster?path=${encodeURIComponent(path)}${cover ? "&cover=true" : ""}`,
 
   setPosterFromUrl: (path: string, url: string, cover: boolean = false) => request<any>(`${BASE_URL}/scrape/poster-url?path=${encodeURIComponent(path)}&url=${encodeURIComponent(url)}&cover=${cover}`, { method: "POST" }),
 

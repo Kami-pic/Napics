@@ -560,10 +560,37 @@ def get_local_poster(path: str, cover: bool = False):
 
     # 2. 物理路径查找
     if os.path.isdir(path):
+        # 2a. 标准文件夹级海报
         for name in ["poster.jpg", "poster.png", "folder.jpg", "cover.jpg"]:
             p = os.path.join(path, name)
             if os.path.exists(p):
                 return _poster_response(p)
+        
+        # 2b. 季文件夹：查找 seasonXX-poster.jpg，或 fallback 到父目录
+        folder_name = os.path.basename(path)
+        season_match = re.search(r'(?:S(\d+)|第(\d+)季|Season\s*(\d+))', folder_name, re.I)
+        if season_match:
+            sn = season_match.group(1) or season_match.group(2) or season_match.group(3)
+            for fmt in [f"season{sn.zfill(2)}-poster.jpg", f"season{sn}-poster.jpg"]:
+                p = os.path.join(path, fmt)
+                if os.path.exists(p):
+                    return _poster_response(p)
+            # 季文件夹没有自己的封面：fallback 到父目录的 poster
+            parent = os.path.dirname(path)
+            if parent and os.path.isdir(parent):
+                for name in ["poster.jpg", "poster.png"]:
+                    p = os.path.join(parent, name)
+                    if os.path.exists(p):
+                        return _poster_response(p)
+        
+        # 2c. 非季文件夹：找 *-poster.jpg（视频同名封面）
+        try:
+            for f in os.listdir(path):
+                fl = f.lower()
+                if fl.endswith('-poster.jpg') or fl.endswith('-poster.png') or fl.endswith('-thumb.jpg'):
+                    return _poster_response(os.path.join(path, f))
+        except OSError:
+            pass
     else:
         # 单文件模式：寻找同名海报
         base = os.path.splitext(path)[0]
@@ -593,81 +620,24 @@ def get_local_poster(path: str, cover: bool = False):
                     for f in items:
                         if f.lower().endswith(("-poster.jpg", "-poster.png", "poster.jpg", "poster.png")):
                             return _poster_response(os.path.join(folder, f))
-                return None
-
-            best_match = None
-            max_score = 0
-            for f in items:
-                fl = f.lower()
-                if fl.endswith(("-poster.jpg", "-poster.png", "-thumb.jpg", "poster.jpg", "poster.png")):
-                    score = sum(1 for k in keywords if k in fl)
-                    if score > max_score:
-                        max_score = score
-                        best_match = f
-            
-            # 匹配门槛
-            if best_match and (max_score >= 2 or max_score >= len(keywords) * 0.5):
-                return _poster_response(os.path.join(folder, best_match))
+            else:
+                best_match = None
+                max_score = 0
+                for f in items:
+                    fl = f.lower()
+                    if fl.endswith(("-poster.jpg", "-poster.png", "-thumb.jpg", "poster.jpg", "poster.png")):
+                        score = sum(1 for k in keywords if k in fl)
+                        if score > max_score:
+                            max_score = score
+                            best_match = f
+                
+                # 匹配门槛
+                if best_match and (max_score >= 2 or max_score >= len(keywords) * 0.5):
+                    return _poster_response(os.path.join(folder, best_match))
                 
         except OSError:
             pass
 
-    # 3. 数据库异步回填逻辑
-    try:
-        from config_manager import config_m
-        library = config_m.load_library()
-        target = None
-        if os.path.isdir(path):
-            target = next((v for v in library.get("videos", []) if v.get("path", "").startswith(path)), None)
-        else:
-            target = next((v for v in library.get("videos", []) if v.get("path") == path), None)
-        
-        if target and target.get("shadow_tmdb_id"):
-            from tmdb_client import tmdb_c
-            tmdb_id = target["shadow_tmdb_id"]
-            is_tv = "/剧集/" in path or "Season" in path
-            info = tmdb_c.get_info(tmdb_id, "tv" if is_tv else "movie")
-            if info and info.get("poster_url"):
-                return RedirectResponse(url=info["poster_url"])
-    except Exception as e:
-        print(f"Poster fallback failed for {path}: {e}")
-
-    raise HTTPException(status_code=404, detail="No poster found")
-    
-    # 文件夹（刮削单元）：poster.jpg 优先，cover.jpg 兜底
-    for name in ["poster.jpg", "poster.png", "folder.jpg", "cover.jpg"]:
-        p = os.path.join(path, name)
-        if os.path.exists(p):
-            return _poster_response(p)
-    
-    # season-poster（在 *-poster.jpg 之前检查，避免误读视频同名封面）
-    folder_name = os.path.basename(path)
-    season_match = re.search(r'(?:S(\d+)|第(\d+)季|Season\s*(\d+))', folder_name, re.I)
-    if season_match:
-        sn = season_match.group(1) or season_match.group(2) or season_match.group(3)
-        for fmt in [f"season{sn.zfill(2)}-poster.jpg", f"season{sn}-poster.jpg"]:
-            p = os.path.join(path, fmt)
-            if os.path.exists(p):
-                return _poster_response(p)
-        # 季文件夹没有自己的封面：fallback 到父目录的 poster
-        parent = os.path.dirname(path)
-        if parent and os.path.isdir(parent):
-            for name in ["poster.jpg", "poster.png"]:
-                p = os.path.join(parent, name)
-                if os.path.exists(p):
-                    return _poster_response(p)
-        # 季文件夹不 fallback 到 *-poster.jpg（那是集的封面）
-        raise HTTPException(status_code=404, detail="No poster found")
-    
-    # 非季文件夹：找 *-poster.jpg（视频同名封面）
-    try:
-        for f in os.listdir(path):
-            fl = f.lower()
-            if fl.endswith('-poster.jpg') or fl.endswith('-poster.png') or fl.endswith('-thumb.jpg'):
-                return _poster_response(os.path.join(path, f))
-    except OSError:
-        pass
-    
     raise HTTPException(status_code=404, detail="No poster found")
 
 @router.post("/scrape/execute")
