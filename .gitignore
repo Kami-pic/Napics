@@ -56,3 +56,6 @@ scrape_cache/
 media_library.json
 black_lagoon_report.txt
 debug_log.txt
+
+# 归档目录（废弃文件暂存）
+_archived_*/

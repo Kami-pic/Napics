@@ -1,4 +1,4 @@
-87---
+---
 inclusion: fileMatch
 fileMatchPattern: "**/*.{py,tsx,ts,js}"
 ---
@@ -41,7 +41,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 ├── stop.bat                # 停止前后端
 ├── start_all.bat           # 启动全部服务（含 Alist/qB/Prowlarr）
 ├── stop_all.bat            # 停止全部服务
-└── restart.bat             # 重启前后端
+└── restart.bat             # 重启前后端（支持 silent 参数）
 ```
 
 ## 后端模块分层
@@ -50,6 +50,13 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 - 数据获取层：tmdb_client.py、douban_client.py、bangumi_client.py、searcher.py
 - 业务逻辑层：organizer.py、analyzer.py、ai_organizer.py、download_manager.py
 - 基础设施层：config_manager.py、downloader.py、scraper_base.py、quality_parser.py
+
+## 关键约束
+- 路由路径不可变，前端 api.ts 中所有路径直接对应后端路由
+- shared.py 是唯一的单例源，路由文件通过 `from shared import config_m, ...` 获取依赖
+- 不要创建 /api/v1/ 前缀，所有路由直接挂在根路径
+- 所有外部服务凭据走 config.json，不允许硬编码
+- 调试必须在 backend/ 目录下执行，确保 ConfigManager 能读到 config.json
 
 ## 约定
 - `_` 开头的 .py 文件是一次性脚本，不要引用也不要维护

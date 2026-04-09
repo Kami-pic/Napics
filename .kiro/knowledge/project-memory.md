@@ -37,11 +37,11 @@
 ## 后端模块化重构（2026-04-09）
 - 旧 main.py（4163 行）拆分为 67 行入口 + 9 个路由模块 + shared.py
 - 拆分脚本：`backend/_refactor_main.py`，验证脚本：`backend/_verify_all_apis.py`
-- 旧文件备份：`backend/main.py.refactor_backup`
 - 104 个路由路径完全不变，前端零改动，15 个端点全量验证通过
 - 前端重启按钮修复：后端调用 `restart.bat silent`，前端轮询后端地址等待恢复
 - 前端 api.ts 中 Gemini 错误的 `/api/v1/xxx` 路径已全部改回旧路径
-- `backend/app/` 目录是 Gemini 不完整重构的残留，已废弃不使用
+- 前端设置新增 qB 用户名/密码、播放器路径配置项
+- 废弃文件移至 `_archived_20260409/`（确认无问题后可删除）
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符

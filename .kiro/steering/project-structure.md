@@ -13,7 +13,7 @@ inclusion: always
 │   ├── tech.md               # [fileMatch] 技术栈（写代码时自动加载）
 │   ├── structure.md          # [fileMatch] 代码结构（写代码时自动加载）
 │   ├── code-style.md         # [fileMatch] 编码风格（写代码时自动加载）
-│   ├── api-conventions.md    # [fileMatch] API 约定（改路由时加载）
+│   ├── api-conventions.md    # [fileMatch] API 约定（改 main.py 时加载）
 │   └── organize-workflow.md  # [fileMatch] 整理流水线规范（改整理代码时加载）
 │
 ├── knowledge/         # 项目知识库（AI 按需读取，了解项目是什么）
@@ -29,53 +29,27 @@ inclusion: always
 │   └── search-enhance-todo.md        # [TODO] 搜索增强（进行中）
 │
 └── specs/             # Kiro Spec（历史存档，当前用 TODO 驱动，保留供追溯）
-    ├── media-organize/        # v1.0 [已完成]
-    ├── search-accuracy/       # v1.0 [已完成]
-    ├── search-download/       # v1.0 [已完成]
-    ├── video-search-upgrade/  # v1.0 [已完成]
-    └── search-enhance/        # v1.0 [进行中]
+    ├── media-organize/        # v1.0 2026-04-03 [已完成] 整理功能补全（备份/快照/season.nfo/分片合并）
+    ├── search-accuracy/       # v1.0 2026-04-03 [已完成] 搜索匹配准确性（影子名/增强评分/索引器优先级）
+    ├── search-download/       # v1.0 2026-04-03 [已完成] 搜索下载优化（质量解析/剧集搜索/下载管理/归位）
+    ├── video-search-upgrade/  # v1.0 2026-04-03 [已完成] 搜索升级+新增影片（豆瓣发现/批量升级）
+    └── search-enhance/        # v1.0 2026-04-03 [进行中] 搜索增强双通道（网盘爬虫+转存）
 ```
 
-# 后端代码结构（2026-04-09 模块化重构后）
+## 约定
 
-```
-backend/
-├── main.py                  ← 入口（67 行薄壳），只做 include_router
-├── shared.py                ← 全局单例 + 共享辅助函数
-├── routes/                  ← 路由模块（按业务域拆分，104 个路由）
-│   ├── library.py           ← /library/* /scan /sync（媒体库）
-│   ├── scrape.py            ← /scrape/* /media/shadow-name /proxy/image（刮削）
-│   ├── organize.py          ← /organize/* /analyze/* /rename（整理）
-│   ├── search.py            ← /api/search /search/* /alist/*（搜索）
-│   ├── download.py          ← /download* /batch-search /batch-download（下载）
-│   ├── config.py            ← /config/* /no-scrape /cache/* /backup /restore（配置）
-│   ├── discover.py          ← /douban/* /movie/poster /add-media（发现）
-│   ├── system.py            ← /recycle-bin/* /torrent-blacklist/* /analysis/* /api/system/*（系统）
-│   └── tools.py             ← /batch_manage /ai/* /play（杂项）
-├── config_manager.py        ← 配置管理（单例在 shared.py 中初始化）
-├── organizer.py             ← 文件夹分类 + 重命名 + 整理流水线
-├── scraper.py               ← NFO 读写 + 海报 + 递归刮削
-├── analyzer.py              ← 独立分析层
-├── searcher.py              ← ProwlarrClient + enhanced_search
-├── download_manager.py      ← 下载任务队列
-├── file_relocator.py        ← 文件归位器（洗版替换）
-├── tmdb_client.py           ← TMDB API 客户端
-├── downloader.py            ← qBittorrent + Alist 客户端
-└── ... (其他业务模块)
-```
-
-## 关键约束
-
-1. **路由路径不可变** — 前端 api.ts 中所有路径直接对应后端路由，改路径必须前后端同步
-2. **启动方式** — `cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000`
-3. **不要用 reload=True** — Windows + SMB 路径下会崩溃
-4. **shared.py 是唯一的单例源** — 路由文件通过 `from shared import config_m, ...` 获取依赖
-5. **不要创建 /api/v1/ 前缀** — 前端不用 v1 路径，所有路由直接挂在根路径
-6. **backend/app/ 目录已废弃** — 是之前不完整重构的残留，不要使用
-7. **所有外部服务凭据和路径必须走 config.json** — 不允许硬编码账号密码、API Key、文件路径。通过 `config_m.config.xxx` 读取。调试/测试时必须先确认 `backend/config.json` 存在且配置正确
-8. **调试前必须加载配置** — 任何涉及后端的调试、测试、脚本运行，都必须在 `backend/` 目录下执行，确保 `ConfigManager` 能读到 `config.json`。不要在项目根目录直接运行后端代码
+- `steering/` 里的 `.md` 文件带 `inclusion: always` 前置元数据，每次对话自动加载
+- `knowledge/project-memory.md` 是项目业务知识库，AI 在涉及相关功能时按需读取
+- 新增设计文档放 `docs/`，行为规则放 `steering/`，项目知识放 `knowledge/`
+- 不要在其他位置维护重复内容
 
 ## docs 命名规范
 
 - 文件名用小写英文 + 连字符，如 `feature-name-todo.md`
-- 状态标签：`[当前]` 使用中 / `[TODO]` 进行中 / `[废弃]` 已取代 / `[一次性]` 完成后不更新
+- 每个文件开头用标签标注状态：
+  - `[当前]` — 仍在使用的设计/架构文档
+  - `[TODO]` — 进行中的任务清单
+  - `[废弃]` — 已被新版取代或已全部完成，可随时清理
+  - `[一次性]` — 调试记录、报告、会话总结等，完成后不再更新，可随时清理
+- 版本迭代时，旧文档标记为 `[废弃]` 而不是删除，方便追溯
+- `[废弃]` 和 `[一次性]` 文档积累过多时可以批量清理
