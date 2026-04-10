@@ -588,6 +588,27 @@ function PanResultsView({
   const [panFilter, setPanFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
+  // 所有 Hooks 必须在条件返回之前调用
+  const sourceFilteredGroups = useMemo(() => {
+    if (sourceFilter === "all") return groups;
+    const filtered: Record<string, PanResult[]> = {};
+    for (const [pt, items] of Object.entries(groups)) {
+      const kept = items.filter((r) => r.source === sourceFilter);
+      if (kept.length > 0) filtered[pt] = kept;
+    }
+    return filtered;
+  }, [groups, sourceFilter]);
+
+  const availableSources = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const items of Object.values(groups)) {
+      for (const r of items) {
+        counts[r.source] = (counts[r.source] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [groups]);
+
   if (searching) {
     return (
       <div className="flex flex-col items-center py-16">
@@ -614,28 +635,6 @@ function PanResultsView({
       </div>
     );
   }
-
-  // 按源筛选后重新分组
-  const sourceFilteredGroups = useMemo(() => {
-    if (sourceFilter === "all") return groups;
-    const filtered: Record<string, PanResult[]> = {};
-    for (const [pt, items] of Object.entries(groups)) {
-      const kept = items.filter((r) => r.source === sourceFilter);
-      if (kept.length > 0) filtered[pt] = kept;
-    }
-    return filtered;
-  }, [groups, sourceFilter]);
-
-  // 收集所有出现的源（用于筛选按钮）
-  const availableSources = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const items of Object.values(groups)) {
-      for (const r of items) {
-        counts[r.source] = (counts[r.source] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [groups]);
 
   // 筛选后的分组（网盘类型 + 源双重筛选）
   const filteredGroups = panFilter === "all"
