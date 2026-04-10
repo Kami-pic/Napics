@@ -963,20 +963,18 @@ def _build_new_tree(new_files_all) -> list:
     return _dict_to_tree(root)
 
 
-def _build_plan_tree(action_plan) -> list:
-    """将标准化推演结果构建为树状结构（按目标季目录分组）。"""
-    if not action_plan:
-        return []
+def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "") -> list:
+    """构建"执行后目录快照"树：新文件去向 + 旧文件删除 + 保留的文件夹。"""
+    tree = []
     
-    plan_items = action_plan.get("plan", []) if isinstance(action_plan, dict) else []
-    if not plan_items:
-        return []
+    plan_items = []
+    if action_plan:
+        plan_items = action_plan.get("plan", []) if isinstance(action_plan, dict) else []
     
-    # 按 target_season_dir 分组
-    season_groups = {}  # season_dir -> [items]
-    root_items = []
+    season_groups = {}
+    root_new_items = []
     
-    for item in plan_items:
+    for item in (plan_items or []):
         if item is None:
             continue
         season_dir = item.get("target_season_dir")
@@ -996,15 +994,14 @@ def _build_plan_tree(action_plan) -> list:
             "episode": mapped.get("episode") if mapped else None,
         }
         
-        if season_dir and season_dir != "None":
+        if season_dir and str(season_dir) != "None":
             if season_dir not in season_groups:
                 season_groups[season_dir] = []
             season_groups[season_dir].append(node)
         else:
-            root_items.append(node)
+            root_new_items.append(node)
     
-    tree = []
-    # 季目录节点
+    # 季目录节点（新建）
     for season_dir in sorted(season_groups.keys()):
         items = season_groups[season_dir]
         tree.append({
@@ -1014,9 +1011,33 @@ def _build_plan_tree(action_plan) -> list:
             "children": sorted(items, key=lambda x: (x.get("episode") or 999)),
         })
     
-    # 根级文件（跳过的、无法归类的）
-    for ri in root_items:
+    # 根级新文件（跳过的等）
+    for ri in root_new_items:
         tree.append(ri)
+    
+    # 旧资源：标记删除或保留
+    if coexist_pairs:
+        for p in coexist_pairs:
+            old_file = p.old_file if hasattr(p, "old_file") else p.get("old_file", "")
+            category = p.category if hasattr(p, "category") else p.get("category", "video")
+            is_folder = p.is_folder if hasattr(p, "is_folder") else p.get("is_folder", False)
+            old_size = p.old_size_gb if hasattr(p, "old_size_gb") else p.get("old_size_gb", 0)
+            name = os.path.basename(old_file)
+            
+            if category == "non_video":
+                tree.append({
+                    "name": name,
+                    "type": "dir" if is_folder else "other",
+                    "action": "keep",
+                    "skip_reason": "非视频，保留不动",
+                })
+            else:
+                tree.append({
+                    "name": name,
+                    "type": "dir" if is_folder else "video",
+                    "action": "delete",
+                    "size_bytes": int(old_size * 1024 * 1024 * 1024),
+                })
     
     return tree
 
@@ -1088,7 +1109,7 @@ async def organize_dry_run(req: RelocateRequest):
             # 构建三栏树状数据
             old_tree = _build_old_tree(res.coexist_pairs, task.save_path)
             new_tree = _build_new_tree(display_new_files)
-            plan_tree = _build_plan_tree(res.action_plan)
+            plan_tree = _build_plan_tree(res.action_plan, res.coexist_pairs, task.save_path)
             
             return {
                 "status": "awaiting_confirm",

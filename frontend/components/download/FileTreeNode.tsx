@@ -22,6 +22,7 @@ const ACTION_COLORS: Record<string, string> = {
   skip: "text-yellow-500/60",
   keep: "text-slate-500/60",
   create: "text-blue-400/60",
+  delete: "text-red-400/60",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -74,7 +75,7 @@ export function FileTreeNode({ node, depth = 0, variant = "new" }: FileTreeNodeP
     else if (ft && !isDir) tags.push({ text: node.name.split(".").pop() || "", cls: "bg-slate-500/10 text-slate-500/60" });
   }
   if (variant === "plan" && node.action) {
-    const actionLabel = node.action === "rename" ? "✅ 重命名" : node.action === "skip" ? "⏭ 跳过" : node.action === "create" ? "📁 新建" : "";
+    const actionLabel = node.action === "rename" ? "✅ 重命名" : node.action === "skip" ? "⏭ 跳过" : node.action === "create" ? "📁 新建" : node.action === "delete" ? "🗑 删除" : node.action === "keep" ? "⚠️ 保留" : "";
     if (actionLabel) tags.push({ text: actionLabel, cls: ACTION_COLORS[node.action] || "" });
     if (node.skip_reason) tags.push({ text: node.skip_reason, cls: "text-yellow-500/50" });
   }
@@ -86,7 +87,10 @@ export function FileTreeNode({ node, depth = 0, variant = "new" }: FileTreeNodeP
   const cardBg = variant === "old"
     ? (node.category === "non_video" ? "bg-yellow-500/[0.03] border-yellow-500/10" : "bg-white/[0.02] border-white/[0.03]")
     : variant === "plan"
-      ? (node.action === "skip" ? "bg-yellow-500/[0.03] border-yellow-500/10" : "bg-blue-500/5 border-blue-500/10")
+      ? (node.action === "skip" ? "bg-yellow-500/[0.03] border-yellow-500/10"
+        : node.action === "delete" ? "bg-red-500/[0.03] border-red-500/10"
+        : node.action === "keep" ? "bg-yellow-500/[0.03] border-yellow-500/10"
+        : "bg-blue-500/5 border-blue-500/10")
       : "bg-white/[0.02] border-white/[0.03]";
 
   // 标题颜色
@@ -94,9 +98,13 @@ export function FileTreeNode({ node, depth = 0, variant = "new" }: FileTreeNodeP
     ? "text-blue-300"
     : variant === "plan" && node.action === "skip"
       ? "text-yellow-400/70"
-      : variant === "old" && node.category === "non_video"
-        ? "text-slate-500"
-        : "text-slate-300";
+      : variant === "plan" && node.action === "delete"
+        ? "text-red-400/70 line-through"
+        : variant === "plan" && node.action === "keep"
+          ? "text-slate-500"
+          : variant === "old" && node.category === "non_video"
+            ? "text-slate-500"
+            : "text-slate-300";
 
   return (
     <div style={{ marginLeft: depth > 0 ? 12 : 0 }}>
