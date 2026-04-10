@@ -20,7 +20,10 @@ inclusion: always
 │   ├── project-memory.md     # 项目记忆：业务逻辑细节、踩坑经验、当前进度
 │   ├── api-reference.md      # API 清单（路径+方法+用途）
 │   ├── data-models.md        # 核心数据结构（JSON 字段说明、状态机）
-│   └── organize-pipeline-v3.md # 整理流水线 V3 完整设计（三段式解耦架构）
+│   ├── organize-pipeline-v3.md # 整理流水线 V3 完整设计（三段式解耦架构）
+│   ├── pan-search-pipeline.md  # 网盘搜索流水线（4源聚合+筛选+转存）
+│   ├── bt-search-pipeline.md   # BT 搜索流水线（回退链+二次匹配+评分排序）
+│   └── download-replace-pipeline.md # 下载与归位替换流水线（双通道+两段式推演）
 │
 ├── docs/              # 设计文档与 TODO 清单
 │   ├── media-organize-architecture.md # [当前] 分类体系+整理架构+前端展示规则
