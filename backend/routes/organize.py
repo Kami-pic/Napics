@@ -903,60 +903,64 @@ def _build_old_tree(coexist_pairs, save_path: str) -> list:
 
 
 def _build_new_tree(new_files_all) -> list:
-    """将新资源文件列表构建为树状结构（按目录分组）。"""
+    """将新资源文件列表构建为多层树状结构（递归按目录分组）。"""
     if not new_files_all:
         return []
     
-    # 按第一层目录分组
-    groups = {}  # dir_name -> [files]
-    root_files = []
+    def _classify_ext(name):
+        ext = os.path.splitext(name)[1].lower()
+        if ext in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"}:
+            return "video"
+        if ext in {".ass",".srt",".ssa",".sub",".idx",".sup"}:
+            return "subtitle"
+        return "other"
+    
+    # 构建嵌套字典树
+    root = {}  # {name: {"__files__": [...], "subdir": {...}}}
     
     for f in new_files_all:
         name = f.get("name", "")
+        size = f.get("size_bytes", f.get("size", 0))
         parts = name.replace("/", os.sep).replace("\\", os.sep).split(os.sep)
-        if len(parts) > 1:
-            dir_name = parts[0]
-            file_name = os.sep.join(parts[1:])
-            if dir_name not in groups:
-                groups[dir_name] = []
-            groups[dir_name].append({
-                "name": os.path.basename(file_name),
-                "full_rel": name,
-                "size_bytes": f.get("size_bytes", f.get("size", 0)),
-            })
-        else:
-            root_files.append({
-                "name": name,
-                "full_rel": name,
-                "size_bytes": f.get("size_bytes", f.get("size", 0)),
-            })
+        
+        current = root
+        for i, part in enumerate(parts):
+            if i == len(parts) - 1:
+                # 叶子节点（文件）
+                if "__files__" not in current:
+                    current["__files__"] = []
+                current["__files__"].append({"name": part, "size_bytes": size})
+            else:
+                # 目录节点
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
     
-    tree = []
-    # 目录节点
-    for dir_name, files in sorted(groups.items()):
-        ext_classify = lambda n: "video" if os.path.splitext(n)[1].lower() in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"} else ("subtitle" if os.path.splitext(n)[1].lower() in {".ass",".srt",".ssa",".sub",".idx",".sup"} else "other")
-        children = []
-        for ff in sorted(files, key=lambda x: x["name"]):
-            children.append({
-                "name": ff["name"],
-                "type": ext_classify(ff["name"]),
-                "size_bytes": ff["size_bytes"],
+    def _dict_to_tree(d) -> list:
+        """递归将嵌套字典转为树节点列表"""
+        nodes = []
+        # 先处理子目录
+        for key, val in sorted(d.items()):
+            if key == "__files__":
+                continue
+            children = _dict_to_tree(val)
+            dir_size = sum(c.get("size_bytes", 0) for c in children)
+            nodes.append({
+                "name": key,
+                "type": "dir",
+                "size_bytes": dir_size,
+                "children": children,
             })
-        dir_size = sum(c["size_bytes"] for c in children)
-        tree.append({
-            "name": dir_name,
-            "type": "dir",
-            "size_bytes": dir_size,
-            "children": children,
-        })
+        # 再处理文件
+        for f in sorted(d.get("__files__", []), key=lambda x: x["name"]):
+            nodes.append({
+                "name": f["name"],
+                "type": _classify_ext(f["name"]),
+                "size_bytes": f["size_bytes"],
+            })
+        return nodes
     
-    # 根级散装文件
-    for rf in root_files:
-        ext = os.path.splitext(rf["name"])[1].lower()
-        ftype = "video" if ext in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"} else ("subtitle" if ext in {".ass",".srt",".ssa",".sub",".idx",".sup"} else "other")
-        tree.append({"name": rf["name"], "type": ftype, "size_bytes": rf["size_bytes"]})
-    
-    return tree
+    return _dict_to_tree(root)
 
 
 def _build_plan_tree(action_plan) -> list:
