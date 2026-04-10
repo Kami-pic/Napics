@@ -475,7 +475,7 @@ function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: { node:
       {/* 第二行：移动到 / 复制到 / 删除 / 移除 */}
       <div className="grid grid-cols-4 gap-2">
         <MoveAction onMove={handleMove} />
-        <CopyAction onCopy={async (t) => { try { await api.batchManage("copy", allVideoPaths, t); onRefresh(); } catch { alert("失败"); } }} />
+        <CopyAction onCopy={async (t) => { try { await api.batchManage("copy", [node.path], t); onRefresh(); } catch { alert("失败"); } }} />
         <DeleteAction onDelete={handleDelete} />
         <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
       </div>
