@@ -98,104 +98,6 @@ def classify_path(path: str):
     return organizer.classify_folder(path, library, category_hint=category_hint)
 
 
-def _get_category_from_path(path: str) -> str:
-    """从文件路径推断一级分类标签（movie/tv）。
-    优先从 config.category_tags 查找，否则用目录名自动推断。
-    """
-    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
-    if not base:
-        return ""
-    # 规范化路径
-    norm_path = os.path.normpath(path)
-    norm_base = os.path.normpath(base)
-    if not norm_path.startswith(norm_base):
-        return ""
-    rel = os.path.relpath(norm_path, norm_base)
-    # 取第一层目录名
-    parts = rel.split(os.sep)
-    if not parts or parts[0] == ".":
-        return ""
-    category_dir_name = parts[0]
-    category_dir_path = os.path.join(base, category_dir_name)
-    # 优先从配置查找
-    configured_tags = config_m.config.category_tags or {}
-    if category_dir_path in configured_tags:
-        return configured_tags[category_dir_path]
-    return organizer.infer_category_tag(category_dir_name)
-
-
-def _is_top_category(path: str) -> bool:
-    """判断 path 是否是 NAS 根目录的直接子目录（一级分类目录）"""
-    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
-    if not base:
-        return False
-    norm_path = os.path.normpath(path)
-    norm_base = os.path.normpath(base)
-    if not norm_path.startswith(norm_base):
-        return False
-    rel = os.path.relpath(norm_path, norm_base)
-    parts = rel.split(os.sep)
-    # 一级分类目录 = 相对路径只有一层
-    return len(parts) == 1 and parts[0] != "."
-
-
-def _sync_library_paths(ops: list):
-    """整理操作后同步更新 media_library.json 中的文件路径"""
-    library = config_m.load_library()
-    changed = False
-    for op in ops:
-        if op.get("action") == "move" and op.get("old") and op.get("new"):
-            for v in library:
-                if v.get("file_path") == op["old"]:
-                    v["file_path"] = op["new"]
-                    # 更新 folder_name
-                    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
-                    if base:
-                        rel = os.path.relpath(os.path.dirname(op["new"]), base)
-                        v["folder_name"] = "" if rel == "." else rel
-                    changed = True
-    if changed:
-        config_m.save_library(library)
-
-
-def _update_clean_names_after_scrape(path: str, scrape_result: dict):
-    """刮削成功后，用刮削结果更新 clean_name。
-    剧名只取中文部分，集名格式为 中文名 SxxExx。
-    """
-    try:
-        self_data = scrape_result.get("self", {}).get("data") or {}
-        title = self_data.get("title", "")
-        if not title:
-            return
-        
-        from analyzer import _extract_chinese_name, clean_episode_name
-        cn_title = _extract_chinese_name(title)
-        
-        library = config_m.load_library()
-        changed = False
-        video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
-        
-        norm_path = os.path.normpath(path)
-        for v in library:
-            fp = v.get("file_path", "")
-            fp_dir = os.path.normpath(os.path.dirname(fp))
-            if fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
-                ext = os.path.splitext(fp)[1].lower()
-                if ext in video_exts:
-                    # 用新的清洗规则：中文剧名 + SxxExx
-                    new_clean = clean_episode_name(v.get("file_name", ""), cn_title)
-                    if new_clean:
-                        v["clean_name"] = new_clean
-                    else:
-                        v["clean_name"] = cn_title
-                    changed = True
-        
-        if changed:
-            config_m.save_library(library)
-    except Exception:
-        pass
-
-
 @router.post("/organize/rename")
 def rename_videos(path: str, dry_run: bool = True, shadow_only: bool = False):
     """统一重命名
@@ -459,7 +361,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
         result["wrap_plan"] = wrap_plan
 
         # Step 1 推演：扫描旧刮削，生成清理 plan
-        archive_plan = _smart_archive_plan(path)
+        archive_plan = organizer.smart_archive_plan(path)
         result["archive_plan"] = archive_plan
 
         # Step 2：分析判定（只读）
@@ -525,7 +427,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
             # 执行 archive_plan
             archive_plan = action_plan.get("archive_plan", [])
             if archive_plan:
-                _execute_archive_plan(archive_plan)
+                organizer.execute_archive_plan(archive_plan)
                 result["steps"]["archive"] = len(archive_plan)
 
             # 执行 scrape（写 NFO）
@@ -608,7 +510,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
                 result["steps"]["wrap"] = wrap_result.get("count", 0)
 
             # Step 1
-            archived = _smart_archive_recursive(path)
+            archived = organizer.smart_archive_recursive(path)
             result["steps"]["archive"] = archived
 
             # Step 2
@@ -650,162 +552,6 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
 
         return result
 
-
-def _smart_archive_plan(path: str) -> list:
-    """推演模式：扫描旧刮削，返回清理 plan（不执行）"""
-    import xml.etree.ElementTree as ET
-    plan = []
-    scrape_names = {'poster.jpg', 'poster.png', 'fanart.jpg', 'fanart.png',
-                    'clearlogo.png', 'folder.jpg', 'movie.nfo', 'tvshow.nfo',
-                    'season.nfo', 'theme.mp3'}
-    poster_suffixes = ['-poster.jpg', '-poster.png', '-fanart.jpg', '-fanart.png',
-                       '-clearlogo.png', '-thumb.jpg']
-
-    def _scan_dir(dir_path):
-        try:
-            items = os.listdir(dir_path)
-        except OSError:
-            return
-        # 检查 NFO 是否有效
-        nfo_valid = False
-        for nfo_name in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
-            nfo_path = os.path.join(dir_path, nfo_name)
-            if os.path.exists(nfo_path):
-                try:
-                    tree = ET.parse(nfo_path)
-                    title = tree.getroot().findtext("title", "").strip()
-                    if title:
-                        nfo_valid = True
-                except Exception:
-                    pass
-                break
-
-        if nfo_valid:
-            return  # 有效 NFO → 保留，不清理
-
-        # 无效 NFO 或无 NFO → 收集要清理的刮削文件
-        files_to_archive = []
-        for f in items:
-            fp = os.path.join(dir_path, f)
-            if not os.path.isfile(fp):
-                continue
-            ext = os.path.splitext(f)[1].lower()
-            if f in scrape_names or ext == '.nfo' or \
-               (ext in {'.jpg', '.png'} and any(f.endswith(s) for s in poster_suffixes)):
-                files_to_archive.append(f)
-
-        if files_to_archive:
-            plan.append({
-                "dir": dir_path,
-                "files": files_to_archive,
-                "action": "archive_and_delete",
-                "desc": f"清理 {len(files_to_archive)} 个无效刮削文件",
-            })
-
-        # 递归子目录
-        for item in items:
-            sub = os.path.join(dir_path, item)
-            if os.path.isdir(sub) and not item.startswith('.'):
-                _scan_dir(sub)
-
-    _scan_dir(path)
-    return plan
-
-
-def _smart_archive_recursive(path: str) -> int:
-    """执行模式：递归清理无效旧刮削，保留有效 NFO"""
-    import zipfile
-    import xml.etree.ElementTree as ET
-    total_archived = 0
-    scrape_names = {'poster.jpg', 'poster.png', 'fanart.jpg', 'fanart.png',
-                    'clearlogo.png', 'folder.jpg', 'cover.jpg', 'movie.nfo',
-                    'tvshow.nfo', 'season.nfo', 'theme.mp3'}
-    poster_suffixes = ['-poster.jpg', '-poster.png', '-fanart.jpg', '-fanart.png',
-                       '-clearlogo.png', '-thumb.jpg']
-
-    def _process_dir(dir_path):
-        nonlocal total_archived
-        try:
-            items = os.listdir(dir_path)
-        except OSError:
-            return
-
-        # 检查 NFO 是否有效
-        nfo_valid = False
-        for nfo_name in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
-            nfo_path = os.path.join(dir_path, nfo_name)
-            if os.path.exists(nfo_path):
-                try:
-                    tree = ET.parse(nfo_path)
-                    title = tree.getroot().findtext("title", "").strip()
-                    if title:
-                        nfo_valid = True
-                except Exception:
-                    pass
-                break
-
-        if not nfo_valid:
-            # 收集要清理的刮削文件
-            files = []
-            for f in items:
-                fp = os.path.join(dir_path, f)
-                if not os.path.isfile(fp):
-                    continue
-                ext = os.path.splitext(f)[1].lower()
-                if f in scrape_names or ext == '.nfo' or \
-                   (ext in {'.jpg', '.png'} and any(f.endswith(s) for s in poster_suffixes)):
-                    files.append(f)
-
-            if files:
-                zp = os.path.join(dir_path, '.old_scrape.zip')
-                if not os.path.exists(zp):
-                    try:
-                        with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as zf:
-                            for f in files:
-                                zf.write(os.path.join(dir_path, f), f)
-                        for f in files:
-                            try:
-                                os.remove(os.path.join(dir_path, f))
-                            except OSError:
-                                pass
-                        total_archived += len(files)
-                    except Exception:
-                        pass
-
-        # 递归子目录
-        for item in items:
-            sub = os.path.join(dir_path, item)
-            if os.path.isdir(sub) and not item.startswith('.'):
-                _process_dir(sub)
-
-    _process_dir(path)
-    return total_archived
-
-
-def _execute_archive_plan(archive_plan: list):
-    """执行旧刮削清理 plan"""
-    import zipfile
-    for item in archive_plan:
-        dir_path = item.get("dir", "")
-        files = item.get("files", [])
-        if not dir_path or not files:
-            continue
-        zp = os.path.join(dir_path, '.old_scrape.zip')
-        if os.path.exists(zp):
-            continue
-        try:
-            with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as zf:
-                for f in files:
-                    fp = os.path.join(dir_path, f)
-                    if os.path.exists(fp):
-                        zf.write(fp, f)
-            for f in files:
-                try:
-                    os.remove(os.path.join(dir_path, f))
-                except OSError:
-                    pass
-        except Exception:
-            pass
 
 @router.post("/organize/merge-scattered")
 def merge_scattered_seasons_api(path: str = "", dry_run: bool = True):
@@ -1007,10 +753,10 @@ async def organize_full_stream(path: str, dry_run: bool = True, use_ai: bool = F
             # Step 2: 旧刮削清理
             yield f"data: {json.dumps({'step': 2, 'total': total_steps, 'label': '旧刮削清理', 'status': 'running'})}\n\n"
             if dry_run:
-                archive_plan = _smart_archive_plan(path)
+                archive_plan = organizer.smart_archive_plan(path)
                 result["steps"]["archive"] = len(archive_plan)
             else:
-                archived = _smart_archive_recursive(path)
+                archived = organizer.smart_archive_recursive(path)
                 result["steps"]["archive"] = archived
             yield f"data: {json.dumps({'step': 2, 'total': total_steps, 'label': '旧刮削清理', 'status': 'done', 'count': result['steps']['archive']})}\n\n"
 

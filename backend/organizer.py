@@ -1707,3 +1707,156 @@ def merge_scattered_seasons(scattered_issue: Dict, dry_run: bool = True) -> Dict
             history_m.create_snapshot(snapshot_ops, label="merge_seasons")
     
     return {"status": "ok", "ops": ops, "target_dir": target_dir, "count": len([o for o in ops if o.get("action") == "move_dir"])}
+
+
+# ── 旧刮削智能清理（V3 流水线 Step 1） ──
+
+def smart_archive_plan(path: str) -> list:
+    """推演模式：扫描旧刮削，返回清理 plan（不执行）"""
+    import xml.etree.ElementTree as ET
+    plan = []
+    scrape_names = {'poster.jpg', 'poster.png', 'fanart.jpg', 'fanart.png',
+                    'clearlogo.png', 'folder.jpg', 'movie.nfo', 'tvshow.nfo',
+                    'season.nfo', 'theme.mp3'}
+    poster_suffixes = ['-poster.jpg', '-poster.png', '-fanart.jpg', '-fanart.png',
+                       '-clearlogo.png', '-thumb.jpg']
+
+    def _scan_dir(dir_path):
+        try:
+            items = os.listdir(dir_path)
+        except OSError:
+            return
+        nfo_valid = False
+        for nfo_name in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
+            nfo_path = os.path.join(dir_path, nfo_name)
+            if os.path.exists(nfo_path):
+                try:
+                    tree = ET.parse(nfo_path)
+                    title = tree.getroot().findtext("title", "").strip()
+                    if title:
+                        nfo_valid = True
+                except Exception:
+                    pass
+                break
+
+        if nfo_valid:
+            return
+
+        files_to_archive = []
+        for f in items:
+            fp = os.path.join(dir_path, f)
+            if not os.path.isfile(fp):
+                continue
+            ext = os.path.splitext(f)[1].lower()
+            if f in scrape_names or ext == '.nfo' or \
+               (ext in {'.jpg', '.png'} and any(f.endswith(s) for s in poster_suffixes)):
+                files_to_archive.append(f)
+
+        if files_to_archive:
+            plan.append({
+                "dir": dir_path,
+                "files": files_to_archive,
+                "action": "archive_and_delete",
+                "desc": f"清理 {len(files_to_archive)} 个无效刮削文件",
+            })
+
+        for item in items:
+            sub = os.path.join(dir_path, item)
+            if os.path.isdir(sub) and not item.startswith('.'):
+                _scan_dir(sub)
+
+    _scan_dir(path)
+    return plan
+
+
+def smart_archive_recursive(path: str) -> int:
+    """执行模式：递归清理无效旧刮削，保留有效 NFO"""
+    import zipfile
+    import xml.etree.ElementTree as ET
+    total_archived = 0
+    scrape_names = {'poster.jpg', 'poster.png', 'fanart.jpg', 'fanart.png',
+                    'clearlogo.png', 'folder.jpg', 'cover.jpg', 'movie.nfo',
+                    'tvshow.nfo', 'season.nfo', 'theme.mp3'}
+    poster_suffixes = ['-poster.jpg', '-poster.png', '-fanart.jpg', '-fanart.png',
+                       '-clearlogo.png', '-thumb.jpg']
+
+    def _process_dir(dir_path):
+        nonlocal total_archived
+        try:
+            items = os.listdir(dir_path)
+        except OSError:
+            return
+
+        nfo_valid = False
+        for nfo_name in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
+            nfo_path = os.path.join(dir_path, nfo_name)
+            if os.path.exists(nfo_path):
+                try:
+                    tree = ET.parse(nfo_path)
+                    title = tree.getroot().findtext("title", "").strip()
+                    if title:
+                        nfo_valid = True
+                except Exception:
+                    pass
+                break
+
+        if not nfo_valid:
+            files = []
+            for f in items:
+                fp = os.path.join(dir_path, f)
+                if not os.path.isfile(fp):
+                    continue
+                ext = os.path.splitext(f)[1].lower()
+                if f in scrape_names or ext == '.nfo' or \
+                   (ext in {'.jpg', '.png'} and any(f.endswith(s) for s in poster_suffixes)):
+                    files.append(f)
+
+            if files:
+                zp = os.path.join(dir_path, '.old_scrape.zip')
+                if not os.path.exists(zp):
+                    try:
+                        with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as zf:
+                            for f in files:
+                                zf.write(os.path.join(dir_path, f), f)
+                        for f in files:
+                            try:
+                                os.remove(os.path.join(dir_path, f))
+                            except OSError:
+                                pass
+                        total_archived += len(files)
+                    except Exception:
+                        pass
+
+        for item in items:
+            sub = os.path.join(dir_path, item)
+            if os.path.isdir(sub) and not item.startswith('.'):
+                _process_dir(sub)
+
+    _process_dir(path)
+    return total_archived
+
+
+def execute_archive_plan(archive_plan: list):
+    """执行旧刮削清理 plan"""
+    import zipfile
+    for item in archive_plan:
+        dir_path = item.get("dir", "")
+        files = item.get("files", [])
+        if not dir_path or not files:
+            continue
+        zp = os.path.join(dir_path, '.old_scrape.zip')
+        if os.path.exists(zp):
+            continue
+        try:
+            with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for f in files:
+                    fp = os.path.join(dir_path, f)
+                    if os.path.exists(fp):
+                        zf.write(fp, f)
+            for f in files:
+                try:
+                    os.remove(os.path.join(dir_path, f))
+                except OSError:
+                    pass
+        except Exception:
+            pass
