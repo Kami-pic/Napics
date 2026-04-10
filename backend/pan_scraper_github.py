@@ -53,7 +53,7 @@ _HTML_TITLE_RE = re.compile(r"<td[^>]*>([^<]+)</td>")
 _HTML_LINK_RE = re.compile(r'href="(https?://pan\.quark\.cn/s/[a-zA-Z0-9]+)"')
 
 # 索引刷新间隔（秒）
-INDEX_REFRESH_INTERVAL = 1800  # 30 分钟
+INDEX_REFRESH_INTERVAL = 86400  # 24 小时（仓库更新频率约每天一次，无需频繁拉取）
 
 
 class GitHubPanScraper(ScraperBase):
