@@ -66,7 +66,17 @@ def _get_pan_search_service() -> PanSearchService:
     global _pan_search_service
     if _pan_search_service is None:
         _pan_search_service = PanSearchService(
-            search_sources={"pansearch": True, "rrdynb": False, "ddys": False, "pansou": False},
+            search_sources={
+                "pansearch": True,
+                "pansou": True,
+                "gogopanso": True,   # 狗狗盘搜：公开 API，每日更新，无反爬
+                "sites": False,      # 通用站点：大多需登录或被反爬，暂关
+                "slowread": False,   # 慢读：纯 JS 渲染，需逆向 API，暂关
+                "wnsearch": False,   # 我能搜：纯 JS 渲染，需逆向 API，暂关
+                "rrdynb": False,
+                "ddys": False,
+            },
+            pansou_api_url="https://pansou.app",
         )
     return _pan_search_service
 

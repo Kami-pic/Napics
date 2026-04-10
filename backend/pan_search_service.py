@@ -19,6 +19,10 @@ from pan_scraper_rrdynb import RrdynbScraper
 from pan_scraper_ddys import DdysScraper
 from pan_scraper_pansou import PanSouClient
 from pan_scraper_pansearch import PanSearchScraper
+from pan_scraper_sites import MultiSiteScraper
+from pan_scraper_slowread import SlowreadScraper
+from pan_scraper_wnsearch import WnSearchScraper
+from pan_scraper_gogopanso import GogoPansoScraper
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +53,7 @@ class PanSearchService:
         # 根据配置初始化已启用的爬虫
         sources = search_sources or {
             "pansearch": True, "rrdynb": True, "ddys": True, "pansou": False,
+            "sites": False, "slowread": False, "wnsearch": False,
         }
         self.scrapers: Dict[str, ScraperBase] = {}
         # pansearch — 国内可直连，优先启用
@@ -62,6 +67,18 @@ class PanSearchService:
             self.scrapers["pansou"] = PanSouClient(
                 api_url=pansou_api_url, proxy=scraper_proxy or None
             )
+        # 通用网盘搜索站（凌风云/盘搜搜/小白盘/趣盘搜）
+        if sources.get("sites"):
+            self.scrapers["sites"] = MultiSiteScraper(proxy=scraper_proxy or None)
+        # 慢读搜索（16 种网盘类型）
+        if sources.get("slowread"):
+            self.scrapers["slowread"] = SlowreadScraper(proxy=scraper_proxy or None)
+        # 我能搜（夸克/百度/迅雷/UC）
+        if sources.get("wnsearch"):
+            self.scrapers["wnsearch"] = WnSearchScraper(proxy=scraper_proxy or None)
+        # 狗狗盘搜（aliyunpanshare 搜索前端，每日更新）
+        if sources.get("gogopanso", True):
+            self.scrapers["gogopanso"] = GogoPansoScraper(proxy=scraper_proxy or None)
 
     async def search(
         self, keyword: str, media_type: str = ""
@@ -101,7 +118,11 @@ class PanSearchService:
                     ))
 
         # 补充未启用的源状态
-        for name in ["pansearch", "rrdynb", "ddys", "pansou"]:
+        all_source_names = [
+            "pansearch", "rrdynb", "ddys", "pansou",
+            "sites", "slowread", "wnsearch", "gogopanso",
+        ]
+        for name in all_source_names:
             if name not in self.scrapers:
                 source_statuses.append(SourceStatus(
                     name=name, status="disabled",
