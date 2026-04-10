@@ -963,13 +963,24 @@ def _build_new_tree(new_files_all) -> list:
     return _dict_to_tree(root)
 
 
-def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "") -> list:
-    """构建"执行后目录快照"树：新文件去向 + 旧文件删除 + 保留的文件夹。"""
+def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "", new_files_all=None) -> list:
+    """构建"执行后目录快照"树：新文件去向 + 附属文件 + 旧文件删除。
+    
+    展示内容：
+    - 📁 新建目录（Season 01）+ 内部重命名的视频
+    - ✅ 重命名的视频 / ⏭ 跳过的视频
+    - 📁 附属文件夹（SPs、CDs）+ 内部文件（字幕、音乐等）
+    - 💬 字幕文件（跟随对应视频）
+    - 🗑 将被删除的旧视频（红色删除线）
+    """
     tree = []
     
     plan_items = []
     if action_plan:
         plan_items = action_plan.get("plan", []) if isinstance(action_plan, dict) else []
+    
+    # 收集 plan 中已处理的文件名（用于后面排除）
+    plan_filenames = set()
     
     season_groups = {}
     root_new_items = []
@@ -983,6 +994,8 @@ def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "") -> li
         target_name = item.get("target_filename") or item.get("original_filename", "?")
         original_name = item.get("original_filename", "?")
         mapped = item.get("mapped")
+        
+        plan_filenames.add(original_name.lower())
         
         node = {
             "name": target_name,
@@ -1014,6 +1027,68 @@ def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "") -> li
     # 根级新文件（跳过的等）
     for ri in root_new_items:
         tree.append(ri)
+    
+    # 新种子中不在 plan 里的附属文件（字幕、SPs、CDs 等）
+    if new_files_all:
+        def _classify_ext(name):
+            ext = os.path.splitext(name)[1].lower()
+            if ext in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"}:
+                return "video"
+            if ext in {".ass",".srt",".ssa",".sub",".idx",".sup"}:
+                return "subtitle"
+            return "other"
+        
+        # 构建嵌套字典，只收集不在 plan 中的文件
+        extra_root = {}
+        for f in new_files_all:
+            name = f.get("name", "")
+            size = f.get("size_bytes", f.get("size", 0))
+            parts = name.replace("/", os.sep).replace("\\", os.sep).split(os.sep)
+            # 取文件名（最后一个 part）
+            fname = parts[-1] if parts else name
+            if fname.lower() in plan_filenames:
+                continue  # 已在 plan 中处理过
+            
+            current = extra_root
+            for i, part in enumerate(parts):
+                if i == len(parts) - 1:
+                    if "__files__" not in current:
+                        current["__files__"] = []
+                    current["__files__"].append({"name": part, "size_bytes": size})
+                else:
+                    if part not in current:
+                        current[part] = {}
+                    current = current[part]
+        
+        def _dict_to_nodes(d) -> list:
+            nodes = []
+            for key, val in sorted(d.items()):
+                if key == "__files__":
+                    continue
+                children = _dict_to_nodes(val)
+                nodes.append({
+                    "name": key,
+                    "type": "dir",
+                    "action": "keep",
+                    "skip_reason": "附属文件夹",
+                    "children": children,
+                })
+            for ff in sorted(d.get("__files__", []), key=lambda x: x["name"]):
+                ft = _classify_ext(ff["name"])
+                nodes.append({
+                    "name": ff["name"],
+                    "type": ft,
+                    "action": "keep",
+                    "size_bytes": ff["size_bytes"],
+                })
+            return nodes
+        
+        extra_nodes = _dict_to_nodes(extra_root)
+        # 跳过第一层种子目录壳（如果只有一个顶层目录）
+        if len(extra_nodes) == 1 and extra_nodes[0].get("type") == "dir":
+            tree.extend(extra_nodes[0].get("children", []))
+        else:
+            tree.extend(extra_nodes)
     
     # 旧资源：标记删除或保留
     if coexist_pairs:
@@ -1109,7 +1184,7 @@ async def organize_dry_run(req: RelocateRequest):
             # 构建三栏树状数据
             old_tree = _build_old_tree(res.coexist_pairs, task.save_path)
             new_tree = _build_new_tree(display_new_files)
-            plan_tree = _build_plan_tree(res.action_plan, res.coexist_pairs, task.save_path)
+            plan_tree = _build_plan_tree(res.action_plan, res.coexist_pairs, task.save_path, display_new_files)
             
             return {
                 "status": "awaiting_confirm",

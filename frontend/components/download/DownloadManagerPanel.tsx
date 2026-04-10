@@ -314,16 +314,19 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                         新资源 (原始文件)
                         <span className="text-[9px] font-normal text-slate-600">{(dryRunData.newFilesAll || []).length} 个文件</span>
                       </p>
-                      <p className="text-[9px] text-slate-600 mb-3 shrink-0">当前下载的完整文件列表</p>
+                      <p className="text-[9px] text-slate-600 mb-3 shrink-0">当前下载的完整文件列表（含字幕、音乐等附属文件）</p>
                       <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
                         <FileTree tree={dryRunData.newTree || []} variant="new" />
                       </div>
-                      <div className="mt-4 shrink-0">
+                      <div className="mt-4 pt-3 border-t border-white/[0.04] shrink-0">
                         <button onClick={() => handleExecuteAction("archive_both")} disabled={!!confirmingId}
                           className="w-full py-2.5 rounded-xl text-[11px] font-bold bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] border border-white/[0.08] transition-all">
                           保留新旧并归档
                         </button>
-                        <p className="text-[8px] text-slate-600 mt-1.5 text-center">旧文件移至 [旧资源备份] 子目录，新旧共存</p>
+                        <p className="text-[8px] text-slate-600 mt-1.5 text-center leading-relaxed">
+                          旧文件 → 📁 [旧资源备份] - {dryRunData.targetName} 子目录<br/>
+                          新文件保持原样不动，新旧共存
+                        </p>
                       </div>
                     </div>
 
