@@ -238,6 +238,10 @@ def sync_from_qb():
         with dm._lock:
             # 1. 更新已有任务的状态
             for task in dm.tasks:
+                # 已整理的任务跳过 qB 状态同步（文件可能已被重命名/移动）
+                if task.organized:
+                    continue
+
                 if task.status in ("failed", "unknown", "lost") and "推送失败" in (task.error or ""):
                     # 尝试通过名字匹配
                     name_lower = task.media_name.lower()

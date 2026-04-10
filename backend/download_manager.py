@@ -48,6 +48,7 @@ class DownloadTask(BaseModel):
     error: str = ""
     is_season_pack: bool = False
     season_number: int = 0
+    organized: bool = False        # 已执行整理替换，跳过 qB 状态同步
     created_at: str = ""
     updated_at: str = ""
 
@@ -252,6 +253,9 @@ class DownloadManager:
         """通过 qBittorrent API 同步单个任务的进度。"""
         if not self.qb or not task.downloader_hash:
             return
+        # 已整理的任务跳过 qB 同步（文件可能已被重命名/移动）
+        if task.organized:
+            return
 
         try:
             if not self.qb._login():
@@ -449,9 +453,17 @@ class DownloadManager:
                     break
         self._save_now()
 
-    def archive_task(self, task_id: str):
-        """标记任务为已归档。"""
-        self.update_status(task_id, "archived")
+    def archive_task(self, task_id: str, organized: bool = False):
+        """标记任务为已归档。organized=True 表示已执行整理替换，跳过后续 qB 状态同步。"""
+        with self._lock:
+            for t in self.tasks:
+                if t.id == task_id:
+                    t.status = "archived"
+                    if organized:
+                        t.organized = True
+                    t.updated_at = datetime.now().isoformat()
+                    break
+        self._save_now()
 
 
     def delete_task(self, task_id: str) -> bool:

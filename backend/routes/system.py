@@ -151,15 +151,6 @@ def check_blacklist(url: str):
     """检查种子是否在黑名单中"""
     return {"blocked": torrent_bl.is_blocked(url)}
 
-
-class RelocateRequest(BaseModel):
-    task_id: str
-    auto_replace: bool = False
-
-class ExecuteRelocateRequest(BaseModel):
-    task_id: str
-    plan: dict
-
 @router.get("/api/config")
 def get_config():
     """获取当前系统配置"""

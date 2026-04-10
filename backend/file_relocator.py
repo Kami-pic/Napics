@@ -13,6 +13,7 @@ NFO 回收精准狙击规则：
 """
 
 import os
+import re
 import glob
 import time
 from typing import List, Optional, Dict
@@ -44,6 +45,61 @@ class RelocateResult(BaseModel):
 _VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
 
 
+def _safe_print(msg: str):
+    """安全打印（避免 Windows GBK 编码崩溃）"""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        try:
+            print(msg.encode("utf-8", errors="replace").decode("utf-8"))
+        except Exception:
+            pass
+
+
+def _scan_disk_for_whitelist(save_path: str) -> List[str]:
+    """当 qB 白名单不可用时，通过磁盘扫描自动构建白名单。
+    
+    策略：扫描 save_path 下的子目录，找到包含视频的子目录，
+    将其中所有文件视为"新资源"。
+    
+    适用场景：
+    - downloader_hash 为空（种子已删除但文件还在）
+    - qB 无法返回文件列表
+    
+    返回相对于 save_path 的文件路径列表。
+    """
+    result = []
+    if not os.path.isdir(save_path):
+        return result
+    
+    # 扫描 save_path 下的所有子目录，找到"看起来像种子文件夹"的目录
+    # 特征：目录名包含字幕组标签、编码信息、分辨率等
+    torrent_dir_patterns = re.compile(
+        r'\[.*?\]|BDRip|BluRay|WEB-DL|HEVC|x264|x265|1080p|720p|FLAC|AAC|10-?bit',
+        re.IGNORECASE
+    )
+    
+    for item in os.listdir(save_path):
+        item_path = os.path.join(save_path, item)
+        if not os.path.isdir(item_path):
+            continue
+        if item.startswith('.') or item.startswith('[旧资源备份]'):
+            continue
+        
+        # 检查是否像种子文件夹（包含字幕组标签等特征）
+        if torrent_dir_patterns.search(item):
+            # 收集该目录下所有文件
+            for root, _, files in os.walk(item_path):
+                for f in files:
+                    rel = os.path.relpath(os.path.join(root, f), save_path)
+                    result.append(rel)
+    
+    if result:
+        _safe_print(f"[Relocator] 磁盘扫描构建白名单: {len(result)} 个文件")
+    
+    return result
+
+
 class FileRelocator:
     """文件归位器：作为 V3 整理流水线的客户端。"""
 
@@ -61,7 +117,7 @@ class FileRelocator:
     async def relocate(self, task: DownloadTask, new_files_whitelist: List[str] = None) -> RelocateResult:
         """归档整理探测（原洗版探测）。
         
-        1. 获取新资源白名单（由外部注入）。
+        1. 获取新资源白名单（由外部注入，或磁盘扫描自动构建）。
         2. 对新资源进行 V3 推演，获取标准化改名预览。
         3. 对旧资源（非名单内文件）进行扫描，探测同季冲突。
         """
@@ -71,10 +127,13 @@ class FileRelocator:
         # 确定扫描路径：直接扫描正式下载目录
         scan_path = task.save_path
         if not os.path.exists(scan_path or ""):
-             # 如果 save_path 还没创建（极少见），fallback 到根目录
-             return RelocateResult(success=False, status="failed", error=f"下载目录尚未就绪: {scan_path}")
+            return RelocateResult(success=False, status="failed", error=f"下载目录尚未就绪: {scan_path}")
 
-        # 日志安全输出（避免 GBK 编码崩溃）
+        # 白名单兜底：如果 qB 没给白名单，通过磁盘扫描自动构建
+        if not new_files_whitelist:
+            new_files_whitelist = _scan_disk_for_whitelist(scan_path)
+            if new_files_whitelist:
+                _safe_print(f"[Relocator] 使用磁盘扫描白名单（{len(new_files_whitelist)} 个文件）")
 
         # ── 第一步：对新资源进行标准化命名推演 ──
         try:
@@ -82,7 +141,7 @@ class FileRelocator:
                 path=scan_path,
                 dry_run=True,
                 use_ai=True,
-                whitelist=new_files_whitelist
+                whitelist=new_files_whitelist if new_files_whitelist else None
             )
         except Exception as e:
             import traceback
@@ -92,12 +151,10 @@ class FileRelocator:
                 pass
             return RelocateResult(success=False, status="failed", error=f"推演失败: {e}")
 
-
         if not plan:
             return RelocateResult(success=False, status="failed", error="无法识别新下载的文件结构")
 
         # ── 第二步：识别并对比老兵 ──
-        # 此时的 conflicts 列表就是我们的“待回收老兵”清单
         conflicts = self._detect_conflicts_v2(plan, scan_path, new_files_whitelist)
 
         if conflicts:
@@ -108,7 +165,7 @@ class FileRelocator:
                 coexist_pairs=conflicts,
             )
 
-        # 无冲突 → 直接返回归档状态（让 API 层决定是否标记归档）
+        # 无冲突 → 直接返回归档状态
         return RelocateResult(
             success=True,
             status="archived",
@@ -117,9 +174,6 @@ class FileRelocator:
 
     async def confirm_replace(self, task: DownloadTask, plan: dict) -> RelocateResult:
         """用户确认替换：旧资源入回收站 -> 新资源整理归档。"""
-        # 重新探测冲突确保实时性
-        # 注意：这里需要再次传入 whitelist，因为 confirm_replace 此时没有这个信息
-        # 生产环境下建议在 plan 中携带 whitelist
         whitelist = plan.get("whitelist", [])
         conflicts = self._detect_conflicts_v2(plan, task.save_path, whitelist)
 
@@ -150,7 +204,6 @@ class FileRelocator:
                 src = pair.old_file
                 if os.path.exists(src):
                     dst = os.path.join(old_dir, os.path.basename(src))
-                    # 如果目标已存在，加后缀
                     if os.path.exists(dst):
                         base, ext = os.path.splitext(dst)
                         dst = f"{base}_{int(time.time())}{ext}"
@@ -200,11 +253,13 @@ class FileRelocator:
 
     def _detect_conflicts_v2(self, plan: dict, target_base: str, whitelist: List[str]) -> List[CoexistPair]:
         """V2 冲突探测：通过白名单区分新旧资源。
-        1. whitelist 中的文件是刚刚下载的任务文件（新资源）。
-        2. target_base 目录下，不在名单中且属于同一季的文件是“旧资源”。
+        
+        白名单匹配策略（三层兜底）：
+        - 第一层：绝对路径精确匹配（种子目录名 == save_path 目录名）
+        - 第二层：文件名匹配（种子目录名 ≠ save_path 目录名，但文件名相同）
+        - 第三层：种子子目录名匹配（排除新下载的整个文件夹）
         """
         from tmdb_client import parse_filename
-        import os
         
         conflicts = []
         plan_items = plan.get("plan", [])
@@ -215,49 +270,90 @@ class FileRelocator:
         
         # 智能路径拼合逻辑
         def get_abs_path(rel_p, base):
-            # 1. 强制标准化分隔符：彻底处理 qB 的 / 或 \
             rel_p = rel_p.replace("/", os.sep).replace("\\", os.sep)
             rel_p = os.path.normpath(rel_p)
             base = os.path.normpath(base)
             
-            if os.path.isabs(rel_p): return rel_p
+            if os.path.isabs(rel_p):
+                return rel_p
             
-            # 使用 split 拆分。由于已经对齐了 os.sep，现在能正确拆分
             parts = rel_p.split(os.sep)
             if len(parts) > 1:
                 first_dir = parts[0]
                 base_name = os.path.basename(base)
-                # 2. 智能去重叠逻辑：如果种子里的第一层目录就是当前所在目录名
                 if first_dir.lower() == base_name.lower():
                     modified_rel = os.path.join(*parts[1:])
-                    abs_p = os.path.join(base, modified_rel)
-                    return abs_p
+                    return os.path.join(base, modified_rel)
                     
             return os.path.join(base, rel_p)
 
-        # 规范化白名单
-        w_set = set()
+        # ── 构建三层白名单集合 ──
+        w_path_set = set()       # 绝对路径匹配
+        w_basename_set = set()   # 文件名兜底匹配
+        w_subdir_set = set()     # 种子内子目录名匹配
+        
         if whitelist:
+            base_name_lower = os.path.normcase(os.path.basename(target_base))
             for p in whitelist:
+                # 第一层：绝对路径
                 abs_p = get_abs_path(p, target_base)
-                w_set.add(os.path.normcase(os.path.normpath(abs_p)))
+                w_path_set.add(os.path.normcase(os.path.normpath(abs_p)))
+                
+                # 第二层：文件名（无论路径怎么拼，文件名总是对的）
+                p_sep = p.replace("/", os.sep).replace("\\", os.sep)
+                basename = os.path.basename(p_sep)
+                if basename:
+                    w_basename_set.add(os.path.normcase(basename))
+                
+                # 第三层：种子内第一层子目录名
+                p_norm = os.path.normpath(p_sep)
+                parts = p_norm.split(os.sep)
+                if len(parts) > 1:
+                    w_subdir_set.add(os.path.normcase(parts[0]))
+                    # 如果种子第一层目录名和 save_path 目录名相同，取第二层
+                    if os.path.normcase(parts[0]) == base_name_lower and len(parts) > 2:
+                        w_subdir_set.add(os.path.normcase(parts[1]))
 
-        # 1. 扫描目录下的所有旧视频
+        _safe_print(f"[Conflicts] 白名单: paths={len(w_path_set)}, basenames={len(w_basename_set)}, subdirs={len(w_subdir_set)}")
+
+        def _is_file_in_whitelist(file_path: str, file_name: str) -> bool:
+            """判断文件是否在白名单中"""
+            if not whitelist:
+                return False
+            # 第一层：绝对路径
+            if os.path.normcase(os.path.normpath(file_path)) in w_path_set:
+                return True
+            # 第二层：文件名
+            if os.path.normcase(file_name) in w_basename_set:
+                return True
+            return False
+
+        def _is_dir_in_whitelist(dir_path: str, dir_name: str) -> bool:
+            """判断目录是否属于新下载的种子文件夹"""
+            if not whitelist:
+                return False
+            if os.path.normcase(os.path.normpath(dir_path)) in w_path_set:
+                return True
+            if os.path.normcase(dir_name) in w_subdir_set:
+                return True
+            return False
+
+        # ── 扫描目录下的所有旧视频 ──
         old_candidates = []
         if os.path.isdir(target_base):
             for root, dirs, files in os.walk(target_base):
                 norm_root = os.path.normpath(root).lower()
-                if any(x in norm_root for x in [".recycle", "$recycle.bin", "#recycle", "@recycle"]): continue
-                if "[旧资源备份]" in root: continue
+                if any(x in norm_root for x in [".recycle", "$recycle.bin", "#recycle", "@recycle"]):
+                    continue
+                if "[旧资源备份]" in root:
+                    continue
                 
-                # 1.1 扫描散装视频文件
+                # 扫描散装视频文件
                 for f in files:
                     if os.path.splitext(f)[1].lower() in _VIDEO_EXTS:
                         f_path = os.path.abspath(os.path.join(root, f))
-                        f_norm = os.path.normcase(os.path.normpath(f_path))
-                        if f_norm not in w_set:
+                        if not _is_file_in_whitelist(f_path, f):
                             p_info = parse_filename(f)
-                            # 如果文件就在 target_base 下，或者它是我们要找的旧版本
                             old_candidates.append({
                                 "path": f_path,
                                 "season": p_info.get("season"),
@@ -265,28 +361,24 @@ class FileRelocator:
                                 "is_folder": False
                             })
                 
-                # 1.2 扫描非白名单子目录（仅在 target_base 第一层级或深层，如果它们包含视频）
-                # 注意：os.walk 里的 dirs 是相对于 root 的子目录列表
+                # 扫描非白名单子目录
                 from organizer import _is_ignorable_subdir
                 for d in dirs:
                     d_path = os.path.abspath(os.path.join(root, d))
-                    d_norm = os.path.normcase(os.path.normpath(d_path))
                     
-                    # 排除隐藏目录、忽略名单目录和已经在白名单里的新兵目录
-                    if d.startswith('.') or _is_ignorable_subdir(d) or d_norm in w_set:
+                    if d.startswith('.') or _is_ignorable_subdir(d) or _is_dir_in_whitelist(d_path, d):
                         continue
                         
-                    # 检查该目录是否包含视频，如果包含，则视为潜在冲突旧版本
                     has_video = False
                     try:
                         for item in os.listdir(d_path):
                             if os.path.splitext(item)[1].lower() in _VIDEO_EXTS or os.path.isdir(os.path.join(d_path, item)):
                                 has_video = True
                                 break
-                    except Exception: pass
+                    except Exception:
+                        pass
                     
                     if has_video:
-                        # 尝试从目录名识别季号，帮助更精准的冲突匹配
                         from organizer import _extract_season_number
                         s_num = _extract_season_number(d)
                         old_candidates.append({
@@ -296,38 +388,37 @@ class FileRelocator:
                             "is_folder": True
                         })
         
-        # old_candidates collected
+        _safe_print(f"[Conflicts] 旧资源候选: {len(old_candidates)} 个")
 
-        # 2. 季号判定
+        # ── 季号判定 ──
         involved_seasons = set()
         for item in plan_items:
-            s = item.get("mapped", {}).get("season")
+            mapped = item.get("mapped") if item else None
+            if mapped:
+                s = mapped.get("season")
+            else:
+                s = None
             if s is not None:
                 involved_seasons.add(s)
             else:
                 involved_seasons.add(-1)
             
-        # 兜底：如果识别不到季号（如单文件电影），则开启全局匹配模式 (-1)
         if not involved_seasons and plan_items:
             involved_seasons.add(-1)
             
-        # 选取一个代表性的新兵预览名（用于表格展示）
         example_new = plan_items[0].get("target_path", "新兵重命名")
 
-        # 3. 匹配：找出磁盘上与新资源同季的“旧视频”
+        # ── 匹配：找出磁盘上与新资源同季的"旧视频" ──
         for old in old_candidates:
             o_season = old.get("season")
             matched = False
-            # 如果新资源是全局匹配，或者季号相同
             if -1 in involved_seasons: 
                 matched = True
             elif o_season is not None and o_season in involved_seasons: 
                 matched = True
             elif o_season is None and 1 in involved_seasons:
-                # 兼容老番：旧资源文件名（如 铳墓02.rmvb）没写季号，默认将其视为第一季，判定为冲突
                 matched = True
             elif not involved_seasons and plan_items:
-                # 极端兜底：如果完全推导不出季号但有推算项，为安全起见也算冲突
                 matched = True
                 
             if matched:
@@ -338,7 +429,8 @@ class FileRelocator:
                     new_size_gb=0.0,
                     old_size_gb=round(old_size / (1024 ** 3), 3)
                 ))
-            
+        
+        _safe_print(f"[Conflicts] 最终冲突: {len(conflicts)} 对")
         return conflicts
 
     def _recycle_old_files(self, pair: CoexistPair, task_id: str) -> bool:
@@ -382,23 +474,19 @@ class FileRelocator:
                 self.recycle_bin.move_to_bin(dir_file_path, task_id)
         
         # 6. 查找同级/父级的 seasonXX-poster.jpg 等
-        # 如果当前在 Season X 目录下，我们需要清理父目录里的该季海报
         parent_dir = os.path.dirname(target_dir)
         season_num = None
-        # 尝试从路径中提取季号 (例如 .../Season 01/...)
         dir_name = os.path.basename(target_dir).lower()
         if "season" in dir_name:
-            import re
             m = re.search(r"season\s*(\d+)", dir_name)
             if m:
                 season_num = int(m.group(1))
         
         if season_num is not None:
-             # 清理父目录下的 seasonXX-poster.jpg 等
-             prefix = f"season{season_num:02d}-"
-             for extra in ["poster.jpg", "fanart.jpg", "thumb.jpg", "banner.jpg"]:
-                 extra_path = os.path.join(parent_dir, prefix + extra)
-                 if os.path.exists(extra_path):
-                     self.recycle_bin.move_to_bin(extra_path, task_id)
+            prefix = f"season{season_num:02d}-"
+            for extra in ["poster.jpg", "fanart.jpg", "thumb.jpg", "banner.jpg"]:
+                extra_path = os.path.join(parent_dir, prefix + extra)
+                if os.path.exists(extra_path):
+                    self.recycle_bin.move_to_bin(extra_path, task_id)
 
         return True

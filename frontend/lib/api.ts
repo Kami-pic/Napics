@@ -247,7 +247,7 @@ export const api = {
   getDownloadProgress: () => request<any>(`${BASE_URL}/download-manager/progress`),
 
   syncDownloadProgress: () =>
-    request<any>(`${BASE_URL}/download-manager/sync`, { method: "POST" }),
+    request<any>(`${BASE_URL}/download-manager/sync-from-qb`, { method: "POST" }),
 
   deleteDownloadTask: (taskId: string) =>
     request<any>(`${BASE_URL}/download-manager/task?task_id=${encodeURIComponent(taskId)}`, { method: "DELETE" }),
@@ -263,16 +263,34 @@ export const api = {
     request<any>(`${BASE_URL}/download-manager/recommend-channel?seeders=${seeders}&size_gb=${sizeGb}`),
 
   // ── 归位与洗版替换 ──
-  organizeDryRun: (taskId: string, autoReplace: boolean = false) => request<any>(`${BASE_URL}/organize/dry-run`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task_id: taskId, auto_replace: autoReplace })
-  }),
-  organizeExecute: (taskId: string, plan: any) => request<any>(`${BASE_URL}/organize/execute`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task_id: taskId, plan })
-  }),
+  organizeDryRun: (taskId: string, autoReplace: boolean = false) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000); // 120 秒超时
+    return request<any>(`${BASE_URL}/organize/dry-run`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id: taskId, auto_replace: autoReplace }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+  },
+  organizeExecute: (taskId: string, plan: any) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180_000); // 180 秒超时
+    return request<any>(`${BASE_URL}/organize/execute`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id: taskId, plan }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+  },
 
-  archiveBoth: (taskId: string, plan: any) => request<any>(`${BASE_URL}/organize/archive-both`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task_id: taskId, plan })
-  }),
+  archiveBoth: (taskId: string, plan: any) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180_000);
+    return request<any>(`${BASE_URL}/organize/archive-both`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id: taskId, plan }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+  },
 
   purgeOldData: (taskId: string) =>
     request<any>(`${BASE_URL}/organize/purge-old?task_id=${encodeURIComponent(taskId)}`, { method: "POST" }),

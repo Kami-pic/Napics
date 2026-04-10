@@ -55,14 +55,17 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
     setSyncingQb(true);
     setSyncMsg("");
     try {
-      await api.syncDownloadProgress(); // 假设后端对应同步 qB 逻辑
+      const res = await api.syncDownloadProgress();
       await loadTasks();
-      setSyncMsg("同步完成");
+      const parts = [];
+      if (res.imported > 0) parts.push(`导入 ${res.imported} 个新任务`);
+      if (res.updated > 0) parts.push(`更新 ${res.updated} 个`);
+      setSyncMsg(parts.length > 0 ? parts.join("，") : "已同步，无新增");
     } catch (e) {
       setSyncMsg("同步失败");
     }
     setSyncingQb(false);
-    setTimeout(() => setSyncMsg(""), 5000);
+    setTimeout(() => setSyncMsg(""), 8000);
   }, [loadTasks]);
 
   useEffect(() => {
@@ -113,7 +116,8 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
 
 
     } catch(e: any) {
-      alert("探测失败: " + e.message);
+      const msg = e.name === "AbortError" ? "请求超时，可能是保存路径过大或 NAS 不可达" : e.message;
+      alert("探测失败: " + msg);
     } finally {
       setConfirmingId(null);
     }

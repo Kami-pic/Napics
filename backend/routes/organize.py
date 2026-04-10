@@ -1096,6 +1096,15 @@ def get_organize_history_detail(snapshot_id: int):
     raise HTTPException(status_code=404, detail="Snapshot not found")
 
 
+# ── 整理替换数据模型 ──
+class RelocateRequest(BaseModel):
+    task_id: str
+    auto_replace: bool = False
+
+class ExecuteRelocateRequest(BaseModel):
+    task_id: str
+    plan: dict
+
 # ── 下载提交时检查黑名单 ──
 @router.post("/organize/dry-run")
 async def organize_dry_run(req: RelocateRequest):
@@ -1106,7 +1115,24 @@ async def organize_dry_run(req: RelocateRequest):
         task = dm.get_task(req.task_id)
         if not task:
             return {"status": "failed", "message": f"任务不存在: {req.task_id}", "coexist_pairs": []}
-            
+
+        # 安全检查：save_path 不能是一级分类目录或 NAS 根目录
+        # 这些路径下文件太多，整理替换探测会卡死
+        if _is_top_category(task.save_path):
+            return {
+                "status": "failed",
+                "message": f"该任务的保存路径是一级分类目录（{os.path.basename(task.save_path)}），"
+                           f"无法进行整理替换探测。请手动将文件移到正确的子目录后重试。",
+                "coexist_pairs": []
+            }
+        nas_roots = config_m.config.nas_paths or []
+        if any(os.path.normpath(task.save_path).lower() == os.path.normpath(r).lower() for r in nas_roots):
+            return {
+                "status": "failed",
+                "message": "该任务的保存路径是 NAS 根目录，无法进行整理替换探测。",
+                "coexist_pairs": []
+            }
+
         # 获取新资源文件列表（含大小）
         file_info_list = []   # [{name, size_bytes}, ...]
         if task.downloader_hash:
@@ -1195,7 +1221,7 @@ async def organize_execute(req: ExecuteRelocateRequest):
     execute_res = await rel.confirm_replace(task, req.plan)
     
     if execute_res.success:
-        dm.archive_task(task.id)
+        dm.archive_task(task.id, organized=True)
         
     return {"status": execute_res.status, "message": execute_res.error or "整理替换任务执行完毕"}
 
@@ -1222,7 +1248,7 @@ async def organize_archive_both(req: ExecuteRelocateRequest):
     execute_res = await rel.archive_both(task, res.coexist_pairs)
     
     if execute_res.success:
-        dm.archive_task(task.id)
+        dm.archive_task(task.id, organized=True)
         
     return {"status": execute_res.status, "message": execute_res.error or "共存归档任务执行完毕"}
 
