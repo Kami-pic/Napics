@@ -567,6 +567,11 @@ const PAN_TYPE_LABELS: Record<string, string> = {
   quark: "夸克", aliyun: "阿里", baidu: "百度",
   pan115: "115", pikpak: "PikPak", unknown: "未知",
 };
+const SOURCE_LABELS: Record<string, string> = {
+  pansearch: "PanSearch", pansou: "PanSou", gogopanso: "狗狗盘搜",
+  rrdynb: "人人电影", ddys: "低端影视", sites: "通用站点",
+  slowread: "慢读", wnsearch: "我能搜",
+};
 
 // ── 网盘搜索结果视图 ──
 function PanResultsView({
@@ -581,6 +586,7 @@ function PanResultsView({
   onTransfer: (r: PanResult) => void;
 }) {
   const [panFilter, setPanFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   if (searching) {
     return (
@@ -609,15 +615,37 @@ function PanResultsView({
     );
   }
 
-  // 筛选后的分组
+  // 按源筛选后重新分组
+  const sourceFilteredGroups = useMemo(() => {
+    if (sourceFilter === "all") return groups;
+    const filtered: Record<string, PanResult[]> = {};
+    for (const [pt, items] of Object.entries(groups)) {
+      const kept = items.filter((r) => r.source === sourceFilter);
+      if (kept.length > 0) filtered[pt] = kept;
+    }
+    return filtered;
+  }, [groups, sourceFilter]);
+
+  // 收集所有出现的源（用于筛选按钮）
+  const availableSources = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const items of Object.values(groups)) {
+      for (const r of items) {
+        counts[r.source] = (counts[r.source] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [groups]);
+
+  // 筛选后的分组（网盘类型 + 源双重筛选）
   const filteredGroups = panFilter === "all"
-    ? Object.entries(groups)
-    : Object.entries(groups).filter(([pt]) => pt === panFilter);
+    ? Object.entries(sourceFilteredGroups)
+    : Object.entries(sourceFilteredGroups).filter(([pt]) => pt === panFilter);
   const filteredTotal = filteredGroups.reduce((sum, [, items]) => sum + items.length, 0);
 
   return (
     <div className="space-y-4">
-      {/* 网盘类型筛选器 + 源状态 */}
+      {/* 网盘类型筛选器 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <button onClick={() => setPanFilter("all")}
@@ -647,6 +675,25 @@ function PanResultsView({
           ))}
         </div>
       </div>
+
+      {/* 搜索源筛选器 */}
+      {Object.keys(availableSources).length > 1 && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-slate-600 mr-1">来源</span>
+          <button onClick={() => setSourceFilter("all")}
+            className={`text-[10px] px-2 py-0.5 rounded transition-colors ${sourceFilter === "all" ? "bg-cyan-500/15 text-cyan-400" : "bg-white/[0.04] text-slate-500 hover:text-slate-300"}`}>
+            全部
+          </button>
+          {Object.entries(availableSources).map(([src, count]) => (
+            <button key={src} onClick={() => setSourceFilter(sourceFilter === src ? "all" : src)}
+              className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                sourceFilter === src ? "bg-cyan-500/15 text-cyan-400" : "bg-white/[0.04] text-slate-500 hover:text-slate-300"
+              }`}>
+              {SOURCE_LABELS[src] || src} {count}
+            </button>
+          ))}
+        </div>
+      )}
 
       {filteredGroups.map(([panType, items]) => (
         <div key={panType} className="border border-white/[0.04] rounded-xl overflow-hidden">
