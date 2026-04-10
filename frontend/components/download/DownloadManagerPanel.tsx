@@ -71,6 +71,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
 
   useEffect(() => {
     if (open) {
+      setWashCache({});  // 每次打开面板清空缓存，确保使用最新数据
       loadTasks();
       pollRef.current = setInterval(async () => {
         if (view === "wash") return; // 详情页暂停全局轮询
