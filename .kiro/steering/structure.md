@@ -8,9 +8,9 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 ## 目录布局
 ```
 ├── backend/                # Python 后端
-│   ├── main.py             # FastAPI 入口（67 行薄壳），注册路由
+│   ├── main.py             # FastAPI 入口（67 行薄壳），只注册路由
 │   ├── shared.py           # 全局单例 + 共享辅助函数
-│   ├── routes/             # 路由模块（按业务域拆分，104 个路由）
+│   ├── routes/             # 路由层（按业务域拆分）— 只做参数校验和调用业务层
 │   │   ├── library.py      # /library/* /scan /sync
 │   │   ├── scrape.py       # /scrape/* /media/shadow-name
 │   │   ├── organize.py     # /organize/* /analyze/* /rename
@@ -24,6 +24,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── organizer.py        # 文件夹分类 + 重命名 + 结构整理
 │   ├── scraper.py          # NFO/海报读写 + 递归刮削
 │   ├── analyzer.py         # 独立分析层（纯读取诊断）
+│   ├── file_relocator.py   # 整理替换归位器（两段式推演+落盘）
 │   ├── searcher.py         # Prowlarr 搜索 + 增强匹配
 │   ├── download_manager.py # 下载任务队列 + 生命周期管理
 │   ├── downloader.py       # qBittorrent + Alist 客户端
@@ -37,19 +38,46 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── lib/                # 工具函数（api.ts、folderTypes.ts、utils.ts）
 │   └── types/              # 类型定义（index.ts）
 ├── .kiro/                  # AI 协作配置（见 project-structure.md）
-├── start.bat               # 启动前后端
-├── stop.bat                # 停止前后端
-├── start_all.bat           # 启动全部服务（含 Alist/qB/Prowlarr）
-├── stop_all.bat            # 停止全部服务
+├── start.bat / stop.bat    # 启动/停止前后端
+├── start_all.bat / stop_all.bat  # 启动/停止全部服务
 └── restart.bat             # 重启前后端（支持 silent 参数）
 ```
 
-## 后端模块分层
-- 入口层：main.py（薄壳）+ routes/*（路由定义 + 请求处理）
-- 共享层：shared.py（单例初始化 + 辅助函数）
-- 数据获取层：tmdb_client.py、douban_client.py、bangumi_client.py、searcher.py
-- 业务逻辑层：organizer.py、analyzer.py、ai_organizer.py、download_manager.py
-- 基础设施层：config_manager.py、downloader.py、scraper_base.py、quality_parser.py
+## 后端分层架构
+
+```
+入口层        main.py（薄壳，只注册路由）
+              ↓
+路由层        routes/*（参数校验 + 调用业务层，不写业务逻辑）
+              ↓
+业务逻辑层    organizer.py / analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py
+              ↓
+数据获取层    tmdb_client.py / douban_client.py / bangumi_client.py / searcher.py / scraper.py
+              ↓
+基础设施层    config_manager.py / downloader.py / scraper_base.py / quality_parser.py
+              ↓
+共享层        shared.py（单例初始化 + 辅助函数，所有层的依赖注入源）
+```
+
+### 各层职责边界
+
+| 层 | 职责 | 禁止 |
+|---|---|---|
+| 路由层 routes/* | 接收请求、参数校验、调用业务层、返回响应 | 不写超过 20 行的业务逻辑函数 |
+| 业务逻辑层 | 核心算法、状态管理、流程编排 | 不直接处理 HTTP 请求/响应 |
+| 数据获取层 | 外部 API 调用、文件读写、数据解析 | 不做业务决策 |
+| 基础设施层 | 配置、客户端封装、通用工具 | 不依赖业务层 |
+| 共享层 shared.py | 单例初始化、依赖注入 | 不写业务逻辑 |
+
+### 新增代码的放置规则
+
+- 新增路由：放到对应业务域的 routes/*.py 中
+- 新增业务逻辑：放到对应的业务模块中（organizer.py / download_manager.py 等）
+- 如果现有模块职责已经很重（超过 1000 行且包含多个不相关功能），允许拆出独立模块
+- 拆分信号：一个文件里有多个不相关的功能域（如 organizer.py 同时管分类和影子名）
+- 不拆信号：逻辑自洽、只服务于一个功能的模块，即使行数多也不强制拆
+- Pydantic 数据模型定义在使用它的模块中，不要跨文件定义后忘记导入
+- 路由文件中的辅助函数如果超过 20 行，应该下沉到业务层
 
 ## 关键约束
 - 路由路径不可变，前端 api.ts 中所有路径直接对应后端路由
@@ -61,4 +89,3 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 ## 约定
 - `_` 开头的 .py 文件是一次性脚本，不要引用也不要维护
 - `test_` 开头的是测试脚本
-- 核心业务逻辑不要新建文件，优先在现有模块上扩展
