@@ -102,6 +102,7 @@ export default function SearchModal({
   const [panSearching, setPanSearching] = useState(false);
   const [panTotal, setPanTotal] = useState(0);
   const panCache = useRef<Map<string, { results: PanResult[]; groups: Record<string, PanResult[]>; statuses: PanSourceStatus[]; total: number }>>(new Map());
+  const [panFilters, setPanFilters] = useState<PanFilterState>(DEFAULT_PAN_FILTERS);
 
   useEffect(() => { setSavePath(defaultSavePath); }, [defaultSavePath]);
   useEffect(() => { setKeyword(query); }, [query]);
@@ -377,6 +378,9 @@ export default function SearchModal({
               />
             </div>
           )}
+          {activeTab === "pan" && (
+            <PanFilterBar filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} />
+          )}
         </div>
 
         {toast && (
@@ -426,6 +430,7 @@ export default function SearchModal({
               total={panTotal}
               sourceStatuses={panSourceStatuses}
               keyword={keyword}
+              filters={panFilters}
               onRetry={() => doPanSearch(keyword)}
               onTransfer={async (r) => {
                 setToast(null);
@@ -597,88 +602,61 @@ const SOURCE_LABELS: Record<string, string> = {
   sites: "通用站点", slowread: "慢读", wnsearch: "我能搜",
 };
 
-// ── 网盘搜索结果视图 ──
-function PanResultsView({
-  searching, groups, total, sourceStatuses, keyword, onRetry, onTransfer,
+// ── 网盘筛选器栏（和 BT FilterBar 同级位置）──
+function PanFilterBar({
+  filters, onChange, groups, sourceStatuses,
 }: {
-  searching: boolean;
+  filters: PanFilterState;
+  onChange: (f: PanFilterState) => void;
   groups: Record<string, PanResult[]>;
-  total: number;
   sourceStatuses: PanSourceStatus[];
-  keyword: string;
-  onRetry: () => void;
-  onTransfer: (r: PanResult) => void;
 }) {
-  const [panFilters, setPanFilters] = useState<PanFilterState>(DEFAULT_PAN_FILTERS);
-
-  // 收集所有结果用于筛选（从 groups 展平）
+  // 从结果中动态提取可用选项
   const allResults = useMemo(() => {
     const all: PanResult[] = [];
     for (const items of Object.values(groups)) all.push(...items);
     return all;
   }, [groups]);
 
-  // 收集可用的筛选选项（动态从结果中提取）
-  const availableOptions = useMemo(() => {
+  const options = useMemo(() => {
     const panTypes = new Set<string>();
     const sources = new Set<string>();
-    const resolutions = new Set<string>();
     for (const r of allResults) {
       panTypes.add(r.pan_type);
       sources.add(r.source);
-      if (r.resolution && r.resolution !== "unknown") resolutions.add(r.resolution);
     }
-    return { panTypes: Array.from(panTypes), sources: Array.from(sources), resolutions: Array.from(resolutions) };
+    return { panTypes: Array.from(panTypes), sources: Array.from(sources) };
   }, [allResults]);
 
-  // 应用筛选
-  const filteredResults = useMemo(() => applyPanFilters(allResults, panFilters), [allResults, panFilters]);
+  const set = <K extends keyof PanFilterState>(key: K, val: PanFilterState[K]) =>
+    onChange({ ...filters, [key]: val });
+  const isFiltered = filters.panType || filters.source || filters.resolution || filters.completeOnly;
 
-  // 筛选后重新分组
-  const filteredGroups = useMemo(() => {
-    const g: Record<string, PanResult[]> = {};
-    for (const r of filteredResults) {
-      if (!g[r.pan_type]) g[r.pan_type] = [];
-      g[r.pan_type].push(r);
-    }
-    // 按优先级排序
-    const order = ["quark", "aliyun", "pan115", "pikpak", "baidu"];
-    const ordered: Record<string, PanResult[]> = {};
-    for (const pt of order) { if (g[pt]) ordered[pt] = g[pt]; }
-    for (const pt of Object.keys(g)) { if (!ordered[pt]) ordered[pt] = g[pt]; }
-    return ordered;
-  }, [filteredResults]);
-
-  const isFiltered = panFilters.panType || panFilters.source || panFilters.resolution || panFilters.completeOnly;
-  const setFilter = <K extends keyof PanFilterState>(key: K, val: PanFilterState[K]) =>
-    setPanFilters((prev) => ({ ...prev, [key]: val }));
-
-  // ── 筛选器 UI（始终显示，搜索前也可操作）──
-  const filterBar = (
-    <div className="flex flex-wrap items-end gap-3 mb-3">
+  return (
+    <div className="flex flex-wrap items-end gap-3">
       <label className="flex flex-col gap-1 text-xs text-slate-400">
         网盘
-        <select value={panFilters.panType} onChange={(e) => setFilter("panType", e.target.value)}
+        <select value={filters.panType} onChange={(e) => set("panType", e.target.value)}
           className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
-          <option value="">全部</option>
-          {availableOptions.panTypes.map((pt) => (
+          <option value="">不限</option>
+          {options.panTypes.map((pt) => (
             <option key={pt} value={pt}>{PAN_TYPE_LABELS[pt] || pt}</option>
           ))}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs text-slate-400">
         来源
-        <select value={panFilters.source} onChange={(e) => setFilter("source", e.target.value)}
+        <select value={filters.source} onChange={(e) => set("source", e.target.value)}
           className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
-          <option value="">全部</option>
-          {availableOptions.sources.map((s) => (
+          <option value="">不限</option>
+          {options.sources.map((s) => (
             <option key={s} value={s}>{SOURCE_LABELS[s] || s}</option>
           ))}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs text-slate-400">
         分辨率
-        <select value={panFilters.resolution} onChange={(e) => setFilter("resolution", e.target.value)}
+        <select value={filters.resolution} onChange={(e) => set("resolution", e.target.value)}
           className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
           <option value="">不限</option>
           <option value="2160p">4K</option>
@@ -687,16 +665,15 @@ function PanResultsView({
         </select>
       </label>
       <label className="flex items-center gap-1.5 text-xs text-slate-400 pt-4 cursor-pointer">
-        <input type="checkbox" checked={panFilters.completeOnly} onChange={(e) => setFilter("completeOnly", e.target.checked)}
+        <input type="checkbox" checked={filters.completeOnly} onChange={(e) => set("completeOnly", e.target.checked)}
           className="w-3.5 h-3.5 rounded border-white/10 bg-white/[0.04] text-emerald-600 focus:ring-0" />
         仅整季
       </label>
       {isFiltered && (
-        <button onClick={() => setPanFilters(DEFAULT_PAN_FILTERS)}
-          className="text-[10px] text-slate-500 hover:text-slate-300 pt-4 underline">清除筛选</button>
+        <button onClick={() => onChange(DEFAULT_PAN_FILTERS)}
+          className="text-[10px] text-slate-500 hover:text-slate-300 pt-4 underline">清除</button>
       )}
       <div className="flex-1" />
-      {/* 源状态指示器 */}
       <div className="flex items-center gap-1.5 pt-4">
         {sourceStatuses.filter((s) => s.status !== "disabled").map((s) => (
           <span key={s.name} className={`text-[10px] px-1.5 py-0.5 rounded ${
@@ -710,38 +687,69 @@ function PanResultsView({
       </div>
     </div>
   );
+}
+
+// ── 网盘搜索结果视图（纯展示，筛选器已提到外层）──
+function PanResultsView({
+  searching, groups, total, sourceStatuses, keyword, filters, onRetry, onTransfer,
+}: {
+  searching: boolean;
+  groups: Record<string, PanResult[]>;
+  total: number;
+  sourceStatuses: PanSourceStatus[];
+  keyword: string;
+  filters: PanFilterState;
+  onRetry: () => void;
+  onTransfer: (r: PanResult) => void;
+}) {
+  // 展平 + 筛选 + 重新分组
+  const allResults = useMemo(() => {
+    const all: PanResult[] = [];
+    for (const items of Object.values(groups)) all.push(...items);
+    return all;
+  }, [groups]);
+
+  const filteredResults = useMemo(() => applyPanFilters(allResults, filters), [allResults, filters]);
+
+  const filteredGroups = useMemo(() => {
+    const g: Record<string, PanResult[]> = {};
+    for (const r of filteredResults) {
+      if (!g[r.pan_type]) g[r.pan_type] = [];
+      g[r.pan_type].push(r);
+    }
+    const order = ["quark", "aliyun", "pan115", "pikpak", "baidu"];
+    const ordered: Record<string, PanResult[]> = {};
+    for (const pt of order) { if (g[pt]) ordered[pt] = g[pt]; }
+    for (const pt of Object.keys(g)) { if (!ordered[pt]) ordered[pt] = g[pt]; }
+    return ordered;
+  }, [filteredResults]);
+
+  const isFiltered = filters.panType || filters.source || filters.resolution || filters.completeOnly;
 
   if (searching) {
     return (
-      <div>
-        {filterBar}
-        <div className="flex flex-col items-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-3" />
-          <p className="text-[13px] text-slate-500">搜索网盘资源...</p>
-        </div>
+      <div className="flex flex-col items-center py-16">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-3" />
+        <p className="text-[13px] text-slate-500">搜索网盘资源...</p>
       </div>
     );
   }
 
   if (total === 0) {
     return (
-      <div>
-        {filterBar}
-        <div className="text-center py-10">
-          <p className="text-xs text-slate-600 mb-3">未搜到网盘资源</p>
-          <button onClick={onRetry} className="text-xs text-emerald-400 hover:text-emerald-300">重试</button>
-        </div>
+      <div className="text-center py-10">
+        <p className="text-xs text-slate-600 mb-3">未搜到网盘资源</p>
+        <button onClick={onRetry} className="text-xs text-emerald-400 hover:text-emerald-300">重试</button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {filterBar}
-
-      {/* 结果统计 */}
-      <div className="flex items-center gap-2 text-[10px] text-slate-500">
-        <span>共 {filteredResults.length} 条{isFiltered ? ` (筛选自 ${total} 条)` : ""}</span>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] text-slate-500">
+          共 {filteredResults.length} 条{isFiltered ? `（筛选自 ${total} 条）` : ""}
+        </p>
       </div>
 
       {Object.entries(filteredGroups).map(([panType, items]) => (
@@ -763,8 +771,6 @@ function PanResultsView({
       {filteredResults.length === 0 && isFiltered && (
         <div className="text-center py-8">
           <p className="text-xs text-slate-600 mb-2">当前筛选条件无匹配结果</p>
-          <button onClick={() => setPanFilters(DEFAULT_PAN_FILTERS)}
-            className="text-xs text-emerald-400 hover:text-emerald-300">清除筛选</button>
         </div>
       )}
     </div>

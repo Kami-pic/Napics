@@ -44,7 +44,7 @@
 - 搜索缓存只缓存有结果的，空结果不缓存
 - 前端过滤器是纯前端行为，不触发重新搜索
 - 网盘转存必须同时提取 share_url + 提取码
-- Alist 挂载状态：夸克/PikPak/115 正常，阿里 token 过期，百度授权问题
+- Alist 挂载状态：夸克/PikPak/115/百度 正常，阿里云分享 只能读取不能写入。
 - 夸克转存 API：stoken 含特殊字符需 URL 编码，fid_token_list 用 share_fid_token 不是 fid
 - pansearch.me 连续搜索会被限频，需要间隔
 - alipansou.com 用 JS 加密渲染，纯 requests 拿不到结果
