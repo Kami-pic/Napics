@@ -211,17 +211,15 @@ function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: { node:
   const handleMove = async (t: string) => {
     if (!confirm(`确定要移动文件夹 "${node.name}" 到 ${t}？`)) return;
     try {
-      // 移动整个文件夹
-      await api.rename(node.path, t + "\\" + node.name);
+      await api.batchManage("move", [node.path], t);
       onRefresh();
     } catch {
-      // fallback: 逐个移动直接视频
-      try { await api.batchManage("move", directVideoPaths, t); onRefresh(); } catch { alert("移动失败"); }
+      alert("移动失败");
     }
   };
   const handleDelete = async () => {
     if (!confirm(`确定要删除文件夹 "${node.name}" 及其所有内容？`)) return;
-    try { await api.batchManage("delete", allVideoPaths); onRefresh(); } catch { alert("删除失败"); }
+    try { await api.batchManage("delete", [node.path]); onRefresh(); } catch { alert("删除失败"); }
   };
   const handleRemove = async () => { await api.batchManage("remove", allVideoPaths); onRefresh(); };
 

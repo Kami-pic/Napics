@@ -38,58 +38,82 @@ def batch_manage(req: BatchRequest):
     if req.action == "delete":
         for p in req.paths:
             try:
-                if os.path.exists(p):
+                if os.path.isdir(p):
+                    # 文件夹删除：收集内部所有视频路径用于同步媒体库
+                    for root, _, files in os.walk(p):
+                        for f in files:
+                            success.append(os.path.join(root, f))
+                    shutil.rmtree(p)
+                    success.append(p)
+                elif os.path.isfile(p):
                     os.remove(p)
                     success.append(p)
                 else:
-                    failed.append({"path": p, "error": "File not found"})
+                    failed.append({"path": p, "error": "Path not found"})
             except Exception as e:
                 failed.append({"path": p, "error": str(e)})
-        # 同步从媒体库中移除
+        # 同步从媒体库中移除（匹配文件路径和文件夹前缀）
         library = config_m.load_library()
         deleted_set = set(success)
-        library = [v for v in library if v.get("file_path") not in deleted_set]
+        deleted_dirs = [p for p in req.paths if os.path.sep in p or "/" in p]
+        library = [v for v in library if v.get("file_path") not in deleted_set
+                   and not any(v.get("file_path", "").startswith(d + os.sep) or v.get("file_path", "").startswith(d + "/") for d in deleted_dirs)]
         config_m.save_library(library)
     
     elif req.action == "move":
         if not req.target_dir:
             raise HTTPException(status_code=400, detail="target_dir required")
         os.makedirs(req.target_dir, exist_ok=True)
-        path_map = {}  # old_path → new_path
+        path_map = {}  # old_path → new_path（文件级）
+        dir_map = {}   # old_dir → new_dir（文件夹级）
         for p in req.paths:
             try:
-                if os.path.exists(p):
-                    new_path = os.path.join(req.target_dir, os.path.basename(p))
-                    # 同步移动关联文件（NFO/poster/fanart）
-                    if os.path.isfile(p):
-                        old_base = os.path.splitext(p)[0]
-                        new_base = os.path.splitext(new_path)[0]
-                        for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
-                            old_f = old_base + suffix
-                            if os.path.exists(old_f):
-                                try:
-                                    shutil.move(old_f, os.path.join(req.target_dir, os.path.basename(old_f)))
-                                except Exception:
-                                    pass
+                if not os.path.exists(p):
+                    failed.append({"path": p, "error": "Path not found"})
+                    continue
+                new_path = os.path.join(req.target_dir, os.path.basename(p))
+                if os.path.isdir(p):
+                    # 文件夹移动：整个文件夹搬过去
+                    shutil.move(p, new_path)
+                    dir_map[p] = new_path
+                    success.append(p)
+                else:
+                    # 文件移动：同步移动关联文件（NFO/poster/fanart）
+                    old_base = os.path.splitext(p)[0]
+                    for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
+                        old_f = old_base + suffix
+                        if os.path.exists(old_f):
+                            try:
+                                shutil.move(old_f, os.path.join(req.target_dir, os.path.basename(old_f)))
+                            except Exception:
+                                pass
                     shutil.move(p, new_path)
                     path_map[p] = new_path
                     success.append(p)
-                else:
-                    failed.append({"path": p, "error": "File not found"})
             except Exception as e:
                 failed.append({"path": p, "error": str(e)})
         # 更新 media_library.json 中的路径
-        if path_map:
+        if path_map or dir_map:
             library = config_m.load_library()
             base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
             for v in library:
                 fp = v.get("file_path", "")
+                # 文件级匹配
                 if fp in path_map:
                     v["file_path"] = path_map[fp]
                     v["file_name"] = os.path.basename(path_map[fp])
                     if base:
                         rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
                         v["folder_name"] = "" if rel == "." else rel
+                else:
+                    # 文件夹级前缀匹配
+                    for old_dir, new_dir in dir_map.items():
+                        if fp.startswith(old_dir + os.sep) or fp.startswith(old_dir + "/"):
+                            v["file_path"] = new_dir + fp[len(old_dir):]
+                            if base:
+                                rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
+                                v["folder_name"] = "" if rel == "." else rel
+                            break
             config_m.save_library(library)
     
     elif req.action == "copy":
