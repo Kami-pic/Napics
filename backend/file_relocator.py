@@ -292,7 +292,7 @@ class FileRelocator:
         # ── 构建三层白名单集合 ──
         w_path_set = set()       # 绝对路径匹配
         w_basename_set = set()   # 文件名兜底匹配
-        w_subdir_set = set()     # 种子内子目录名匹配
+        w_subdir_set = set()     # 种子内所有层级的目录名匹配
         
         if whitelist:
             base_name_lower = os.path.normcase(os.path.basename(target_base))
@@ -307,14 +307,20 @@ class FileRelocator:
                 if basename:
                     w_basename_set.add(os.path.normcase(basename))
                 
-                # 第三层：种子内第一层子目录名
+                # 第三层：种子内所有层级的目录名（SPs、音乐CD等子目录都要收集）
                 p_norm = os.path.normpath(p_sep)
                 parts = p_norm.split(os.sep)
-                if len(parts) > 1:
-                    w_subdir_set.add(os.path.normcase(parts[0]))
-                    # 如果种子第一层目录名和 save_path 目录名相同，取第二层
-                    if os.path.normcase(parts[0]) == base_name_lower and len(parts) > 2:
-                        w_subdir_set.add(os.path.normcase(parts[1]))
+                # 收集路径中每一层目录名（排除文件名本身，即最后一个 part）
+                for i in range(len(parts) - 1):
+                    dir_name = os.path.normcase(parts[i])
+                    if dir_name and dir_name != base_name_lower:
+                        w_subdir_set.add(dir_name)
+                    # 如果第一层和 save_path 同名，跳过它但继续收集后续层
+                # 同时把绝对路径版本的中间目录也加入
+                abs_dir = os.path.dirname(os.path.normcase(os.path.normpath(abs_p)))
+                while abs_dir and os.path.normcase(abs_dir) != os.path.normcase(target_base):
+                    w_path_set.add(abs_dir)
+                    abs_dir = os.path.dirname(abs_dir)
 
         _safe_print(f"[Conflicts] 白名单: paths={len(w_path_set)}, basenames={len(w_basename_set)}, subdirs={len(w_subdir_set)}")
 
