@@ -569,8 +569,8 @@ const PAN_TYPE_LABELS: Record<string, string> = {
 };
 const SOURCE_LABELS: Record<string, string> = {
   pansearch: "PanSearch", pansou: "PanSou", gogopanso: "狗狗盘搜",
-  rrdynb: "人人电影", ddys: "低端影视", sites: "通用站点",
-  slowread: "慢读", wnsearch: "我能搜",
+  github: "GitHub仓库", rrdynb: "人人电影", ddys: "低端影视",
+  sites: "通用站点", slowread: "慢读", wnsearch: "我能搜",
 };
 
 // ── 网盘搜索结果视图 ──

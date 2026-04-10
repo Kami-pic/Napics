@@ -23,6 +23,7 @@ from pan_scraper_sites import MultiSiteScraper
 from pan_scraper_slowread import SlowreadScraper
 from pan_scraper_wnsearch import WnSearchScraper
 from pan_scraper_gogopanso import GogoPansoScraper
+from pan_scraper_github import GitHubPanScraper
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,9 @@ class PanSearchService:
         # 狗狗盘搜（aliyunpanshare 搜索前端，每日更新）
         if sources.get("gogopanso", True):
             self.scrapers["gogopanso"] = GogoPansoScraper(proxy=scraper_proxy or None)
+        # GitHub 资源仓库（QuarkShare + quark-share，本地索引）
+        if sources.get("github", True):
+            self.scrapers["github"] = GitHubPanScraper(proxy=scraper_proxy or None)
 
     async def search(
         self, keyword: str, media_type: str = ""
@@ -120,7 +124,7 @@ class PanSearchService:
         # 补充未启用的源状态
         all_source_names = [
             "pansearch", "rrdynb", "ddys", "pansou",
-            "sites", "slowread", "wnsearch", "gogopanso",
+            "sites", "slowread", "wnsearch", "gogopanso", "github",
         ]
         for name in all_source_names:
             if name not in self.scrapers:

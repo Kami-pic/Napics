@@ -70,6 +70,7 @@ def _get_pan_search_service() -> PanSearchService:
                 "pansearch": True,
                 "pansou": True,
                 "gogopanso": True,   # 狗狗盘搜：公开 API，每日更新，无反爬
+                "github": True,      # GitHub 资源仓库：QuarkShare + quark-share
                 "sites": False,      # 通用站点：大多需登录或被反爬，暂关
                 "slowread": False,   # 慢读：纯 JS 渲染，需逆向 API，暂关
                 "wnsearch": False,   # 我能搜：纯 JS 渲染，需逆向 API，暂关
