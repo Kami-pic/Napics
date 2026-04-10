@@ -28,6 +28,12 @@ from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 
+# 批量管理请求模型（移动/复制/删除）
+class BatchRequest(BaseModel):
+    action: str  # "delete" | "move" | "copy" | "remove"
+    paths: List[str]
+    target_dir: Optional[str] = None
+
 router = APIRouter()
 
 @router.post("/batch_manage")

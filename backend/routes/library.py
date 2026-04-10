@@ -229,7 +229,7 @@ def set_folder_type(req: dict):
     if not path or not folder_type:
         return {"status": "error", "message": "path and folder_type required"}
     
-    ft_path = os.path.join(os.path.dirname(__file__), "folder_types.json")
+    ft_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "folder_types.json")
     import json
     data = {}
     if os.path.exists(ft_path):
