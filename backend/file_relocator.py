@@ -29,6 +29,8 @@ class CoexistPair(BaseModel):
     old_file: str          # 目标目录中已存在的旧文件路径
     new_size_gb: float = 0.0
     old_size_gb: float = 0.0
+    category: str = "video"  # "video" | "folder" | "non_video" — 用于前端分类展示
+    is_folder: bool = False  # 是否是文件夹
 
 
 class RelocateResult(BaseModel):
@@ -411,6 +413,7 @@ class FileRelocator:
         # ── 匹配：找出磁盘上与新资源同季的"旧视频" ──
         for old in old_candidates:
             o_season = old.get("season")
+            is_folder = old.get("is_folder", False)
             matched = False
             if -1 in involved_seasons: 
                 matched = True
@@ -422,12 +425,41 @@ class FileRelocator:
                 matched = True
                 
             if matched:
-                old_size = os.path.getsize(old["path"]) if os.path.exists(old["path"]) else 0
+                old_path = old["path"]
+                old_size = 0
+                
+                # 判断分类
+                if is_folder:
+                    # 文件夹：检查内部是否有视频文件来决定分类
+                    has_video_inside = False
+                    try:
+                        for item in os.listdir(old_path):
+                            if os.path.splitext(item)[1].lower() in _VIDEO_EXTS:
+                                has_video_inside = True
+                                break
+                    except Exception:
+                        pass
+                    category = "folder" if has_video_inside else "non_video"
+                    # 文件夹大小取内部所有文件总和
+                    try:
+                        for r, _, fs in os.walk(old_path):
+                            for ff in fs:
+                                fp = os.path.join(r, ff)
+                                if os.path.isfile(fp):
+                                    old_size += os.path.getsize(fp)
+                    except Exception:
+                        pass
+                else:
+                    category = "video"
+                    old_size = os.path.getsize(old_path) if os.path.exists(old_path) else 0
+                
                 conflicts.append(CoexistPair(
                     new_file=example_new,
-                    old_file=old["path"],
-                    new_size_gb=0.0,
-                    old_size_gb=round(old_size / (1024 ** 3), 3)
+                    old_file=old_path,
+                    new_size_gb=round(old_size / (1024 ** 3), 3),
+                    old_size_gb=round(old_size / (1024 ** 3), 3),
+                    category=category,
+                    is_folder=is_folder,
                 ))
         
         _safe_print(f"[Conflicts] 最终冲突: {len(conflicts)} 对")

@@ -851,6 +851,172 @@ class ExecuteRelocateRequest(BaseModel):
     task_id: str
     plan: dict
 
+
+# ── 树状结构构建工具 ──
+
+def _build_old_tree(coexist_pairs, save_path: str) -> list:
+    """将旧资源冲突列表构建为树状结构。
+    返回 [{name, type, size_bytes, category, children?}, ...]
+    """
+    root_name = os.path.basename(save_path) or save_path
+    children = []
+    for p in coexist_pairs:
+        old_path = p.old_file if isinstance(p, dict) else getattr(p, "old_file", "")
+        category = p.get("category", "video") if isinstance(p, dict) else getattr(p, "category", "video")
+        is_folder = p.get("is_folder", False) if isinstance(p, dict) else getattr(p, "is_folder", False)
+        old_size = p.get("old_size_gb", 0) if isinstance(p, dict) else getattr(p, "old_size_gb", 0)
+        
+        name = os.path.basename(old_path)
+        # 计算相对于 save_path 的路径
+        try:
+            rel = os.path.relpath(old_path, save_path)
+        except ValueError:
+            rel = name
+        
+        node = {
+            "name": name,
+            "rel_path": rel,
+            "type": "dir" if is_folder else "file",
+            "category": category,  # "video" | "folder" | "non_video"
+            "size_bytes": int(old_size * 1024 * 1024 * 1024),
+        }
+        
+        # 文件夹节点：扫描子内容
+        if is_folder and os.path.isdir(old_path):
+            sub_children = []
+            try:
+                for item in sorted(os.listdir(old_path)):
+                    item_path = os.path.join(old_path, item)
+                    ext = os.path.splitext(item)[1].lower()
+                    is_video = ext in {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
+                    is_sub = ext in {".ass", ".srt", ".ssa", ".sub", ".idx", ".sup"}
+                    ftype = "video" if is_video else ("subtitle" if is_sub else "other")
+                    sz = os.path.getsize(item_path) if os.path.isfile(item_path) else 0
+                    sub_children.append({"name": item, "type": ftype, "size_bytes": sz})
+            except Exception:
+                pass
+            node["children"] = sub_children
+        
+        children.append(node)
+    
+    return [{"name": root_name, "type": "root", "children": children}]
+
+
+def _build_new_tree(new_files_all) -> list:
+    """将新资源文件列表构建为树状结构（按目录分组）。"""
+    if not new_files_all:
+        return []
+    
+    # 按第一层目录分组
+    groups = {}  # dir_name -> [files]
+    root_files = []
+    
+    for f in new_files_all:
+        name = f.get("name", "")
+        parts = name.replace("/", os.sep).replace("\\", os.sep).split(os.sep)
+        if len(parts) > 1:
+            dir_name = parts[0]
+            file_name = os.sep.join(parts[1:])
+            if dir_name not in groups:
+                groups[dir_name] = []
+            groups[dir_name].append({
+                "name": os.path.basename(file_name),
+                "full_rel": name,
+                "size_bytes": f.get("size_bytes", f.get("size", 0)),
+            })
+        else:
+            root_files.append({
+                "name": name,
+                "full_rel": name,
+                "size_bytes": f.get("size_bytes", f.get("size", 0)),
+            })
+    
+    tree = []
+    # 目录节点
+    for dir_name, files in sorted(groups.items()):
+        ext_classify = lambda n: "video" if os.path.splitext(n)[1].lower() in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"} else ("subtitle" if os.path.splitext(n)[1].lower() in {".ass",".srt",".ssa",".sub",".idx",".sup"} else "other")
+        children = []
+        for ff in sorted(files, key=lambda x: x["name"]):
+            children.append({
+                "name": ff["name"],
+                "type": ext_classify(ff["name"]),
+                "size_bytes": ff["size_bytes"],
+            })
+        dir_size = sum(c["size_bytes"] for c in children)
+        tree.append({
+            "name": dir_name,
+            "type": "dir",
+            "size_bytes": dir_size,
+            "children": children,
+        })
+    
+    # 根级散装文件
+    for rf in root_files:
+        ext = os.path.splitext(rf["name"])[1].lower()
+        ftype = "video" if ext in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"} else ("subtitle" if ext in {".ass",".srt",".ssa",".sub",".idx",".sup"} else "other")
+        tree.append({"name": rf["name"], "type": ftype, "size_bytes": rf["size_bytes"]})
+    
+    return tree
+
+
+def _build_plan_tree(action_plan) -> list:
+    """将标准化推演结果构建为树状结构（按目标季目录分组）。"""
+    if not action_plan:
+        return []
+    
+    plan_items = action_plan.get("plan", []) if isinstance(action_plan, dict) else []
+    if not plan_items:
+        return []
+    
+    # 按 target_season_dir 分组
+    season_groups = {}  # season_dir -> [items]
+    root_items = []
+    
+    for item in plan_items:
+        if item is None:
+            continue
+        season_dir = item.get("target_season_dir")
+        actions = item.get("actions", [])
+        skip = item.get("skip_reason") or ""
+        target_name = item.get("target_filename") or item.get("original_filename", "?")
+        original_name = item.get("original_filename", "?")
+        mapped = item.get("mapped")
+        
+        node = {
+            "name": target_name,
+            "original_name": original_name,
+            "type": "video",
+            "action": "rename" if "write_episode_nfo" in actions else ("skip" if skip else "keep"),
+            "skip_reason": skip,
+            "season": mapped.get("season") if mapped else None,
+            "episode": mapped.get("episode") if mapped else None,
+        }
+        
+        if season_dir and season_dir != "None":
+            if season_dir not in season_groups:
+                season_groups[season_dir] = []
+            season_groups[season_dir].append(node)
+        else:
+            root_items.append(node)
+    
+    tree = []
+    # 季目录节点
+    for season_dir in sorted(season_groups.keys()):
+        items = season_groups[season_dir]
+        tree.append({
+            "name": season_dir,
+            "type": "dir",
+            "action": "create",
+            "children": sorted(items, key=lambda x: (x.get("episode") or 999)),
+        })
+    
+    # 根级文件（跳过的、无法归类的）
+    for ri in root_items:
+        tree.append(ri)
+    
+    return tree
+
+
 # ── 下载提交时检查黑名单 ──
 @router.post("/organize/dry-run")
 async def organize_dry_run(req: RelocateRequest):
@@ -915,12 +1081,21 @@ async def organize_dry_run(req: RelocateRequest):
                     for item in res.action_plan
                 ]
             
+            # 构建三栏树状数据
+            old_tree = _build_old_tree(res.coexist_pairs, task.save_path)
+            new_tree = _build_new_tree(display_new_files)
+            plan_tree = _build_plan_tree(res.action_plan)
+            
             return {
                 "status": "awaiting_confirm",
                 "message": "发现库中存量旧版本，建议执行整理替换",
                 "coexist_pairs": [p.dict() for p in res.coexist_pairs],
                 "plan": res.action_plan,
-                "new_files_all": display_new_files,  # 完整文件列表（含字幕等）供 UI 展示
+                "new_files_all": display_new_files,
+                # 树状结构数据（前端优先使用）
+                "old_tree": old_tree,
+                "new_tree": new_tree,
+                "plan_tree": plan_tree,
             }
         
         if res.status == "failed":

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { DownloadTask } from "@/types";
 import { api } from "@/lib/api";
+import { FileTree } from "./FileTreeNode";
 
 type StatusFilter = "" | "downloading" | "completed" | "awaiting_confirm" | "failed";
 
@@ -34,7 +35,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
   // 视图控制：list 为列表，wash 为整理替换详情
   const [view, setView] = useState<"list" | "wash">("list");
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [dryRunData, setDryRunData] = useState<{taskId: string, targetName: string, pairs: any[], plan: any, newFilesAll: any[]} | null>(null);
+  const [dryRunData, setDryRunData] = useState<{taskId: string, targetName: string, pairs: any[], plan: any, newFilesAll: any[], oldTree?: any[], newTree?: any[], planTree?: any[]} | null>(null);
   
   // 推演结果缓存：taskId -> dryRunData
   const [washCache, setWashCache] = useState<Record<string, any>>({});
@@ -104,7 +105,10 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
            taskId, targetName: mediaName, 
            pairs: data.coexist_pairs || [], 
            plan: data.plan,
-           newFilesAll: data.new_files_all || [],  // 完整文件列表（含字幕等）
+           newFilesAll: data.new_files_all || [],
+           oldTree: data.old_tree || [],
+           newTree: data.new_tree || [],
+           planTree: data.plan_tree || [],
          };
          setDryRunData(result);
          setWashCache(prev => ({ ...prev, [taskId]: result }));
@@ -288,16 +292,11 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                     <div className="flex flex-col bg-[#1a1a1a] border border-red-500/10 rounded-2xl p-4 min-h-0">
                       <p className="text-[11px] font-bold text-red-400 mb-2 flex items-center justify-between shrink-0">
                         旧资源 (库中存量)
-                        <span className="text-[9px] font-normal text-red-400/40">{dryRunData.pairs.length} 个文件</span>
+                        <span className="text-[9px] font-normal text-red-400/40">{dryRunData.pairs.filter((p: any) => p.category !== "non_video").length} 个待清理</span>
                       </p>
-                      <p className="text-[9px] text-slate-600 mb-3 shrink-0">以下文件将被替换或清理</p>
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                        {dryRunData.pairs.map((p: any, i: number) => (
-                          <div key={i} className="bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.03]">
-                            <p className="text-[10px] text-slate-300 truncate font-mono" title={p.old_file}>{p.old_file.split(/[/\\]/).pop()}</p>
-                            <p className="text-[9px] text-slate-600 mt-1">{(p.old_size_gb * 1024).toFixed(0)}MB</p>
-                          </div>
-                        ))}
+                      <p className="text-[9px] text-slate-600 mb-3 shrink-0">🗑 待清理 · ⚠️ 保留不动 · 📁 含视频文件夹</p>
+                      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                        <FileTree tree={dryRunData.oldTree || []} variant="old" />
                       </div>
                       <div className="mt-4 shrink-0">
                         <button onClick={() => handleExecuteAction("purge")} disabled={!!confirmingId}
@@ -315,25 +314,8 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                         <span className="text-[9px] font-normal text-slate-600">{(dryRunData.newFilesAll || []).length} 个文件</span>
                       </p>
                       <p className="text-[9px] text-slate-600 mb-3 shrink-0">当前下载的完整文件列表</p>
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                        {(dryRunData.newFilesAll || []).map((f: any, i: number) => {
-                          const fname = (f.name || '').split(/[/\\]/).pop() || '';
-                          const ext = fname.split('.').pop()?.toLowerCase() || '';
-                          const isVideo = ['mkv','mp4','avi','mov','wmv','rmvb','ts','m4v','flv'].includes(ext);
-                          const isSub = ['ass','srt','ssa','sub','idx','sup'].includes(ext);
-                          const sizeMB = f.size_bytes ? (f.size_bytes / 1024 / 1024).toFixed(0) : '?';
-                          return (
-                            <div key={i} className="bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.03]">
-                              <p className="text-[10px] text-slate-300 truncate font-mono" title={f.name}>{fname}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[9px] text-slate-600">{sizeMB}MB</span>
-                                {isSub && <span className="text-[8px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-500/60">字幕</span>}
-                                {isVideo && <span className="text-[8px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-500/60">视频</span>}
-                                {!isVideo && !isSub && <span className="text-[8px] px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500/60">{ext}</span>}
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                        <FileTree tree={dryRunData.newTree || []} variant="new" />
                       </div>
                       <div className="mt-4 shrink-0">
                         <button onClick={() => handleExecuteAction("archive_both")} disabled={!!confirmingId}
@@ -348,27 +330,9 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                     {/* 第三栏：标准化结果预览 */}
                     <div className="flex flex-col bg-[#1a1a1a] border border-blue-500/20 rounded-2xl p-4 shadow-[0_0_30px_rgba(59,130,246,0.05)] min-h-0">
                       <p className="text-[11px] font-bold text-blue-400 mb-2 shrink-0">标准化结果 (预览)</p>
-                      <p className="text-[9px] text-slate-600 mb-3 shrink-0">整理后的文件名与目录结构</p>
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                        {(dryRunData.plan?.plan || []).map((item: any, i: number) => {
-                          const targetName = item.target_filename || item.target_path?.split(/[/\\]/).pop() || '';
-                          const originalName = item.original_filename || item.original_path?.split(/[/\\]/).pop() || '';
-                          const isRenamed = targetName !== originalName;
-                          const seasonDir = item.target_season_dir;
-                          return (
-                            <div key={i} className="bg-blue-500/5 p-2.5 rounded-lg border border-blue-500/10">
-                              <p className={`text-[10px] font-medium truncate font-mono ${isRenamed ? 'text-blue-300' : 'text-slate-500'}`} title={item.target_path}>
-                                {targetName}
-                              </p>
-                              {(isRenamed || seasonDir) && (
-                                <div className="flex items-center gap-2 mt-1">
-                                  {seasonDir && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400/60">{seasonDir}</span>}
-                                  {isRenamed && <span className="text-[8px] text-green-400/50">已重命名</span>}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                      <p className="text-[9px] text-slate-600 mb-3 shrink-0">✅ 重命名 · ⏭ 跳过 · 📁 新建目录</p>
+                      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                        <FileTree tree={dryRunData.planTree || []} variant="plan" />
                       </div>
                       <div className="mt-4 shrink-0">
                         <button onClick={() => handleExecuteAction("full_wash")} disabled={!!confirmingId}
