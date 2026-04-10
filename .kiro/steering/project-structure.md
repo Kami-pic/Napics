@@ -23,10 +23,9 @@ inclusion: always
 │   └── organize-pipeline-v3.md # 整理流水线 V3 完整设计（三段式解耦架构）
 │
 ├── docs/              # 设计文档与 TODO 清单
-│   ├── media-organize-architecture.md # [当前] 文件夹分类体系设计
-│   ├── folder-type-refactor.md       # [当前] 分类标签重构设计
-│   ├── auto-replace-todo.md          # [TODO] 下载自动替换（进行中）
-│   └── search-enhance-todo.md        # [TODO] 搜索增强（进行中）
+│   ├── media-organize-architecture.md # [当前] 分类体系+整理架构+前端展示规则
+│   ├── auto-replace-todo.md          # [TODO] 下载自动替换（核心归位已完成，自动化待做）
+│   └── search-enhance-todo.md        # [TODO] 搜索增强（阶段1-3已完成，磁力直搜+配置待做）
 │
 └── specs/             # Kiro Spec（历史存档，当前用 TODO 驱动，保留供追溯）
     ├── media-organize/        # v1.0 2026-04-03 [已完成] 整理功能补全（备份/快照/season.nfo/分片合并）

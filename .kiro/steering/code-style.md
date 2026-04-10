@@ -28,8 +28,9 @@ fileMatchPattern: "**/*.{py,tsx,ts,js,css}"
 - 颜色：主背景 #0f0f0f，面板 #141414，边框 white/[0.06]
 
 ## 前后端类型对齐
-- 后端 folder_type 枚举值：movie / tv / series_collection / movie_collection / variety / misc
-- 前端 folderTypes.ts 必须和后端保持一致，不允许使用简写或别名（如不能用 collection 代替 movie_collection）
+- 后端 folder_type 枚举值：movie / tv / collection / series / season / mixed
+- 一级分类标签 category_tag：movie / tv
+- 前端 folderTypes.ts 必须和后端保持一致
 - 新增或修改 folder_type 时，前后端必须同步更新
 - 前端 types/index.ts 中的 interface 字段名必须和后端 Pydantic Model 的字段名一致（snake_case）
 
