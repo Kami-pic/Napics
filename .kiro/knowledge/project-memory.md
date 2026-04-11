@@ -44,15 +44,11 @@
 
 ## 前端组件拆分
 - 8 个子目录：ai/ detail/ download/ layout/ manage/ media/ search/ settings/
-- ai/SmartManager.tsx — AI 智能管理
-- detail/DetailDrawer.tsx — 详情抽屉（含移动/删除/文件夹类型切换）
-- detail/MovieCollectionGrid.tsx + SeriesCollectionList.tsx + TvDetail.tsx — 详情子视图
-- download/DownloadManagerPanel.tsx + FileTreeNode.tsx + RecycleBinPanel.tsx — 下载管理
-- layout/Breadcrumbs + FilterBar + Header + ScanPanel + Sidebar + Toolbar — 布局组件
-- manage/BatchBar.tsx — 批量操作栏
-- media/CardGrid + FolderTable + AddMediaPanel + AnalysisReport + DoubanRecommend + OrganizeHistory + OrganizeProgress + OperationHistory — 媒体展示
-- search/SearchModal.tsx + FilterBar.tsx + BatchUpgradePanel.tsx — 搜索弹窗
-- settings/SettingsModal.tsx — 设置弹窗
+- detail/ 已拆分（2026-04-11）：DetailDrawer.tsx 1339行→62行瘦壳 + 11 个独立文件
+  - DetailDrawer.tsx（入口）→ FolderDetail / VideoDetail / CandidatePicker / ShadowNameSection / useScrape / BatchPanel / EditableTitle / DetailComponents / PosterUpload / detailCache
+- media/ 已拆分（2026-04-11）：DiscoverPage.tsx 681行→313行 + 6 个独立文件
+  - DiscoverPage.tsx（主组件）→ DiscoverCard / DiscoverHeader / ExpandDetail / WeeklyCombinedView / SkeletonGrid / discoverUtils
+- 颜色规范：`lib/mediaColors.ts`（电影蓝/剧集绿/动画紫/书籍粉/游戏橙/评分品牌色）
 
 ## 当前进度与下一步
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
@@ -60,23 +56,24 @@
 - 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 基本完成）
 - 待做：磁力熊直搜、其他网盘转存 API、设置页搜索源开关、转存纳入 DownloadManager
 
-## 发现推荐模块（2026-04-10 新增）
-- `douban_api_v2.py`：豆瓣 App API v2 签名鉴权客户端，HMAC-SHA1 签名，frodo.douban.com
-  - 9 个榜单接口 + 探索筛选 + 搜索 + 详情，文件缓存在 `scrape_cache/dbv2_*.json`
-  - 缓存策略：热映 1 天、榜单 7 天、TOP250/详情 30 天
-  - 防封：随机延迟 1-3s + 随机 UA 池
-- `routes/discover.py` 新增路由：`/discover/recommend/{source}` + `/discover/explore` + `/discover/sources` + `/discover/refresh/{source}`
-- `routes/scrape.py`：豆瓣搜索和详情优先走 API v2，fallback 旧版网页爬取
-- `tmdb_client.py` 新增：`discover()` + `trending()` 方法
-- 前端 `DiscoverPage.tsx` 替代 `DoubanRecommend.tsx`：
-  - 两层 sticky 头部：一级 tab（发现/探索）+ 二级 tab（8 个推荐源）
-  - 周榜合并为一个 tab（华语+全球上下排列带排名角标）
-  - 响应式列数 × 4 行，内存缓存切 tab 瞬间，骨骼屏加载
-  - 手动刷新按钮清前端+后端缓存
-- `DoubanRecommend.tsx` 保留未删除，`page.tsx` 已切换到 DiscoverPage
-- 前端 `api.ts` 新增：`discoverRecommend` / `discoverExplore` / `discoverSources` / `discoverRefresh`
-- CardGrid 的 CardPoster 组件修复：`everLoadedRef` 防止 grid 重排时图片 spinner 重现
-- 待拆分：DiscoverPage.tsx（681 行）需要拆为 DiscoverCard / DiscoverExpandDetail / DiscoverWeekly / DiscoverSkeleton / discoverUtils 等独立文件
+## 发现推荐模块（2026-04-10 新增，04-11 大幅增强）
+- `douban_api_v2.py`：豆瓣 App API v2 签名鉴权，9 个榜单 + 探索 + 搜索 + 详情
+  - `_normalize_item` 从 `card_subtitle` 解析 genres/countries/year（合集接口不直接返回这些字段）
+  - `episodes_info` 字段（如"22集全"）从原始 API 的 `episodes_info` 提取
+  - 搜索结果过滤非影视条目（`target_type not in ("movie","tv")`）
+  - 搜索 `responseGroup: "large"` 获取 Bangumi 评分
+- 详情多源算法（`/media/info?source=&id=`）：
+  - douban：豆瓣 v2 详情（优先用 id 直接拉）→ TMDB
+  - tmdb：TMDB → 豆瓣 v2
+  - bangumi：Bangumi 详情（优先用 bgm_id 直接拉）→ 豆瓣 v2 → TMDB
+- 推荐接口 fallback：API v2 失败时回退到旧版网页接口（5 个豆瓣源有映射）
+- 图片缓存优化：`/scrape/poster` 改为 `Cache-Control: public, max-age=3600`，`/proxy/image` 改为 `max-age=86400`
+- 发现页 tab 切换优化：`display:none` 保持已加载 tab 的 DOM，图片不重新加载
+- 发现页卡片信息：标题 + 年份·国家·集数 + 类型标签（genres），评分用品牌色（豆瓣黄/TMDB蓝/Bangumi粉）
+- 展开详情面板同时显示豆瓣+TMDB 评分（品牌色星星 icon + 文字标注）
+- 豆瓣详情封面走 `/proxy/image` 代理（防盗链）
+- 刮削候选面板：三源评分（品牌色星星）+ 类型标签（`getMediaTypeColor`）+ 裂图 fallback
+- 媒体库颜色统一：电影蓝色、剧集绿色（CardGrid 标签 + 一级目录标签）
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符

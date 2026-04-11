@@ -50,7 +50,7 @@
 - [x] 骨骼屏加载替代转圈 loading
 - [x] 手动刷新按钮（清前端+后端缓存）
 - [x] 保留"点击卡片展开详情 → 搜索资源"交互模式
-- [ ] 搜索框保留（豆瓣搜索）
+- [x] 搜索框保留（豆瓣搜索）
 
 ### 1.5 前端：丝滑无感页面切换
 - [x] `page.tsx` 中媒体库内容和发现页使用同一个滚动容器
@@ -59,8 +59,42 @@
 - [x] 进入子文件夹时隐藏发现区域，回到根目录时显示
 - [x] IntersectionObserver 检测发现区域进入视口时才开始加载数据（懒加载）
 - [ ] 磁吸滚动：滚动到发现区域边界时自动吸附（待打磨）
-- [ ] 卡片展开面板切换时下方卡片图片闪烁/重载问题（已修复：everLoadedRef 防止重复 spinner）
-- [ ] 后端 `/scrape/poster` 接口添加 CORS 头消除 OpaqueResponseBlocking 报错（优化项）
+- [x] 卡片展开面板切换时下方卡片图片闪烁/重载问题（已修复：everLoadedRef 防止重复 spinner）
+- [x] 后端 `/scrape/poster` 接口 Cache-Control 优化（public, max-age=3600）
+- [x] 后端 `/proxy/image` 接口 Cache-Control 优化（public, max-age=86400）
+
+### 1.6 前端：发现页增强（2026-04-11 新增）
+- [x] DiscoverPage.tsx 拆分为 7 个独立文件（313 行主组件 + 6 个子组件）
+- [x] 卡片信息增强：类型标签 + 年份·国家·集数 + episodes_info（如"22集全"）
+- [x] 评分品牌色：豆瓣黄/TMDB蓝/Bangumi粉，未评分显示"—"
+- [x] 混编 tab（TMDB趋势/搜索）显示电影/剧集类型标签
+- [x] 裂图处理：img onError fallback 显示 🎬 + 片名 + "图片加载失败"
+- [x] Tab 切换 display:none 保持 DOM，图片不重新加载
+- [x] 请求竞态防护：loadIdRef + cacheKey 防止旧请求污染新 tab
+- [x] 详情多源算法：豆瓣 tab→豆瓣优先，TMDB tab→TMDB优先，Bangumi tab→Bangumi优先
+- [x] 详情面板同时显示豆瓣+TMDB 评分（品牌色星星 icon）
+- [x] 豆瓣详情封面走代理（防盗链）
+- [x] 周榜展开面板（CSS order 定位到点击行下方）
+- [x] Tab 文案更新：热门动画/电影总榜/剧集周榜/Bangumi趋势
+- [x] 推荐接口 fallback：API v2 失败回退旧版网页接口
+
+### 1.7 刮削候选面板增强（2026-04-11 新增）
+- [x] 豆瓣候选：评分 + 类型标签 + 国家 + 导演 + 简介 + 原始名
+- [x] TMDB 候选：评分（vote_average）+ 类型标签放前面
+- [x] Bangumi 候选：评分（responseGroup=large）+ 类型颜色（动画紫/书籍粉/游戏橙）
+- [x] 三源裂图 fallback（onError 显示 🎬 占位）
+- [x] 豆瓣搜索过滤非影视条目（音乐/书籍）
+- [x] 统一 UI 颜色规范：`lib/mediaColors.ts`
+
+### 1.8 媒体库颜色统一（2026-04-11 新增）
+- [x] 电影蓝色、剧集绿色（CardGrid 标签）
+- [x] 一级目录标签带透明度蓝/绿
+- [x] 系列电影蓝色、剧集绿色
+
+### 1.9 DetailDrawer 拆分（2026-04-11）
+- [x] 1339 行→62 行瘦壳 + 11 个独立文件
+- [x] 全部零 TS 错误 + 构建通过
+- [x] 端到端测试 14 项操作全部通过
 
 ---
 

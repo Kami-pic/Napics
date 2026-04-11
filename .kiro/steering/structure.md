@@ -35,7 +35,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── app/                # 页面路由（page.tsx、layout.tsx、manage/）
 │   ├── components/         # UI 组件（ai/detail/download/layout/manage/media/search/settings）
 │   ├── hooks/              # 自定义 hooks（useLibrary.ts）
-│   ├── lib/                # 工具函数（api.ts、folderTypes.ts、utils.ts）
+│   ├── lib/                # 工具函数（api.ts、folderTypes.ts、utils.ts、mediaColors.ts）
 │   └── types/              # 类型定义（index.ts）
 ├── .kiro/                  # AI 协作配置（见 project-structure.md）
 ├── start.bat / stop.bat    # 启动/停止前后端
@@ -52,7 +52,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
               ↓
 业务逻辑层    organizer.py / analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py
               ↓
-数据获取层    tmdb_client.py / douban_client.py / bangumi_client.py / searcher.py / scraper.py
+数据获取层    tmdb_client.py / douban_client.py / douban_api_v2.py / bangumi_client.py / searcher.py / scraper.py
               ↓
 基础设施层    config_manager.py / downloader.py / scraper_base.py / quality_parser.py
               ↓
