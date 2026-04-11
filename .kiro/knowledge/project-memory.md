@@ -34,21 +34,32 @@
 - 前端筛选器：网盘类型 + 来源 + 分辨率 + 仅整季（下拉选择框，和 BT FilterBar 同级布局）
 - 前端来源标签映射：SOURCE_LABELS（pansearch/pansou/gogopanso/github）
 
-## 后端模块化（2026-04-09）
+## 后端模块化（2026-04-09 初拆，04-12 大文件拆分）
 - 旧 main.py（4163 行）拆分为 67 行入口 + 9 个路由模块 + shared.py
-- 路由模块：library/scrape/organize/search/download/config/discover/system/tools
-- BatchRequest 定义在 tools.py（不在 system.py），batch_manage 路由在 tools.py
-- folder_types.json 路径：library.py 写入和 organizer.py 读取都指向 `backend/`
-- 104 个路由路径不变，前端零改动
-- restart.bat：循环等待端口释放后再启动（解决 Errno 10048 端口冲突）
+- 2026-04-12 大文件拆分（4 个后端 + 2 个前端）：
+  - scraper.py(1193行) → nfo_handler.py + poster_downloader.py + scraper.py（递归刮削）
+  - organizer.py(1862行) → renamer.py（重命名+影子名）+ structure_organizer.py（结构整理+归档）+ organizer.py（分类判定~550行）
+  - routes/scrape.py(1169行) → routes/media_info.py（候选搜索+详情多源）+ routes/poster.py（海报管理+图片代理）
+  - routes/organize.py(1306行) → routes/relocate.py（归位替换）+ routes/analyze.py（分析诊断）
+- 所有拆分通过 re-export 保持向后兼容，现有 `from organizer import xxx` / `from scraper import xxx` 全部不用改
+- 循环依赖通过延迟导入解决（renamer/structure_organizer 在函数内部 `from organizer import ...`）
+- 路由路径不变，前端 api.ts 零改动
+- 回归测试：后端 33 项 + 前端 34 项 = 67 项全部通过
 
 ## 前端组件拆分
 - 8 个子目录：ai/ detail/ download/ layout/ manage/ media/ search/ settings/
 - detail/ 已拆分（2026-04-11）：DetailDrawer.tsx 1339行→62行瘦壳 + 11 个独立文件
   - DetailDrawer.tsx（入口）→ FolderDetail / VideoDetail / CandidatePicker / ShadowNameSection / useScrape / BatchPanel / EditableTitle / DetailComponents / PosterUpload / detailCache
-- media/ 已拆分（2026-04-11）：DiscoverPage.tsx 681行→313行 + 6 个独立文件
-  - DiscoverPage.tsx（主组件）→ DiscoverCard / DiscoverHeader / ExpandDetail / WeeklyCombinedView / SkeletonGrid / discoverUtils
+- media/ 已拆分（2026-04-11 + 04-12）：
+  - DiscoverPage.tsx 681行→313行 + 6 个独立文件（DiscoverCard / DiscoverHeader / ExpandDetail / WeeklyCombinedView / SkeletonGrid / discoverUtils）
+  - CardGrid.tsx 573行→351行 + 3 个独立文件（CardPoster / EpisodeList / ExpandPanel）
+  - CardPoster 独立后可被 ExpandPanel / DiscoverPage 等复用
+- search/ 已拆分（2026-04-12）：
+  - SearchModal.tsx 855行→467行 + 3 个独立文件（EpisodeTable / PanFilterBar / PanResultsView）
+  - PanFilterBar 导出 PanFilterState / DEFAULT_PAN_FILTERS / applyPanFilters / PAN_TYPE_COLORS 等常量
+- BatchUpgradePanel.tsx（530行）暂不拆：状态机逻辑自洽
 - 颜色规范：`lib/mediaColors.ts`（电影蓝/剧集绿/动画紫/书籍粉/游戏橙/评分品牌色）
+- 测试框架：vitest + @testing-library/react，测试文件在 `frontend/__tests__/`
 
 ## 当前进度与下一步
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
@@ -87,5 +98,8 @@
 - GitHub 仓库索引：首次搜索触发拉取（约6秒），之后24h内纯本地匹配
 - Alist 离线下载不支持网盘分享链接，只支持 magnet/http/ed2k
 - 快速同步新增超过 50 个文件时自动切换快速模式（跳过 ffprobe，只读文件名+大小）
+- 快速同步增加文件大小变化检测（差异>5%自动重新 ffprobe），解决替换高清版本后仍显示低画质的问题
+- 网盘搜索爬虫超时从 30s 降到 15s，慢源不拖累整体
+- 发现页 ExpandDetail 的 img 加 key 强制重挂载，解决切换卡片封面残留问题
 - 扫描/同步的 event_generator 必须整体包 try-except，单文件失败不能中断整个流
 - restart.bat 旧版 timeout 2s 不够导致端口冲突，已改为循环等待端口释放
