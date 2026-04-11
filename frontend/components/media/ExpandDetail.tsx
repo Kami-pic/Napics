@@ -187,8 +187,9 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false }: {
             className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>
         )}
         {/* TMDB 链接 */}
-        {(d.external_ids?.tmdb_id || d.tmdb_id) && ((d.external_ids?.tmdb_id ?? 0) > 0 || (d.tmdb_id ?? 0) > 0) && (() => {
+        {(() => {
           const tid = d.external_ids?.tmdb_id || d.tmdb_id;
+          if (!tid || tid <= 0) return null;
           const mediaPath = d.total_seasons || d.episode_count ? "tv" : "movie";
           return (
             <a href={`https://www.themoviedb.org/${mediaPath}/${tid}`}
