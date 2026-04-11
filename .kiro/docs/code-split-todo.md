@@ -5,17 +5,31 @@
 
 ## 前端（优先级高 → 低）
 
-### 1. SearchModal.tsx — 855 行 ⚠️
-- 搜索弹窗 + 结果列表 + 筛选面板 + 季级搜索 + 下载操作
-- 建议拆为：SearchModal（入口）+ SearchResultList + SeasonSearchPanel + SearchActions
+### 1. SearchModal.tsx — 855 行 ⚠️ [已完成 ✅]
 
-### 2. CardGrid.tsx — 573 行 ⚠️
-- 卡片渲染 + 展开面板 + CardPoster + 系列合并 + 季展开
-- 建议拆为：CardGrid（入口）+ CardPoster（独立）+ ExpandPanel + SeasonExpand
+拆为 1 个主组件 + 3 个独立文件。
 
-### 3. BatchUpgradePanel.tsx — 530 行 ⚠️
-- 批量升级任务列表 + 结果展示 + 操作按钮 + 筛选
-- 建议拆为：BatchUpgradePanel（入口）+ UpgradeTaskList + UpgradeResultRow
+- [x] EpisodeTable.tsx — 剧集搜索汇总表格
+- [x] PanFilterBar.tsx — 网盘筛选栏 + 常量 + applyPanFilters
+- [x] PanResultsView.tsx — 网盘结果面板 + PanResultCard
+- [x] SearchModal.tsx 精简到约 467 行
+- [x] `npm run build` 无 TS 错误
+
+### 2. CardGrid.tsx — 573 行 ⚠️ [已完成 ✅]
+
+拆为 1 个主组件 + 3 个独立文件。
+
+- [x] CardPoster.tsx — 封面组件（50 行）
+- [x] EpisodeList.tsx — 剧集列表（39 行）
+- [x] ExpandPanel.tsx — 展开面板（150 行）
+- [x] CardGrid.tsx 精简到约 351 行，导出 getSeasonLabel 和 CardItem
+- [x] `npm run build` 无 TS 错误
+
+### 3. BatchUpgradePanel.tsx — 530 行 [暂不拆]
+- 完整的状态机弹窗（searching → review → downloading → done），逻辑自洽
+- StatusIcon 只有 15 行，不值得单独拆文件
+- 强拆 UpgradeTaskRow / UpgradeResultDetail 会导致大量 props 传递，收益不大
+- 后续如果新增功能导致超过 700 行，再考虑拆分
 
 ### 4. DoubanRecommend.tsx — 427 行 🗑️
 - 已被 DiscoverPage 替代，标记废弃，已加入 .gitignore
