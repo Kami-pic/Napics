@@ -255,14 +255,19 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         bgm_detail = _try_bangumi_detail(title, subtitle, bgm_id=bgm_id)
         if bgm_detail:
             print(f"[MediaInfo] Bangumi 命中: rating={bgm_detail.get('rating')}, poster={bgm_detail.get('poster_url', '')[:60]}")
+            _enrich_ratings(bgm_detail, title, year, type, subtitle)
             return bgm_detail
         print("[MediaInfo] Bangumi 未命中，fallback 豆瓣")
         db_detail = _try_douban_detail(title, year, type)
         if db_detail:
             print(f"[MediaInfo] 豆瓣 fallback 命中: source=douban")
+            _enrich_ratings(db_detail, title, year, type, subtitle)
             return db_detail
         print("[MediaInfo] 豆瓣也未命中，fallback TMDB")
-        return _try_tmdb_detail(title, year, type, subtitle)
+        result = _try_tmdb_detail(title, year, type, subtitle)
+        if result and result.get("found"):
+            _enrich_ratings(result, title, year, type, subtitle)
+        return result
 
     # ── 豆瓣优先路径 ──
     if source == "douban":
@@ -270,19 +275,63 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         db_detail = _try_douban_detail(title, year, type, douban_id=id if id else "")
         if db_detail:
             print(f"[MediaInfo] 豆瓣命中: poster={db_detail.get('poster_url', '')[:80]}, source={db_detail.get('source')}")
+            _enrich_ratings(db_detail, title, year, type, subtitle)
             return db_detail
         print("[MediaInfo] 豆瓣未命中，fallback TMDB")
-        return _try_tmdb_detail(title, year, type, subtitle)
+        result = _try_tmdb_detail(title, year, type, subtitle)
+        if result and result.get("found"):
+            _enrich_ratings(result, title, year, type, subtitle)
+        return result
 
     # ── TMDB 优先路径（默认）──
     print("[MediaInfo] TMDB 默认路径")
     tmdb_detail = _try_tmdb_detail(title, year, type, subtitle)
     if tmdb_detail and tmdb_detail.get("found"):
+        _enrich_ratings(tmdb_detail, title, year, type, subtitle)
         return tmdb_detail
     db_detail = _try_douban_detail(title, year, type)
     if db_detail:
+        _enrich_ratings(db_detail, title, year, type, subtitle)
         return db_detail
     return {"found": False}
+
+
+def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: str = ""):
+    """补充其他源的评分到 ratings 字段。不阻塞主流程，失败静默跳过。"""
+    source = detail.get("source", "")
+    ratings = {}
+    # 主源评分
+    if source and detail.get("rating"):
+        ratings[source] = detail["rating"]
+
+    # 补充豆瓣评分
+    if source != "douban":
+        try:
+            db = _try_douban_detail(title, year, type)
+            if db and db.get("rating"):
+                ratings["douban"] = db["rating"]
+        except Exception:
+            pass
+
+    # 补充 TMDB 评分
+    if source != "tmdb":
+        try:
+            tmdb = _try_tmdb_detail(title, year, type, subtitle)
+            if tmdb and tmdb.get("found") and tmdb.get("rating"):
+                ratings["tmdb"] = tmdb["rating"]
+        except Exception:
+            pass
+
+    # 补充 Bangumi 评分
+    if source != "bangumi":
+        try:
+            bgm = _try_bangumi_detail(title, subtitle)
+            if bgm and bgm.get("rating"):
+                ratings["bangumi"] = bgm["rating"]
+        except Exception:
+            pass
+
+    detail["ratings"] = ratings
 
 
 def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") -> dict | None:

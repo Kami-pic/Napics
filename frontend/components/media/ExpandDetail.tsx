@@ -88,43 +88,37 @@ function NoDetailFallback({ item, onSearch, onRetry, cardRatingSource = "douban"
 
 // ── 有详情时的完整展示 ──
 function DetailContent({ item, d, onSearch, cardRatingSource = "douban" }: { item: DoubanHotItem; d: MediaDetail; onSearch: () => void; cardRatingSource?: string }) {
-  // 评分来源：卡片评分（item.rating）+ 详情评分（d.rating）
-  const detailSource = d.source || "tmdb";
-  const cardRating = item.rating;
-  const detailRating = d.rating || 0;
-
-  // 评分标签配置
-  const ratingConfig: Record<string, { label: string; color: string; bg: string }> = {
-    douban: { label: "豆瓣", color: getRatingColor("douban"), bg: "bg-green-400/10" },
-    tmdb: { label: "TMDB", color: getRatingColor("tmdb"), bg: "bg-blue-400/10" },
-    bangumi: { label: "Bangumi", color: getRatingColor("bangumi"), bg: "bg-pink-400/10" },
-  };
-
-  // 卡片评分和详情评分可能来自同一个源，避免重复
-  const cardSrc = cardRatingSource || "douban";
-  const cardCfg = ratingConfig[cardSrc] || ratingConfig.douban;
-  const detailCfg = ratingConfig[detailSource] || ratingConfig.tmdb;
-  const sameSource = cardSrc === detailSource;
+  // 三源评分：优先用 ratings 字段，fallback 到 d.rating
+  const ratings = (d as any).ratings || {};
+  const doubanRating = ratings.douban || 0;
+  const tmdbRating = ratings.tmdb || 0;
+  const bangumiRating = ratings.bangumi || 0;
+  // 如果 ratings 为空（旧缓存），用 d.rating 作为主源评分
+  const hasAnyRating = doubanRating > 0 || tmdbRating > 0 || bangumiRating > 0;
 
   return (
     <>
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         <span className="text-xs text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded">{d.year || item.year || "—"}</span>
-        {/* 详情评分 */}
-        {detailRating > 0 && (
-          <span className={`text-xs ${detailCfg.color} ${detailCfg.bg} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+        {doubanRating > 0 && (
+          <span className={`text-xs ${getRatingColor("douban")} bg-green-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
             <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            {detailCfg.label} {detailRating}
+            豆瓣 {doubanRating}
           </span>
         )}
-        {/* 卡片评分（仅当和详情不同源时额外显示） */}
-        {cardRating > 0 && !sameSource && (
-          <span className={`text-xs ${cardCfg.color} ${cardCfg.bg} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+        {tmdbRating > 0 && (
+          <span className={`text-xs ${getRatingColor("tmdb")} bg-blue-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
             <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            {cardCfg.label} {cardRating}
+            TMDB {tmdbRating}
           </span>
         )}
-        {!detailRating && !cardRating && <span className="text-xs text-slate-500 bg-white/[0.06] px-2 py-0.5 rounded">暂无评分</span>}
+        {bangumiRating > 0 && (
+          <span className={`text-xs ${getRatingColor("bangumi")} bg-pink-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+            <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+            Bangumi {bangumiRating}
+          </span>
+        )}
+        {!hasAnyRating && !item.rating && <span className="text-xs text-slate-500 bg-white/[0.06] px-2 py-0.5 rounded">暂无评分</span>}
         {d.runtime ? <span className="text-xs text-slate-500">{d.runtime} 分钟</span> : null}
         {d.total_seasons ? <span className="text-xs text-slate-500">{d.total_seasons} 季</span> : null}
         {d.episode_count ? <span className="text-xs text-slate-500">{d.episode_count} 集</span> : null}

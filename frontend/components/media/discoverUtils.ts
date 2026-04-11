@@ -39,7 +39,8 @@ export interface MediaDetail {
   genres?: string[]; director?: string; cast?: string[]; runtime?: number;
   imdb_id?: string; total_seasons?: number; episode_count?: number; status?: string;
   countries?: string[];
-  source?: "tmdb" | "douban" | "bangumi";  // 详情数据来源
+  source?: "tmdb" | "douban" | "bangumi";
+  ratings?: { douban?: number; tmdb?: number; bangumi?: number };  // 三源评分
 }
 
 const DETAIL_CACHE_KEY = "discover_detail_cache";
@@ -84,7 +85,7 @@ export type RecommendSource = {
 export const RECOMMEND_TABS: RecommendSource[] = [
   { key: "douban_movie_hot", label: "热门电影", mediaType: "movie", ratingSource: "douban" },
   { key: "douban_tv_hot", label: "热门剧集", mediaType: "tv", ratingSource: "douban" },
-  { key: "douban_animation", label: "热门动画", mediaType: "tv", ratingSource: "bangumi" },
+  { key: "douban_animation", label: "热门动画", mediaType: "tv", ratingSource: "douban" },
   { key: "douban_showing", label: "正在热映", mediaType: "movie", ratingSource: "douban" },
   { key: "douban_top250", label: "电影总榜", mediaType: "movie", showRank: true, ratingSource: "douban" },
   { key: "weekly_combined", label: "剧集周榜", mediaType: "tv", showRank: true, ratingSource: "douban" },
