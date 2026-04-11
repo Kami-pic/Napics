@@ -50,9 +50,9 @@
 - 刮削 + 代理 + 候选搜索 + 详情多源 + 海报管理
 - 建议拆为：routes/scrape.py（刮削核心）+ routes/media_info.py（详情多源）+ routes/poster.py（海报管理）
 
-### 12. scraper.py — 1193 行
+### 12. scraper.py — 1193 行 ⚠️
 - NFO 读写 + 海报下载 + 递归刮削
-- 可拆：nfo_writer.py + poster_downloader.py
+- 建议拆为：scraper.py（入口+递归刮削）+ nfo_writer.py（NFO 读写）+ poster_downloader.py（海报下载）
 
 ### 13. tmdb_client.py — 908 行
 - 单一职责（TMDB API 客户端），功能自洽
