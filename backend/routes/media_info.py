@@ -359,9 +359,18 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
             print(f"[MediaInfo._try_douban] 用 ID 直接拉: douban_id={douban_id}, media_type={media_type}")
             detail = douban_api_v2.get_detail(douban_id, media_type=media_type)
             if detail and detail.get("title"):
-                print(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}, poster={detail.get('poster_url', '')[:60]}")
-                return _format_douban_detail(detail)
-            print(f"[MediaInfo._try_douban] ID 拉取失败或无 title")
+                # 标题校验：ID 拉到的标题和请求 title 至少有 2 个字重叠
+                import re as _re
+                title_chars = set(_re.findall(r'[\u4e00-\u9fff]', title))
+                detail_chars = set(_re.findall(r'[\u4e00-\u9fff]', detail.get("title", "")))
+                overlap = len(title_chars & detail_chars)
+                if overlap >= 2 or not title_chars:
+                    print(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}, poster={detail.get('poster_url', '')[:60]}")
+                    return _format_douban_detail(detail)
+                else:
+                    print(f"[MediaInfo._try_douban] ID 标题不匹配: 请求={title}, 返回={detail.get('title')}，改走搜索")
+            else:
+                print(f"[MediaInfo._try_douban] ID 拉取失败或无 title")
 
         # 搜索匹配
         print(f"[MediaInfo._try_douban] 搜索: title={title}")
@@ -417,17 +426,28 @@ def _format_douban_detail(detail: dict) -> dict:
 
 
 def _try_bangumi_detail(title: str, subtitle: str = "", bgm_id: int = 0) -> dict | None:
-    """尝试从 Bangumi 获取详情。bgm_id > 0 时直接拉详情，否则搜索"""
+    """尝试从 Bangumi 获取详情。bgm_id > 0 时直接拉详情，否则搜索。
+    如果 ID 拉到的标题和请求 title 差异太大，放弃 ID 走搜索。"""
     try:
         # 有 ID 直接拉详情，跳过搜索
         if bgm_id > 0:
             print(f"[MediaInfo._try_bangumi] 用 ID 直接拉: bgm_id={bgm_id}")
             detail = bangumi_client.get_detail(bgm_id)
             if detail and detail.get("title"):
-                formatted = _format_bangumi_detail(detail)
-                print(f"[MediaInfo._try_bangumi] ID 拉取成功: title={detail.get('title')}, rating={detail.get('rating')}")
-                return formatted
-            print(f"[MediaInfo._try_bangumi] ID 拉取失败")
+                # 标题校验：ID 拉到的标题和请求 title 至少有 2 个字重叠
+                detail_title = detail.get("title", "")
+                detail_orig = detail.get("original_title", "")
+                import re as _re
+                title_chars = set(_re.findall(r'[\u4e00-\u9fff]', title))
+                detail_chars = set(_re.findall(r'[\u4e00-\u9fff]', detail_title))
+                overlap = len(title_chars & detail_chars)
+                title_in_orig = title.lower() in (detail_orig or "").lower() or (subtitle and subtitle.lower() in (detail_orig or "").lower())
+                if overlap >= 2 or title_in_orig or not title_chars:
+                    formatted = _format_bangumi_detail(detail)
+                    print(f"[MediaInfo._try_bangumi] ID 拉取成功: title={detail_title}, rating={detail.get('rating')}")
+                    return formatted
+                else:
+                    print(f"[MediaInfo._try_bangumi] ID 标题不匹配: 请求={title}, 返回={detail_title}，改走搜索")
 
         # 搜索匹配
         print(f"[MediaInfo._try_bangumi] 搜索: title={title}")
