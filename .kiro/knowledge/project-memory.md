@@ -88,6 +88,9 @@
   - Bangumi 趋势 tab 的 item.douban_id 实际是 bgm_id → 豆瓣链接不显示，改为 Bangumi 链接
   - 数据来源标签：底部小字 `数据来自 豆瓣/TMDB/Bangumi`
   - 缓存管理：`deleteCachedDetail` 支持清除单条缓存
+  - ID 拉取标题校验：Bangumi/豆瓣 ID 返回标题和请求标题中文字重叠 < 2 时放弃 ID 改走搜索
+  - TMDB 匹配增强：用豆瓣 original_title 作为 subtitle 传给 _try_tmdb_detail 做 fallback 搜索
+  - 已知局限：_enrich_ratings 是同步串行的（豆瓣+TMDB+Bangumi），详情加载较慢，待异步化优化
 - 推荐接口 fallback：API v2 失败时回退到旧版网页接口（5 个豆瓣源有映射）
 - 图片缓存优化：`/scrape/poster` 改为 `Cache-Control: public, max-age=3600`，`/proxy/image` 改为 `max-age=86400`
 - 发现页 tab 切换优化：`display:none` 保持已加载 tab 的 DOM，图片不重新加载
@@ -111,5 +114,8 @@
 - 快速同步增加文件大小变化检测（差异>5%自动重新 ffprobe），解决替换高清版本后仍显示低画质的问题
 - 网盘搜索爬虫超时从 30s 降到 15s，慢源不拖累整体
 - 发现页 ExpandDetail 的 img 加 key 强制重挂载，解决切换卡片封面残留问题
+- Bangumi calendar API 的 bgm_id 和卡片标题偶尔错位，需要标题校验防止匹配到错误条目
+- 空字符串 `""` 是任何字符串的子串（`"" in "abc"` → True），条件判断时必须先检查非空
+- React 中 `{0 && <Component />}` 会渲染文本 "0"，falsy 数值条件必须用 `> 0` 或 `!!` 转布尔
 - 扫描/同步的 event_generator 必须整体包 try-except，单文件失败不能中断整个流
 - restart.bat 旧版 timeout 2s 不够导致端口冲突，已改为循环等待端口释放
