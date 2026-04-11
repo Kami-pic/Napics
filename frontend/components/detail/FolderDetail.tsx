@@ -215,3 +215,189 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
   const pathParts = node.path.split(/[\\/]/).filter(Boolean);
   const breadcrumb = pathParts.length > 2 ? pathParts.slice(-2).join(" › ") : pathParts.slice(-1).join("");
   const folderTypeLabel = FOLDER_TYPE_LABELS[folderType] || folderType;
+  return (
+    <div className="p-5 space-y-4">
+      {/* 层级路径指示 */}
+      {!isRoot && node.path && (
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
+          <span className="shrink-0">{folderType === "season" ? "📂" : folderType === "tv" ? "📺" : folderType === "movie" ? "🎬" : "📁"}</span>
+          <span className="truncate">{breadcrumb}</span>
+          {folderTypeLabel && <span className="shrink-0 px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px]">{folderTypeLabel}</span>}
+        </div>
+      )}
+      {/* 封面 */}
+      {!isRoot && (
+        <div className="relative">
+          <Poster key={posterKey} fallbackName={node.name} localPath={node.path} posterDeleted={posterDeleted} noScrape={isAggregate} />
+          <div className="absolute top-2 right-2 z-10">
+            <PosterUpload path={node.path} hideDeleteScrape={isAggregate} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); if (!isAggregate) setScrapeData(null); } else { setPosterDeleted(false); } if (!isAggregate) reload(); onRefresh(); }} />
+          </div>
+        </div>
+      )}
+      {/* 一级分类目录：分类标签选择器 */}
+      {(node.is_top_category || node.category_tag) && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-slate-500">分类标签</span>
+          <select value={node.category_tag || "movie"} onChange={async (e) => {
+            const newTag = e.target.value;
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/category-tag`, {
+                method: "POST", headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({path: node.path, tag: newTag})
+              });
+              await onRefresh();
+            } catch {}
+          }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-white/[0.06] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
+            {[
+              {v: "movie", l: "电影"},
+              {v: "tv", l: "剧集"},
+            ].map(t => (
+              <option key={t.v} value={t.v}>{t.l}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {/* 文件夹类型标签（可修改，非一级分类目录） */}
+      {folderType && !node.is_top_category && (
+        <div className="flex items-center gap-2">
+          <select value={folderType} onChange={async (e) => {
+            const newType = e.target.value;
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/folder-type`, {
+                method: "POST", headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({path: node.path, folder_type: newType})
+              });
+              await onRefresh();
+            } catch {}
+          }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-white/[0.06] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
+            {(parentCategoryTag === "tv"
+              ? ["tv", "season", "mixed"]
+              : (() => {
+                  const canBeMovie = node.videos.length <= 1 && (!node.children || node.children.length === 0);
+                  return canBeMovie ? ["movie", "collection", "series", "mixed"] : ["collection", "series", "mixed"];
+                })()
+            ).map(t => (
+              <option key={t} value={t}>{FOLDER_TYPE_LABELS[t] || t}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {/* 刮削内容：只在末端刮削单元（movie/tv/season）时显示 */}
+      {!isAggregate && scrapeLoading && <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-500/10 border border-blue-500/20"><div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" /><span className="text-xs text-blue-400">正在刮削...</span></div>}
+      {!isAggregate && scrapeStatus === "success" && !scrapeLoading && scrape && (scrape.tmdb_id > 0 || scrape.title) && <><div className="text-xs text-green-400/70">✓ {scrape.title || "已匹配"}</div><ScrapeInfo data={scrape} /></>}
+      {!isAggregate && confidence && <ConfidenceBadge confidence={confidence} pendingConfirm={pendingConfirm} onConfirm={() => setPendingConfirm(false)} onReject={() => { setPendingConfirm(false); }} />}
+      {/* movie 类型显示视频级标准名，tv/season 显示文件夹级标准名 */}
+      {folderType === "movie" && node.videos[0] && (
+        <ShadowNameSection path={node.videos[0].file_path} video={node.videos[0]} onRefresh={onRefresh} />
+      )}
+      {(folderType === "tv" || folderType === "season") && (
+        <ShadowNameSection path={node.path} folderName={node.name} folderShadowName={node.shadow_name} onRefresh={onRefresh} />
+      )}
+      <div className="grid grid-cols-3 gap-2">
+        {[[String(node.video_count), "视频"], [String(node.children?.length || 0), "子目录"], [formatSize(totalSize), "总大小"]].map(([v, l]) => (
+          <div key={l} className="bg-white/[0.04] rounded-lg p-2.5 text-center"><p className="text-base font-semibold text-white">{v}</p><p className="text-[11px] text-slate-500">{l}</p></div>
+        ))}
+      </div>
+      {/* 第一行操作按钮 */}
+      {(() => {
+        // cnName：从 clean_name 提取中文部分
+        const cleanName = node.clean_name || node.name;
+        const cnParts = cleanName.match(/[\u4e00-\u9fff\u3400-\u4dbf]+/g);
+        const cnName = cnParts ? [...new Set(cnParts)].join("") : cleanName;
+        // enName：shadow_name 去年份 > clean_name 中的英文部分
+        const shadowClean = (node.shadow_name || "").replace(/\s*\(\d{4}\)\s*$/, "").trim();
+        // shadow_name 可能含中文，提取纯英文部分
+        const shadowEn = shadowClean.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, " ").replace(/\s+/g, " ").trim();
+        const enFromClean = cleanName.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, " ").replace(/\s+/g, " ").trim();
+        const enName = shadowEn || enFromClean || "";
+        const ft = node.folder_type || "";
+        // 季号：从 node.name 中提取
+        const sMatch = node.name.match(/(?:Season|S)\s*(\d+)/i) || node.name.match(/第(\d+)季/);
+        const sNum = sMatch ? parseInt(sMatch[1]) : undefined;
+        // 默认搜索词
+        const defaultQuery = ft === "season" && sNum
+          ? `${cnName} Season ${sNum}`
+          : (cnName && enName && cnName !== enName ? `${cnName} ${enName}` : cnName);
+        const ctx = { cnName, enName, folderType: ft, seasonNumber: sNum, savePath: node.path };
+        return isAggregate ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
+            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">一键刮削</button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
+            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">一键刮削</button>
+            <CandidatePicker name={node.clean_name || node.videos[0]?.clean_name || node.name} path={node.path} onSelected={(d) => { if (d) setScrapeData(d); setPosterKey(k => k + 1); onRefresh(); }} />
+          </div>
+        );
+      })()}
+      {/* 第二行：移动到 / 复制到 / 删除 / 移除 */}
+      <div className="grid grid-cols-4 gap-2">
+        <MoveAction onMove={handleMove} />
+        <CopyAction onCopy={async (t) => { try { await api.batchManage("copy", [node.path], t); onRefresh(); } catch { alert("失败"); } }} />
+        <DeleteAction onDelete={handleDelete} />
+        <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
+      </div>
+      {/* 第三行：自动命名 / 标准结构 / 一键整理 + AI开关 */}
+      <div className="space-y-2">
+        <button onClick={() => doAction("rename")} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">自动命名</button>
+        <button onClick={async () => { setActionLoading(true); setActionResult(""); try { const res = await api.structureOrganize(node.path, true); const ops = res.ops || []; const videoExts = ['.mp4','.mkv','.avi','.rmvb','.rm','.flv','.ts','.m4v','.mov','.wmv']; const videoOps = ops.filter((o: any) => { const p = o.old || o.path || o.desc || ''; return videoExts.some(ext => p.toLowerCase().endsWith(ext)) || o.action === 'rename_dir' || o.action === 'rmdir'; }); const moveOps = videoOps.filter((o: any) => o.action === 'move'); const renameOps = videoOps.filter((o: any) => o.action === 'rename_dir'); if (ops.length) { let msg = `预览-structure ${moveOps.length} 个视频`; if (renameOps.length) msg += `，${renameOps.length} 个目录重命名`; moveOps.slice(0, 8).forEach((o: any) => { msg += `\n📦 ${o.desc || ''}`; }); renameOps.slice(0, 3).forEach((o: any) => { msg += `\n✏️ ${o.desc || ''}`; }); if (moveOps.length > 8) msg += `\n  ... 还有 ${moveOps.length - 8} 个视频`; setActionResult(msg); } else { setActionResult("结构已标准，无需调整"); } } catch (e: any) { setActionResult("操作失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">标准结构</button>
+        <div className="flex gap-2">
+          {actionLoading && abortController ? (
+            <button
+              onMouseEnter={() => setOrganizeHover(true)} onMouseLeave={() => setOrganizeHover(false)}
+              onClick={() => { abortController.abort(); setAbortController(null); setActionLoading(false); }}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${organizeHover ? "bg-red-600/60 text-red-200" : "bg-white/[0.04] text-slate-400"}`}
+            >
+              {organizeHover ? "⏹ 中止" : <><div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />正在分析...</>}
+            </button>
+          ) : (
+            <button onClick={() => doAction("organize")} disabled={actionLoading} className="flex-1 py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">一键整理</button>
+          )}
+          <button onClick={() => setUseAi(!useAi)} className={`px-3 py-2.5 rounded-lg text-xs transition-all ${useAi ? "bg-blue-600/60 text-white" : "bg-white/[0.04] text-slate-500 hover:bg-white/[0.06]"}`}>🤖</button>
+        </div>
+      </div>
+      {/* 操作结果 */}
+      {actionResult && (
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-xs text-slate-300">
+          {actionResult.split("\n").map((line, i) => {
+            if (line.startsWith("  → ")) return <div key={i} className="text-blue-400 font-medium mb-1">{line}</div>;
+            if (line.startsWith("📦 ")) return <div key={i} className="text-emerald-400/80 mt-1">{line}</div>;
+            if (line.startsWith("✏️ ")) return <div key={i} className="text-amber-400/80 mt-1">{line}</div>;
+            if (line.startsWith("• ")) return <div key={i} className="text-slate-500 mt-1.5">{line}</div>;
+            return <div key={i}>{line}</div>;
+          })}
+          {actionResult.includes("预览-rename") && (
+            <div className="flex gap-2 mt-3">
+              <button onClick={() => doAction("rename_shadow", false)} disabled={actionLoading}
+                className="flex-1 py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">更新标准名</button>
+              <button onClick={() => doAction("rename_real", false)} disabled={actionLoading}
+                className="flex-1 py-2 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-sm font-medium disabled:opacity-50">替换原始名</button>
+            </div>
+          )}
+          {actionResult.startsWith("预览-organize") && (
+            <button onClick={() => doAction("organize", false)} disabled={actionLoading}
+              className="mt-2 w-full py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">确认执行</button>
+          )}
+          {actionResult.startsWith("预览-structure") && (
+            <button onClick={async () => { setActionLoading(true); try { const res = await api.structureOrganize(node.path, false); setActionResult("结构整理完成: " + (res.count || 0) + " 项操作"); onRefresh(); } catch (e: any) { setActionResult("执行失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading}
+              className="mt-2 w-full py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">确认执行</button>
+          )}
+          {actionResult.startsWith("预览") && !actionResult.includes("预览-rename") && !actionResult.includes("预览-organize") && !actionResult.includes("预览-structure") && (
+            <button onClick={() => doAction(lastAction, false)} disabled={actionLoading}
+              className="mt-2 w-full py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">确认执行</button>
+          )}
+        </div>
+      )}
+      <InfoRow label="路径" value={node.path} />
+      {!isRoot && !isAggregate && (
+        <button onClick={toggleNoScrape} className={`w-full py-2 rounded-lg text-xs transition-all ${noScrape ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/[0.04] text-slate-500 hover:bg-white/[0.06]"}`}>
+          {noScrape ? "🚫 已禁止刮削（点击解除）" : "禁止刮削此文件夹"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── 视频详情 ──
