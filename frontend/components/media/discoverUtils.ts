@@ -73,6 +73,11 @@ export function setCachedDetail(key: string, val: MediaDetail) {
   saveDetailCache(detailCache);
 }
 
+export function deleteCachedDetail(key: string) {
+  detailCache.delete(key);
+  saveDetailCache(detailCache);
+}
+
 // ── 推荐源配置 ──
 export type RecommendSource = {
   key: string;

@@ -81,7 +81,8 @@ function RankSection({ title, items, indexOffset, expandedIndex, onCardClick, de
             style={{ order: rowEnd >= 0 ? rowEnd + 1 : 9999 }}>
             <ExpandDetail item={items[localExpandIdx]} detail={detail} loading={detailLoading}
               onSearch={() => onSearch({...items[localExpandIdx], _tmdb_original_title: detail?.original_title || ""} as any)}
-              onClose={onCloseExpand} onRetry={onRetry} cardRatingSource="douban" />
+              onClose={onCloseExpand} onRetry={onRetry}
+              defaultSource="douban" />
           </div>
         )}
       </div>

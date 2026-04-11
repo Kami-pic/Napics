@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { DoubanHotItem } from "@/types";
 import { api } from "@/lib/api";
-import { normalizeItem, getCachedDetail, setCachedDetail, RECOMMEND_TABS } from "./discoverUtils";
+import { normalizeItem, getCachedDetail, setCachedDetail, deleteCachedDetail, RECOMMEND_TABS } from "./discoverUtils";
 import type { MediaDetail, PrimaryTab } from "./discoverUtils";
 import DiscoverCard from "./DiscoverCard";
 import SkeletonGrid from "./SkeletonGrid";
@@ -273,6 +273,28 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
       .finally(() => { if (pendingClickRef.current === cacheKey) setDetailLoading(false); });
   }, [expandedIndex, displayItems, activeTab, activeTabConfig]);
 
+  // 切换数据源刷新（清缓存 + 用指定源重新请求）
+  const handleRefreshWithSource = useCallback((source: string) => {
+    if (expandedIndex === null) return;
+    const item = displayItems[expandedIndex];
+    if (!item) return;
+    // 清除旧缓存（所有源的缓存都清）
+    for (const suffix of ["", "_douban", "_tmdb", "_bangumi"]) {
+      deleteCachedDetail(`${item.title}_${item.year}_${activeTab}${suffix}`);
+    }
+    // 也清除默认 key
+    deleteCachedDetail(`${item.title}_${item.year}_${activeTab}`);
+    const cacheKey = `${item.title}_${item.year}_${activeTab}`;
+    pendingClickRef.current = cacheKey;
+    setDetail(null); setDetailLoading(true);
+    const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
+    const itemId = item.douban_id || "";
+    api.mediaInfo(item.title, item.year, tmdbType as any, item.subtitle || "", source, itemId)
+      .then(d => { if (pendingClickRef.current !== cacheKey) return; if (d.found) setCachedDetail(cacheKey, d); setDetail(d); })
+      .catch(() => { if (pendingClickRef.current === cacheKey) setDetail({ found: false }); })
+      .finally(() => { if (pendingClickRef.current === cacheKey) setDetailLoading(false); });
+  }, [expandedIndex, displayItems, activeTab, activeTabConfig]);
+
   // 全局点击关闭
   useEffect(() => {
     if (expandedIndex === null) return;
@@ -334,7 +356,10 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
                   style={{ order: rowEndIndex >= 0 ? rowEndIndex + 1 : 9999 }}>
                   <ExpandDetail item={tabItems[expandedIndex]} detail={detail} loading={detailLoading}
                     onSearch={() => onSelectMedia({...tabItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
-                    onClose={closeExpand} onRetry={handleRetry} cardRatingSource={tabConfig.ratingSource || "douban"} />
+                    onClose={closeExpand} onRetry={handleRetry}
+                    defaultSource={tabConfig.ratingSource || "douban"}
+                    showBangumiRating={tabConfig.ratingSource === "bangumi" || tabKey === "douban_animation"}
+                    onRefreshWithSource={handleRefreshWithSource} />
                 </div>
               )}
             </div>
@@ -384,7 +409,9 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
                     style={{ order: rowEndIndex >= 0 ? rowEndIndex + 1 : 9999 }}>
                     <ExpandDetail item={searchItems[expandedIndex]} detail={detail} loading={detailLoading}
                       onSearch={() => onSelectMedia({...searchItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
-                      onClose={closeExpand} onRetry={handleRetry} cardRatingSource="douban" />
+                      onClose={closeExpand} onRetry={handleRetry}
+                      defaultSource="douban"
+                      onRefreshWithSource={handleRefreshWithSource} />
                   </div>
                 )}
               </div>
