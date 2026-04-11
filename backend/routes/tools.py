@@ -84,18 +84,42 @@ def batch_manage(req: BatchRequest):
                     dir_map[p] = new_path
                     success.append(p)
                 else:
-                    # 文件移动：同步移动关联文件（NFO/poster/fanart）
-                    old_base = os.path.splitext(p)[0]
-                    for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
-                        old_f = old_base + suffix
-                        if os.path.exists(old_f):
-                            try:
-                                shutil.move(old_f, os.path.join(req.target_dir, os.path.basename(old_f)))
-                            except Exception:
-                                pass
-                    shutil.move(p, new_path)
-                    path_map[p] = new_path
-                    success.append(p)
+                    # 文件移动：检查是否在封装文件夹中（单视频+关联文件）
+                    parent_dir = os.path.dirname(p)
+                    parent_name = os.path.basename(parent_dir)
+                    video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
+                    try:
+                        siblings = os.listdir(parent_dir)
+                        sibling_videos = [f for f in siblings if os.path.splitext(f)[1].lower() in video_exts]
+                        sibling_dirs = [f for f in siblings if os.path.isdir(os.path.join(parent_dir, f)) and not f.startswith('.')]
+                    except OSError:
+                        sibling_videos = []
+                        sibling_dirs = []
+
+                    # 封装文件夹判定：只有 1 个视频 + 0 个子目录 + 父目录不是一级分类目录
+                    _TOP_CATS = {"电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"}
+                    is_wrapped = len(sibling_videos) == 1 and len(sibling_dirs) == 0 and parent_name not in _TOP_CATS
+
+                    if is_wrapped:
+                        # 移动整个封装文件夹
+                        new_dir = os.path.join(req.target_dir, parent_name)
+                        shutil.move(parent_dir, new_dir)
+                        dir_map[parent_dir] = new_dir
+                        success.append(p)
+                        print(f"[batch_manage] 封装文件夹移动: {parent_dir} → {new_dir}")
+                    else:
+                        # 散装文件：移动视频 + 同名关联文件
+                        old_base = os.path.splitext(p)[0]
+                        for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
+                            old_f = old_base + suffix
+                            if os.path.exists(old_f):
+                                try:
+                                    shutil.move(old_f, os.path.join(req.target_dir, os.path.basename(old_f)))
+                                except Exception:
+                                    pass
+                        shutil.move(p, new_path)
+                        path_map[p] = new_path
+                        success.append(p)
             except Exception as e:
                 failed.append({"path": p, "error": str(e)})
         # 更新 media_library.json 中的路径
@@ -132,9 +156,26 @@ def batch_manage(req: BatchRequest):
                     dest = os.path.join(req.target_dir, os.path.basename(p))
                     if os.path.isdir(p):
                         shutil.copytree(p, dest)
+                        success.append(p)
                     else:
-                        shutil.copy2(p, dest)
-                    success.append(p)
+                        # 检查是否在封装文件夹中
+                        parent_dir = os.path.dirname(p)
+                        parent_name = os.path.basename(parent_dir)
+                        video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
+                        try:
+                            siblings = os.listdir(parent_dir)
+                            sibling_videos = [f for f in siblings if os.path.splitext(f)[1].lower() in video_exts]
+                            sibling_dirs = [f for f in siblings if os.path.isdir(os.path.join(parent_dir, f)) and not f.startswith('.')]
+                        except OSError:
+                            sibling_videos = []
+                            sibling_dirs = []
+                        _TOP_CATS = {"电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"}
+                        is_wrapped = len(sibling_videos) == 1 and len(sibling_dirs) == 0 and parent_name not in _TOP_CATS
+                        if is_wrapped:
+                            shutil.copytree(parent_dir, os.path.join(req.target_dir, parent_name))
+                        else:
+                            shutil.copy2(p, dest)
+                        success.append(p)
                 else:
                     failed.append({"path": p, "error": "Not found"})
             except Exception as e:

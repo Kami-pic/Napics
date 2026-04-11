@@ -60,3 +60,9 @@ debug_log.txt
 # 归档目录（废弃文件暂存）
 _archived_*/
 backend/routes/folder_types.json
+
+# 已废弃组件（被 DiscoverPage 替代，保留供参考但不入库）
+frontend/components/media/DoubanRecommend.tsx
+
+# 一次性测试/调试脚本
+backend/_*.py
