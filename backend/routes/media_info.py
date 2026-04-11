@@ -310,19 +310,25 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
     if detail.get("imdb_id"):
         external_ids["imdb_id"] = detail["imdb_id"]
 
+    # 用主源详情的 original_title 增强 TMDB 搜索（中文搜不到时用原名）
+    orig_title = detail.get("original_title", "") or subtitle
+
     # 补充豆瓣
     if source != "douban":
         try:
             db = _try_douban_detail(title, year, type)
             if db:
                 if db.get("rating"): ratings["douban"] = db["rating"]
+                # 从豆瓣详情获取 original_title 用于 TMDB 搜索
+                if not orig_title:
+                    orig_title = db.get("original_title", "")
         except Exception:
             pass
 
-    # 补充 TMDB
+    # 补充 TMDB（用 original_title 作为 subtitle 增强搜索）
     if source != "tmdb":
         try:
-            tmdb = _try_tmdb_detail(title, year, type, subtitle)
+            tmdb = _try_tmdb_detail(title, year, type, orig_title)
             if tmdb and tmdb.get("found"):
                 if tmdb.get("rating"): ratings["tmdb"] = tmdb["rating"]
                 if tmdb.get("tmdb_id"): external_ids["tmdb_id"] = tmdb["tmdb_id"]
