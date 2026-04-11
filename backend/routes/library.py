@@ -151,6 +151,26 @@ def quick_sync():
             # 删除已不存在的
             current_lib = [v for v in library if v.get("file_path", "") not in removed]
 
+            # 检测已有文件的大小变化（替换了更高清版本但路径不变的情况）
+            changed_files = []
+            for v in current_lib:
+                fp = v.get("file_path", "")
+                if fp and fp in fs_files:
+                    try:
+                        actual_size = round(os.path.getsize(fp) / (1024**3), 2)
+                        lib_size = v.get("size_gb", 0)
+                        # 大小差异超过 5% 视为文件已被替换
+                        if lib_size > 0 and abs(actual_size - lib_size) / lib_size > 0.05:
+                            changed_files.append(fp)
+                    except OSError:
+                        pass
+
+            if changed_files:
+                yield "data: " + json.dumps({"type": "status", "message": f"检测到 {len(changed_files)} 个文件大小变化，重新分析"}) + "\n\n"
+                # 从 current_lib 中移除变化的文件，当作新增重新扫描
+                current_lib = [v for v in current_lib if v.get("file_path", "") not in set(changed_files)]
+                added = added | set(changed_files)
+
             # 新增的逐个跑 ffprobe（超过 50 个时用快速模式跳过 ffprobe）
             total_new = len(added)
             new_videos = []

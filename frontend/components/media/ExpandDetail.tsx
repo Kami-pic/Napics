@@ -16,7 +16,10 @@ export interface ExpandDetailProps {
 
 export default function ExpandDetail({ item, detail, loading, onSearch, onClose, onRetry }: ExpandDetailProps) {
   const d = detail?.found ? detail : null;
-  const posterSrc = d?.poster_url ? proxyUrl(d.poster_url) : (item.cover_url ? proxyUrl(item.cover_url) : "");
+  // 详情封面优先，loading 期间用卡片封面占位（避免残留上一个的封面）
+  const detailPoster = d?.poster_url ? proxyUrl(d.poster_url) : "";
+  const cardPoster = item.cover_url ? proxyUrl(item.cover_url) : "";
+  const posterSrc = detailPoster || cardPoster;
 
   return (
     <div className="flex gap-5">
@@ -24,7 +27,7 @@ export default function ExpandDetail({ item, detail, loading, onSearch, onClose,
       <div className="w-[140px] flex-shrink-0">
         <div className="aspect-[2/3] bg-[#1a1a1a] rounded-lg overflow-hidden">
           {posterSrc ? (
-            <img src={posterSrc} alt={item.title} className="w-full h-full object-cover"
+            <img key={item.douban_id || item.title} src={posterSrc} alt={item.title} className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-700 text-xs">暂无封面</div>

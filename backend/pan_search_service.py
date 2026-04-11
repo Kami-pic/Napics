@@ -110,7 +110,7 @@ class PanSearchService:
 
             for name, future in futures.items():
                 try:
-                    results = future.result(timeout=30)
+                    results = future.result(timeout=15)
                     source_statuses.append(SourceStatus(
                         name=name, status="success", count=len(results),
                     ))
