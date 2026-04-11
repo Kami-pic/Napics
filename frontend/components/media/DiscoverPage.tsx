@@ -334,7 +334,7 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
                   style={{ order: rowEndIndex >= 0 ? rowEndIndex + 1 : 9999 }}>
                   <ExpandDetail item={tabItems[expandedIndex]} detail={detail} loading={detailLoading}
                     onSearch={() => onSelectMedia({...tabItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
-                    onClose={closeExpand} onRetry={handleRetry} />
+                    onClose={closeExpand} onRetry={handleRetry} cardRatingSource={tabConfig.ratingSource || "douban"} />
                 </div>
               )}
             </div>
@@ -384,7 +384,7 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
                     style={{ order: rowEndIndex >= 0 ? rowEndIndex + 1 : 9999 }}>
                     <ExpandDetail item={searchItems[expandedIndex]} detail={detail} loading={detailLoading}
                       onSearch={() => onSelectMedia({...searchItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
-                      onClose={closeExpand} onRetry={handleRetry} />
+                      onClose={closeExpand} onRetry={handleRetry} cardRatingSource="douban" />
                   </div>
                 )}
               </div>
