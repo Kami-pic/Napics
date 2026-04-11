@@ -174,12 +174,26 @@ export const api = {
     request<any>(`${BASE_URL}/douban/hot?type=${encodeURIComponent(type)}&page_start=${pageStart}&tag=${encodeURIComponent(tag)}`),
 
   // 影片详情（TMDB）
-  mediaInfo: (title: string, year: string = "", type: "movie" | "tv" = "movie", subtitle: string = "") =>
-    request<any>(`${BASE_URL}/media/info?title=${encodeURIComponent(title)}&year=${encodeURIComponent(year)}&type=${type}&subtitle=${encodeURIComponent(subtitle)}`),
+  mediaInfo: (title: string, year: string = "", type: "movie" | "tv" = "movie", subtitle: string = "", source: string = "tmdb", id: string = "") =>
+    request<any>(`${BASE_URL}/media/info?title=${encodeURIComponent(title)}&year=${encodeURIComponent(year)}&type=${type}&subtitle=${encodeURIComponent(subtitle)}&source=${source}&id=${encodeURIComponent(id)}`),
 
   // 豆瓣搜索
   doubanSearch: (query: string) =>
     request<any>(`${BASE_URL}/douban/search?query=${encodeURIComponent(query)}`),
+
+  // ── 发现推荐 API ──
+  discoverRecommend: (source: string, start: number = 0, count: number = 20) =>
+    request<any>(`${BASE_URL}/discover/recommend/${source}?start=${start}&count=${count}`),
+
+  discoverExplore: (provider: string = "douban", type: string = "movie", sort: string = "R", tags: string = "", page: number = 0, count: number = 20) => {
+    const p = new URLSearchParams({ provider, type, sort, tags, page: String(page), count: String(count) });
+    return request<any>(`${BASE_URL}/discover/explore?${p.toString()}`);
+  },
+
+  discoverSources: () => request<any>(`${BASE_URL}/discover/sources`),
+
+  discoverRefresh: (source: string) =>
+    request<any>(`${BASE_URL}/discover/refresh/${source}`, { method: "POST" }),
 
   // 新增影片（预刮削入库）
   addMedia: (info: AddMediaInfo & { save_path: string }) =>

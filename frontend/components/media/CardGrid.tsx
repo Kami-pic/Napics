@@ -199,10 +199,10 @@ export default function CardGrid({
                     <CardPoster name={folder.name} path={folder.path} cacheKey={refreshKey} cover={ft === "collection" || ft === "series" || ft === "mixed" || (ft !== "movie" && ft !== "tv" && ft !== "season" && folder.children?.length > 0)} />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
                     {leaf && ft !== "movie" && (
-                      <div className="absolute top-3 left-3 bg-blue-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{folder.video_count} 集</div>
+                      <div className="absolute top-3 left-3 bg-green-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{folder.video_count} 集</div>
                     )}
                     {folder.category_tag && (
-                      <div className="absolute top-3 left-3 bg-white/10 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide">
+                      <div className={`absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide ${folder.category_tag === "movie" ? "bg-blue-500/30 text-blue-300" : "bg-green-500/30 text-green-300"}`}>
                         {getCategoryTagLabel(folder.category_tag)}
                       </div>
                     )}
@@ -254,7 +254,7 @@ export default function CardGrid({
                 <div className="relative aspect-[2/3] bg-[#111]">
                   <CardPoster name={item.seriesName} path={item.parentNode?.path || item.seasons[0]?.path} cacheKey={refreshKey} />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
-                  <div className="absolute top-3 left-3 bg-blue-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{item.seasons.length} 季 · {totalEps} 集</div>
+                  <div className="absolute top-3 left-3 bg-green-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{item.seasons.length} 季 · {totalEps} 集</div>
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <p className="text-[15px] font-semibold text-white truncate">{item.parentNode?.name || item.seriesName}</p>
                     <p className="text-xs text-slate-400 mt-1">{isActive ? "收起" : "展开"}</p>
@@ -274,7 +274,7 @@ export default function CardGrid({
                 <div className="relative aspect-[2/3] bg-[#111]">
                   <CardPoster name={folder.name} path={folder.path} cacheKey={refreshKey} cover />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
-                  <div className="absolute top-3 left-3 bg-amber-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{childCount} 部</div>
+                  <div className="absolute top-3 left-3 bg-blue-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{childCount} 部</div>
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <p className="text-[15px] font-semibold text-white truncate">{folder.name}</p>
                     <p className="text-xs text-slate-400 mt-1">{isActive ? "收起" : "系列"}</p>
@@ -394,7 +394,7 @@ function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPaths, onToggleSel
                 <div className="relative aspect-[2/3] bg-[#111]">
                   <CardPoster name={s.name} path={s.path} cacheKey={refreshKey} />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
-                  <div className="absolute top-2 left-2 bg-blue-600/80 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold">{s.video_count} 集</div>
+                  <div className="absolute top-2 left-2 bg-green-600/80 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold">{s.video_count} 集</div>
                   <div className="absolute bottom-0 left-0 right-0 p-2">
                     <p className="text-[12px] font-semibold text-white truncate">{getSeasonLabel(s.name)}</p>
                   </div>
@@ -531,6 +531,7 @@ function CardPoster({ name, path, cacheKey = 0, cover = false }: { name: string;
   const [error, setError] = useState(false);
   const [remoteSrc, setRemoteSrc] = useState<string | null>(null);
   const [stage, setStage] = useState<"local" | "remote" | "done">("local");
+  const everLoadedRef = useRef(false); // 曾经加载成功过就不再显示 spinner
   const bust = cacheKey ? `&_t=${cacheKey}` : "";
   const coverParam = cover ? "&cover=true" : "";
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -545,11 +546,11 @@ function CardPoster({ name, path, cacheKey = 0, cover = false }: { name: string;
 
   return (
     <>
-      {!loaded && !error && stage !== "done" && src && <div className="absolute inset-0 flex items-center justify-center bg-[#111]"><div className="w-6 h-6 border-2 border-slate-800 border-t-slate-500 rounded-full animate-spin" /></div>}
+      {!loaded && !everLoadedRef.current && !error && stage !== "done" && src && <div className="absolute inset-0 flex items-center justify-center bg-[#111]"><div className="w-6 h-6 border-2 border-slate-800 border-t-slate-500 rounded-full animate-spin" /></div>}
       {(error || stage === "done" || !src) && <div className="absolute inset-0 bg-[#111] flex items-center justify-center"><span className="text-slate-700 text-3xl">🎬</span></div>}
-      {src && stage !== "done" && <img src={src} alt="" loading="lazy"
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-        onLoad={() => setLoaded(true)}
+      {src && stage !== "done" && <img src={src} alt="" loading="eager" decoding="sync"
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${(loaded || everLoadedRef.current) ? "opacity-100" : "opacity-0"}`}
+        onLoad={() => { setLoaded(true); everLoadedRef.current = true; }}
         onError={() => {
           if (stage === "local" && path && !cover) {
             // 本地没有，尝试读 NFO 拿远程 URL（仅刮削单元，聚合容器不读 NFO）

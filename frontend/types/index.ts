@@ -192,6 +192,14 @@ export interface DoubanHotItem {
   subtitle: string;
   episode: string;
   _tmdb_original_title?: string;
+  // 豆瓣 API v2 扩展字段
+  genres?: string[];
+  overview?: string;
+  directors?: string[];
+  actors?: string[];
+  countries?: string[];
+  media_type?: string;
+  episodes_info?: string;
 }
 
 export interface AddMediaInfo {

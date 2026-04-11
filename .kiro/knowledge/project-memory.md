@@ -57,7 +57,26 @@
 ## 当前进度与下一步
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - 自动替换 TODO：`.kiro/docs/auto-replace-todo.md`
+- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 基本完成）
 - 待做：磁力熊直搜、其他网盘转存 API、设置页搜索源开关、转存纳入 DownloadManager
+
+## 发现推荐模块（2026-04-10 新增）
+- `douban_api_v2.py`：豆瓣 App API v2 签名鉴权客户端，HMAC-SHA1 签名，frodo.douban.com
+  - 9 个榜单接口 + 探索筛选 + 搜索 + 详情，文件缓存在 `scrape_cache/dbv2_*.json`
+  - 缓存策略：热映 1 天、榜单 7 天、TOP250/详情 30 天
+  - 防封：随机延迟 1-3s + 随机 UA 池
+- `routes/discover.py` 新增路由：`/discover/recommend/{source}` + `/discover/explore` + `/discover/sources` + `/discover/refresh/{source}`
+- `routes/scrape.py`：豆瓣搜索和详情优先走 API v2，fallback 旧版网页爬取
+- `tmdb_client.py` 新增：`discover()` + `trending()` 方法
+- 前端 `DiscoverPage.tsx` 替代 `DoubanRecommend.tsx`：
+  - 两层 sticky 头部：一级 tab（发现/探索）+ 二级 tab（8 个推荐源）
+  - 周榜合并为一个 tab（华语+全球上下排列带排名角标）
+  - 响应式列数 × 4 行，内存缓存切 tab 瞬间，骨骼屏加载
+  - 手动刷新按钮清前端+后端缓存
+- `DoubanRecommend.tsx` 保留未删除，`page.tsx` 已切换到 DiscoverPage
+- 前端 `api.ts` 新增：`discoverRecommend` / `discoverExplore` / `discoverSources` / `discoverRefresh`
+- CardGrid 的 CardPoster 组件修复：`everLoadedRef` 防止 grid 重排时图片 spinner 重现
+- 待拆分：DiscoverPage.tsx（681 行）需要拆为 DiscoverCard / DiscoverExpandDetail / DiscoverWeekly / DiscoverSkeleton / discoverUtils 等独立文件
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符

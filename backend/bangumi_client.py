@@ -14,7 +14,7 @@ TYPE_MAP = {1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元"}
 def search(query: str, type_filter: int = 0) -> List[Dict]:
     """搜索 Bangumi，返回候选列表。type_filter=0 搜全部，2=动画，6=三次元"""
     url = f"{BASE}/search/subject/{requests.utils.quote(query)}"
-    params = {"responseGroup": "small", "max_results": 15}
+    params = {"responseGroup": "large", "max_results": 15}
     if type_filter:
         params["type"] = type_filter
     try:
@@ -71,13 +71,14 @@ def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
             images = item.get("images", {}) or {}
             poster = images.get("large", "") or images.get("common", "") or images.get("medium", "")
             results.append({
-                "douban_id": str(item.get("id", "")),  # 用 bgm_id 作为 id
+                "douban_id": str(item.get("id", "")),
                 "title": item.get("name_cn", "") or item.get("name", ""),
                 "year": (item.get("air_date", "") or "")[:4],
                 "rating": round((item.get("rating", {}) or {}).get("score", 0), 1),
                 "cover_url": poster,
-                "subtitle": item.get("name", ""),  # 原名（日文）
+                "subtitle": item.get("name", ""),
                 "episode": "",
+                "media_type": "tv",
             })
         return results
     except Exception as e:

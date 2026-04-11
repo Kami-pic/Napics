@@ -24,6 +24,7 @@ from shared import (
 )
 import scanner, searcher, downloader, tmdb_client, config_manager
 import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
+import douban_api_v2
 from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
@@ -225,6 +226,7 @@ def scrape_candidates(name: str):
             "overview": (m.get("overview", "") or "")[:120],
             "poster_url": f"https://image.tmdb.org/t/p/w200{m['poster_path']}" if m.get("poster_path") else None,
             "popularity": m.get("popularity", 0),
+            "rating": round(m.get("vote_average", 0), 1),
         })
     for t in tvs[:5]:
         orig = t.get("original_name", "")
@@ -244,22 +246,35 @@ def scrape_candidates(name: str):
             "overview": (t.get("overview", "") or "")[:120],
             "poster_url": f"https://image.tmdb.org/t/p/w200{t['poster_path']}" if t.get("poster_path") else None,
             "popularity": t.get("popularity", 0),
+            "rating": round(t.get("vote_average", 0), 1),
         })
     
     return {"query": query, "candidates": candidates}
 
 @router.get("/scrape/douban")
 def scrape_douban_candidates(name: str):
-    """搜索豆瓣返回候选结果"""
+    """搜索豆瓣返回候选结果（优先 API v2，fallback 旧版网页接口）"""
     parsed = tmdb_client.parse_filename(name)
     query = parsed["clean_name"] or name
+
+    # 优先 API v2
+    results = douban_api_v2.search(query, count=15)
+    if results:
+        # API v2 返回的海报是直链，不需要代理
+        for r in results:
+            poster = r.get("poster_url", "")
+            if poster and "doubanio.com" in poster:
+                r["poster_url_original"] = poster
+                r["poster_url"] = f"/proxy/image?url={requests.utils.quote(poster)}"
+        return {"query": query, "candidates": results, "source": "api_v2"}
+
+    # Fallback: 旧版网页接口
     results = douban_client.search(query)
-    # 保留原始 URL 用于下载，代理 URL 用于前端显示
     for r in results:
         if r.get("poster_url") and "doubanio.com" in r["poster_url"]:
             r["poster_url_original"] = r["poster_url"]
             r["poster_url"] = f"/proxy/image?url={requests.utils.quote(r['poster_url'])}"
-    return {"query": query, "candidates": results}
+    return {"query": query, "candidates": results, "source": "web_fallback"}
 
 @router.get("/proxy/image")
 def proxy_image(url: str):
@@ -274,7 +289,8 @@ def proxy_image(url: str):
         resp.raise_for_status()
         content_type = resp.headers.get("content-type", "image/jpeg")
         from fastapi.responses import Response
-        return Response(content=resp.content, media_type=content_type)
+        return Response(content=resp.content, media_type=content_type,
+                        headers={"Cache-Control": "public, max-age=86400"})
     except Exception:
         raise HTTPException(status_code=404, detail="Image fetch failed")
 
@@ -283,25 +299,46 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
     """用户选择豆瓣候选后，用搜索结果数据写入 NFO + 海报"""
     from tmdb_client import ScrapeResult
     
-    # 尝试拉取详情，失败则用搜索结果的基本信息
-    detail = douban_client.get_detail(douban_id)
-    if detail and detail.get("title"):
+    # 优先 API v2 拉取详情
+    result = None
+    v2_detail = douban_api_v2.get_detail(douban_id, media_type="movie")
+    if v2_detail and v2_detail.get("title"):
         result = ScrapeResult(
             tmdb_id=int(douban_id),
             media_type="movie",
-            title=detail.get("title", "") or title,
-            original_title=detail.get("original_title", "") or subtitle,
-            year=detail.get("year", "") or year,
-            overview=detail.get("overview", ""),
-            rating=detail.get("rating", 0),
-            genres=detail.get("genres", []),
-            director=detail.get("director", ""),
-            cast=detail.get("cast", []),
-            runtime=detail.get("runtime", 0),
-            poster_url=detail.get("poster_url", "") or poster_url,
+            title=v2_detail.get("title", "") or title,
+            original_title=v2_detail.get("original_title", "") or subtitle,
+            year=v2_detail.get("year", "") or year,
+            overview=v2_detail.get("overview", ""),
+            rating=v2_detail.get("rating", 0),
+            genres=v2_detail.get("genres", []),
+            director=v2_detail.get("directors", [""])[0] if v2_detail.get("directors") else "",
+            cast=v2_detail.get("actors", []),
+            runtime=v2_detail.get("runtime", 0),
+            poster_url=v2_detail.get("poster_url", "") or poster_url,
         )
-    else:
-        # 详情解析失败，用搜索结果的基本信息
+
+    # Fallback: 旧版网页爬取
+    if not result:
+        detail = douban_client.get_detail(douban_id)
+        if detail and detail.get("title"):
+            result = ScrapeResult(
+                tmdb_id=int(douban_id),
+                media_type="movie",
+                title=detail.get("title", "") or title,
+                original_title=detail.get("original_title", "") or subtitle,
+                year=detail.get("year", "") or year,
+                overview=detail.get("overview", ""),
+                rating=detail.get("rating", 0),
+                genres=detail.get("genres", []),
+                director=detail.get("director", ""),
+                cast=detail.get("cast", []),
+                runtime=detail.get("runtime", 0),
+                poster_url=detail.get("poster_url", "") or poster_url,
+            )
+
+    # 都失败了，用搜索结果的基本信息
+    if not result:
         result = ScrapeResult(
             tmdb_id=int(douban_id),
             media_type="movie",
@@ -546,8 +583,9 @@ def get_local_poster(path: str, cover: bool = False):
             content = f.read()
         ext = os.path.splitext(file_path)[1].lower()
         mt = "image/png" if ext == ".png" else "image/jpeg"
+        # 允许浏览器缓存海报 1 小时，前端通过 _t= 参数做缓存失效
         return Response(content=content, media_type=mt,
-                        headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+                        headers={"Cache-Control": "public, max-age=3600"})
 
     # 1. 聚合容器模式
     if cover:
@@ -887,71 +925,224 @@ import organizer
 import analyzer
 
 @router.get("/media/info")
-def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: str = ""):
-    """通过 TMDB 搜索获取影片详细信息。搜索策略：中文标题 → subtitle（外文名）→ 豆瓣搜索获取外文名重试"""
-    clients = get_clients()
-    tmdb = clients["tmdb"]
+def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: str = "", source: str = "tmdb", id: str = ""):
+    """获取影片详细信息。source 控制优先级，id 可直接指定数据源 ID 跳过搜索：
+    - tmdb: TMDB → 豆瓣 v2（默认）
+    - douban: 豆瓣 v2（优先用 id）→ TMDB
+    - bangumi: Bangumi（优先用 id）→ 豆瓣 v2 → TMDB
+    """
+    # ── Bangumi 优先路径 ──
+    if source == "bangumi":
+        bgm_id = int(id) if id and id.isdigit() else 0
+        bgm_detail = _try_bangumi_detail(title, subtitle, bgm_id=bgm_id)
+        if bgm_detail:
+            return bgm_detail
+        db_detail = _try_douban_detail(title, year, type)
+        if db_detail:
+            return db_detail
+        return _try_tmdb_detail(title, year, type, subtitle)
 
-    def _search(query: str):
-        if type == "tv":
-            return tmdb.search_tv(query)
-        return tmdb.search_movie(query)
+    # ── 豆瓣优先路径 ──
+    if source == "douban":
+        db_detail = _try_douban_detail(title, year, type, douban_id=id if id else "")
+        if db_detail:
+            return db_detail
+        return _try_tmdb_detail(title, year, type, subtitle)
 
-    def _search_nolang(query: str):
-        """不带语言限制搜索，覆盖更多翻译版本"""
-        try:
-            if type == "tv":
-                return tmdb._get("/search/tv", {"query": query, "language": "en-US"}).get("results", [])[:10]
-            return tmdb._get("/search/movie", {"query": query, "language": "en-US"}).get("results", [])[:10]
-        except:
-            return []
+    # ── TMDB 优先路径（默认）──
+    tmdb_detail = _try_tmdb_detail(title, year, type, subtitle)
+    if tmdb_detail and tmdb_detail.get("found"):
+        return tmdb_detail
+    db_detail = _try_douban_detail(title, year, type)
+    if db_detail:
+        return db_detail
+    return {"found": False}
 
-    def _pick_best(results: list, yr: str):
+
+def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") -> dict | None:
+    """尝试从豆瓣 v2 获取详情。douban_id 非空时直接拉详情，否则搜索"""
+    try:
+        media_type = "tv" if type == "tv" else "movie"
+
+        # 有 ID 直接拉详情
+        if douban_id:
+            detail = douban_api_v2.get_detail(douban_id, media_type=media_type)
+            if detail and detail.get("title"):
+                return _format_douban_detail(detail)
+
+        # 搜索匹配
+        results = douban_api_v2.search(title, count=5)
         if not results:
             return None
         best = results[0]
-        if yr:
+        if year:
             for r in results:
-                r_year = (r.get("release_date") or r.get("first_air_date") or "")[:4]
-                if r_year == yr:
+                if r.get("year") == year:
                     best = r
                     break
-        return best
+        did = best.get("douban_id")
+        if not did:
+            return None
+        detail = douban_api_v2.get_detail(did, media_type=media_type)
+        if not detail or not detail.get("title"):
+            return None
+        return _format_douban_detail(detail)
+    except Exception as e:
+        print(f"[MediaInfo] 豆瓣详情失败: {e}")
+        return None
 
+
+def _format_douban_detail(detail: dict) -> dict:
+    """格式化豆瓣详情为统一结构"""
+    poster = detail.get("poster_url", "")
+    # 豆瓣图片走代理（防盗链）
+    if poster and "doubanio.com" in poster:
+        poster = f"/proxy/image?url={requests.utils.quote(poster)}"
+    return {
+        "found": True,
+        "tmdb_id": 0,
+        "title": detail.get("title", ""),
+        "original_title": detail.get("original_title", ""),
+        "year": detail.get("year", ""),
+        "poster_url": poster,
+        "backdrop_url": "",
+        "overview": detail.get("overview", ""),
+        "rating": detail.get("rating", 0),
+        "genres": detail.get("genres", []),
+        "director": (detail.get("directors") or [""])[0],
+        "cast": detail.get("actors", [])[:6],
+        "runtime": detail.get("runtime", 0),
+        "imdb_id": "",
+        "total_seasons": detail.get("seasons_count", 0),
+        "episode_count": detail.get("episode_count", 0),
+        "status": "",
+        "countries": detail.get("countries", []),
+        "source": "douban",
+    }
+
+
+def _try_bangumi_detail(title: str, subtitle: str = "", bgm_id: int = 0) -> dict | None:
+    """尝试从 Bangumi 获取详情。bgm_id > 0 时直接拉详情，否则搜索"""
     try:
-        # 1. 用中文标题搜
-        best = _pick_best(_search(title), year)
+        # 有 ID 直接拉详情，跳过搜索
+        if bgm_id > 0:
+            detail = bangumi_client.get_detail(bgm_id)
+            if detail and detail.get("title"):
+                return _format_bangumi_detail(detail)
 
-        # 2. 没找到且有 subtitle（外文名），用 subtitle 搜
+        # 搜索匹配
+        results = bangumi_client.search(title)
+        if not results:
+            return None
+        best = results[0]
+        for r in results:
+            if r.get("type") == "动画" and (r.get("title") == title or r.get("original_title") == subtitle):
+                best = r
+                break
+            if r.get("type") == "动画":
+                best = r
+                break
+        bid = best.get("bgm_id")
+        if not bid:
+            return None
+        detail = bangumi_client.get_detail(bid)
+        if not detail:
+            return None
+        return _format_bangumi_detail(detail)
+    except Exception as e:
+        print(f"[MediaInfo] Bangumi 详情失败: {e}")
+        return None
+
+
+def _format_bangumi_detail(detail: dict) -> dict:
+    """格式化 Bangumi 详情为统一结构"""
+    return {
+        "found": True,
+        "tmdb_id": 0,
+        "title": detail.get("title", ""),
+        "original_title": detail.get("original_title", ""),
+        "year": detail.get("year", ""),
+        "poster_url": detail.get("poster_url", ""),
+        "backdrop_url": "",
+        "overview": detail.get("overview", ""),
+        "rating": detail.get("rating", 0),
+        "genres": detail.get("genres", []),
+        "director": detail.get("director", ""),
+        "cast": detail.get("cast", [])[:6],
+        "runtime": 0,
+        "imdb_id": "",
+        "total_seasons": 0,
+        "episode_count": detail.get("total_episodes", 0),
+        "status": "",
+        "countries": [],
+        "source": "bangumi",
+    }
+
+
+class AddMediaRequest(BaseModel):
+    title: str
+    original_title: str = ""
+    year: str = ""
+    douban_id: str = ""
+    rating: float = 0
+    overview: str = ""
+    genres: List[str] = []
+    director: str = ""
+    cast: List[str] = []
+    poster_url: str = ""
+    save_path: str
+
+
+
+def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> dict:
+    """尝试从 TMDB 获取详情（原有逻辑）"""
+    try:
+        clients = get_clients()
+        tmdb = clients["tmdb"]
+
+        def _search(query):
+            return tmdb.search_tv(query) if type == "tv" else tmdb.search_movie(query)
+
+        def _search_nolang(query):
+            try:
+                ep = "/search/tv" if type == "tv" else "/search/movie"
+                return tmdb._get(ep, {"query": query, "language": "en-US"}).get("results", [])[:10]
+            except:
+                return []
+
+        def _pick_best(results, yr):
+            if not results:
+                return None
+            best = results[0]
+            if yr:
+                for r in results:
+                    r_year = (r.get("release_date") or r.get("first_air_date") or "")[:4]
+                    if r_year == yr:
+                        best = r
+                        break
+            return best
+
+        best = _pick_best(_search(title), year)
         if not best and subtitle and subtitle != title:
             best = _pick_best(_search(subtitle), year)
-
-        # 3. 还没找到，用豆瓣搜索接口获取外文名重试
         if not best:
-            douban_results = douban_client.search(title)
+            douban_results = douban_api_v2.search(title, count=5) or douban_client.search(title)
             for dr in douban_results:
-                alt_name = dr.get("subtitle", "")
+                alt_name = dr.get("subtitle", "") or dr.get("original_title", "")
                 if alt_name and alt_name != title and alt_name != subtitle:
                     best = _pick_best(_search(alt_name), year)
                     if best:
                         break
-                    # 外文名也用英文搜索试试
                     best = _pick_best(_search_nolang(alt_name), year)
                     if best:
                         break
-
-        # 4. 还没找到，用英文搜索中文标题（TMDB 有时只有英文条目）
         if not best:
             best = _pick_best(_search_nolang(title), year)
-
         if not best:
             return {"found": False}
 
         tmdb_id = best.get("id", 0)
-        if type == "tv":
-            detail = tmdb.get_tv_detail(tmdb_id)
-        else:
-            detail = tmdb.get_movie_detail(tmdb_id)
+        detail = tmdb.get_tv_detail(tmdb_id) if type == "tv" else tmdb.get_movie_detail(tmdb_id)
         return {
             "found": True,
             "tmdb_id": detail.tmdb_id,
@@ -971,21 +1162,8 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
             "episode_count": detail.episode_count,
             "status": detail.status,
             "countries": detail.countries,
+            "source": "tmdb",
         }
     except Exception as e:
-        print(f"[MediaInfo] error: {e}")
+        print(f"[MediaInfo] TMDB 详情失败: {e}")
         return {"found": False}
-
-class AddMediaRequest(BaseModel):
-    title: str
-    original_title: str = ""
-    year: str = ""
-    douban_id: str = ""
-    rating: float = 0
-    overview: str = ""
-    genres: List[str] = []
-    director: str = ""
-    cast: List[str] = []
-    poster_url: str = ""
-    save_path: str
-

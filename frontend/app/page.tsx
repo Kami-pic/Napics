@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLibrary } from "@/hooks/useLibrary";
 import Header from "@/components/layout/Header";
 import Toolbar from "@/components/layout/Toolbar";
@@ -8,7 +8,7 @@ import SettingsModal from "@/components/settings/SettingsModal";
 import SearchModal from "@/components/search/SearchModal";
 import AddMediaPanel from "@/components/media/AddMediaPanel";
 import BatchUpgradePanel from "@/components/search/BatchUpgradePanel";
-import DoubanRecommend from "@/components/media/DoubanRecommend";
+import DiscoverPage from "@/components/media/DiscoverPage";
 import CardGrid from "@/components/media/CardGrid";
 import FolderTable from "@/components/media/FolderTable";
 import Sidebar from "@/components/layout/Sidebar";
@@ -35,6 +35,9 @@ export default function Home() {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const discoverRef = useRef<HTMLDivElement>(null);
+  const [discoverVisible, setDiscoverVisible] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [searchContext, setSearchContext] = useState<{
@@ -96,12 +99,23 @@ export default function Home() {
     startScan();
   };
 
+  // ── 发现区域懒加载：IntersectionObserver 检测进入视口 ──
+  useEffect(() => {
+    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); return; }
+    const observer = new IntersectionObserver(
+      ([entry]) => setDiscoverVisible(entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    observer.observe(discoverRef.current);
+    return () => observer.disconnect();
+  }, [showDiscover]);
+
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white font-sans flex overflow-hidden">
       <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={navigateTo}
         collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
 
-      <div className="flex-1 h-screen overflow-y-auto no-scrollbar" onClick={(e) => {
+      <div ref={scrollContainerRef} className="flex-1 h-screen overflow-y-auto no-scrollbar" onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('[data-card]') || target.closest('[data-expand-panel]') ||
             target.closest('[data-discover-card]') || target.closest('[data-detail-drawer]') ||
@@ -170,9 +184,12 @@ export default function Home() {
             )}
           </div>
 
-          <div className={showDiscover ? "" : "hidden"}>
-            <DoubanRecommend onSelectMedia={handleSelectDoubanMedia} />
-          </div>
+          {/* 发现区域：根目录时显示，滚动到此处时懒加载 */}
+          {showDiscover && (
+            <div ref={discoverRef} className="min-h-[200px]">
+              <DiscoverPage onSelectMedia={handleSelectDoubanMedia} visible={discoverVisible} scrollContainerRef={scrollContainerRef} />
+            </div>
+          )}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import type { VideoInfo, FolderNode, ScrapeResult, MatchConfidence } from "@/typ
 import { api } from "@/lib/api";
 import { formatSize, formatDuration, isLeafFolder } from "@/lib/utils";
 import { FOLDER_TYPE_LABELS, isAggregate as isAggregateType } from "@/lib/folderTypes";
+import { getMediaTypeColor, getRatingColor } from "@/lib/mediaColors";
 
 // 模块级缓存：操作状态不随组件卸载丢失
 // key = 路径，value = 各种操作的状态
@@ -862,44 +863,64 @@ function CandidatePicker({ name, path, onSelected }: { name: string; path: strin
         {tab === "tmdb" && candidates.map(c => (
           <button key={`tmdb-${c.tmdb_id}`} onClick={() => selectTmdb(c)} disabled={selecting !== null}
             className={`w-full flex gap-2.5 p-2 rounded-lg text-left transition-all ${selecting === `tmdb-${c.tmdb_id}` ? "bg-blue-500/20 border border-blue-500/30" : "bg-white/[0.03] hover:bg-white/[0.06] border border-transparent"}`}>
-            {c.poster_url ? <img src={c.poster_url} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0" /> : <div className="w-10 h-14 rounded bg-[#222] flex-shrink-0" />}
+            {c.poster_url ? <img src={c.poster_url} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0"
+              onError={(e) => { const el = e.target as HTMLImageElement; el.style.display = "none"; el.parentElement?.querySelector("[data-fallback]")?.classList.remove("hidden"); }} />
+            : null}
+            <div data-fallback className={`w-10 h-14 rounded bg-[#222] flex-shrink-0 flex items-center justify-center ${c.poster_url ? "hidden" : ""}`}><span className="text-slate-700 text-sm">🎬</span></div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white truncate">{c.title}</p>
               {c.english_title && c.english_title !== c.title && <p className="text-[11px] text-blue-400/70 truncate">{c.english_title}</p>}
               {c.original_title && c.original_title !== c.title && c.original_title !== c.english_title && <p className="text-[11px] text-slate-500 truncate">{c.original_title}</p>}
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {(() => { const mc = getMediaTypeColor(c.media_type); return <span className={`text-[10px] px-1.5 py-0.5 rounded ${mc.bg} ${mc.text}`}>{mc.label}</span>; })()}
                 <span className="text-[10px] text-slate-600">{c.year}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${c.media_type === "movie" ? "bg-blue-500/20 text-blue-400" : "bg-green-500/20 text-green-400"}`}>{c.media_type === "movie" ? "电影" : "剧集"}</span>
+                {c.rating > 0 && <span className={`text-[10px] ${getRatingColor("tmdb")} font-bold flex items-center gap-0.5`}><svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>{c.rating}</span>}
               </div>
-              {c.overview && <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">{c.overview}</p>}
+              {c.overview && <p className="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">{c.overview}</p>}
             </div>
           </button>
         ))}
         {tab === "douban" && doubanCandidates.map(c => (
           <button key={`db-${c.douban_id}`} onClick={() => selectDouban(c)} disabled={selecting !== null}
             className={`w-full flex gap-2.5 p-2 rounded-lg text-left transition-all ${selecting === `douban-${c.douban_id}` ? "bg-green-500/20 border border-green-500/30" : "bg-white/[0.03] hover:bg-white/[0.06] border border-transparent"}`}>
-            {c.poster_url ? <img src={c.poster_url.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${c.poster_url}` : c.poster_url} alt="" referrerPolicy="no-referrer" className="w-10 h-14 rounded object-cover flex-shrink-0" /> : <div className="w-10 h-14 rounded bg-[#222] flex-shrink-0" />}
+            {c.poster_url ? <img src={c.poster_url.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${c.poster_url}` : c.poster_url} alt="" referrerPolicy="no-referrer" className="w-10 h-14 rounded object-cover flex-shrink-0"
+              onError={(e) => { const el = e.target as HTMLImageElement; el.style.display = "none"; el.parentElement?.querySelector("[data-fallback]")?.classList.remove("hidden"); }} />
+            : null}
+            <div data-fallback className={`w-10 h-14 rounded bg-[#222] flex-shrink-0 flex items-center justify-center ${c.poster_url ? "hidden" : ""}`}><span className="text-slate-700 text-sm">🎬</span></div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white truncate">{c.title}</p>
-              {c.subtitle && <p className="text-[11px] text-slate-500 truncate">{c.subtitle}</p>}
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] text-slate-600">{c.year}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">{c.episode ? `剧集 ${c.episode}集` : "电影"}</span>
+              {c.original_title && c.original_title !== c.title && <p className="text-[11px] text-green-400/70 truncate">{c.original_title}</p>}
+              {c.subtitle && c.subtitle !== c.original_title && c.subtitle !== c.title && <p className="text-[11px] text-slate-500 truncate">{c.subtitle}</p>}
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {(() => { const mt = c.episode ? "tv" : c.media_type || "movie"; const mc = getMediaTypeColor(mt); return <span className={`text-[10px] px-1.5 py-0.5 rounded ${mc.bg} ${mc.text}`}>{c.episode ? `${mc.label} ${c.episode}集` : mc.label}</span>; })()}
+                {c.genres?.length > 0 && c.genres.slice(0, 3).map((g: string) => (
+                  <span key={g} className="text-[10px] text-slate-500 bg-white/[0.06] px-1 py-0.5 rounded">{g}</span>
+                ))}
+                {c.rating > 0 && <span className={`text-[10px] ${getRatingColor("douban")} font-bold flex items-center gap-0.5`}><svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>{c.rating}</span>}
               </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {c.year && <span className="text-[10px] text-slate-600">{c.year}</span>}
+                {c.countries?.length > 0 && <span className="text-[10px] text-slate-600">{c.countries.slice(0, 2).join("/")}</span>}
+                {c.directors?.length > 0 && <span className="text-[10px] text-slate-600">导演: {c.directors.slice(0, 2).join(" / ")}</span>}
+              </div>
+              {c.overview && <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">{c.overview}</p>}
             </div>
           </button>
         ))}
         {tab === "bangumi" && bangumiCandidates.map(c => (
           <button key={`bgm-${c.bgm_id}`} onClick={() => selectBangumi(c)} disabled={selecting !== null}
             className={`w-full flex gap-2.5 p-2 rounded-lg text-left transition-all ${selecting === `bgm-${c.bgm_id}` ? "bg-pink-500/20 border border-pink-500/30" : "bg-white/[0.03] hover:bg-white/[0.06] border border-transparent"}`}>
-            {c.poster_url ? <img src={c.poster_url} alt="" referrerPolicy="no-referrer" className="w-10 h-14 rounded object-cover flex-shrink-0" /> : <div className="w-10 h-14 rounded bg-[#222] flex-shrink-0" />}
+            {c.poster_url ? <img src={c.poster_url} alt="" referrerPolicy="no-referrer" className="w-10 h-14 rounded object-cover flex-shrink-0"
+              onError={(e) => { const el = e.target as HTMLImageElement; el.style.display = "none"; el.parentElement?.querySelector("[data-fallback]")?.classList.remove("hidden"); }} />
+            : null}
+            <div data-fallback className={`w-10 h-14 rounded bg-[#222] flex-shrink-0 flex items-center justify-center ${c.poster_url ? "hidden" : ""}`}><span className="text-slate-700 text-sm">🎬</span></div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white truncate">{c.title}</p>
               {c.original_title && c.original_title !== c.title && <p className="text-[11px] text-slate-500 truncate">{c.original_title}</p>}
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {(() => { const mc = getMediaTypeColor(c.type || "动画"); return <span className={`text-[10px] px-1.5 py-0.5 rounded ${mc.bg} ${mc.text}`}>{mc.label}</span>; })()}
                 <span className="text-[10px] text-slate-600">{c.year}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400">{c.type}</span>
-                {c.rating > 0 && <span className="text-[10px] text-amber-400">★ {c.rating}</span>}
+                {c.rating > 0 && <span className={`text-[10px] ${getRatingColor("bangumi")} font-bold flex items-center gap-0.5`}><svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>{c.rating}</span>}
               </div>
               {c.summary && <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">{c.summary}</p>}
             </div>

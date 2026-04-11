@@ -24,6 +24,7 @@ from shared import (
 )
 import scanner, searcher, downloader, tmdb_client, config_manager
 import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
+import douban_api_v2
 from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
@@ -182,7 +183,17 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
 
 @router.get("/douban/search")
 def douban_search(query: str):
-    """搜索豆瓣影片"""
+    """搜索豆瓣影片（优先 API v2）"""
+    # 优先 API v2
+    results = douban_api_v2.search(query, count=15)
+    if results:
+        for r in results:
+            poster = r.get("poster_url", "")
+            if poster and "doubanio.com" in poster:
+                r["poster_url_original"] = poster
+                r["poster_url"] = f"/proxy/image?url={requests.utils.quote(poster)}"
+        return {"query": query, "candidates": results}
+    # Fallback
     results = douban_client.search(query)
     for r in results:
         if r.get("poster_url") and "doubanio.com" in r["poster_url"]:
@@ -248,3 +259,132 @@ def add_media(req: AddMediaRequest):
 # ══════════════════════════════════════════════════════════════
 
 # ── 种子排序权重配置 ──
+
+
+# ══════════════════════════════════════════════════════════════
+# 发现推荐 API（豆瓣 API v2 + Bangumi）
+# ══════════════════════════════════════════════════════════════
+
+def _tmdb_trending_paged(start: int, count: int) -> list:
+    """TMDB trending 支持分页拼接（每页 20 条）"""
+    tmdb = get_clients()["tmdb"]
+    all_items = []
+    page = 1
+    while len(all_items) < start + count and page <= 3:
+        items = tmdb.trending(page=page)
+        if not items:
+            break
+        all_items.extend(items)
+        page += 1
+    return all_items[start:start + count]
+
+
+# 推荐源映射
+_RECOMMEND_SOURCES = {
+    "douban_showing": lambda start, count: douban_api_v2.movie_showing(start, count),
+    "douban_movie_hot": lambda start, count: douban_api_v2.movie_hot(start, count),
+    "douban_tv_hot": lambda start, count: douban_api_v2.tv_hot(start, count),
+    "douban_animation": lambda start, count: douban_api_v2.tv_animation(start, count),
+    "douban_top250": lambda start, count: douban_api_v2.movie_top250(start, count),
+    "douban_weekly_chinese": lambda start, count: douban_api_v2.tv_weekly_chinese(start, count),
+    "douban_weekly_global": lambda start, count: douban_api_v2.tv_weekly_global(start, count),
+    "tmdb_trending": lambda start, count: _tmdb_trending_paged(start, count),
+    "bangumi_calendar": lambda start, count: bangumi_client.get_hot_anime(start, count),
+}
+
+
+@router.get("/discover/recommend/{source}")
+def discover_recommend(source: str, start: int = 0, count: int = 20):
+    """统一推荐接口，豆瓣 API v2 失败时 fallback 到旧版网页接口"""
+    fetcher = _RECOMMEND_SOURCES.get(source)
+    if not fetcher:
+        raise HTTPException(status_code=400, detail=f"未知推荐源: {source}，可选: {list(_RECOMMEND_SOURCES.keys())}")
+    try:
+        items = fetcher(start, count)
+        if items:
+            return {"source": source, "items": items, "count": len(items)}
+    except Exception as e:
+        print(f"[Discover] recommend/{source} API v2 失败: {e}")
+
+    # Fallback：豆瓣旧版网页接口（仅豆瓣源）
+    _FALLBACK_MAP = {
+        "douban_showing": ("movie", "热映"),
+        "douban_movie_hot": ("movie", "热门"),
+        "douban_tv_hot": ("tv", "热门"),
+        "douban_animation": ("tv", "动画"),
+        "douban_top250": ("movie", "豆瓣高分"),
+    }
+    fb = _FALLBACK_MAP.get(source)
+    if fb:
+        try:
+            print(f"[Discover] {source} fallback 到旧版网页接口")
+            items = douban_client.get_hot_list(fb[0], start, fb[1])
+            return {"source": source, "items": items or [], "count": len(items or []), "fallback": True}
+        except Exception as e2:
+            print(f"[Discover] {source} fallback 也失败: {e2}")
+    return {"source": source, "items": [], "count": 0}
+
+
+@router.get("/discover/explore")
+def discover_explore(provider: str = "douban", type: str = "movie", sort: str = "R", tags: str = "", page: int = 0, count: int = 20):
+    """探索接口。provider: douban/tmdb, type: movie/tv, sort: R(热度)/S(评分)/T(时间)"""
+    try:
+        if provider == "douban":
+            if type == "tv":
+                items = douban_api_v2.tv_explore(tags=tags, sort=sort, start=page * count, count=count)
+            else:
+                items = douban_api_v2.movie_explore(tags=tags, sort=sort, start=page * count, count=count)
+        elif provider == "tmdb":
+            tmdb = get_clients()["tmdb"]
+            items = tmdb.discover(
+                media_type=type,
+                sort_by=sort if "." in sort else "popularity.desc",
+                genres=tags,
+                page=(page or 0) + 1,  # TMDB 页码从 1 开始
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"未知 provider: {provider}")
+        return {"provider": provider, "type": type, "items": items or [], "count": len(items or [])}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Discover] explore 失败: {e}")
+        return {"provider": provider, "type": type, "items": [], "count": 0, "error": str(e)}
+
+
+@router.get("/discover/sources")
+def discover_sources():
+    """返回所有可用的推荐源列表"""
+    return {
+        "recommend": list(_RECOMMEND_SOURCES.keys()),
+        "explore": {
+            "douban": {"types": ["movie", "tv"], "sorts": ["R", "S", "T"]},
+            "tmdb": {"types": ["movie", "tv"], "sorts": ["popularity.desc", "vote_average.desc"]},
+        },
+    }
+
+
+@router.post("/discover/refresh/{source}")
+def discover_refresh(source: str):
+    """清除指定推荐源的后端文件缓存，下次请求会重新拉取"""
+    import glob
+    cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scrape_cache")
+    if not os.path.exists(cache_dir):
+        return {"status": "ok", "cleared": 0}
+    # 清除 douban_api_v2 的缓存文件（前缀 dbv2_）
+    cleared = 0
+    for f in glob.glob(os.path.join(cache_dir, "dbv2_*.json")):
+        try:
+            # 简单策略：清除所有 dbv2 缓存（因为 cache_key 是 hash，无法精确匹配 source）
+            os.remove(f)
+            cleared += 1
+        except:
+            pass
+    # 也清除旧版热榜缓存
+    for f in glob.glob(os.path.join(cache_dir, "hot_*.json")):
+        try:
+            os.remove(f)
+            cleared += 1
+        except:
+            pass
+    return {"status": "ok", "cleared": cleared, "source": source}
