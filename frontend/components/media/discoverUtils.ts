@@ -40,7 +40,8 @@ export interface MediaDetail {
   imdb_id?: string; total_seasons?: number; episode_count?: number; status?: string;
   countries?: string[];
   source?: "tmdb" | "douban" | "bangumi";
-  ratings?: { douban?: number; tmdb?: number; bangumi?: number };  // 三源评分
+  ratings?: { douban?: number; tmdb?: number; bangumi?: number };
+  external_ids?: { tmdb_id?: number; imdb_id?: string };
 }
 
 const DETAIL_CACHE_KEY = "discover_detail_cache";

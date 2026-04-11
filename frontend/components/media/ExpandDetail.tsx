@@ -181,13 +181,30 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false }: {
       </div>
       <div className="flex items-center gap-2 mt-4">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
-        {item.douban_id && (
+        {/* 豆瓣链接：仅当 item.douban_id 是真正的豆瓣 ID 时显示（Bangumi 趋势 tab 的 douban_id 实际是 bgm_id，不显示） */}
+        {item.douban_id && d.source !== "bangumi" && (
           <a href={`https://movie.douban.com/subject/${item.douban_id}/`} target="_blank" rel="noopener noreferrer"
-            className="px-4 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>
+            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>
         )}
-        {d.imdb_id && (
-          <a href={`https://www.imdb.com/title/${d.imdb_id}`} target="_blank" rel="noopener noreferrer"
-            className="px-4 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">IMDB</a>
+        {/* TMDB 链接 */}
+        {(d.external_ids?.tmdb_id || d.tmdb_id) && ((d.external_ids?.tmdb_id ?? 0) > 0 || (d.tmdb_id ?? 0) > 0) && (() => {
+          const tid = d.external_ids?.tmdb_id || d.tmdb_id;
+          const mediaPath = d.total_seasons || d.episode_count ? "tv" : "movie";
+          return (
+            <a href={`https://www.themoviedb.org/${mediaPath}/${tid}`}
+              target="_blank" rel="noopener noreferrer"
+              className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">TMDB</a>
+          );
+        })()}
+        {/* IMDB 链接 */}
+        {(d.external_ids?.imdb_id || d.imdb_id) && (
+          <a href={`https://www.imdb.com/title/${d.external_ids?.imdb_id || d.imdb_id}`} target="_blank" rel="noopener noreferrer"
+            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">IMDB</a>
+        )}
+        {/* Bangumi 链接：热门动画和 Bangumi 趋势 tab */}
+        {item.douban_id && (d.source === "bangumi" || showBangumiRating) && (
+          <a href={`https://bgm.tv/subject/${item.douban_id}`} target="_blank" rel="noopener noreferrer"
+            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">Bangumi</a>
         )}
         {/* 数据来源标签 */}
         <span className="text-[10px] text-slate-600 ml-auto">数据来自 {sourceLabel}</span>

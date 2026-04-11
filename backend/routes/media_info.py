@@ -297,41 +297,50 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
 
 
 def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: str = ""):
-    """补充其他源的评分到 ratings 字段。不阻塞主流程，失败静默跳过。"""
+    """补充其他源的评分和 ID 到 ratings / external_ids 字段。不阻塞主流程，失败静默跳过。"""
     source = detail.get("source", "")
     ratings = {}
-    # 主源评分
+    external_ids = {}
+
+    # 主源评分和 ID
     if source and detail.get("rating"):
         ratings[source] = detail["rating"]
+    if detail.get("tmdb_id"):
+        external_ids["tmdb_id"] = detail["tmdb_id"]
+    if detail.get("imdb_id"):
+        external_ids["imdb_id"] = detail["imdb_id"]
 
-    # 补充豆瓣评分
+    # 补充豆瓣
     if source != "douban":
         try:
             db = _try_douban_detail(title, year, type)
-            if db and db.get("rating"):
-                ratings["douban"] = db["rating"]
+            if db:
+                if db.get("rating"): ratings["douban"] = db["rating"]
         except Exception:
             pass
 
-    # 补充 TMDB 评分
+    # 补充 TMDB
     if source != "tmdb":
         try:
             tmdb = _try_tmdb_detail(title, year, type, subtitle)
-            if tmdb and tmdb.get("found") and tmdb.get("rating"):
-                ratings["tmdb"] = tmdb["rating"]
+            if tmdb and tmdb.get("found"):
+                if tmdb.get("rating"): ratings["tmdb"] = tmdb["rating"]
+                if tmdb.get("tmdb_id"): external_ids["tmdb_id"] = tmdb["tmdb_id"]
+                if tmdb.get("imdb_id"): external_ids["imdb_id"] = tmdb["imdb_id"]
         except Exception:
             pass
 
-    # 补充 Bangumi 评分
+    # 补充 Bangumi
     if source != "bangumi":
         try:
             bgm = _try_bangumi_detail(title, subtitle)
-            if bgm and bgm.get("rating"):
-                ratings["bangumi"] = bgm["rating"]
+            if bgm:
+                if bgm.get("rating"): ratings["bangumi"] = bgm["rating"]
         except Exception:
             pass
 
     detail["ratings"] = ratings
+    detail["external_ids"] = external_ids
 
 
 def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") -> dict | None:
