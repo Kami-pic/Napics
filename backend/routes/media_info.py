@@ -246,25 +246,36 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
     - douban: 豆瓣 v2（优先用 id）→ TMDB
     - bangumi: Bangumi（优先用 id）→ 豆瓣 v2 → TMDB
     """
+    print(f"[MediaInfo] 请求: title={title}, year={year}, type={type}, source={source}, id={id}")
+
     # ── Bangumi 优先路径 ──
     if source == "bangumi":
         bgm_id = int(id) if id and id.isdigit() else 0
+        print(f"[MediaInfo] Bangumi 路径: bgm_id={bgm_id}")
         bgm_detail = _try_bangumi_detail(title, subtitle, bgm_id=bgm_id)
         if bgm_detail:
+            print(f"[MediaInfo] Bangumi 命中: rating={bgm_detail.get('rating')}, poster={bgm_detail.get('poster_url', '')[:60]}")
             return bgm_detail
+        print("[MediaInfo] Bangumi 未命中，fallback 豆瓣")
         db_detail = _try_douban_detail(title, year, type)
         if db_detail:
+            print(f"[MediaInfo] 豆瓣 fallback 命中: source=douban")
             return db_detail
+        print("[MediaInfo] 豆瓣也未命中，fallback TMDB")
         return _try_tmdb_detail(title, year, type, subtitle)
 
     # ── 豆瓣优先路径 ──
     if source == "douban":
+        print(f"[MediaInfo] 豆瓣路径: douban_id={id}")
         db_detail = _try_douban_detail(title, year, type, douban_id=id if id else "")
         if db_detail:
+            print(f"[MediaInfo] 豆瓣命中: poster={db_detail.get('poster_url', '')[:80]}, source={db_detail.get('source')}")
             return db_detail
+        print("[MediaInfo] 豆瓣未命中，fallback TMDB")
         return _try_tmdb_detail(title, year, type, subtitle)
 
     # ── TMDB 优先路径（默认）──
+    print("[MediaInfo] TMDB 默认路径")
     tmdb_detail = _try_tmdb_detail(title, year, type, subtitle)
     if tmdb_detail and tmdb_detail.get("found"):
         return tmdb_detail
@@ -281,13 +292,18 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
 
         # 有 ID 直接拉详情
         if douban_id:
+            print(f"[MediaInfo._try_douban] 用 ID 直接拉: douban_id={douban_id}, media_type={media_type}")
             detail = douban_api_v2.get_detail(douban_id, media_type=media_type)
             if detail and detail.get("title"):
+                print(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}, poster={detail.get('poster_url', '')[:60]}")
                 return _format_douban_detail(detail)
+            print(f"[MediaInfo._try_douban] ID 拉取失败或无 title")
 
         # 搜索匹配
+        print(f"[MediaInfo._try_douban] 搜索: title={title}")
         results = douban_api_v2.search(title, count=5)
         if not results:
+            print(f"[MediaInfo._try_douban] 搜索无结果")
             return None
         best = results[0]
         if year:
@@ -341,11 +357,16 @@ def _try_bangumi_detail(title: str, subtitle: str = "", bgm_id: int = 0) -> dict
     try:
         # 有 ID 直接拉详情，跳过搜索
         if bgm_id > 0:
+            print(f"[MediaInfo._try_bangumi] 用 ID 直接拉: bgm_id={bgm_id}")
             detail = bangumi_client.get_detail(bgm_id)
             if detail and detail.get("title"):
-                return _format_bangumi_detail(detail)
+                formatted = _format_bangumi_detail(detail)
+                print(f"[MediaInfo._try_bangumi] ID 拉取成功: title={detail.get('title')}, rating={detail.get('rating')}")
+                return formatted
+            print(f"[MediaInfo._try_bangumi] ID 拉取失败")
 
         # 搜索匹配
+        print(f"[MediaInfo._try_bangumi] 搜索: title={title}")
         results = bangumi_client.search(title)
         if not results:
             return None

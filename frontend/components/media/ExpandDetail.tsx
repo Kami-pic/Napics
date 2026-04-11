@@ -85,27 +85,43 @@ function NoDetailFallback({ item, onSearch, onRetry }: { item: DoubanHotItem; on
 
 // ── 有详情时的完整展示 ──
 function DetailContent({ item, d, onSearch }: { item: DoubanHotItem; d: MediaDetail; onSearch: () => void }) {
-  // 豆瓣评分来自卡片数据，TMDB 评分来自详情接口
-  const doubanRating = item.rating;
-  const tmdbRating = d.rating || 0;
+  // 评分来源：卡片评分（item.rating）+ 详情评分（d.rating）
+  // 根据详情来源决定标签：douban/tmdb/bangumi
+  const detailSource = d.source || "tmdb";
+  const cardRating = item.rating;  // 卡片数据的评分（推荐 API 返回的）
+  const detailRating = d.rating || 0;  // 详情接口的评分
+
+  // 卡片评分和详情评分可能来自同一个源，避免重复显示
+  const showCardRating = cardRating > 0 && detailSource !== "douban";  // 豆瓣详情已包含评分，不重复
+  const showDetailRating = detailRating > 0;
+
+  // 评分标签配置
+  const ratingConfig: Record<string, { label: string; color: string; bg: string }> = {
+    douban: { label: "豆瓣", color: getRatingColor("douban"), bg: "bg-green-400/10" },
+    tmdb: { label: "TMDB", color: getRatingColor("tmdb"), bg: "bg-blue-400/10" },
+    bangumi: { label: "Bangumi", color: getRatingColor("bangumi"), bg: "bg-pink-400/10" },
+  };
+  const detailCfg = ratingConfig[detailSource] || ratingConfig.tmdb;
 
   return (
     <>
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         <span className="text-xs text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded">{d.year || item.year || "—"}</span>
-        {doubanRating > 0 && (
+        {/* 详情评分（根据 source 动态显示标签） */}
+        {showDetailRating && (
+          <span className={`text-xs ${detailCfg.color} ${detailCfg.bg} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+            <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+            {detailCfg.label} {detailRating}
+          </span>
+        )}
+        {/* 卡片评分（仅当详情来源不是豆瓣时额外显示，避免重复） */}
+        {showCardRating && (
           <span className={`text-xs ${getRatingColor("douban")} bg-green-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
             <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            豆瓣 {doubanRating}
+            豆瓣 {cardRating}
           </span>
         )}
-        {tmdbRating > 0 && (
-          <span className={`text-xs ${getRatingColor("tmdb")} bg-blue-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
-            <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            TMDB {tmdbRating}
-          </span>
-        )}
-        {!doubanRating && !tmdbRating && <span className="text-xs text-slate-500 bg-white/[0.06] px-2 py-0.5 rounded">暂无评分</span>}
+        {!showDetailRating && !showCardRating && <span className="text-xs text-slate-500 bg-white/[0.06] px-2 py-0.5 rounded">暂无评分</span>}
         {d.runtime ? <span className="text-xs text-slate-500">{d.runtime} 分钟</span> : null}
         {d.total_seasons ? <span className="text-xs text-slate-500">{d.total_seasons} 季</span> : null}
         {d.episode_count ? <span className="text-xs text-slate-500">{d.episode_count} 集</span> : null}

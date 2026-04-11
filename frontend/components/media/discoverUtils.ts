@@ -39,6 +39,7 @@ export interface MediaDetail {
   genres?: string[]; director?: string; cast?: string[]; runtime?: number;
   imdb_id?: string; total_seasons?: number; episode_count?: number; status?: string;
   countries?: string[];
+  source?: "tmdb" | "douban" | "bangumi";  // 详情数据来源
 }
 
 const DETAIL_CACHE_KEY = "discover_detail_cache";
