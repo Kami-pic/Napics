@@ -62,26 +62,36 @@
 - 测试框架：vitest + @testing-library/react，测试文件在 `frontend/__tests__/`
 
 ## 当前进度与下一步
+- 代码拆分 TODO：`.kiro/docs/code-split-todo.md`（后端 4 项 + 前端 2 项已完成，剩余前端 5-8 低优先级）
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - 自动替换 TODO：`.kiro/docs/auto-replace-todo.md`
-- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 基本完成）
+- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 完成，阶段 2 探索筛选待做）
 - 待做：磁力熊直搜、其他网盘转存 API、设置页搜索源开关、转存纳入 DownloadManager
+- 待做：发现页详情匹配错误时的候选选择（阶段 2，类似刮削候选面板）
 
-## 发现推荐模块（2026-04-10 新增，04-11 大幅增强）
+## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级）
 - `douban_api_v2.py`：豆瓣 App API v2 签名鉴权，9 个榜单 + 探索 + 搜索 + 详情
   - `_normalize_item` 从 `card_subtitle` 解析 genres/countries/year（合集接口不直接返回这些字段）
   - `episodes_info` 字段（如"22集全"）从原始 API 的 `episodes_info` 提取
   - 搜索结果过滤非影视条目（`target_type not in ("movie","tv")`）
   - 搜索 `responseGroup: "large"` 获取 Bangumi 评分
 - 详情多源算法（`/media/info?source=&id=`）：
-  - douban：豆瓣 v2 详情（优先用 id 直接拉）→ TMDB
-  - tmdb：TMDB → 豆瓣 v2
+  - douban：豆瓣 v2 详情（优先用 id 直接拉）→ TMDB fallback
+  - tmdb：TMDB → 豆瓣 v2 fallback
   - bangumi：Bangumi 详情（优先用 bgm_id 直接拉）→ 豆瓣 v2 → TMDB
+  - `_enrich_ratings`：主源命中后并行补充其他两源评分 + external_ids（tmdb_id/imdb_id）
+  - 返回 `ratings: {douban, tmdb, bangumi}` + `external_ids: {tmdb_id, imdb_id}` + `source`
+- 详情面板功能（04-12 新增）：
+  - 数据源下拉（豆瓣/TMDB/Bangumi）+ 🔄 刷新按钮（清缓存+用选中源重新请求）
+  - 三源评分：豆瓣5个tab+TMDB趋势显示双评分（豆瓣+TMDB），热门动画+Bangumi趋势显示三源评分
+  - 外部链接：豆瓣/TMDB/IMDB/Bangumi，有数据就显示，没数据不显示
+  - Bangumi 趋势 tab 的 item.douban_id 实际是 bgm_id → 豆瓣链接不显示，改为 Bangumi 链接
+  - 数据来源标签：底部小字 `数据来自 豆瓣/TMDB/Bangumi`
+  - 缓存管理：`deleteCachedDetail` 支持清除单条缓存
 - 推荐接口 fallback：API v2 失败时回退到旧版网页接口（5 个豆瓣源有映射）
 - 图片缓存优化：`/scrape/poster` 改为 `Cache-Control: public, max-age=3600`，`/proxy/image` 改为 `max-age=86400`
 - 发现页 tab 切换优化：`display:none` 保持已加载 tab 的 DOM，图片不重新加载
 - 发现页卡片信息：标题 + 年份·国家·集数 + 类型标签（genres），评分用品牌色（豆瓣黄/TMDB蓝/Bangumi粉）
-- 展开详情面板同时显示豆瓣+TMDB 评分（品牌色星星 icon + 文字标注）
 - 豆瓣详情封面走 `/proxy/image` 代理（防盗链）
 - 刮削候选面板：三源评分（品牌色星星）+ 类型标签（`getMediaTypeColor`）+ 裂图 fallback
 - 媒体库颜色统一：电影蓝色、剧集绿色（CardGrid 标签 + 一级目录标签）
