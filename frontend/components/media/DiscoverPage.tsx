@@ -4,13 +4,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { DoubanHotItem } from "@/types";
 import { api } from "@/lib/api";
-import { normalizeItem, getCachedDetail, setCachedDetail, deleteCachedDetail, RECOMMEND_TABS } from "./discoverUtils";
+import { normalizeItem, getCachedDetail, setCachedDetail, deleteCachedDetail, RECOMMEND_TABS, EXPLORE_TABS } from "./discoverUtils";
 import type { MediaDetail, PrimaryTab } from "./discoverUtils";
 import DiscoverCard from "./DiscoverCard";
 import SkeletonGrid from "./SkeletonGrid";
 import ExpandDetail from "./ExpandDetail";
-import WeeklyCombinedView from "./WeeklyCombinedView";
 import DiscoverHeader from "./DiscoverHeader";
+import ExplorePage from "./ExplorePage";
+import RecommendTabContent from "./RecommendTabContent";
 
 interface DiscoverPageProps {
   onSelectMedia: (item: DoubanHotItem) => void;
@@ -35,6 +36,7 @@ const EMPTY_TAB: TabState = { items: [], loading: false, error: false, hasMore: 
 export default function DiscoverPage({ onSelectMedia, visible = true, scrollContainerRef }: DiscoverPageProps) {
   const [primaryTab, setPrimaryTab] = useState<PrimaryTab>("recommend");
   const [activeTab, setActiveTab] = useState(RECOMMEND_TABS[0].key);
+  const [exploreTab, setExploreTab] = useState(EXPLORE_TABS[0].key);
   // 按 tab 存储数据，已加载的 tab 保持在 DOM 中
   const [tabDataMap, setTabDataMap] = useState<Record<string, TabState>>({});
   // 记录哪些 tab 曾经加载过（用于保持 DOM 不销毁）
@@ -141,16 +143,22 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
       const data = await api.discoverRecommend(tabKey, pageNum * reqSize, reqSize);
       if (isStale()) return;
       const normalized = (data.items || []).map(normalizeItem);
-      const trimmed = normalized.slice(0, maxShow);
+      const cc = colCountRef.current;
+      const trimmed = normalized.slice(0, Math.floor(Math.min(normalized.length, maxShow) / cc) * cc);
       if (append) {
         setTabDataMap(prev => {
           const old = prev[tabKey] || EMPTY_TAB;
           const existingIds = new Set(old.items.map((i: DoubanHotItem) => i.douban_id || i.title));
           const unique = trimmed.filter((i: DoubanHotItem) => !existingIds.has(i.douban_id || i.title));
-          return { ...prev, [tabKey]: { ...old, items: [...old.items, ...unique], hasMore: normalized.length >= reqSize * 0.5, page: pageNum } };
+          const merged = [...old.items, ...unique];
+          // 截断到整行
+          const rowAligned = merged.slice(0, Math.floor(merged.length / cc) * cc);
+          const more = unique.length > 0 && normalized.length >= reqSize * 0.5;
+          return { ...prev, [tabKey]: { ...old, items: rowAligned, hasMore: more, page: pageNum } };
         });
       } else {
-        updateTab(tabKey, { items: trimmed, hasMore: normalized.length >= reqSize * 0.5, loading: false, page: 0 });
+        const more = normalized.length >= reqSize * 0.5;
+        updateTab(tabKey, { items: trimmed, hasMore: more, loading: false, page: 0 });
       }
     } catch {
       if (!isStale() && !append) updateTab(tabKey, { error: true, items: [], loading: false });
@@ -235,6 +243,7 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
 
   const handleCardClick = useCallback(async (index: number) => {
     if (expandedIndex === index) { closeExpand(); return; }
+    scrollToDiscover();
     setExpandedIndex(index); setExpandPos({ afterIndex: index });
     const item = displayItems[index];
     if (!item) return;
@@ -256,7 +265,7 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
     } finally {
       if (pendingClickRef.current === cacheKey) setDetailLoading(false);
     }
-  }, [expandedIndex, displayItems, activeTab, activeTabConfig, closeExpand]);
+  }, [expandedIndex, displayItems, activeTab, activeTabConfig, closeExpand, scrollToDiscover]);
 
   const handleRetry = useCallback(() => {
     if (expandedIndex === null) return;
@@ -310,72 +319,12 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
 
   const rowEndIndex = expandPos ? getRowEndIndex(expandPos.afterIndex) : -1;
 
-  // ── 渲染每个 tab 的内容面板（保持 DOM 不销毁）──
-  const renderTabContent = (tabKey: string, isActive: boolean) => {
-    const data = tabDataMap[tabKey] || EMPTY_TAB;
-    const tabConfig = RECOMMEND_TABS.find(t => t.key === tabKey) || RECOMMEND_TABS[0];
-    const isWeekly = tabKey === "weekly_combined";
-    const tabItems = data.items;
-
-    return (
-      <div key={tabKey} style={{ display: isActive && !isSearchMode ? undefined : "none" }}>
-        {data.loading && (isWeekly ? !(data.weeklyChineseItems?.length) : tabItems.length === 0) ? (
-          <SkeletonGrid colCount={colCount} rows={4} />
-        ) : data.error ? (
-          <div className="text-center py-12">
-            <p className="text-xs text-slate-600 mb-2">加载失败</p>
-            <button onClick={() => { const id = ++loadIdRef.current; setTabDataMap(prev => { const n = { ...prev }; delete n[tabKey]; return n; }); loadTab(tabKey, 0, false, id); }}
-              className="text-xs text-blue-400 hover:text-blue-300">重试</button>
-          </div>
-        ) : isWeekly ? (
-          <WeeklyCombinedView
-            chineseItems={data.weeklyChineseItems || []} globalItems={data.weeklyGlobalItems || []}
-            expandedIndex={isActive ? expandedIndex : null} onCardClick={handleCardClick}
-            detail={detail} detailLoading={detailLoading}
-            onSearch={(item) => onSelectMedia({...item, _tmdb_original_title: detail?.original_title || ""} as any)}
-            onCloseExpand={closeExpand} onRetry={handleRetry}
-          />
-        ) : tabItems.length === 0 ? (
-          <p className="text-center py-12 text-xs text-slate-600">暂无数据</p>
-        ) : (
-          <>
-            <div ref={isActive ? gridRef : undefined}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
-              {tabItems.map((item, index) => (
-                <DiscoverCard key={`card-${tabKey}-${item.douban_id || item.title}-${index}`}
-                  item={item} index={index} isActive={isActive && expandedIndex === index}
-                  showRank={!!tabConfig.showRank}
-                  showMediaType={tabConfig.mediaType === "mixed"}
-                  ratingSource={tabConfig.ratingSource || "douban"}
-                  onClick={() => handleCardClick(index)}
-                  style={isActive ? { order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 } : undefined} />
-              ))}
-              {isActive && expandedIndex !== null && expandedIndex < tabItems.length && (
-                <div key="expand-panel" data-expand-panel
-                  className="col-span-full bg-[#141414] border border-white/[0.06] rounded-xl p-5 animate-in fade-in duration-200"
-                  style={{ order: rowEndIndex >= 0 ? rowEndIndex + 1 : 9999 }}>
-                  <ExpandDetail item={tabItems[expandedIndex]} detail={detail} loading={detailLoading}
-                    onSearch={() => onSelectMedia({...tabItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
-                    onClose={closeExpand} onRetry={handleRetry}
-                    defaultSource={tabConfig.ratingSource || "douban"}
-                    showBangumiRating={tabConfig.ratingSource === "bangumi" || tabKey === "douban_animation"}
-                    onRefreshWithSource={handleRefreshWithSource} />
-                </div>
-              )}
-            </div>
-            {isActive && data.hasMore && (
-              <div className="flex justify-center mt-6 pb-8">
-                <button onClick={loadMore} disabled={loadingMore}
-                  className="px-5 py-2 text-xs text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-lg transition-all disabled:opacity-50">
-                  {loadingMore ? "加载中..." : "查看更多"}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    );
-  };
+  // 重试 tab 加载
+  const handleRetryTab = useCallback((tabKey: string) => {
+    const id = ++loadIdRef.current;
+    setTabDataMap(prev => { const n = { ...prev }; delete n[tabKey]; return n; });
+    loadTab(tabKey, 0, false, id);
+  }, [loadTab]);
 
   return (
     <div className="mt-8">
@@ -419,8 +368,22 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
           </div>
         )}
 
-        {/* 所有已加载的 tab 内容（保持 DOM，用 display:none 隐藏非当前 tab）*/}
-        {Array.from(renderedTabs).map(tabKey => renderTabContent(tabKey, tabKey === activeTab))}
+        {/* 所有已加载的推荐 tab 内容（保持 DOM，用 display:none 隐藏非当前 tab）*/}
+        {primaryTab === "recommend" && Array.from(renderedTabs).map(tabKey => (
+          <RecommendTabContent key={tabKey} tabKey={tabKey} isActive={tabKey === activeTab}
+            isSearchMode={isSearchMode} data={tabDataMap[tabKey] || { items: [], loading: false, error: false, hasMore: true, page: 0 }}
+            colCount={colCount} expandedIndex={expandedIndex} detail={detail} detailLoading={detailLoading}
+            loadingMore={loadingMore} rowEndIndex={rowEndIndex} gridRef={gridRef}
+            onCardClick={handleCardClick} onSelectMedia={onSelectMedia} onCloseExpand={closeExpand}
+            onRetry={handleRetry} onRefreshWithSource={handleRefreshWithSource}
+            onLoadMore={loadMore} onRetryTab={handleRetryTab} />
+        ))}
+
+        {/* 探索页 */}
+        {primaryTab === "explore" && !isSearchMode && (
+          <ExplorePage onSelectMedia={onSelectMedia} activeTab={exploreTab} setActiveTab={setExploreTab}
+            colCount={colCount} />
+        )}
       </div>
     </div>
   );

@@ -89,11 +89,11 @@ export type RecommendSource = {
 };
 
 export const RECOMMEND_TABS: RecommendSource[] = [
+  { key: "combined", label: "综合推荐", mediaType: "mixed", ratingSource: "douban" },
   { key: "douban_movie_hot", label: "热门电影", mediaType: "movie", ratingSource: "douban" },
   { key: "douban_tv_hot", label: "热门剧集", mediaType: "tv", ratingSource: "douban" },
   { key: "douban_animation", label: "热门动画", mediaType: "tv", ratingSource: "douban" },
   { key: "douban_showing", label: "正在热映", mediaType: "movie", ratingSource: "douban" },
-  { key: "douban_top250", label: "电影总榜", mediaType: "movie", showRank: true, ratingSource: "douban" },
   { key: "weekly_combined", label: "剧集周榜", mediaType: "tv", showRank: true, ratingSource: "douban" },
   { key: "tmdb_trending", label: "TMDB放送", mediaType: "mixed", ratingSource: "tmdb" },
   { key: "bangumi_calendar", label: "Bangumi放送", mediaType: "tv", ratingSource: "bangumi" },
@@ -102,7 +102,24 @@ export const RECOMMEND_TABS: RecommendSource[] = [
 // ── 一级 tab 配置 ──
 export type PrimaryTab = "recommend" | "explore" | "subscribe";
 export const PRIMARY_TABS: { key: PrimaryTab; label: string }[] = [
-  { key: "recommend", label: "发现" },
+  { key: "recommend", label: "推荐" },
   { key: "explore", label: "探索" },
   // { key: "subscribe", label: "订阅" },  // 阶段 3 启用
+];
+
+// ── 探索源配置 ──
+export type ExploreSource = {
+  key: string;
+  label: string;
+  provider: string;
+  type: string;
+  defaultSort: string;
+};
+
+export const EXPLORE_TABS: ExploreSource[] = [
+  { key: "douban_movie", label: "豆瓣电影", provider: "douban", type: "movie", defaultSort: "T" },
+  { key: "douban_tv", label: "豆瓣剧集", provider: "douban", type: "tv", defaultSort: "T" },
+  { key: "tmdb_movie", label: "TMDB电影", provider: "tmdb", type: "movie", defaultSort: "popularity.desc" },
+  { key: "tmdb_tv", label: "TMDB剧集", provider: "tmdb", type: "tv", defaultSort: "popularity.desc" },
+  { key: "bangumi", label: "Bangumi", provider: "bangumi", type: "2", defaultSort: "rank" },
 ];

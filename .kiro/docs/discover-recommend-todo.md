@@ -58,7 +58,7 @@
 - [x] 发现区域有自己的 sticky 标题栏，滚动到该区域时吸顶
 - [x] 进入子文件夹时隐藏发现区域，回到根目录时显示
 - [x] IntersectionObserver 检测发现区域进入视口时才开始加载数据（懒加载）
-- [ ] 磁吸滚动：滚动到发现区域边界时自动吸附（待打磨）
+- [x] 磁吸滚动 + 阻尼吸附：`hooks/useScrollDamping.ts`（下滑距墙<460px吸附到发现页，上滑距墙>260px吸附回顶部）
 - [x] 卡片展开面板切换时下方卡片图片闪烁/重载问题（已修复：everLoadedRef 防止重复 spinner）
 - [x] 后端 `/scrape/poster` 接口 Cache-Control 优化（public, max-age=3600）
 - [x] 后端 `/proxy/image` 接口 Cache-Control 优化（public, max-age=86400）
@@ -117,8 +117,8 @@
 > 一级 tab 切换"推荐/探索"，推荐新增"综合推荐"tab，探索内二级 tab 5 个源。
 
 ### 2.0 推荐 tab 调整
-- [ ] 一级 tab 文案："发现" → "推荐"
-- [ ] 推荐 tab 调整为 8 个：
+- [x] 一级 tab 文案："发现" → "推荐"
+- [x] 推荐 tab 调整为 8 个：
   1. **综合推荐**（新增）— 三源融合排序，混合电影+剧集+动画
   2. 热门电影（豆瓣 movie_hot_gaia）
   3. 热门剧集（豆瓣 tv_hot）
@@ -127,75 +127,91 @@
   6. 剧集周榜（豆瓣 weekly 合并）
   7. TMDB放送（TMDB trending/week，混合电影+剧集）
   8. Bangumi放送（Bangumi calendar，当季动画按评分排序）
-- [ ] 电影总榜(TOP250) 移到探索-豆瓣电影的排序选项中（预设标签"TOP250"）
+- [x] 电影总榜(TOP250) 移到探索-豆瓣电影的排序选项中（预设标签"TOP250"）
 
 ### 2.0.1 综合推荐算法（后端 `/discover/recommend/combined`）
 
 **数据获取（并发，timeout=5s）：**
-- 豆瓣：movie_hot(10条) + tv_hot(10条)
-- TMDB：trending/week(20条)
-- Bangumi：calendar 热门(10条)
+- [x] 豆瓣：movie_hot(10条) + tv_hot(10条)
+- [x] TMDB：trending/week(20条)
+- [x] Bangumi：calendar 热门(10条)
 
 **多维去重（优先级从高到低）：**
-1. tmdb_id / douban_id 关联映射（如果有）
-2. original_title 精确匹配
-3. 中文标题 + 年份匹配（年份允许 ±1 误差）
+- [x] 1. tmdb_id / douban_id 关联映射（如果有）
+- [x] 2. original_title 精确匹配
+- [x] 3. 中文标题 + 年份匹配（年份允许 ±1 误差）
 
 **评分归一化（10 分制基准）：**
-- 豆瓣：base = 原始评分 × 1.0
-- TMDB：base = (原始评分 + 0.5) × 0.9（补偿 TMDB 评分偏低）
-- Bangumi：base = 原始评分 + 0.2（补偿动漫评分严苛）
+- [x] 豆瓣：base = 原始评分 × 1.0
+- [x] TMDB：base = (原始评分 + 0.5) × 0.9（补偿 TMDB 评分偏低）
+- [x] Bangumi：base = 原始评分 + 0.2（补偿动漫评分严苛）
 
 **加权计算 final_score：**
-- 豆瓣来源加成：source == "douban" → +0.5
-- 动漫爱好者加成：genres 含"动画/Animation/Anime" → +0.8
-- 当季新番加成：源自 Bangumi 且首播 180 天内 → +0.8
-- 多源共振：2 源命中 → +1.0，3 源命中 → +2.0
-- 冷门降权：单源且评价人数极少 → score × 0.8
+- [x] 豆瓣来源加成：source == "douban" → +0.5
+- [x] 动漫爱好者加成：genres 含"动画/Animation/Anime" → +0.8
+- [x] 当季新番加成：源自 Bangumi 且首播当年 → +0.8
+- [x] 多源共振：2 源命中 → +1.0，3 源命中 → +2.0
+- [ ] 冷门降权：单源且评价人数极少 → score × 0.8
 
 **产出逻辑（40 条）：**
-- 动漫保底：至少 12 条(30%) 动画类资源，不足从 Bangumi 桶补位
-- 影剧交叉：每 3 条中至少 1 条电影 + 1 条剧集/番剧
-- Fallback：去重后不足 40 条，从 top250 或 weekly 补位
-- 容错：单源超时/失败不影响其他源，自动降级为双源/单源模式
+- [x] 动漫保底：至少 12 条(30%) 动画类资源，不足从 Bangumi 桶补位
+- [x] 影剧交叉：每 3 条中至少 1 条电影 + 1 条剧集/番剧
+- [ ] Fallback：去重后不足 40 条，从 top250 或 weekly 补位
+- [x] 容错：单源超时/失败不影响其他源，自动降级为双源/单源模式
 
 **返回字段：**
-- `reason`: "全网热门" / "高分番剧" / "豆瓣热榜" / "当季新番" 等
-- `is_new_anime`: true/false（180 天内新番，前端高亮）
-- `local_status`: 暂不实现，留到 2.7
+- [x] `reason`: "全网热门" / "高分番剧" / "豆瓣热榜" / "当季新番" 等
+- [x] `is_new_anime`: true/false（180 天内新番，前端高亮）
+- [ ] `local_status`: 暂不实现，留到 2.7
 
 ### 2.1 豆瓣电影探索
-- [ ] 后端路由 `/discover/explore?provider=douban&type=movie&sort=R&tags=&page=1`
-- [ ] 调用 `douban_api_v2.movie_recommend(sort, tags, start, count)`
-- [ ] 排序选项：近期热度(R，默认) / 高分优先(S) / 最新上映(T) / TOP250（预设标签）
-- [ ] 类型标签：剧情/喜剧/动作/爱情/科幻/悬疑/恐怖/动画/...（豆瓣 API 支持的 tags）
-- [ ] 无限滚动分页
+- [x] 后端路由 `/discover/explore?provider=douban&type=movie&sort=T&tags=&page=1`
+- [x] 调用 `douban_api_v2.movie_explore(sort, tags, start, count)`
+- [x] 筛选项对照 MP 前端完整修正：排序(T/U/S/R/TOP250) + 风格(22个) + 地区(15个常用) + 年代(年代段+动态6年) + 评分双滑块
+- [x] 豆瓣默认排序 T（近期热度），TOP250 作为豆瓣电影专属排序标签
+- [x] 无限滚动分页
+- [x] 过滤非影视条目（合集/豆列：无年份且无评分）
+- [x] sort=T 数据不足时自动用 sort=U 补位
+- [x] 评分过滤后不足 count 条时通用候补机制
 
 ### 2.2 豆瓣剧集探索
-- [ ] 后端路由 `/discover/explore?provider=douban&type=tv&sort=R&tags=&page=1`
-- [ ] 调用 `douban_api_v2.tv_recommend(sort, tags, start, count)`
-- [ ] 排序和标签同 2.1（无 TOP250）
+- [x] 后端路由 `/discover/explore?provider=douban&type=tv&sort=T&tags=&page=1`
+- [x] 同 2.1，筛选项已修正（无 TOP250）
 
 ### 2.3 TMDB 电影探索
-- [ ] 后端路由 `/discover/explore?provider=tmdb&type=movie&sort_by=popularity.desc&genres=&language=&vote_average=0&page=1`
-- [ ] 调用 `tmdb_client.discover(media_type="movie", ...)`
-- [ ] 筛选：排序(人气/评分/上映日期) + 类型(genres) + 语言(original_language) + 最低评分(vote_average) + 上映日期(release_date)
+- [x] 后端路由 `/discover/explore?provider=tmdb&type=movie&sort_by=popularity.desc&...`
+- [x] 排序 6 个：热度降序/升序 + 上映日期降序/升序 + 评分降序/升序
+- [x] 电影用 release_date，剧集用 first_air_date
+- [x] 筛选：风格(19个) + 语言(13个) + 评分双滑块
+- [x] count 参数生效：超过 20 条自动请求多页合并
 
 ### 2.4 TMDB 剧集探索
-- [ ] 同 2.3，`type=tv`
+- [x] 同 2.3，`type=tv`
+- [x] 排序和风格已修正（剧集风格 16 个）
 
 ### 2.5 Bangumi 探索
-- [ ] 扩展 `bangumi_client.py` 新增 `discover(type, cat, sort, year, page)` 方法
-- [ ] 后端路由 `/discover/explore?provider=bangumi&type=2&sort=rank&year=&page=1`
-- [ ] 筛选：类型(动画/书籍/游戏/音乐) + 分类(cat) + 排序(rank/date) + 年份
+- [x] `bangumi_client.py` discover() 方法 + 代理支持（从 config.json 读取 http_proxy）
+- [x] 类别筛选 cat 参数：其他(0)/TV(1)/OVA(2)/Movie(3)/WEB(5)，type 固定为 2
+- [x] 排序(rank/date) + 年份(最近10年)
 
 ### 2.6 前端探索页
-- [ ] 一级 tab 切换：推荐 / 探索
-- [ ] 探索内二级 tab：豆瓣电影 / 豆瓣剧集 / TMDB电影 / TMDB剧集 / Bangumi
-- [ ] 每个 tab 顶部筛选栏（参考 MP 铺开式设计，根据源不同显示不同筛选项）
-- [ ] 默认排序：豆瓣=近期热度(R)，TMDB=popularity.desc，Bangumi=rank
-- [ ] 无限滚动分页，复用 DiscoverCard 卡片组件
-- [ ] 点击卡片展开详情（复用 ExpandDetail）
+- [x] 一级 tab 切换：推荐 / 探索
+- [x] 探索内二级 tab：豆瓣电影 / 豆瓣剧集 / TMDB电影 / TMDB剧集 / Bangumi
+- [x] 二级 tab 电影蓝/剧集绿色彩规范
+- [x] 筛选栏对照 MP 前端源码完整修正
+- [x] 评分双滑块（豆瓣+TMDB）
+- [x] 无限滚动分页，复用 DiscoverCard 卡片组件
+- [x] 点击卡片展开详情（复用 ExpandDetail）
+- [x] 探索二级 tab sticky 吸附
+- [x] 展示逻辑和推荐一致（colCount * 4 行，响应式列数，reqSize 动态计算）
+- [x] 筛选切换时立即清空+骨骼屏，loadIdRef 竞态防护
+- [x] 缓存命中时确保 loading 状态重置（防宕机）
+- [x] TOP250 排名角标（前 3 金色）
+- [x] 详情匹配修复：豆瓣 ID 拉取失败时自动尝试 movie↔tv，彻底失败不 fallback 搜索（避免匹配错误）
+- [x] 滚动自动加载：前 4 批 IntersectionObserver 自动触发（400ms 延时+骨骼行），之后手动点击
+- [x] 数据截断到 colCount 整数倍，避免最后一行不满
+- [x] 综合推荐 60 条上限 + 排名角标 + "今天就推荐这么多吧"
+- [x] 磁吸滚动 + 阻尼吸附（`useScrollDamping` hook）
 
 ### 2.7 本地媒体库感知（后做）
 - [ ] 推荐/探索接口返回的 items 新增 `local_status` 字段：`none`（未拥有）/ `owned_low`（已有低画质）/ `owned_high`（已有高画质）

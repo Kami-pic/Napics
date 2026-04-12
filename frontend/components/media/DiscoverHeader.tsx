@@ -87,9 +87,7 @@ export default function DiscoverHeader({
         </div>
       )}
       {primaryTab === "explore" && !isSearchMode && (
-        <div className="flex gap-1 py-3">
-          <span className="text-xs text-slate-500 py-1">探索筛选（阶段 2 开发中）</span>
-        </div>
+        <div /> /* 探索二级 tab 由 ExplorePage 自己渲染 */
       )}
     </div>
   );

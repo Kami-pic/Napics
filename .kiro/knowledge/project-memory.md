@@ -65,41 +65,45 @@
 - 代码拆分 TODO：`.kiro/docs/code-split-todo.md`（后端 4 项 + 前端 2 项已完成，剩余前端 5-8 低优先级）
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - 自动替换 TODO：`.kiro/docs/auto-replace-todo.md`
-- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 完成，阶段 2 探索筛选待做）
+- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 完成，阶段 2 探索筛选基本完成）
+- 阶段 2 已完成：探索 5 源筛选（豆瓣电影/剧集+TMDB电影/剧集+Bangumi）、综合推荐算法、TOP250 排序标签、评分双滑块、候补机制、详情匹配修复、滚动自动加载、磁吸阻尼吸附
+- 阶段 2 剩余：本地媒体库感知(2.7)、详情候选选择、冷门降权、Fallback 补位
 - 待做：磁力熊直搜、其他网盘转存 API、设置页搜索源开关、转存纳入 DownloadManager
-- 待做：发现页详情匹配错误时的候选选择（阶段 2，类似刮削候选面板）
 
-## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级）
+## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级+阶段2探索筛选完成）
 - `douban_api_v2.py`：豆瓣 App API v2 签名鉴权，9 个榜单 + 探索 + 搜索 + 详情
-  - `_normalize_item` 从 `card_subtitle` 解析 genres/countries/year（合集接口不直接返回这些字段）
-  - `episodes_info` 字段（如"22集全"）从原始 API 的 `episodes_info` 提取
-  - 搜索结果过滤非影视条目（`target_type not in ("movie","tv")`）
-  - 搜索 `responseGroup: "large"` 获取 Bangumi 评分
-- 详情多源算法（`/media/info?source=&id=`）：
-  - douban：豆瓣 v2 详情（优先用 id 直接拉）→ TMDB fallback
-  - tmdb：TMDB → 豆瓣 v2 fallback
-  - bangumi：Bangumi 详情（优先用 bgm_id 直接拉）→ 豆瓣 v2 → TMDB
-  - `_enrich_ratings`：主源命中后并行补充其他两源评分 + external_ids（tmdb_id/imdb_id）
-  - 返回 `ratings: {douban, tmdb, bangumi}` + `external_ids: {tmdb_id, imdb_id}` + `source`
-- 详情面板功能（04-12 新增）：
-  - 数据源下拉（豆瓣/TMDB/Bangumi）+ 🔄 刷新按钮（清缓存+用选中源重新请求）
-  - 三源评分：豆瓣5个tab+TMDB趋势显示双评分（豆瓣+TMDB），热门动画+Bangumi趋势显示三源评分
-  - 外部链接：豆瓣/TMDB/IMDB/Bangumi，有数据就显示，没数据不显示
-  - Bangumi 趋势 tab 的 item.douban_id 实际是 bgm_id → 豆瓣链接不显示，改为 Bangumi 链接
-  - 数据来源标签：底部小字 `数据来自 豆瓣/TMDB/Bangumi`
-  - 缓存管理：`deleteCachedDetail` 支持清除单条缓存
-  - ID 拉取标题校验：Bangumi/豆瓣 ID 返回标题和请求标题中文字重叠 < 2 时放弃 ID 改走搜索
-  - TMDB 匹配增强：用豆瓣 original_title 作为 subtitle 传给 _try_tmdb_detail 做 fallback 搜索
-  - 已知局限：中文搜 TMDB 覆盖率有限，部分冷门片搜不到；Bangumi calendar API 的 bgm_id 偶尔错位
-  - 链接按钮策略：有精确 ID 用详情页（正常亮度），无 ID 用搜索页（变灰 text-slate-500）
-  - _enrich_ratings 已改为并行（豆瓣先跑 → TMDB+Bangumi 线程池并行），耗时从 10+s 降到 4-5s
-- 推荐接口 fallback：API v2 失败时回退到旧版网页接口（5 个豆瓣源有映射）
-- 图片缓存优化：`/scrape/poster` 改为 `Cache-Control: public, max-age=3600`，`/proxy/image` 改为 `max-age=86400`
-- 发现页 tab 切换优化：`display:none` 保持已加载 tab 的 DOM，图片不重新加载
-- 发现页卡片信息：标题 + 年份·国家·集数 + 类型标签（genres），评分用品牌色（豆瓣黄/TMDB蓝/Bangumi粉）
-- 豆瓣详情封面走 `/proxy/image` 代理（防盗链）
-- 刮削候选面板：三源评分（品牌色星星）+ 类型标签（`getMediaTypeColor`）+ 裂图 fallback
-- 媒体库颜色统一：电影蓝色、剧集绿色（CardGrid 标签 + 一级目录标签）
+  - 探索接口 `movie_explore`/`tv_explore`：过滤非影视条目（无标题或无年份且无评分的合集/豆列）
+  - 豆瓣探索 sort 参数：T=近期热度（默认） U=综合排序 S=高分优先 R=首播时间
+  - sort=T 数据量不稳定（豆瓣 API 行为），后端自动用 sort=U 补位
+- `bangumi_client.py`：所有请求加了代理支持（从 config.json 的 http_proxy 读取）
+- `tmdb_client.py` discover()：支持 count 参数，超过 20 条自动请求多页合并
+- 阶段 2 探索页文件：
+  - `ExplorePage.tsx`：探索页主组件（筛选+无限滚动+卡片网格）
+  - `ExploreFilterBar.tsx`：探索筛选栏（对照 MP 前端源码完整修正）
+  - `RecommendTabContent.tsx`：推荐 tab 渲染组件
+  - `combined_recommend.py`：综合推荐算法（三源融合排序）
+- 探索筛选配置（完全对齐 MP 前端 discover-DW2W5EZR.js）：
+  - 豆瓣：排序(T/U/S/R) + 风格(22个) + 地区(15个常用) + 年代(年代段+动态6年) + 评分双滑块
+  - 豆瓣电影额外排序：TOP250（走 movie_top250 接口，显示排名角标）
+  - TMDB 电影：排序(6个含升降序) + 风格(19个) + 语言(13个) + 评分双滑块
+  - TMDB 剧集：排序(6个，日期用 first_air_date) + 风格(16个) + 语言 + 评分双滑块
+  - Bangumi：类别 cat(其他/TV/OVA/Movie/WEB) + 排序(rank/date) + 年份(最近10年)
+- 探索页增强：
+  - 二级 tab 电影蓝/剧集绿色彩规范
+  - 筛选切换立即清空+骨骼屏+loadIdRef 竞态防护
+  - 评分过滤后不足 count 条时通用候补机制（用其他排序补位）
+  - reqSize = colCount * 4 动态计算，TMDB 多页合并支持
+- 详情匹配修复（04-12）：
+  - 豆瓣 ID 拉取失败时自动尝试 movie↔tv（探索列表的 media_type 可能不准）
+  - 两种都失败说明是非影视条目，直接返回 found:false，不 fallback 搜索（避免匹配错误）
+  - 已知案例：豆瓣探索混入合集/豆列（如 "WOWOW 連続ドラマW"），ID 404 后搜索匹配到错误影片
+- 滚动交互（04-12）：
+  - `hooks/useScrollDamping.ts`：磁吸阻尼 hook，详见 `knowledge/scroll-damping-interaction.md`
+  - 下滑距墙 < 460px 吸附到发现页（350ms），上滑距墙 > 260px 吸附回顶部（200ms）
+  - 推荐/探索卡片滚动自动加载：前 4 批 IntersectionObserver + 400ms 延时 + 骨骼行，之后手动点击
+  - 数据截断到 colCount 整数倍，避免最后一行不满
+  - 综合推荐 60 条上限 + 排名角标 + "今天就推荐这么多吧"
+  - 媒体库和发现页间距 mt-10（40px）
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符

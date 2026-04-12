@@ -366,22 +366,20 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
         # 有 ID 直接拉详情
         if douban_id:
             print(f"[MediaInfo._try_douban] 用 ID 直接拉: douban_id={douban_id}, media_type={media_type}")
+            # 先用指定 media_type 拉，失败则尝试另一种（电影/剧集可能分类不准）
             detail = douban_api_v2.get_detail(douban_id, media_type=media_type)
+            if not detail or not detail.get("title"):
+                alt_type = "tv" if media_type == "movie" else "movie"
+                print(f"[MediaInfo._try_douban] {media_type} 404，尝试 {alt_type}")
+                detail = douban_api_v2.get_detail(douban_id, media_type=alt_type)
             if detail and detail.get("title"):
-                # 标题校验：ID 拉到的标题和请求 title 至少有 2 个字重叠
-                import re as _re
-                title_chars = set(_re.findall(r'[\u4e00-\u9fff]', title))
-                detail_chars = set(_re.findall(r'[\u4e00-\u9fff]', detail.get("title", "")))
-                overlap = len(title_chars & detail_chars)
-                if overlap >= 2 or not title_chars:
-                    print(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}, poster={detail.get('poster_url', '')[:60]}")
-                    return _format_douban_detail(detail)
-                else:
-                    print(f"[MediaInfo._try_douban] ID 标题不匹配: 请求={title}, 返回={detail.get('title')}，改走搜索")
-            else:
-                print(f"[MediaInfo._try_douban] ID 拉取失败或无 title")
+                print(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}")
+                return _format_douban_detail(detail)
+            # ID 拉取彻底失败（可能是合集/豆列），不 fallback 搜索（避免匹配错误）
+            print(f"[MediaInfo._try_douban] ID {douban_id} 拉取失败（可能是非影视条目），跳过")
+            return None
 
-        # 搜索匹配
+        # 无 ID 时搜索匹配
         print(f"[MediaInfo._try_douban] 搜索: title={title}")
         results = douban_api_v2.search(title, count=5)
         if not results:

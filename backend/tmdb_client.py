@@ -493,51 +493,61 @@ class TMDBClient:
 
     def discover(self, media_type: str = "movie", sort_by: str = "popularity.desc",
                  genres: str = "", language: str = "", vote_avg: float = 0,
-                 vote_count: int = 0, release_date: str = "", page: int = 1) -> List[dict]:
-        """TMDB Discover 接口：按条件筛选电影/剧集"""
-        import hashlib
-        cache_key = hashlib.md5(f"discover_{media_type}_{sort_by}_{genres}_{language}_{vote_avg}_{page}".encode()).hexdigest()[:12]
-        cp = os.path.join(CACHE_DIR, f"discover_{cache_key}.json")
-        cached = self._load_cache(cp, max_age_hours=24)
-        if cached is not None:
-            return cached.get("results", [])
+                 vote_count: int = 0, release_date: str = "", page: int = 1,
+                 count: int = 20) -> List[dict]:
+        """TMDB Discover 接口：按条件筛选电影/剧集。
+        count: 期望返回条数，TMDB 每页固定 20 条，超过 20 会自动请求多页合并。
+        """
+        import hashlib, math
+        pages_needed = max(1, math.ceil(count / 20))
+        all_items = []
 
-        params = {"sort_by": sort_by, "page": page}
-        if genres:
-            params["with_genres"] = genres
-        if language:
-            params["with_original_language"] = language
-        if vote_avg > 0:
-            params["vote_average.gte"] = vote_avg
-        if vote_count > 0:
-            params["vote_count.gte"] = vote_count
-        if release_date:
-            if media_type == "movie":
-                params["primary_release_date.gte"] = release_date
-            else:
-                params["first_air_date.gte"] = release_date
+        for pg in range(pages_needed):
+            current_page = page + pg
+            cache_key = hashlib.md5(f"discover_{media_type}_{sort_by}_{genres}_{language}_{vote_avg}_{current_page}".encode()).hexdigest()[:12]
+            cp = os.path.join(CACHE_DIR, f"discover_{cache_key}.json")
+            cached = self._load_cache(cp, max_age_hours=24)
+            if cached is not None:
+                all_items.extend(cached.get("results", []))
+                continue
 
-        try:
-            results = self._get(f"/discover/{media_type}", params).get("results", [])
-            # 标准化输出
-            items = []
-            for r in results:
-                items.append({
-                    "tmdb_id": r.get("id"),
-                    "title": r.get("title") or r.get("name") or "",
-                    "original_title": r.get("original_title") or r.get("original_name") or "",
-                    "year": (r.get("release_date") or r.get("first_air_date") or "")[:4],
-                    "rating": round(r.get("vote_average", 0), 1),
-                    "poster_url": self._poster(r.get("poster_path")),
-                    "overview": r.get("overview") or "",
-                    "media_type": media_type,
-                    "genre_ids": r.get("genre_ids", []),
-                })
-            self._save_cache(cp, {"results": items})
-            return items
-        except Exception as e:
-            print(f"[TMDB] discover/{media_type} 失败: {e}")
-            return []
+            params = {"sort_by": sort_by, "page": current_page}
+            if genres:
+                params["with_genres"] = genres
+            if language:
+                params["with_original_language"] = language
+            if vote_avg > 0:
+                params["vote_average.gte"] = vote_avg
+            if vote_count > 0:
+                params["vote_count.gte"] = vote_count
+            if release_date:
+                if media_type == "movie":
+                    params["primary_release_date.gte"] = release_date
+                else:
+                    params["first_air_date.gte"] = release_date
+
+            try:
+                results = self._get(f"/discover/{media_type}", params).get("results", [])
+                items = []
+                for r in results:
+                    items.append({
+                        "tmdb_id": r.get("id"),
+                        "title": r.get("title") or r.get("name") or "",
+                        "original_title": r.get("original_title") or r.get("original_name") or "",
+                        "year": (r.get("release_date") or r.get("first_air_date") or "")[:4],
+                        "rating": round(r.get("vote_average", 0), 1),
+                        "poster_url": self._poster(r.get("poster_path")),
+                        "overview": r.get("overview") or "",
+                        "media_type": media_type,
+                        "genre_ids": r.get("genre_ids", []),
+                    })
+                self._save_cache(cp, {"results": items})
+                all_items.extend(items)
+            except Exception as e:
+                print(f"[TMDB] discover/{media_type} page={current_page} 失败: {e}")
+                break
+
+        return all_items[:count]
 
     def trending(self, page: int = 1) -> List[dict]:
         """TMDB 流行趋势（周榜）"""

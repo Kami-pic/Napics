@@ -281,11 +281,11 @@ def _tmdb_trending_paged(start: int, count: int) -> list:
 
 # 推荐源映射
 _RECOMMEND_SOURCES = {
+    "combined": None,  # 综合推荐走独立逻辑
     "douban_showing": lambda start, count: douban_api_v2.movie_showing(start, count),
     "douban_movie_hot": lambda start, count: douban_api_v2.movie_hot(start, count),
     "douban_tv_hot": lambda start, count: douban_api_v2.tv_hot(start, count),
     "douban_animation": lambda start, count: douban_api_v2.tv_animation(start, count),
-    "douban_top250": lambda start, count: douban_api_v2.movie_top250(start, count),
     "douban_weekly_chinese": lambda start, count: douban_api_v2.tv_weekly_chinese(start, count),
     "douban_weekly_global": lambda start, count: douban_api_v2.tv_weekly_global(start, count),
     "tmdb_trending": lambda start, count: _tmdb_trending_paged(start, count),
@@ -296,6 +296,31 @@ _RECOMMEND_SOURCES = {
 @router.get("/discover/recommend/{source}")
 def discover_recommend(source: str, start: int = 0, count: int = 20):
     """统一推荐接口，豆瓣 API v2 失败时 fallback 到旧版网页接口"""
+    # 综合推荐走独立逻辑（带文件缓存 1 小时）
+    if source == "combined":
+        import hashlib
+        cache_key = hashlib.md5(b"combined_recommend").hexdigest()[:12]
+        cache_path = os.path.join("scrape_cache", f"combined_{cache_key}.json")
+        if os.path.exists(cache_path):
+            try:
+                mtime = os.path.getmtime(cache_path)
+                if time.time() - mtime < 3600:  # 1 小时缓存
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        cached = json.load(f)
+                    return {"source": "combined", "items": cached[start:start + count], "count": len(cached)}
+            except Exception:
+                pass
+        from combined_recommend import get_combined_recommend
+        items = get_combined_recommend()
+        # 缓存结果
+        try:
+            os.makedirs("scrape_cache", exist_ok=True)
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(items, f, ensure_ascii=False)
+        except Exception:
+            pass
+        return {"source": "combined", "items": items[start:start + count], "count": len(items)}
+
     fetcher = _RECOMMEND_SOURCES.get(source)
     if not fetcher:
         raise HTTPException(status_code=400, detail=f"未知推荐源: {source}，可选: {list(_RECOMMEND_SOURCES.keys())}")
@@ -326,21 +351,74 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
 
 
 @router.get("/discover/explore")
-def discover_explore(provider: str = "douban", type: str = "movie", sort: str = "R", tags: str = "", page: int = 0, count: int = 20):
-    """探索接口。provider: douban/tmdb, type: movie/tv, sort: R(热度)/S(评分)/T(时间)"""
+def discover_explore(
+    provider: str = "douban", type: str = "movie", sort: str = "T",
+    tags: str = "", page: int = 0, count: int = 20,
+    # TMDB 扩展参数
+    with_original_language: str = "", with_keywords: str = "",
+    vote_average: float = 0, vote_count: int = 0, vote_max: float = 10,
+    # Bangumi 扩展参数
+    cat: int = None, year: str = "",
+):
+    """探索接口。provider: douban/tmdb/bangumi"""
     try:
         if provider == "douban":
-            if type == "tv":
-                items = douban_api_v2.tv_explore(tags=tags, sort=sort, start=page * count, count=count)
+            has_rating_filter = vote_average > 0 or vote_max < 10
+            # 多请求 20% 以应对过滤损耗（垃圾条目+评分过滤）
+            fetch_count = int(count * 1.3) if not has_rating_filter else int(count * 1.5)
+            if sort == "TOP250" and type == "movie":
+                items = douban_api_v2.movie_top250(start=page * count, count=fetch_count)
+            elif type == "tv":
+                items = douban_api_v2.tv_explore(tags=tags, sort=sort, start=page * count, count=fetch_count)
             else:
-                items = douban_api_v2.movie_explore(tags=tags, sort=sort, start=page * count, count=count)
+                items = douban_api_v2.movie_explore(tags=tags, sort=sort, start=page * count, count=fetch_count)
+            # 评分范围过滤（双滑块）
+            if has_rating_filter:
+                items = [i for i in (items or []) if _in_rating_range(i.get("rating", 0), vote_average, vote_max)]
+            # 通用候补：过滤后不足 count 条时，用其他排序补位
+            if items is not None and len(items) < count and sort != "TOP250":
+                existing_ids = {i.get("douban_id") for i in items if i.get("douban_id")}
+                fill_sort = "U" if sort != "U" else "S"
+                fill_fn = douban_api_v2.tv_explore if type == "tv" else douban_api_v2.movie_explore
+                fill = fill_fn(tags=tags, sort=fill_sort, start=0, count=count)
+                for fi in (fill or []):
+                    if has_rating_filter and not _in_rating_range(fi.get("rating", 0), vote_average, vote_max):
+                        continue
+                    if fi.get("douban_id") and fi.get("douban_id") not in existing_ids:
+                        items.append(fi)
+                        existing_ids.add(fi.get("douban_id"))
+                        if len(items) >= count:
+                            break
+            items = (items or [])[:count]
         elif provider == "tmdb":
             tmdb = get_clients()["tmdb"]
+            import math
+            # 有评分上限过滤时多请求 30%
+            tmdb_count = int(count * 1.3) if vote_max < 10 else count
+            pages_per_req = max(1, math.ceil(tmdb_count / 20))
+            tmdb_start_page = page * max(1, math.ceil(count / 20)) + 1
             items = tmdb.discover(
                 media_type=type,
                 sort_by=sort if "." in sort else "popularity.desc",
                 genres=tags,
-                page=(page or 0) + 1,  # TMDB 页码从 1 开始
+                language=with_original_language,
+                vote_avg=vote_average,
+                vote_count=vote_count,
+                page=tmdb_start_page,
+                count=tmdb_count,
+            )
+            # TMDB 评分上限过滤
+            if vote_max < 10 and items:
+                items = [i for i in items if (i.get("rating", 0) or 0) <= vote_max]
+            items = (items or [])[:count]
+        elif provider == "bangumi":
+            bgm_type = 2  # 默认动画
+            if type == "book": bgm_type = 1
+            elif type == "game": bgm_type = 4
+            elif type == "real": bgm_type = 6
+            items = bangumi_client.discover(
+                type=bgm_type, cat=cat, sort=sort if sort in ("rank", "date") else "rank",
+                year=year or None, limit=count, offset=page * count,
             )
         else:
             raise HTTPException(status_code=400, detail=f"未知 provider: {provider}")
@@ -352,14 +430,22 @@ def discover_explore(provider: str = "douban", type: str = "movie", sort: str = 
         return {"provider": provider, "type": type, "items": [], "count": 0, "error": str(e)}
 
 
+def _in_rating_range(rating: float, min_r: float, max_r: float) -> bool:
+    """评分范围判断：评分为 0（未评分）的条目始终保留"""
+    if not rating or rating <= 0:
+        return True
+    return min_r <= rating <= max_r
+
+
 @router.get("/discover/sources")
 def discover_sources():
-    """返回所有可用的推荐源列表"""
+    """返回所有可用的推荐源和探索源列表"""
     return {
         "recommend": list(_RECOMMEND_SOURCES.keys()),
         "explore": {
             "douban": {"types": ["movie", "tv"], "sorts": ["R", "S", "T"]},
-            "tmdb": {"types": ["movie", "tv"], "sorts": ["popularity.desc", "vote_average.desc"]},
+            "tmdb": {"types": ["movie", "tv"], "sorts": ["popularity.desc", "vote_average.desc", "primary_release_date.desc"]},
+            "bangumi": {"types": [2, 1, 4, 6], "sorts": ["rank", "date"]},
         },
     }
 

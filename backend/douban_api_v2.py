@@ -219,22 +219,25 @@ def tv_weekly_global(start: int = 0, count: int = 20) -> List[Dict]:
 # 公开接口：探索（按标签+排序筛选）
 # ══════════════════════════════════════════════════════════════
 
-def movie_explore(tags: str = "", sort: str = "R", start: int = 0, count: int = 20) -> List[Dict]:
-    """豆瓣电影探索。sort: R=热度 T=近期热度 S=高分优先"""
+def movie_explore(tags: str = "", sort: str = "U", start: int = 0, count: int = 20) -> List[Dict]:
+    """豆瓣电影探索。sort: U=综合排序 R=首播时间 T=近期热度 S=高分优先"""
     data = _request("movie_recommend", tags=tags, sort=sort, start=start, count=count)
     if not data:
         return []
     items = data.get("items") or []
-    return [_normalize_item(item) for item in items]
+    # 过滤垃圾条目：无标题、或无年份且无评分（合集/豆列类）
+    return [i for i in [_normalize_item(item) for item in items]
+            if i.get("title", "").strip() and (i.get("year") or i.get("rating", 0) > 0)]
 
 
-def tv_explore(tags: str = "", sort: str = "R", start: int = 0, count: int = 20) -> List[Dict]:
-    """豆瓣剧集探索。sort: R=热度 T=近期热度 S=高分优先"""
+def tv_explore(tags: str = "", sort: str = "U", start: int = 0, count: int = 20) -> List[Dict]:
+    """豆瓣剧集探索。sort: U=综合排序 R=首播时间 T=近期热度 S=高分优先"""
     data = _request("tv_recommend", tags=tags, sort=sort, start=start, count=count)
     if not data:
         return []
     items = data.get("items") or []
-    return [_normalize_item(item) for item in items]
+    return [i for i in [_normalize_item(item) for item in items]
+            if i.get("title", "").strip() and (i.get("year") or i.get("rating", 0) > 0)]
 
 
 # ══════════════════════════════════════════════════════════════

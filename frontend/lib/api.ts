@@ -185,8 +185,20 @@ export const api = {
   discoverRecommend: (source: string, start: number = 0, count: number = 20) =>
     request<any>(`${BASE_URL}/discover/recommend/${source}?start=${start}&count=${count}`),
 
-  discoverExplore: (provider: string = "douban", type: string = "movie", sort: string = "R", tags: string = "", page: number = 0, count: number = 20) => {
-    const p = new URLSearchParams({ provider, type, sort, tags, page: String(page), count: String(count) });
+  discoverExplore: (provider: string = "douban", type: string = "movie", sort: string = "T", tags: string = "", page: number = 0, count: number = 20, language: string = "", year: string = "", voteAverage: number = 0, area: string = "", cat: string = "", voteMax: number = 10) => {
+    const p = new URLSearchParams({ provider, type, sort, page: String(page), count: String(count) });
+    // 豆瓣 tags 拼接：风格+地区+年代（豆瓣 API 用逗号分隔多个标签）
+    const tagParts = [tags, area, provider === "douban" ? year : ""].filter(Boolean);
+    if (provider === "douban" && tagParts.length > 0) {
+      p.set("tags", tagParts.join(","));
+    } else if (tags) {
+      p.set("tags", tags);
+    }
+    if (language) p.set("with_original_language", language);
+    if (year && provider !== "douban") p.set("year", year);
+    if (voteAverage > 0) p.set("vote_average", String(voteAverage));
+    if (voteMax < 10) p.set("vote_max", String(voteMax));
+    if (cat) p.set("cat", cat);
     return request<any>(`${BASE_URL}/discover/explore?${p.toString()}`);
   },
 

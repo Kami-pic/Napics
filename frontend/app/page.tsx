@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLibrary } from "@/hooks/useLibrary";
+import { useScrollDamping } from "@/hooks/useScrollDamping";
 import Header from "@/components/layout/Header";
 import Toolbar from "@/components/layout/Toolbar";
 import SettingsModal from "@/components/settings/SettingsModal";
@@ -36,6 +37,7 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const discoverRef = useRef<HTMLDivElement>(null);
+  const libraryContentRef = useRef<HTMLDivElement>(null);
   const [discoverVisible, setDiscoverVisible] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,6 +112,39 @@ export default function Home() {
     return () => observer.disconnect();
   }, [showDiscover]);
 
+  // ── 阻尼 + 磁力吸附 ──
+  useScrollDamping({
+    containerRef: scrollContainerRef,
+    wallRef: discoverRef,
+    enabled: showDiscover,
+  });
+
+  // ── 键盘拦截：发现页内 Home/PageUp 先回发现页顶部 ──
+  useEffect(() => {
+    if (!showDiscover || !discoverRef.current || !scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!discoverRef.current) return;
+      const discoverTop = discoverRef.current.offsetTop;
+      const scrollTop = container.scrollTop;
+      if (scrollTop < discoverTop - 20) return;
+
+      if (e.key === "Home" && scrollTop > discoverTop + 10) {
+        e.preventDefault();
+        container.scrollTo({ top: discoverTop - 8, behavior: "smooth" });
+      }
+      if (e.key === "PageUp" && scrollTop > discoverTop + 10) {
+        e.preventDefault();
+        const target = Math.max(scrollTop - container.clientHeight, discoverTop - 8);
+        container.scrollTo({ top: target, behavior: "smooth" });
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showDiscover]);
+
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white font-sans flex overflow-hidden">
       <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={navigateTo}
@@ -149,7 +184,7 @@ export default function Home() {
               syncDone={syncDone} setSyncDone={setSyncDone} />
           </div>
 
-          <div>
+          <div ref={libraryContentRef}>
             {loading && stats.total === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <div className="w-10 h-10 border-3 border-slate-700 border-t-blue-500 rounded-full animate-spin mb-4" />
@@ -186,7 +221,7 @@ export default function Home() {
 
           {/* 发现区域：根目录时显示，滚动到此处时懒加载 */}
           {showDiscover && (
-            <div ref={discoverRef} className="min-h-[200px]">
+            <div ref={discoverRef} className="min-h-[200px] mt-10">
               <DiscoverPage onSelectMedia={handleSelectDoubanMedia} visible={discoverVisible} scrollContainerRef={scrollContainerRef} />
             </div>
           )}

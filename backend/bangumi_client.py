@@ -11,6 +11,24 @@ BASE = "https://api.bgm.tv"
 # type: 1=书籍 2=动画 3=音乐 4=游戏 6=三次元
 TYPE_MAP = {1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元"}
 
+# 代理配置（从 config.json 读取）
+_PROXIES = None
+def _get_proxies():
+    global _PROXIES
+    if _PROXIES is not None:
+        return _PROXIES
+    try:
+        from config_manager import ConfigManager
+        cm = ConfigManager()
+        proxy = cm.get("http_proxy", "")
+        if proxy:
+            _PROXIES = {"http": proxy, "https": proxy}
+        else:
+            _PROXIES = {}
+    except Exception:
+        _PROXIES = {}
+    return _PROXIES
+
 def search(query: str, type_filter: int = 0) -> List[Dict]:
     """搜索 Bangumi，返回候选列表。type_filter=0 搜全部，2=动画，6=三次元"""
     url = f"{BASE}/search/subject/{requests.utils.quote(query)}"
@@ -18,7 +36,7 @@ def search(query: str, type_filter: int = 0) -> List[Dict]:
     if type_filter:
         params["type"] = type_filter
     try:
-        resp = requests.get(url, params=params, headers=HEADERS, timeout=8)
+        resp = requests.get(url, params=params, headers=HEADERS, timeout=8, proxies=_get_proxies() or None)
         if resp.status_code == 404:
             return []
         resp.raise_for_status()
@@ -48,7 +66,7 @@ def search(query: str, type_filter: int = 0) -> List[Dict]:
 def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
     """获取当季热门动画（Bangumi 每日放送，按评分排序）"""
     try:
-        resp = requests.get(f"{BASE}/calendar", headers=HEADERS, timeout=8)
+        resp = requests.get(f"{BASE}/calendar", headers=HEADERS, timeout=8, proxies=_get_proxies() or None)
         resp.raise_for_status()
         days = resp.json()
         all_items = []
@@ -96,11 +114,55 @@ def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
         return []
 
 
+def discover(type: int = 2, cat: int = None, sort: str = "rank",
+             year: str = None, limit: int = 30, offset: int = 0) -> List[Dict]:
+    """探索 Bangumi 条目（v0/subjects 接口）。
+    type: 1=书籍 2=动画 3=音乐 4=游戏 6=三次元
+    sort: rank(排名) / date(日期)
+    """
+    params = {"type": type, "sort": sort, "limit": limit, "offset": offset}
+    if cat is not None:
+        params["cat"] = cat
+    if year:
+        # Bangumi v0/subjects 支持 filter 参数
+        params["year"] = year
+    try:
+        resp = requests.get(f"{BASE}/v0/subjects", params=params, headers=HEADERS, timeout=8, proxies=_get_proxies() or None)
+        if resp.status_code == 404:
+            return []
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data") or data.get("list") or (data if isinstance(data, list) else [])
+        results = []
+        for item in items:
+            images = item.get("images", {}) or {}
+            poster = images.get("large", "") or images.get("common", "") or images.get("medium", "")
+            bgm_type = item.get("type", 0)
+            results.append({
+                "douban_id": str(item.get("id", "")),
+                "title": item.get("name_cn", "") or item.get("name", ""),
+                "original_title": item.get("name", ""),
+                "year": (item.get("date", "") or item.get("air_date", "") or "")[:4],
+                "rating": round((item.get("rating", {}) or {}).get("score", 0), 1),
+                "cover_url": poster,
+                "subtitle": item.get("name", ""),
+                "episode": "",
+                "media_type": "tv",
+                "genres": [],
+                "type": TYPE_MAP.get(bgm_type, "其他"),
+                "rank": item.get("rank", 0),
+            })
+        return results
+    except Exception as e:
+        print(f"[Bangumi] discover error: {e}")
+        return []
+
+
 def get_detail(bgm_id: int) -> Optional[Dict]:
     """获取 Bangumi 条目详情"""
     url = f"{BASE}/v0/subjects/{bgm_id}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=10)
+        resp = requests.get(url, headers=HEADERS, timeout=10, proxies=_get_proxies() or None)
         resp.raise_for_status()
         item = resp.json()
         
