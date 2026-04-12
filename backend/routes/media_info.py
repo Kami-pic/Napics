@@ -297,7 +297,9 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
 
 
 def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: str = ""):
-    """补充其他源的评分和 ID 到 ratings / external_ids 字段。不阻塞主流程，失败静默跳过。"""
+    """补充其他源的评分和 ID。豆瓣先跑（拿 original_title），然后 TMDB+Bangumi 并行。"""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     source = detail.get("source", "")
     ratings = {}
     external_ids = {}
@@ -310,40 +312,47 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
     if detail.get("imdb_id"):
         external_ids["imdb_id"] = detail["imdb_id"]
 
-    # 用主源详情的 original_title 增强 TMDB 搜索（中文搜不到时用原名）
     orig_title = detail.get("original_title", "") or subtitle
 
-    # 补充豆瓣
+    # 第一步：补充豆瓣（需要先拿 original_title 给 TMDB 用）
     if source != "douban":
         try:
             db = _try_douban_detail(title, year, type)
             if db:
                 if db.get("rating"): ratings["douban"] = db["rating"]
-                # 从豆瓣详情获取 original_title 用于 TMDB 搜索
                 if not orig_title:
                     orig_title = db.get("original_title", "")
         except Exception:
             pass
 
-    # 补充 TMDB（用 original_title 作为 subtitle 增强搜索）
-    if source != "tmdb":
+    # 第二步：TMDB + Bangumi 并行
+    def _fetch_tmdb():
+        if source == "tmdb": return None
         try:
-            tmdb = _try_tmdb_detail(title, year, type, orig_title)
-            if tmdb and tmdb.get("found"):
-                if tmdb.get("rating"): ratings["tmdb"] = tmdb["rating"]
-                if tmdb.get("tmdb_id"): external_ids["tmdb_id"] = tmdb["tmdb_id"]
-                if tmdb.get("imdb_id"): external_ids["imdb_id"] = tmdb["imdb_id"]
+            return _try_tmdb_detail(title, year, type, orig_title)
         except Exception:
-            pass
+            return None
 
-    # 补充 Bangumi
-    if source != "bangumi":
+    def _fetch_bangumi():
+        if source == "bangumi": return None
         try:
-            bgm = _try_bangumi_detail(title, subtitle)
-            if bgm:
-                if bgm.get("rating"): ratings["bangumi"] = bgm["rating"]
+            return _try_bangumi_detail(title, subtitle)
         except Exception:
-            pass
+            return None
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = {"tmdb": pool.submit(_fetch_tmdb), "bangumi": pool.submit(_fetch_bangumi)}
+        for key, future in futures.items():
+            try:
+                result = future.result(timeout=10)
+                if key == "tmdb" and result and result.get("found"):
+                    if result.get("rating"): ratings["tmdb"] = result["rating"]
+                    if result.get("tmdb_id"): external_ids["tmdb_id"] = result["tmdb_id"]
+                    if result.get("imdb_id"): external_ids["imdb_id"] = result["imdb_id"]
+                elif key == "bangumi" and result and result.get("rating"):
+                    ratings["bangumi"] = result["rating"]
+            except Exception:
+                pass
 
     detail["ratings"] = ratings
     detail["external_ids"] = external_ids
