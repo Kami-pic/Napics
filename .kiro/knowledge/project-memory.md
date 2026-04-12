@@ -90,7 +90,9 @@
   - 缓存管理：`deleteCachedDetail` 支持清除单条缓存
   - ID 拉取标题校验：Bangumi/豆瓣 ID 返回标题和请求标题中文字重叠 < 2 时放弃 ID 改走搜索
   - TMDB 匹配增强：用豆瓣 original_title 作为 subtitle 传给 _try_tmdb_detail 做 fallback 搜索
-  - 已知局限：_enrich_ratings 是同步串行的（豆瓣+TMDB+Bangumi），详情加载较慢，待异步化优化
+  - 已知局限：中文搜 TMDB 覆盖率有限，部分冷门片搜不到；Bangumi calendar API 的 bgm_id 偶尔错位
+  - 链接按钮策略：有精确 ID 用详情页（正常亮度），无 ID 用搜索页（变灰 text-slate-500）
+  - _enrich_ratings 已改为并行（豆瓣先跑 → TMDB+Bangumi 线程池并行），耗时从 10+s 降到 4-5s
 - 推荐接口 fallback：API v2 失败时回退到旧版网页接口（5 个豆瓣源有映射）
 - 图片缓存优化：`/scrape/poster` 改为 `Cache-Control: public, max-age=3600`，`/proxy/image` 改为 `max-age=86400`
 - 发现页 tab 切换优化：`display:none` 保持已加载 tab 的 DOM，图片不重新加载

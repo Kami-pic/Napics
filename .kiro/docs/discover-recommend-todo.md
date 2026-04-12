@@ -103,7 +103,9 @@
 - [x] 数据来源标签：底部小字 `数据来自 豆瓣/TMDB/Bangumi`
 - [x] TMDB 匹配率提升：用豆瓣 original_title 增强 TMDB 搜索
 - [x] ID 拉取标题校验：Bangumi/豆瓣 ID 返回标题和请求标题不匹配时自动改走搜索
-- [ ] 详情加载速度优化：_enrich_ratings 异步化（先返回主源详情，ratings/external_ids 后台补充，前端链接按钮先置灰"加载中"）
+- [x] 详情加载速度优化：_enrich_ratings 改为并行（豆瓣先跑拿 original_title，TMDB+Bangumi 线程池并行）
+- [x] 链接按钮始终可用：有精确 ID 用详情页链接（正常亮度），无 ID 用搜索页链接（变灰区分）
+- [x] 卡片封面 genres 标签上限从 2 个改为 3 个
 - [ ] 详情匹配错误时的候选选择（类似刮削候选面板，显示多个候选让用户手动选）
 - [ ] 匹配算法优化：当前中文搜 TMDB 覆盖率有限，部分冷门片搜不到；Bangumi calendar API 的 bgm_id 和卡片标题偶尔错位
 
