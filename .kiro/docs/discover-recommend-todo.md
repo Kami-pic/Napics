@@ -113,18 +113,47 @@
 
 ## 阶段 2：探索筛选（豆瓣 + TMDB + Bangumi）
 
-### 2.1 豆瓣探索筛选
-- [ ] 前端筛选面板：类型标签（剧情/喜剧/动作/...）+ 地区（华语/欧美/日本/韩国）+ 排序（热度R/评分S/时间T）
-- [ ] 调用 `/discover/explore?provider=douban&type=movie&tags=剧情&sort=S&page=1`
+> 参考 MoviePilot v2 的探索页设计。一级 tab 切换"推荐/探索"，探索内二级 tab 5 个源。
+> 推荐 tab 保留现有 8 个榜单（热门电影/热门剧集/热门动画/正在热映/电影总榜/剧集周榜/TMDB放送/Bangumi放送）。
+> 探索 tab 默认排序"近期热度(R)"，和推荐的"热门电影(movie_hot_gaia)"数据源不同，不重叠。
+
+### 2.0 推荐 tab 调整
+- [ ] 一级 tab 文案："发现" → "推荐"
+- [ ] 保留 8 个推荐源不变（热门电影/热门剧集/热门动画/正在热映/电影总榜/剧集周榜/TMDB放送/Bangumi放送）
+- [ ] TOP250 后续可考虑移到探索的排序预设中（暂保留）
+
+### 2.1 豆瓣电影探索
+- [ ] 后端路由 `/discover/explore?provider=douban&type=movie&sort=R&tags=&page=1`
+- [ ] 调用 `douban_api_v2.movie_recommend(sort, tags, start, count)`
+- [ ] 排序选项：近期热度(R，默认) / 高分优先(S) / 最新上映(T)
+- [ ] 类型标签：剧情/喜剧/动作/爱情/科幻/悬疑/恐怖/动画/...（豆瓣 API 支持的 tags）
 - [ ] 无限滚动分页
 
-### 2.2 TMDB 探索筛选
-- [ ] 前端筛选面板：类型（Action/Comedy/...）+ 语言 + 评分范围 + 排序
-- [ ] 调用 `/discover/explore?provider=tmdb&type=movie&genres=28&sort_by=popularity.desc&page=1`
+### 2.2 豆瓣剧集探索
+- [ ] 后端路由 `/discover/explore?provider=douban&type=tv&sort=R&tags=&page=1`
+- [ ] 调用 `douban_api_v2.tv_recommend(sort, tags, start, count)`
+- [ ] 排序和标签同 2.1
 
-### 2.3 Bangumi 探索
-- [ ] 扩展 `bangumi_client.py` 新增 `discover(type, sort, year, page)` 方法
-- [ ] 前端 Bangumi tab：类型 + 排序 + 年份筛选
+### 2.3 TMDB 电影探索
+- [ ] 后端路由 `/discover/explore?provider=tmdb&type=movie&sort_by=popularity.desc&genres=&language=&vote_average=0&page=1`
+- [ ] 调用 `tmdb_client.discover(media_type="movie", ...)`
+- [ ] 筛选：排序 + 类型(genres) + 语言(original_language) + 最低评分(vote_average) + 上映日期(release_date)
+
+### 2.4 TMDB 剧集探索
+- [ ] 同 2.3，`type=tv`
+
+### 2.5 Bangumi 探索
+- [ ] 扩展 `bangumi_client.py` 新增 `discover(type, cat, sort, year, page)` 方法
+- [ ] 后端路由 `/discover/explore?provider=bangumi&type=2&sort=rank&year=&page=1`
+- [ ] 筛选：类型(动画/书籍/游戏/音乐) + 分类(cat) + 排序(rank/date) + 年份
+
+### 2.6 前端探索页
+- [ ] 一级 tab 切换：推荐 / 探索
+- [ ] 探索内二级 tab：豆瓣电影 / 豆瓣剧集 / TMDB电影 / TMDB剧集 / Bangumi
+- [ ] 每个 tab 顶部筛选栏（根据源不同显示不同筛选项）
+- [ ] 默认排序：豆瓣=近期热度(R)，TMDB=popularity.desc，Bangumi=rank
+- [ ] 无限滚动分页，复用 DiscoverCard 卡片组件
+- [ ] 点击卡片展开详情（复用 ExpandDetail）
 
 ---
 
