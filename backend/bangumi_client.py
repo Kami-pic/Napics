@@ -61,9 +61,19 @@ def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
             bid = item.get("id", 0)
             if bid and bid not in seen:
                 seen.add(bid)
+                # 过滤：评分人数不足 50 且评分低于 5 的不展示（排除刷分/无人评分的条目）
+                score = (item.get("rating", {}) or {}).get("score", 0)
+                total = (item.get("rating", {}) or {}).get("total", 0)
+                if total < 50 and score < 5:
+                    continue
+                if score <= 0 and total <= 0:
+                    continue
                 unique.append(item)
-        # 按评分降序
-        unique.sort(key=lambda x: x.get("rating", {}).get("score", 0), reverse=True)
+        # 按评分降序（评分人数不足 100 的降权排后面）
+        unique.sort(key=lambda x: (
+            1 if (x.get("rating", {}) or {}).get("total", 0) >= 100 else 0,
+            (x.get("rating", {}) or {}).get("score", 0)
+        ), reverse=True)
         # 分页
         page_items = unique[page_start:page_start + page_limit]
         results = []
