@@ -181,48 +181,48 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false }: {
       </div>
       <div className="flex items-center gap-2 mt-4 flex-wrap">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
-        {/* 豆瓣链接：有 douban_id 且不是 Bangumi 趋势 tab 时用精确链接，否则用搜索链接 */}
+        {/* 豆瓣 */}
         {(() => {
           const searchName = d.title || item.title;
-          if (item.douban_id && d.source !== "bangumi") {
-            return <a href={`https://movie.douban.com/subject/${item.douban_id}/`} target="_blank" rel="noopener noreferrer"
-              className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>;
-          }
-          return <a href={`https://search.douban.com/movie/subject_search?search_text=${encodeURIComponent(searchName)}`} target="_blank" rel="noopener noreferrer"
-            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>;
+          const exact = !!(item.douban_id && d.source !== "bangumi");
+          const cls = exact ? "px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors"
+            : "px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg text-xs text-slate-500 transition-colors";
+          const href = exact ? `https://movie.douban.com/subject/${item.douban_id}/`
+            : `https://search.douban.com/movie/subject_search?search_text=${encodeURIComponent(searchName)}`;
+          return <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>豆瓣</a>;
         })()}
-        {/* TMDB 链接：有精确 ID 用详情页，否则用搜索页 */}
+        {/* TMDB */}
         {(() => {
           const tid = d.external_ids?.tmdb_id || d.tmdb_id;
           const searchName = d.original_title || d.title || item.title;
-          if (tid && tid > 0) {
-            const mediaPath = d.total_seasons || d.episode_count ? "tv" : "movie";
-            return <a href={`https://www.themoviedb.org/${mediaPath}/${tid}`} target="_blank" rel="noopener noreferrer"
-              className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">TMDB</a>;
-          }
-          return <a href={`https://www.themoviedb.org/search?query=${encodeURIComponent(searchName)}`} target="_blank" rel="noopener noreferrer"
-            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">TMDB</a>;
+          const exact = !!(tid && tid > 0);
+          const cls = exact ? "px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors"
+            : "px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg text-xs text-slate-500 transition-colors";
+          const mediaPath = d.total_seasons || d.episode_count ? "tv" : "movie";
+          const href = exact ? `https://www.themoviedb.org/${mediaPath}/${tid}`
+            : `https://www.themoviedb.org/search?query=${encodeURIComponent(searchName)}`;
+          return <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>TMDB</a>;
         })()}
-        {/* IMDB 链接：有精确 ID 用详情页，否则用搜索页 */}
+        {/* IMDB */}
         {(() => {
           const imdbId = d.external_ids?.imdb_id || d.imdb_id;
           const searchName = d.original_title || d.title || item.title;
-          if (imdbId) {
-            return <a href={`https://www.imdb.com/title/${imdbId}`} target="_blank" rel="noopener noreferrer"
-              className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">IMDB</a>;
-          }
-          return <a href={`https://www.imdb.com/find/?q=${encodeURIComponent(searchName)}`} target="_blank" rel="noopener noreferrer"
-            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">IMDB</a>;
+          const exact = !!imdbId;
+          const cls = exact ? "px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors"
+            : "px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg text-xs text-slate-500 transition-colors";
+          const href = exact ? `https://www.imdb.com/title/${imdbId}`
+            : `https://www.imdb.com/find/?q=${encodeURIComponent(searchName)}`;
+          return <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>IMDB</a>;
         })()}
-        {/* Bangumi 链接：有精确 bgm_id 用详情页，否则用搜索页 */}
+        {/* Bangumi */}
         {(() => {
           const searchName = item.subtitle || d.original_title || d.title || item.title;
-          if (item.douban_id && (d.source === "bangumi" || showBangumiRating)) {
-            return <a href={`https://bgm.tv/subject/${item.douban_id}`} target="_blank" rel="noopener noreferrer"
-              className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">Bangumi</a>;
-          }
-          return <a href={`https://bgm.tv/subject_search/${encodeURIComponent(searchName)}`} target="_blank" rel="noopener noreferrer"
-            className="px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">Bangumi</a>;
+          const exact = !!(item.douban_id && (d.source === "bangumi" || showBangumiRating));
+          const cls = exact ? "px-3 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors"
+            : "px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg text-xs text-slate-500 transition-colors";
+          const href = exact ? `https://bgm.tv/subject/${item.douban_id}`
+            : `https://bgm.tv/subject_search/${encodeURIComponent(searchName)}`;
+          return <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>Bangumi</a>;
         })()}
         {/* 数据来源标签 */}
         <span className="text-[10px] text-slate-600 ml-auto">数据来自 {sourceLabel}</span>

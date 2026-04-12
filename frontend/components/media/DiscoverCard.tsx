@@ -27,7 +27,7 @@ function PosterFallback({ title, failed }: { title: string; failed?: boolean }) 
 
 const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRank, showMediaType, ratingSource = "douban", onClick, style }: DiscoverCardProps) {
   const [imgError, setImgError] = useState(false);
-  const genres = item.genres?.slice(0, 2) || [];
+  const genres = item.genres?.slice(0, 3) || [];
   const isTV = item.media_type === "tv";
 
   const meta: string[] = [];
