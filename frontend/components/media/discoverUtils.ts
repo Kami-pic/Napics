@@ -95,8 +95,8 @@ export const RECOMMEND_TABS: RecommendSource[] = [
   { key: "douban_showing", label: "正在热映", mediaType: "movie", ratingSource: "douban" },
   { key: "douban_top250", label: "电影总榜", mediaType: "movie", showRank: true, ratingSource: "douban" },
   { key: "weekly_combined", label: "剧集周榜", mediaType: "tv", showRank: true, ratingSource: "douban" },
-  { key: "tmdb_trending", label: "TMDB趋势", mediaType: "mixed", ratingSource: "tmdb" },
-  { key: "bangumi_calendar", label: "Bangumi趋势", mediaType: "tv", ratingSource: "bangumi" },
+  { key: "tmdb_trending", label: "TMDB放送", mediaType: "mixed", ratingSource: "tmdb" },
+  { key: "bangumi_calendar", label: "Bangumi放送", mediaType: "tv", ratingSource: "bangumi" },
 ];
 
 // ── 一级 tab 配置 ──
