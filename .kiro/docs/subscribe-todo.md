@@ -225,7 +225,6 @@
 - [x] C.4 新集播出当天自动触发搜索（日历触发，绕过频率衰减）
 - [x] C.3 下载完成后自动通知订阅管理器更新 downloaded_episodes + 洗版模式自动归位（file_relocator）
 - [x] C.4 前端日历视图（SubscribeCalendar 组件，列表/日历切换）
-- [ ] C.2 千年女优 bug：手动替换文件后质量状态不更新（需实际复现确认）
 - [ ] B.7 新源接入：Mikan / Nyaa / 人人影视 / 字幕组 RSS
 
 ---
