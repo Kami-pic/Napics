@@ -22,6 +22,7 @@ def match_items(items: List[RSSItem], subscription) -> List[RSSItem]:
     """对 RSS 条目列表执行匹配过滤，返回符合订阅要求的条目。
 
     过滤链：质量 → 包含/排除关键词 → 集数匹配 → 指纹去重
+    best_version 模式下跳过"已下载"限制，只做质量比较。
     """
     result = items
 
@@ -31,7 +32,7 @@ def match_items(items: List[RSSItem], subscription) -> List[RSSItem]:
     # 2. 包含/排除关键词
     result = _filter_keywords(result, subscription.include, subscription.exclude)
 
-    # 3. 集数匹配 + 指纹去重
+    # 3. 集数匹配 + 指纹去重（洗版模式跳过已下载限制）
     result = _filter_episodes(result, subscription)
 
     return result
@@ -78,41 +79,53 @@ def _filter_episodes(items: List[RSSItem], subscription) -> List[RSSItem]:
 
     电影：只要没下载过就通过
     剧集：只保留缺失集（不在 downloaded_episodes 中的）
+    best_version 模式：不受"已下载"限制，但仍做指纹去重（同 hash 不重复推送）
     """
     downloaded = subscription.downloaded_episodes or {}
-    downloaded_hashes = {ep.info_hash for ep in downloaded.values() if hasattr(ep, 'info_hash') and ep.info_hash}
-    # 兼容 dict 格式
-    if downloaded and isinstance(list(downloaded.values())[0], dict):
-        downloaded_hashes = {v.get("info_hash", "") for v in downloaded.values() if v.get("info_hash")}
+    downloaded_hashes = set()
+    for v in downloaded.values():
+        if hasattr(v, 'info_hash') and v.info_hash:
+            downloaded_hashes.add(v.info_hash)
+        elif isinstance(v, dict) and v.get("info_hash"):
+            downloaded_hashes.add(v["info_hash"])
 
     is_tv = subscription.type == "tv"
     target_season = subscription.season
+    best_version = getattr(subscription, "best_version", False)
 
     filtered = []
     for item in items:
-        # 指纹去重：已下载的 hash 不再推送
+        # 指纹去重：完全相同的 hash 不再推送
         if item.info_hash and item.info_hash in downloaded_hashes:
             continue
 
-        if is_tv:
-            # 剧集：必须有集号，且该集未下载
-            if item.episode is None:
-                # 可能是整季包，保留
-                if _looks_like_season_pack(item.title):
-                    filtered.append(item)
-                continue
-            # 季号校验（如果订阅指定了季号）
-            if target_season and item.season and item.season != target_season:
-                continue
-            # 该集已下载 → 跳过
-            ep_key = str(item.episode)
-            if ep_key in downloaded:
-                continue
+        if best_version:
+            # 洗版模式：不限制已下载集，但需要质量更高才有意义
+            # 质量比较在 rss_engine 的 _handle_results 中做
+            if is_tv:
+                if item.episode is None:
+                    if _looks_like_season_pack(item.title):
+                        filtered.append(item)
+                    continue
+                if target_season and item.season and item.season != target_season:
+                    continue
             filtered.append(item)
         else:
-            # 电影：只要没下载过就通过
-            if "0" not in downloaded:
+            # 正常模式
+            if is_tv:
+                if item.episode is None:
+                    if _looks_like_season_pack(item.title):
+                        filtered.append(item)
+                    continue
+                if target_season and item.season and item.season != target_season:
+                    continue
+                ep_key = str(item.episode)
+                if ep_key in downloaded:
+                    continue
                 filtered.append(item)
+            else:
+                if "0" not in downloaded:
+                    filtered.append(item)
 
     return filtered
 

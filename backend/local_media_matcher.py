@@ -58,6 +58,7 @@ class LocalMediaMatcher:
                     "shadow_names": set(),
                     "tmdb_ids": set(),
                     "max_height": 0,
+                    "max_score": 0,
                     "folder": fn,
                 }
             info = folders[fn]
@@ -70,6 +71,10 @@ class LocalMediaMatcher:
             tid = v.get("shadow_tmdb_id")
             if tid:
                 info["tmdb_ids"].add(int(tid))
+            # quality_score
+            qs = v.get("quality_score", 0) or 0
+            if qs > info["max_score"]:
+                info["max_score"] = qs
             h = v.get("height") or 0
             # height=0 时尝试从文件名解析分辨率
             if h == 0:
@@ -85,10 +90,19 @@ class LocalMediaMatcher:
 
         # 构建索引
         for fn, info in folders.items():
+            # 质量判断：优先用 quality_score（100 分制），否则回退到 height
+            max_score = info.get("max_score", 0)
+            if max_score >= 35:  # 大约 1080p WEB-DL 级别
+                quality = "high"
+            elif info["max_height"] >= _QUALITY_THRESHOLDS["high"]:
+                quality = "high"
+            else:
+                quality = "low"
             entry = {
                 "folder": fn,
                 "max_height": info["max_height"],
-                "quality": "high" if info["max_height"] >= _QUALITY_THRESHOLDS["high"] else "low",
+                "quality": quality,
+                "quality_score": max_score,
             }
 
             # tmdb_id 索引

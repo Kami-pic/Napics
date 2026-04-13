@@ -215,7 +215,7 @@ class SubscriptionScheduler:
         return matched
 
     def _handle_results(self, sub: Subscription, matched: List[RSSItem]):
-        """处理匹配结果：通知模式存储，自动模式下载"""
+        """处理匹配结果：通知模式存储，自动模式下载，洗版模式比较质量"""
         if not matched:
             return
 
@@ -233,8 +233,10 @@ class SubscriptionScheduler:
                 print(f"[RSSEngine] {sub.title}: 通知模式，新增 {len(new_resources)} 条待选资源")
 
         elif sub.mode == "auto" and self.download_manager:
-            # 自动下载：取质量最高的一条（电影）或每集最高的一条（剧集）
-            to_download = self._select_best(matched, sub)
+            if sub.best_version:
+                to_download = self._select_best_version(matched, sub)
+            else:
+                to_download = self._select_best(matched, sub)
             for item in to_download:
                 self._submit_download(sub, item)
 
@@ -258,6 +260,54 @@ class SubscriptionScheduler:
             ep_items.sort(key=lambda x: x.seeders, reverse=True)
             best.append(ep_items[0])
         return best
+
+    def _select_best_version(self, items: List[RSSItem], sub: Subscription) -> List[RSSItem]:
+        """洗版模式：只选择质量分数高于已有版本的条目"""
+        from quality_parser import parse_quality, compute_quality_score, compare_quality_score
+
+        downloaded = sub.downloaded_episodes or {}
+        to_download = []
+
+        if sub.type != "tv":
+            # 电影洗版：比较 "0" 的已有质量
+            current_tag = downloaded.get("0", {})
+            current_qt = current_tag.quality_tag if hasattr(current_tag, "quality_tag") else (current_tag.get("quality_tag", "") if isinstance(current_tag, dict) else "")
+            current_score = compute_quality_score(parse_quality(current_qt)) if current_qt else 0
+
+            best_item = None
+            best_score = current_score
+            for item in items:
+                new_score = compute_quality_score(parse_quality(item.title))
+                if compare_quality_score(best_score, new_score):
+                    best_score = new_score
+                    best_item = item
+            if best_item:
+                to_download.append(best_item)
+                print(f"[RSSEngine] 洗版: {sub.title} 发现更高质量 ({best_score} > {current_score})")
+        else:
+            # 剧集洗版：按集独立比较
+            by_episode: Dict[int, List[RSSItem]] = {}
+            for item in items:
+                if item.episode is not None:
+                    by_episode.setdefault(item.episode, []).append(item)
+
+            for ep, ep_items in by_episode.items():
+                ep_key = str(ep)
+                current_tag = downloaded.get(ep_key, {})
+                current_qt = current_tag.quality_tag if hasattr(current_tag, "quality_tag") else (current_tag.get("quality_tag", "") if isinstance(current_tag, dict) else "")
+                current_score = compute_quality_score(parse_quality(current_qt)) if current_qt else 0
+
+                best_item = None
+                best_score = current_score
+                for item in ep_items:
+                    new_score = compute_quality_score(parse_quality(item.title))
+                    if compare_quality_score(best_score, new_score):
+                        best_score = new_score
+                        best_item = item
+                if best_item:
+                    to_download.append(best_item)
+
+        return to_download
 
     def _submit_download(self, sub: Subscription, item: RSSItem):
         """提交下载任务到 DownloadManager"""

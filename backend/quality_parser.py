@@ -222,3 +222,75 @@ def compare_quality(current_resolution: str, result_tag: QualityTag) -> str:
         return "equal"
     else:
         return "lower"
+
+
+# ── 100 分制综合评分 ──
+
+# 分辨率（45 分）— 最重要的维度
+_RESOLUTION_SCORE = {"2160p": 45, "1080p": 28, "720p": 14}
+# 来源（20 分）
+_SOURCE_SCORE = {"Remux": 20, "Bluray": 16, "WEB-DL": 10, "HDTV": 5}
+# 音频编码（20 分）
+_AUDIO_SCORE = {
+    "Atmos": 20, "TrueHD": 17, "DTS-HD": 14,
+    "DDP5.1": 10, "DD5.1": 8, "DTS": 7,
+    "EAC3": 6, "AC3": 5, "AAC": 3,
+}
+# 视频编码（10 分）
+_VIDEO_CODEC_SCORE = {"x265": 10, "AV1": 10, "x264": 6}
+# 中文字幕（5 分）
+_CHINESE_SUB_SCORE = 5
+
+
+def compute_quality_score(tag: QualityTag) -> int:
+    """100 分制综合质量评分。
+
+    维度：分辨率(40) + 来源(25) + 音频编码(20) + 视频编码(10) + 中文字幕(5)
+    """
+    score = 0
+    score += _RESOLUTION_SCORE.get(tag.resolution, 0)
+    score += _SOURCE_SCORE.get(tag.source, 0)
+    score += _AUDIO_SCORE.get(tag.audio_codec, 0)
+    score += _VIDEO_CODEC_SCORE.get(tag.video_codec, 0)
+    if tag.has_chinese_sub:
+        score += _CHINESE_SUB_SCORE
+    return score
+
+
+def compute_quality_score_from_video(video: dict) -> int:
+    """从 media_library.json 的视频条目计算质量分数。
+
+    用视频的 height/codec/audio_codec 等字段构造 QualityTag 再算分。
+    """
+    height = video.get("height", 0)
+    if isinstance(height, str):
+        try:
+            height = int(height)
+        except (ValueError, TypeError):
+            height = 0
+
+    resolution = ""
+    if height >= 2160:
+        resolution = "2160p"
+    elif height >= 1080:
+        resolution = "1080p"
+    elif height >= 720:
+        resolution = "720p"
+
+    # 从文件名尝试解析更多信息
+    filename = video.get("file_name", "") or video.get("file_path", "")
+    parsed = parse_quality(filename)
+
+    tag = QualityTag(
+        resolution=resolution or parsed.resolution,
+        source=parsed.source,
+        video_codec=parsed.video_codec or video.get("codec", ""),
+        audio_codec=parsed.audio_codec or video.get("audio_codec", ""),
+        has_chinese_sub=parsed.has_chinese_sub or (video.get("subtitle_count", 0) > 0),
+    )
+    return compute_quality_score(tag)
+
+
+def compare_quality_score(current_score: int, new_score: int, threshold: int = 5) -> bool:
+    """新分数比旧分数高出 threshold 分才返回 True（避免微小差异频繁替换）"""
+    return new_score > current_score + threshold

@@ -204,9 +204,13 @@
 
 ## 阶段 4：质量评分升级 + 自动洗版（整体后移，当前 8 级评分够用）
 
-- [ ] 4.1 `compute_quality_score()` 100 分制综合评分（分辨率40+来源25+音频20+编码10+字幕5）
-- [ ] 4.2 扫描/同步时对每个视频算分，存入 `media_library.json` 的 `quality_score` 字段
-- [ ] 4.3 订阅自动洗版：`best_version=true` + 分数比较 + 自动替换
+- [x] 4.1 `compute_quality_score()` 100 分制综合评分（分辨率45+来源20+音频20+编码10+字幕5）
+- [x] 4.1 `compute_quality_score_from_video()` 从视频条目算分
+- [x] 4.1 `compare_quality_score()` 分数比较（阈值 5 分）
+- [x] 4.2 `save_library()` 自动注入 quality_score 字段（所有保存路径统一注入）
+- [x] 4.2 `local_media_matcher` 质量判断升级（优先用 quality_score，回退到 height）
+- [x] 4.3 `rss_matcher._filter_episodes()` 支持 best_version 洗版模式
+- [x] 4.3 `rss_engine._select_best_version()` 洗版模式质量比较（按集独立比较分数）
 - [ ] 4.4 手动洗版增强：搜索结果按 quality_score 降序，标记比当前更好的
 
 ---

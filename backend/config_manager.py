@@ -106,6 +106,14 @@ class ConfigManager:
             if fp:
                 seen[fp] = v
         deduped = list(seen.values())
+        # 注入 quality_score（100 分制综合评分）
+        try:
+            from quality_parser import compute_quality_score_from_video
+            for v in deduped:
+                if "quality_score" not in v or v.get("quality_score", 0) == 0:
+                    v["quality_score"] = compute_quality_score_from_video(v)
+        except Exception:
+            pass
         lib_path = "media_library.json"
         with open(lib_path, "w", encoding="utf-8") as f:
             json.dump(deduped, f, indent=4, ensure_ascii=False)
