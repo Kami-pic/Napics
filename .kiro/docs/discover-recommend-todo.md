@@ -230,7 +230,8 @@
 
 ## 阶段 4：质量评分升级 + 自动洗版
 
-> 整体后移，当前 8 级评分 + 手动归位替换够用。详见 `subscribe-todo.md` 阶段 4 部分。
+> 核心已完成（100分制评分+save_library注入+洗版匹配），详见 `subscribe-todo.md`。
+> 剩余：4.4 手动洗版增强（搜索结果按 quality_score 排序标记）。
 
 ### 4.1 升级质量评分系统
 - [ ] 在 `quality_parser.py` 新增 `compute_quality_score(tag: QualityTag) -> int` 综合评分函数（100 分制）
