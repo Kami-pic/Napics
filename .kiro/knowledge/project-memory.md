@@ -65,12 +65,10 @@
 - 代码拆分 TODO：`.kiro/docs/code-split-todo.md`（后端 4 项 + 前端 2 项已完成，剩余前端 5-8 低优先级）
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - 自动替换 TODO：`.kiro/docs/auto-replace-todo.md`
-- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 完成，阶段 2 探索筛选基本完成）
-- 订阅系统 TODO：`.kiro/docs/subscribe-todo.md`（子阶段 A+B 完成，C 待做）
-- 阶段 2 已完成：探索 5 源筛选（豆瓣电影/剧集+TMDB电影/剧集+Bangumi）、综合推荐算法、TOP250 排序标签、评分双滑块、候补机制、详情匹配修复、滚动自动加载、磁吸阻尼吸附、本地媒体库感知、Fallback 补位
-- 阶段 2 剩余：详情候选选择、匹配算法优化（冷门片 TMDB 覆盖率）
-- 阶段 3 订阅系统（A+B+C）核心完成：CRUD + 前端 + RSS 框架 + Prowlarr 源 + 匹配引擎 + 定时调度 + 资源列表 + 日历 + 媒体库联动
-- 阶段 4 质量评分+洗版核心完成：100分制评分 + save_library 自动注入 + 洗版匹配逻辑
+- 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1-2 完成，阶段 3-4 核心完成）
+- 订阅系统 TODO：`.kiro/docs/subscribe-todo.md`（阶段 3 A+B+C + 阶段 4 核心完成）
+- 阶段 3+4 已完成：订阅 CRUD + RSS 框架(Prowlarr源) + 匹配引擎 + 定时调度 + 频率衰减 + 100分制评分 + 洗版匹配 + 前端订阅tab/按钮/角标/资源列表/日历API + 媒体库联动
+- 前端 UI 优化（04-13）：订阅入口移到发现页一级tab、卡片状态标签统一到右下角信息行（半透明样式）、一级tab+搜索框聚焦置顶、探索页+搜索模式补全订阅按钮
 - 剩余尾巴（低优先级）：4.4 手动洗版增强、千年女优 bug、日历自动触发搜索、新源接入（Mikan/Nyaa/人人影视）
 
 ## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级+阶段2探索筛选完成）
@@ -148,9 +146,12 @@
   - `config_manager.save_library()` 自动注入 quality_score 字段
   - `local_media_matcher` 质量判断升级（优先 quality_score >= 35，回退 height >= 720）
   - `rss_matcher` 支持 best_version 洗版模式 + `rss_engine._select_best_version()` 按集比较质量
-- 前端：useSubscriptions hook、ExpandDetail 订阅按钮、DiscoverCard 📌 角标
-- 前端：SubscribePanel 侧边抽屉 + FoundResourcesList 资源列表组件
-- 前端：Header 订阅入口按钮、api.ts 11 个订阅 API 函数（含源管理+日历）
+- 前端：useSubscriptions hook、ExpandDetail 订阅按钮（localSubscribed 即时反馈）、DiscoverCard 状态标签
+- 前端：SubscribePanel 侧边抽屉 + SubscribeInline 内嵌列表（发现页订阅tab） + FoundResourcesList 资源列表
+- 前端：推荐/探索/搜索三个场景统一支持订阅按钮+卡片角标
+- 前端：卡片状态标签统一到右下角信息行（半透明样式，合并标签：✓已有·订阅 / ↑升级·订阅）
+- 前端：一级tab点击+搜索框聚焦时自动置顶到发现页
+- 前端：api.ts 11 个订阅 API 函数（含源管理+日历）
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符
