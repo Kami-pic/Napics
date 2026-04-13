@@ -18,9 +18,11 @@ interface ExplorePageProps {
   setActiveTab: (tab: string) => void;
   colCount: number;
   onNavigateToLocal?: (folderPath: string) => void;
+  onSubscribe?: (item: DoubanHotItem, detail: MediaDetail | null) => void;
+  checkSubscribed?: (item: DoubanHotItem) => boolean;
 }
 
-export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal }: ExplorePageProps) {
+export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal, onSubscribe, checkSubscribed }: ExplorePageProps) {
   const tabConfig = EXPLORE_TABS.find(t => t.key === activeTab) || EXPLORE_TABS[0];
   const [filters, setFilters] = useState<Record<string, ExploreFilters>>({});
   const [items, setItems] = useState<DoubanHotItem[]>([]);
@@ -272,7 +274,8 @@ export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, co
                 item={item} index={index} isActive={expandedIndex === index}
                 showRank={currentFilters.sort === "TOP250"} showMediaType={tabConfig.provider === "tmdb"}
                 ratingSource={ratingSource} onClick={() => handleCardClick(index)}
-                style={{ order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 }} />
+                style={{ order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 }}
+                isSubscribed={checkSubscribed?.(item)} />
             ))}
             {expandedIndex !== null && expandedIndex < items.length && (
               <div key="expand-panel" data-expand-panel
@@ -284,7 +287,9 @@ export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, co
                   defaultSource={ratingSource}
                   showBangumiRating={tabConfig.provider === "bangumi"}
                   onRefreshWithSource={handleRefreshWithSource}
-                  onNavigateToLocal={onNavigateToLocal} />
+                  onNavigateToLocal={onNavigateToLocal}
+                  onSubscribe={onSubscribe ? () => onSubscribe(items[expandedIndex], detail) : undefined}
+                  isSubscribed={checkSubscribed?.(items[expandedIndex])} />
               </div>
             )}
           </div>

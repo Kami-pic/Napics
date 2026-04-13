@@ -388,7 +388,8 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
                   <DiscoverCard key={`search-${item.douban_id || item.title}-${index}`}
                     item={item} index={index} isActive={expandedIndex === index}
                     showRank={false} showMediaType ratingSource="douban" onClick={() => handleCardClick(index)}
-                    style={{ order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 }} />
+                    style={{ order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 }}
+                    isSubscribed={justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)} />
                 ))}
                 {expandedIndex !== null && expandedIndex < searchItems.length && (
                   <div key="expand-panel" data-expand-panel
@@ -426,7 +427,9 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         {/* 探索页 */}
         {primaryTab === "explore" && !isSearchMode && (
           <ExplorePage onSelectMedia={onSelectMedia} activeTab={exploreTab} setActiveTab={setExploreTab}
-            colCount={colCount} onNavigateToLocal={onNavigateToLocal} />
+            colCount={colCount} onNavigateToLocal={onNavigateToLocal}
+            onSubscribe={handleSubscribe}
+            checkSubscribed={(item) => justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)} />
         )}
 
         {/* 订阅页 */}
