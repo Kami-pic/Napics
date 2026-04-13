@@ -12,6 +12,7 @@ import ExpandDetail from "./ExpandDetail";
 import DiscoverHeader from "./DiscoverHeader";
 import ExplorePage from "./ExplorePage";
 import RecommendTabContent from "./RecommendTabContent";
+import SubscribeInline from "./SubscribeInline";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 
 interface DiscoverPageProps {
@@ -191,20 +192,26 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     : curTabData.items;
 
   // ── 订阅状态 ──
-  const { isSubscribed, subscribe: doSubscribe } = useSubscriptions();
+  const { isSubscribed, subscribe: doSubscribe, subscriptions, refresh: refreshSubs } = useSubscriptions();
+  const [subscribing, setSubscribing] = useState(false);
 
   const handleSubscribe = useCallback(async (item: DoubanHotItem, d: MediaDetail | null) => {
-    const mediaType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
-    const result = await doSubscribe({
-      title: item.title,
-      year: item.year || d?.year || "",
-      type: mediaType,
-      tmdb_id: d?.tmdb_id || d?.external_ids?.tmdb_id || undefined,
-      douban_id: item.douban_id || undefined,
-      poster: item.cover_url || d?.poster_url || "",
-    });
-    if (result.status === "ok" && result.warning) {
-      console.log(`[Subscribe] ${result.warning}`);
+    setSubscribing(true);
+    try {
+      const mediaType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
+      const result = await doSubscribe({
+        title: item.title,
+        year: item.year || d?.year || "",
+        type: mediaType,
+        tmdb_id: d?.tmdb_id || d?.external_ids?.tmdb_id || undefined,
+        douban_id: item.douban_id || undefined,
+        poster: item.cover_url || d?.poster_url || "",
+      });
+      if (result.status === "error") {
+        console.log(`[Subscribe] ${result.message}`);
+      }
+    } finally {
+      setSubscribing(false);
     }
   }, [doSubscribe, activeTabConfig]);
 
@@ -410,6 +417,11 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         {primaryTab === "explore" && !isSearchMode && (
           <ExplorePage onSelectMedia={onSelectMedia} activeTab={exploreTab} setActiveTab={setExploreTab}
             colCount={colCount} onNavigateToLocal={onNavigateToLocal} />
+        )}
+
+        {/* 订阅页 */}
+        {primaryTab === "subscribe" && !isSearchMode && (
+          <SubscribeInline subscriptions={subscriptions} onRefresh={refreshSubs} />
         )}
       </div>
     </div>

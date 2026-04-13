@@ -106,7 +106,7 @@ export type PrimaryTab = "recommend" | "explore" | "subscribe";
 export const PRIMARY_TABS: { key: PrimaryTab; label: string }[] = [
   { key: "recommend", label: "推荐" },
   { key: "explore", label: "探索" },
-  // { key: "subscribe", label: "订阅" },  // 阶段 3 启用
+  { key: "subscribe", label: "订阅" },
 ];
 
 // ── 探索源配置 ──
