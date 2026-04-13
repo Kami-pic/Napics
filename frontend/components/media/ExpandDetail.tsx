@@ -105,6 +105,8 @@ export default function ExpandDetail({
 
 // ── 无详情时的 fallback 展示 ──
 function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }: { item: DoubanHotItem; onSearch: () => void; onRetry: () => void; onSubscribe?: () => void; isSubscribed?: boolean }) {
+  const [localSubscribed, setLocalSubscribed] = useState(false);
+  const subscribed = isSubscribed || localSubscribed;
   return (
     <div className="mt-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -117,11 +119,11 @@ function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }
       <div className="flex gap-2 mt-4">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
         {onSubscribe && (
-          <button onClick={onSubscribe} disabled={isSubscribed}
+          <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }} disabled={subscribed}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-              isSubscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
+              subscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
             }`}>
-            {isSubscribed ? "📌 已订阅" : "📌 订阅"}
+            {subscribed ? "📌 已订阅" : "📌 订阅"}
           </button>
         )}
         {item.douban_id && (
@@ -147,6 +149,8 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigat
   item: DoubanHotItem; d: MediaDetail; onSearch: () => void; showBangumiRating?: boolean; onNavigateToLocal?: (folderPath: string) => void;
   onSubscribe?: () => void; isSubscribed?: boolean;
 }) {
+  const [localSubscribed, setLocalSubscribed] = useState(false);
+  const subscribed = isSubscribed || localSubscribed;
   const ratings = d.ratings || {};
   const doubanRating = ratings.douban || 0;
   const tmdbRating = ratings.tmdb || 0;
@@ -199,11 +203,11 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigat
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
         {/* 订阅按钮 */}
         {onSubscribe && (
-          <button onClick={onSubscribe} disabled={isSubscribed}
+          <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }} disabled={subscribed}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-              isSubscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
+              subscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
             }`}>
-            {isSubscribed ? "📌 已订阅" : "📌 订阅"}
+            {subscribed ? "📌 已订阅" : "📌 订阅"}
           </button>
         )}
         {/* 本地媒体库跳转 */}
