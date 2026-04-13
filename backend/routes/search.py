@@ -27,8 +27,19 @@ import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
 from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
+from quality_parser import compute_quality_score
 
 router = APIRouter()
+
+
+def _enrich_result(r) -> dict:
+    """给搜索结果附加 quality_score（100 分制）"""
+    d = r.dict() if hasattr(r, "dict") else dict(r)
+    if r.quality:
+        d["quality_score"] = compute_quality_score(r.quality)
+    else:
+        d["quality_score"] = 0
+    return d
 
 @router.get("/api/search")
 def search_resources(
@@ -81,7 +92,7 @@ def search_resources(
         return {
             "query": query,
             "bt_count": len(resp.results),
-            "bt_results": [r.dict() for r in resp.results],
+            "bt_results": [_enrich_result(r) for r in resp.results],
             "hit_keyword": resp.hit_keyword,
             "total_raw": resp.total_raw,
             "total_filtered": resp.total_filtered,
@@ -95,7 +106,7 @@ def search_resources(
     return {
         "query": query,
         "bt_count": len(bt_results),
-        "bt_results": [r.dict() for r in bt_results],
+        "bt_results": [_enrich_result(r) for r in bt_results],
         "hit_keyword": query,
         "total_raw": len(bt_results),
         "total_filtered": len(bt_results),

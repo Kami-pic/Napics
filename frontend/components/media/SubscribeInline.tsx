@@ -5,6 +5,7 @@ import type { SubscriptionItem } from "@/hooks/useSubscriptions";
 import { api } from "@/lib/api";
 import { proxyUrl } from "./discoverUtils";
 import FoundResourcesList from "./FoundResourcesList";
+import SubscribeCalendar from "./SubscribeCalendar";
 
 export interface SubscribeInlineProps {
   subscriptions: SubscriptionItem[];
@@ -12,10 +13,12 @@ export interface SubscribeInlineProps {
 }
 
 type FilterState = "all" | "active" | "paused" | "completed";
+type SubView = "list" | "calendar";
 
 export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeInlineProps) {
   const [filter, setFilter] = useState<FilterState>("all");
   const [operating, setOperating] = useState("");
+  const [view, setView] = useState<SubView>("list");
 
   const filtered = filter === "all" ? subscriptions : subscriptions.filter(s => s.state === filter);
 
@@ -46,7 +49,16 @@ export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeI
     <div>
       {/* 筛选栏 */}
       <div className="flex gap-2 py-3">
-        {(["all", "active", "paused", "completed"] as FilterState[]).map(f => (
+        <button onClick={() => setView("list")}
+          className={`px-3 py-1.5 rounded-lg text-xs transition-all ${view === "list" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}>
+          列表
+        </button>
+        <button onClick={() => setView("calendar")}
+          className={`px-3 py-1.5 rounded-lg text-xs transition-all ${view === "calendar" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}>
+          日历
+        </button>
+        <div className="flex-1" />
+        {view === "list" && (["all", "active", "paused", "completed"] as FilterState[]).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
               filter === f ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"
@@ -56,8 +68,11 @@ export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeI
         ))}
       </div>
 
-      {/* 列表 */}
-      {filtered.length === 0 ? (
+      {/* 日历视图 */}
+      {view === "calendar" && <SubscribeCalendar />}
+
+      {/* 列表视图 */}
+      {view === "list" && (filtered.length === 0 ? (
         <p className="text-center py-16 text-sm text-slate-600">暂无订阅</p>
       ) : (
         <div className="space-y-3">
@@ -133,7 +148,7 @@ export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeI
             );
           })}
         </div>
-      )}
+      ))}
     </div>
   );
 }

@@ -214,6 +214,9 @@ class DownloadManager:
             # 下载完成 → 自动转移到 save_path
             if task.status == "completed" and old_status == "downloading":
                 self._relocate_to_save_path(task)
+                # 订阅回调：更新 downloaded_episodes
+                if task.subscription_id:
+                    self._notify_subscription_complete(task)
 
         if state_changed:
             self._save_now()
@@ -549,6 +552,26 @@ class DownloadManager:
         except Exception as e:
             print(f"[DownloadManager] 加载任务队列失败: {e}")
             self.tasks = []
+
+    def _notify_subscription_complete(self, task: DownloadTask):
+        """下载完成时通知订阅管理器更新 downloaded_episodes"""
+        try:
+            from subscriber import SubscriptionManager
+            # 懒加载订阅管理器（避免循环依赖）
+            mgr = SubscriptionManager(base_path=self.base_path)
+            info_hash = task.downloader_hash or task.download_url or ""
+            mgr.on_download_complete(
+                subscription_id=task.subscription_id,
+                episode=task.subscription_episode,
+                info_hash=info_hash,
+                title=task.media_name,
+                quality_tag="",
+                source="prowlarr",
+                channel=task.channel,
+                task_id=task.id,
+            )
+        except Exception as e:
+            print(f"[DownloadManager] 订阅回调失败: {e}")
 
     def _write_json(self):
         """将任务队列写入 JSON 文件。"""

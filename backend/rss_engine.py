@@ -157,7 +157,10 @@ class SubscriptionScheduler:
             if not self._running:
                 break
 
-            if not should_search_now(sub, self.base_interval):
+            # 日历触发：剧集今天有新集播出时强制搜索
+            calendar_trigger = self._check_calendar_trigger(sub)
+
+            if not calendar_trigger and not should_search_now(sub, self.base_interval):
                 continue
 
             # 随机延迟 30-120 秒防限频
@@ -329,3 +332,27 @@ class SubscriptionScheduler:
             print(f"[RSSEngine] 自动下载: {task.media_name}")
         except Exception as e:
             print(f"[RSSEngine] 下载提交失败: {e}")
+
+    def _check_calendar_trigger(self, sub: Subscription) -> bool:
+        """检查剧集订阅是否有今天播出的新集（日历触发）"""
+        if sub.type != "tv" or not sub.tmdb_id:
+            return False
+        try:
+            from shared import _tmdb_client
+            tmdb = _tmdb_client()
+            if not tmdb:
+                return False
+            season_num = sub.season or 1
+            raw = tmdb._get(f"/tv/{sub.tmdb_id}/season/{season_num}")
+            episodes = raw.get("episodes", [])
+            today = datetime.now().strftime("%Y-%m-%d")
+            downloaded = set(sub.downloaded_episodes.keys())
+            for ep in episodes:
+                air_date = ep.get("air_date", "")
+                ep_num = ep.get("episode_number", 0)
+                if air_date == today and str(ep_num) not in downloaded:
+                    print(f"[RSSEngine] 日历触发: {sub.title} E{ep_num} 今天播出")
+                    return True
+        except Exception:
+            pass
+        return False
