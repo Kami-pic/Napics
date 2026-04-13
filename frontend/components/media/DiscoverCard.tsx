@@ -42,6 +42,19 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
   const hasRating = item.rating > 0;
   const localStatus = item.local_status;
 
+  // 状态标签：优先级 已有+订阅合并 > 已有 > 可升级 > 已订阅
+  const statusTag = localStatus === "owned_high" && isSubscribed
+    ? { text: "✓ 已有·订阅", color: "bg-emerald-600/90 text-white" }
+    : localStatus === "owned_low" && isSubscribed
+    ? { text: "↑ 升级·订阅", color: "bg-amber-600/90 text-white" }
+    : localStatus === "owned_high"
+    ? { text: "✓ 已有", color: "bg-emerald-600/90 text-white" }
+    : localStatus === "owned_low"
+    ? { text: "↑ 可升级", color: "bg-amber-600/90 text-white" }
+    : isSubscribed
+    ? { text: "📌 已订阅", color: "bg-violet-600/90 text-white" }
+    : null;
+
   return (
     <div data-discover-card style={style}
       className={`group rounded-xl overflow-hidden bg-[#1a1a1a] border cursor-pointer transition-all ${
@@ -69,6 +82,12 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         <span className={`absolute top-3 right-3 bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
           {hasRating ? item.rating : "—"}
         </span>
+        {/* 左上角状态标签：有排行时放排行右边（同行），无排行时放左上角 */}
+        {statusTag && (
+          <span className={`absolute top-1.5 ${showRank ? "left-9" : "left-2"} ${statusTag.color} text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none`}>
+            {statusTag.text}
+          </span>
+        )}
         <div className="absolute bottom-0 left-0 right-0 p-3">
           {(genres.length > 0 || showMediaType) && (
             <div className="flex gap-1 mb-1.5">
@@ -80,21 +99,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
             </div>
           )}
           <p className="text-[14px] font-semibold text-white truncate leading-tight">{item.title}</p>
-          <div className="flex items-center mt-1 gap-1">
-            <p className="text-[11px] text-slate-400 truncate flex-1 min-w-0">{meta.join(" · ") || "—"}</p>
-            {/* 状态标签：已有+订阅同时存在时合并为一个标签 */}
-            {localStatus === "owned_high" && isSubscribed ? (
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">已有·订阅</span>
-            ) : localStatus === "owned_low" && isSubscribed ? (
-              <span className="text-[10px] text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">升级·订阅</span>
-            ) : localStatus === "owned_high" ? (
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">✓ 已有</span>
-            ) : localStatus === "owned_low" ? (
-              <span className="text-[10px] text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">↑ 可升级</span>
-            ) : isSubscribed ? (
-              <span className="text-[10px] text-violet-400 bg-violet-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">📌 已订阅</span>
-            ) : null}
-          </div>
+          <p className="text-[11px] text-slate-400 mt-1 truncate">{meta.join(" · ") || "—"}</p>
         </div>
       </div>
     </div>
