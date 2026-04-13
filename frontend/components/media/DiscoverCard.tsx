@@ -84,9 +84,9 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
             <p className="text-[11px] text-slate-400 truncate flex-1 min-w-0">{meta.join(" · ") || "—"}</p>
             {/* 状态标签：已有+订阅同时存在时合并为一个标签 */}
             {localStatus === "owned_high" && isSubscribed ? (
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">✓ 已有·订阅</span>
+              <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">已有·订阅</span>
             ) : localStatus === "owned_low" && isSubscribed ? (
-              <span className="text-[10px] text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">↑ 升级·订阅</span>
+              <span className="text-[10px] text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">升级·订阅</span>
             ) : localStatus === "owned_high" ? (
               <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">✓ 已有</span>
             ) : localStatus === "owned_low" ? (

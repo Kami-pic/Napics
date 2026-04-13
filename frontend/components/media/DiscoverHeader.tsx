@@ -34,7 +34,7 @@ export default function DiscoverHeader({
         <div className="flex items-center gap-6 flex-shrink-0">
           {PRIMARY_TABS.map((t) => (
             <button key={t.key}
-              onClick={(e) => { e.stopPropagation(); setPrimaryTab(t.key); }}
+              onClick={(e) => { e.stopPropagation(); setPrimaryTab(t.key); scrollToDiscover(); }}
               className={`transition-colors ${
                 primaryTab === t.key
                   ? "text-[15px] font-bold text-white tracking-tight"
@@ -56,6 +56,7 @@ export default function DiscoverHeader({
             <input ref={inputRef} value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { onSearch(searchQuery); scrollToDiscover(); } }}
+              onFocus={() => scrollToDiscover()}
               onClick={(e) => e.stopPropagation()}
               placeholder="搜索影片..."
               className="bg-white/[0.04] border border-white/[0.06] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none focus:border-blue-500/50 w-44 placeholder:text-slate-600" />
