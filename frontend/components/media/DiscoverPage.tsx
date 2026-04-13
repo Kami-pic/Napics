@@ -420,7 +420,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
             onLoadMore={loadMore} onRetryTab={handleRetryTab}
             onNavigateToLocal={onNavigateToLocal}
             onSubscribe={handleSubscribe}
-            checkSubscribed={(item) => isSubscribed(undefined, item.title, item.year)} />
+            checkSubscribed={(item) => justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)} />
         ))}
 
         {/* 探索页 */}

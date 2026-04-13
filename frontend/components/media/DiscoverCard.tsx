@@ -80,12 +80,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
             ↑ 可升级
           </span>
         )}
-        {/* 订阅角标 */}
-        {isSubscribed && !localStatus?.startsWith("owned") && (
-          <span className={`absolute ${showRank ? "top-10" : "top-3"} left-3 bg-violet-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none`}>
-            📌
-          </span>
-        )}
+        {/* 订阅角标 — 已移到底部信息行 */}
         <div className="absolute bottom-0 left-0 right-0 p-3">
           {(genres.length > 0 || showMediaType) && (
             <div className="flex gap-1 mb-1.5">
@@ -97,7 +92,12 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
             </div>
           )}
           <p className="text-[14px] font-semibold text-white truncate leading-tight">{item.title}</p>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">{meta.join(" · ") || "—"}</p>
+          <div className="flex items-center mt-1 gap-1">
+            <p className="text-[11px] text-slate-400 truncate flex-1 min-w-0">{meta.join(" · ") || "—"}</p>
+            {isSubscribed && (
+              <span className="text-[10px] text-violet-400 bg-violet-500/15 px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap">📌 已订阅</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
