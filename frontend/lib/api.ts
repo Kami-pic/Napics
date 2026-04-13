@@ -415,4 +415,11 @@ export const api = {
     if (params.season !== undefined) qs.set("season", String(params.season));
     return request<{ subscribed: boolean }>(`${BASE_URL}/subscribe/check?${qs.toString()}`);
   },
+  getSubscriptionSources: () => request<any[]>(`${BASE_URL}/subscribe/sources`),
+  toggleSubscriptionSource: (name: string, enabled: boolean) =>
+    request<any>(`${BASE_URL}/subscribe/sources/${name}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }),
 };

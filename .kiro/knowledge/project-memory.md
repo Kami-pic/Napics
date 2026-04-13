@@ -66,11 +66,11 @@
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - 自动替换 TODO：`.kiro/docs/auto-replace-todo.md`
 - 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 完成，阶段 2 探索筛选基本完成）
-- 订阅系统 TODO：`.kiro/docs/subscribe-todo.md`（子阶段 A 完成，B/C 待做）
+- 订阅系统 TODO：`.kiro/docs/subscribe-todo.md`（子阶段 A+B 完成，C 待做）
 - 阶段 2 已完成：探索 5 源筛选（豆瓣电影/剧集+TMDB电影/剧集+Bangumi）、综合推荐算法、TOP250 排序标签、评分双滑块、候补机制、详情匹配修复、滚动自动加载、磁吸阻尼吸附、本地媒体库感知、Fallback 补位
 - 阶段 2 剩余：详情候选选择、匹配算法优化（冷门片 TMDB 覆盖率）
-- 阶段 3 订阅系统子阶段 A 已完成：CRUD + 前端订阅按钮/角标/管理面板
-- 待做：订阅子阶段 B（定时搜索+自动下载）、子阶段 C（日历+洗版）、磁力熊直搜、其他网盘转存 API
+- 阶段 3 订阅系统子阶段 A+B 已完成：CRUD + 前端 + RSS 框架 + Prowlarr 源 + 匹配引擎 + 定时调度
+- 待做：订阅子阶段 C（日历+洗版）、B.6 前端增强（搜索状态展示）、新源接入（Mikan/Nyaa/人人影视）
 
 ## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级+阶段2探索筛选完成）
 - `douban_api_v2.py`：豆瓣 App API v2 签名鉴权，9 个榜单 + 探索 + 搜索 + 详情
@@ -120,20 +120,24 @@
   - `config_manager.py` 新增 `_on_library_save_callbacks` 回调机制
   - 综合推荐 Fallback 补位：去重后不足 60 条从 top250 + weekly 补位（`_fallback_fill`）
 
-## 订阅系统（2026-04-13 新增，子阶段 A 完成）
+## 订阅系统（2026-04-13 新增，子阶段 A+B 完成）
 - `subscriber.py`：订阅管理器，CRUD + JSON 持久化（subscriptions.json）+ 别名预拉取 + 媒体库查重
-- `routes/subscribe.py`：7 个路由（CRUD + check + search 占位），懒加载单例
+- `routes/subscribe.py`：10 个路由（CRUD + check + search + sources 管理），懒加载单例
 - 数据模型：Subscription（含 EpisodeInfo 指纹对象），电影用 "0" 作 key
 - downloaded_episodes 用对象结构存储指纹（info_hash/title/quality_tag/source/channel/task_id/timestamp）
-- 订阅创建时预拉取别名（alias_resolver），存入 aliases 字段（cn/en/jp）
-- 订阅创建时检查媒体库是否已有（local_media_matcher），已有则返回 warning
-- 剧集订阅从 TMDB 获取总集数填入 total_episode
 - DownloadTask 新增 subscription_id + subscription_episode 字段（订阅→下载→回调纽带）
 - 状态机：active ↔ paused，电影下载完成 → completed，剧集全部集数下载完成 → completed
-- 前端：useSubscriptions hook（启动拉取+本地缓存判断）、ExpandDetail 订阅按钮、DiscoverCard 📌 角标
+- RSS 订阅框架（子阶段 B）：
+  - `rss_source_base.py`：RSS 源基类 + RSSItem 标准化结构 + 集号/季号提取工具
+  - `rss_source_prowlarr.py`：Prowlarr 源（第一个可用源），Search Group 多词并查
+  - `rss_matcher.py`：匹配引擎（质量过滤 + 关键词过滤 + 集数匹配 + 指纹去重 + 整季包识别）
+  - `rss_engine.py`：RSSSourceManager（源注册/启用/禁用）+ SubscriptionScheduler（定时调度+频率衰减）
+  - 频率衰减：前72h每4h → 3-14天每12h → 14-30天每24h → 30天无果自动暂停
+  - 新增源只需实现 RSSSourceBase 并注册，不改框架代码
+- 前端：useSubscriptions hook、ExpandDetail 订阅按钮、DiscoverCard 📌 角标
 - 前端：SubscribePanel 侧边抽屉（海报+状态+进度条+暂停/恢复/删除/搜索）
-- 前端：Header 新增"订阅"入口按钮（显示活跃订阅数角标）
-- 集成测试：37 项全通过（单元17 + DownloadTask兼容5 + 路由导入3 + API路由11 + 前端构建1）
+- 前端：Header 订阅入口按钮、api.ts 10 个订阅 API 函数（含源管理）
+- 测试：后端 33+19 单元/E2E + 前端 50+7 组件测试 = 109 项全通过
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符

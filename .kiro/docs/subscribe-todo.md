@@ -100,53 +100,68 @@
 
 ---
 
-## 子阶段 B：定时搜索 + 资源匹配 + 通知/自动下载
+## 子阶段 B：RSS 订阅框架 + Prowlarr 源接入
 
-### B.1 后端：订阅搜索引擎
+> 核心目标：搭建可扩展的 RSS 订阅框架，Prowlarr 作为第一个源跑通全链路。
+> 框架设计原则：源和框架解耦，新增源只需实现一个类并注册，不改框架代码。
+> 重心放在剧集/番剧的周期性更新，电影订阅作为简化场景支持。
 
-- [ ] 新建 `backend/subscribe_searcher.py`
-- [ ] 搜索词构造 — Search Group 动态构造：
-  - 电影：`[cn_name, en_name + year]`
-  - 剧集/动漫：`[cn + 季号, en + 季号, jp + 季号]`（从 aliases 读取）
-  - 自定义 `search_keyword` 优先级最高
-- [ ] BT 通道：复用 `enhanced_search()`，但改为 Search Group 模式（多词并查、结果按 info_hash 去重、取最优）
-- [ ] 网盘通道（可选）：复用 `PanSearchService.search_sync()`，仅搜中文名
-- [ ] 质量过滤：`parse_quality()` 解析 → 检查是否满足订阅的 `quality` 最低要求
-- [ ] 包含/排除过滤：`include` / `exclude` 关键词匹配
-- [ ] 剧集匹配：从种子标题提取集号，对比 `downloaded_episodes`，只保留缺失集
-- [ ] 电影匹配：搜到满足质量要求的资源即可
-- [ ] 订阅指纹去重：已下载集的 `info_hash` 不再重复推送
+### B.1 后端：RSS 源接口标准化
 
-### B.2 后端：搜索频率衰减
+- [x] 新建 `backend/rss_source_base.py` — RSS 源基类
+- [x] `RSSItem` 标准化数据结构：title / download_url / pub_date / size / info_hash / quality_tag / episode / season / source_name
+- [x] 源注册机制：`RSSSourceManager` 管理所有源，支持动态启用/禁用
+- [x] 集号/季号提取工具：`extract_episode()` / `extract_season()`
 
-- [ ] `should_search_now(subscription)` 判断函数：
-  - 新订阅前 72h：每 4h 搜一次
-  - 3-14 天未命中：每 12h
-  - 14-30 天未命中：每 24h
-  - 30 天未命中：自动 `state=paused` + `note="长期未找到资源，已自动暂停"`
-- [ ] 找到资源后重置 `search_count` 和衰减计时
+### B.2 后端：Prowlarr 源实现（第一个源）
+
+- [x] 新建 `backend/rss_source_prowlarr.py`，实现 `RSSSourceBase`
+- [x] `fetch()` 从订阅 aliases 构造 Search Group 搜索（英文+日文+中文+标题，多词并查、info_hash 去重）
+- [x] 剧集自动追加季号后缀（S01）
+- [x] 自定义 `search_keyword` 优先级最高
+- [x] `can_download()` / `get_download_url()` 实现
+
+### B.3 后端：条目匹配引擎
+
+- [x] 新建 `backend/rss_matcher.py` — 匹配 + 过滤逻辑
+- [x] 质量过滤：`parse_quality()` → 检查是否满足订阅的 `quality` 最低要求
+- [x] 包含/排除过滤：`include` / `exclude` 关键词匹配（排除 OR，包含 AND）
+- [x] 剧集匹配：从标题提取集号，对比 `downloaded_episodes`，只保留缺失集
+- [x] 电影匹配：搜到满足质量要求的资源即可
+- [x] 指纹去重：已下载集的 `info_hash` 不再重复推送
+- [x] 整季包识别（无集号但有季号 / 含 Complete/全集/Batch）
+
+### B.4 后端：定时调度器
+
+- [x] 新建 `backend/rss_engine.py` — `SubscriptionScheduler` 后台线程调度
+- [x] 搜索频率衰减 `should_search_now()`：前 72h 每 4h，3-14 天每 12h，14-30 天每 24h，30 天无果自动暂停
+- [x] 找到资源后重置计数器
+- [x] 每个订阅间随机延迟 30-120 秒（防限频）
+- [x] 遍历所有启用的 RSS 源，合并结果后匹配
+- [x] 结果处理：notify → 存入 found_resources，auto → DownloadManager.submit()
+- [x] 自动下载选择最佳条目（电影取最高 seeders，剧集每集取最高 seeders）
+- [x] 启动时自动启动调度器（懒加载）
 - [ ] `config.json` 新增 `subscribe_interval_hours`（基础间隔，默认 4）
 
-### B.3 后端：定时任务
+### B.5 后端：RSS 源管理路由
 
-- [ ] 后台线程定时遍历活跃订阅（`threading.Timer` 循环）
-- [ ] 每个订阅间随机延迟 30-120 秒（防限频）
-- [ ] 单源超时/失败不影响其他源，自动降级
-- [ ] 搜索结果处理：
-  - `mode=notify` → 更新 `found_resources` 列表
-  - `mode=auto` → 调用 `DownloadManager.submit()` 下载，传入 `subscription_id` + `subscription_episode`
-- [ ] 下载完成回调：更新 `downloaded_episodes`（写入指纹信息）
-- [ ] 电影下载完成 → `state=completed`
-- [ ] 剧集全部集数下载完成 → `state=completed`
-- [ ] 启动时恢复定时任务（`on_startup`）
+- [x] `GET /subscribe/sources` — 查询所有 RSS 源及状态
+- [x] `PUT /subscribe/sources/{name}` — 启用/禁用某个源
+- [x] 手动搜索路由 `POST /subscribe/{id}/search` 真正实现（替换 A 阶段占位）
 
-### B.4 前端：订阅管理增强
+### B.6 前端：订阅管理增强
 
-- [ ] 订阅管理面板显示搜索状态：上次搜索时间、下次预计搜索时间、累计搜索次数
-- [ ] 通知模式：`found_resources` 不为空时显示 🔔 角标 + 资源列表（复用搜索结果 UI）
-- [ ] 用户从 found_resources 中选择资源 → 手动触发下载
-- [ ] 订阅卡片状态角标：🔔 有新资源 / ✓ 已完成 / ⏸ 已暂停 / 🔍 搜索中
-- [ ] 剧集订阅进度条增强：显示每集的下载状态（已下载/缺失）
+- [ ] 订阅面板显示搜索状态：上次搜索时间、累计搜索次数
+- [ ] 通知模式：`found_resources` 不为空时 🔔 角标 + 资源列表，用户手动选择下载
+- [ ] 手动搜索按钮真正生效
+- [ ] 订阅卡片状态角标：🔔 有新资源 / ✓ 已完成 / ⏸ 已暂停
+
+### B.7 预留：后续源接入清单（不在本阶段实现）
+
+- [ ] `rss_source_mikan.py` — 蜜柑计划（动画字幕组聚合，按番剧 RSS 订阅）
+- [ ] `rss_source_nyaa.py` — Nyaa.si（日本动画/日剧 BT 站 RSS）
+- [ ] `rss_source_rryingshi.py` — 人人影视（需攻克反爬/登录）
+- [ ] 其他字幕组 RSS（ANi、喵萌、恋恋等）
 
 ---
 

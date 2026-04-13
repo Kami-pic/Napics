@@ -50,13 +50,16 @@ export default function SubscribePanel({ open, onClose, subscriptions, onRefresh
   const handleSearch = useCallback(async (sub: SubscriptionItem) => {
     setOperating(sub.id);
     try {
-      await api.triggerSubscriptionSearch(sub.id);
+      const result = await api.triggerSubscriptionSearch(sub.id);
+      if (result.matched > 0) {
+        onRefresh();  // 刷新列表以显示新的 found_resources
+      }
     } catch (e) {
       console.error("[SubscribePanel] 搜索触发失败:", e);
     } finally {
       setOperating("");
     }
-  }, []);
+  }, [onRefresh]);
 
   if (!open) return null;
 
