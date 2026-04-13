@@ -554,10 +554,9 @@ class DownloadManager:
             self.tasks = []
 
     def _notify_subscription_complete(self, task: DownloadTask):
-        """下载完成时通知订阅管理器更新 downloaded_episodes"""
+        """下载完成时通知订阅管理器更新 downloaded_episodes，洗版模式触发归位"""
         try:
             from subscriber import SubscriptionManager
-            # 懒加载订阅管理器（避免循环依赖）
             mgr = SubscriptionManager(base_path=self.base_path)
             info_hash = task.downloader_hash or task.download_url or ""
             mgr.on_download_complete(
@@ -570,8 +569,39 @@ class DownloadManager:
                 channel=task.channel,
                 task_id=task.id,
             )
+            # 洗版模式：自动触发归位替换（旧资源进回收站）
+            sub = mgr.get(task.subscription_id)
+            if sub and sub.best_version and task.save_path:
+                self._auto_relocate(task)
         except Exception as e:
             print(f"[DownloadManager] 订阅回调失败: {e}")
+
+    def _auto_relocate(self, task: DownloadTask):
+        """洗版自动归位：在新线程中执行 file_relocator"""
+        import threading
+
+        def _run():
+            try:
+                import asyncio
+                from shared import _get_file_relocator
+                relocator = _get_file_relocator()
+                loop = asyncio.new_event_loop()
+                result = loop.run_until_complete(relocator.relocate(task))
+                loop.close()
+                if result.status == "awaiting_confirm":
+                    # 有冲突，自动确认替换（洗版模式不需要用户确认）
+                    loop2 = asyncio.new_event_loop()
+                    loop2.run_until_complete(relocator.confirm_replace(task, result.action_plan))
+                    loop2.close()
+                    print(f"[DownloadManager] 洗版归位完成: {task.media_name}")
+                elif result.status == "archived":
+                    print(f"[DownloadManager] 洗版归位（无冲突）: {task.media_name}")
+                else:
+                    print(f"[DownloadManager] 洗版归位状态: {result.status} {result.error}")
+            except Exception as e:
+                print(f"[DownloadManager] 洗版归位失败: {e}")
+
+        threading.Thread(target=_run, daemon=True, name=f"relocate-{task.id}").start()
 
     def _write_json(self):
         """将任务队列写入 JSON 文件。"""

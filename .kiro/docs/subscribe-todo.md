@@ -202,7 +202,7 @@
 
 - [x] `best_version=true` 时，搜索不受"已下载"限制（rss_matcher 已实现）
 - [x] 新资源 `quality_score` > 已有 + threshold → 选择下载（rss_engine._select_best_version 已实现）
-- [ ] 替换流程复用 `file_relocator`（旧版进回收站）— 需要和归位替换流程打通
+- [x] 替换流程复用 `file_relocator`（洗版模式自动确认替换，旧版进回收站）
 
 ---
 
@@ -223,7 +223,7 @@
 
 - [x] 4.4 手动洗版增强：搜索结果附加 quality_score 字段（100 分制）
 - [x] C.4 新集播出当天自动触发搜索（日历触发，绕过频率衰减）
-- [x] C.3 下载完成后自动通知订阅管理器更新 downloaded_episodes
+- [x] C.3 下载完成后自动通知订阅管理器更新 downloaded_episodes + 洗版模式自动归位（file_relocator）
 - [x] C.4 前端日历视图（SubscribeCalendar 组件，列表/日历切换）
 - [ ] C.2 千年女优 bug：手动替换文件后质量状态不更新（需实际复现确认）
 - [ ] B.7 新源接入：Mikan / Nyaa / 人人影视 / 字幕组 RSS
