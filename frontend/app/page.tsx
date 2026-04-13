@@ -19,8 +19,6 @@ import AnalysisReport from "@/components/media/AnalysisReport";
 import OperationHistory from "@/components/media/OperationHistory";
 import OrganizeProgress from "@/components/media/OrganizeProgress";
 import DownloadManagerPanel from "@/components/download/DownloadManagerPanel";
-import SubscribePanel from "@/components/media/SubscribePanel";
-import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { api } from "@/lib/api";
 import type { VideoInfo, FolderNode } from "@/types";
 
@@ -56,8 +54,6 @@ export default function Home() {
   const [showOrganizeProgress, setShowOrganizeProgress] = useState(false);
   const [organizeTargetPath, setOrganizeTargetPath] = useState("");
   const [showDownloadManager, setShowDownloadManager] = useState(false);
-  const [showSubscriptions, setShowSubscriptions] = useState(false);
-  const { subscriptions, refresh: refreshSubscriptions } = useSubscriptions();
   const [showReport, setShowReport] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
@@ -192,8 +188,6 @@ export default function Home() {
             scanning={scanning} onStartScan={handleStartScan} onStopScan={stopScan}
             onNavigateHome={() => { navigateTo(null as any); if (fileTree) navigateTo(fileTree); }}
             onOpenDownloads={() => setShowDownloadManager(true)}
-            onOpenSubscriptions={() => setShowSubscriptions(true)}
-            subscriptionCount={subscriptions.filter(s => s.state === "active").length}
             syncMsg={syncMsg} syncing={syncing} />
 
           {/* 第二排：面包屑 | 撤回操作、快速同步、批处理、视图切换 */}
@@ -309,9 +303,6 @@ export default function Home() {
       />
 
       <DownloadManagerPanel open={showDownloadManager} onClose={() => setShowDownloadManager(false)} />
-
-      <SubscribePanel open={showSubscriptions} onClose={() => setShowSubscriptions(false)}
-        subscriptions={subscriptions} onRefresh={refreshSubscriptions} />
 
       {batchMode && selectedPaths.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40">

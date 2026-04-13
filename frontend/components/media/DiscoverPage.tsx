@@ -192,8 +192,15 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     : curTabData.items;
 
   // ── 订阅状态 ──
-  const { isSubscribed, subscribe: doSubscribe, subscriptions, refresh: refreshSubs } = useSubscriptions();
+  const { isSubscribed: _isSubscribed, subscribe: doSubscribe, subscriptions, refresh: refreshSubs } = useSubscriptions();
   const [subscribing, setSubscribing] = useState(false);
+  const [justSubscribed, setJustSubscribed] = useState<Set<string>>(new Set());
+
+  // 包装 isSubscribed：加入"刚订阅"的临时标记
+  const isSubscribed = useCallback((tmdbId?: number, title?: string, year?: string, season?: number): boolean => {
+    if (title && justSubscribed.has(`${title}|${year || ""}`)) return true;
+    return _isSubscribed(tmdbId, title, year, season);
+  }, [_isSubscribed, justSubscribed]);
 
   const handleSubscribe = useCallback(async (item: DoubanHotItem, d: MediaDetail | null) => {
     setSubscribing(true);
@@ -207,9 +214,12 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         douban_id: item.douban_id || undefined,
         poster: item.cover_url || d?.poster_url || "",
       });
-      if (result.status === "error") {
-        console.log(`[Subscribe] ${result.message}`);
+      if (result.status === "ok") {
+        // 立即标记为已订阅（不等列表刷新）
+        setJustSubscribed(prev => new Set(prev).add(`${item.title}|${item.year || d?.year || ""}`));
       }
+    } catch (e) {
+      console.error("[Subscribe] 异常:", e);
     } finally {
       setSubscribing(false);
     }
