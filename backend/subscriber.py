@@ -157,6 +157,19 @@ class SubscriptionManager:
             created_at=now,
         )
 
+        # 媒体库联动：剧集订阅自动填充已有集数
+        if data.get("type") == "tv" and local_warning and media_matcher:
+            try:
+                local_episodes = self._scan_local_episodes(title, year, season, media_matcher)
+                if local_episodes:
+                    for ep_num in local_episodes:
+                        sub.downloaded_episodes[str(ep_num)] = EpisodeInfo(
+                            source="local", timestamp=now, title=f"本地已有 E{ep_num:02d}",
+                        )
+                    print(f"[Subscriber] 媒体库联动: {title} 已有 {len(local_episodes)} 集")
+            except Exception as e:
+                print(f"[Subscriber] 媒体库联动失败: {e}")
+
         with self._lock:
             self.subscriptions.append(sub)
             self._save()
@@ -226,6 +239,57 @@ class SubscriptionManager:
         except Exception as e:
             print(f"[Subscriber] TMDB 获取集数失败: {e}")
         return 0
+
+    def _scan_local_episodes(self, title: str, year: str, season: Optional[int],
+                              media_matcher) -> list:
+        """扫描媒体库中该剧已有的集号列表"""
+        import re
+        try:
+            # 从 media_matcher 的索引中找到匹配的文件夹
+            status, folder = media_matcher.match({"title": title, "year": year})
+            if not status.startswith("owned") or not folder:
+                return []
+
+            # 读取媒体库，找到该文件夹下的所有视频
+            from config_manager import ConfigManager
+            cm = ConfigManager()
+            library = cm.load_library()
+            episodes = set()
+            for v in library:
+                fp = v.get("file_path", "")
+                fn = v.get("folder_name", "")
+                # 匹配文件夹路径
+                if folder not in fn and folder not in fp:
+                    continue
+                # 从文件名提取集号
+                fname = v.get("file_name", "")
+                ep = self._extract_episode_from_filename(fname)
+                if ep is not None:
+                    episodes.add(ep)
+            return sorted(episodes)
+        except Exception as e:
+            print(f"[Subscriber] 扫描本地集数失败: {e}")
+            return []
+
+    @staticmethod
+    def _extract_episode_from_filename(filename: str) -> Optional[int]:
+        """从文件名提取集号"""
+        import re
+        patterns = [
+            re.compile(r"S\d{1,2}E(\d{1,4})", re.IGNORECASE),
+            re.compile(r"[\[\s]E(\d{1,4})[\]\s\.\-]", re.IGNORECASE),
+            re.compile(r"第(\d{1,4})[集话話]"),
+            re.compile(r"EP\.?(\d{1,4})", re.IGNORECASE),
+            re.compile(r"\s-\s(\d{1,4})\s"),
+        ]
+        for pat in patterns:
+            m = pat.search(filename)
+            if m:
+                try:
+                    return int(m.group(1))
+                except (ValueError, IndexError):
+                    continue
+        return None
 
     def is_subscribed(self, tmdb_id: Optional[int] = None,
                       title: str = "", year: str = "",

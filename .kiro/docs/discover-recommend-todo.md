@@ -230,6 +230,8 @@
 
 ## 阶段 4：质量评分升级 + 自动洗版
 
+> 整体后移，当前 8 级评分 + 手动归位替换够用。详见 `subscribe-todo.md` 阶段 4 部分。
+
 ### 4.1 升级质量评分系统
 - [ ] 在 `quality_parser.py` 新增 `compute_quality_score(tag: QualityTag) -> int` 综合评分函数（100 分制）
 - [ ] 评分维度及权重（参考值，可调）：

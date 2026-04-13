@@ -261,6 +261,7 @@ export const api = {
   submitDownload: (task: {
     media_name: string; download_url: string; save_path: string;
     channel?: string; category_hint?: string; is_season_pack?: boolean; season_number?: number;
+    subscription_id?: string; subscription_episode?: number | null;
   }) => request<any>(`${BASE_URL}/download-manager/submit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -422,4 +423,5 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled }),
     }),
+  getSubscriptionCalendar: () => request<any[]>(`${BASE_URL}/subscribe/calendar`),
 };

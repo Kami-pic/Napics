@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import type { SubscriptionItem } from "@/hooks/useSubscriptions";
 import { api } from "@/lib/api";
 import { proxyUrl } from "./discoverUtils";
+import FoundResourcesList from "./FoundResourcesList";
 
 export interface SubscribePanelProps {
   open: boolean;
@@ -93,7 +94,8 @@ export default function SubscribePanel({ open, onClose, subscriptions, onRefresh
             <SubscribeCard key={sub.id} sub={sub} operating={operating === sub.id}
               onTogglePause={() => handleTogglePause(sub)}
               onDelete={() => handleDelete(sub)}
-              onSearch={() => handleSearch(sub)} />
+              onSearch={() => handleSearch(sub)}
+              onRefresh={onRefresh} />
           ))}
         </div>
       </div>
@@ -102,9 +104,9 @@ export default function SubscribePanel({ open, onClose, subscriptions, onRefresh
 }
 
 // ── 单个订阅卡片 ──
-function SubscribeCard({ sub, operating, onTogglePause, onDelete, onSearch }: {
+function SubscribeCard({ sub, operating, onTogglePause, onDelete, onSearch, onRefresh }: {
   sub: SubscriptionItem; operating: boolean;
-  onTogglePause: () => void; onDelete: () => void; onSearch: () => void;
+  onTogglePause: () => void; onDelete: () => void; onSearch: () => void; onRefresh: () => void;
 }) {
   const isTV = sub.type === "tv";
   const dlCount = Object.keys(sub.downloaded_episodes || {}).length;
@@ -114,55 +116,75 @@ function SubscribeCard({ sub, operating, onTogglePause, onDelete, onSearch }: {
     : sub.state === "paused" ? "text-amber-400 bg-amber-500/10"
     : "text-slate-400 bg-white/[0.06]";
 
+  // 格式化搜索时间
+  const searchInfo = sub.last_search
+    ? `搜索 ${sub.search_count || 0} 次 · ${sub.last_search.slice(5, 16).replace(" ", " ")}`
+    : "未搜索";
+
   return (
-    <div className={`flex gap-3 p-3 rounded-xl border transition-all ${
+    <div className={`p-3 rounded-xl border transition-all ${
       operating ? "opacity-50 pointer-events-none" : ""
     } ${hasNewRes ? "border-amber-500/30 bg-amber-500/[0.03]" : "border-white/[0.06] bg-white/[0.02]"}`}>
-      {/* 海报缩略图 */}
-      <div className="w-12 h-[72px] flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a]">
-        {sub.poster ? (
-          <img src={proxyUrl(sub.poster)} alt={sub.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-700 text-lg">🎬</div>
-        )}
-      </div>
-      {/* 信息 */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-white truncate">{sub.title}</p>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${stateColor}`}>{stateLabel}</span>
-          {hasNewRes && <span className="text-[10px] text-amber-400">🔔</span>}
+      <div className="flex gap-3">
+        {/* 海报缩略图 */}
+        <div className="w-12 h-[72px] flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a]">
+          {sub.poster ? (
+            <img src={proxyUrl(sub.poster)} alt={sub.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-700 text-lg">🎬</div>
+          )}
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          {sub.year && <span className="text-[10px] text-slate-500">{sub.year}</span>}
-          <span className="text-[10px] text-slate-500">{isTV ? "剧集" : "电影"}</span>
-          <span className="text-[10px] text-slate-500">{sub.quality}</span>
-          <span className="text-[10px] text-slate-600">{sub.mode === "auto" ? "自动" : "通知"}</span>
-        </div>
-        {/* 剧集进度 */}
-        {isTV && sub.total_episode > 0 && (
-          <div className="mt-1.5">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500/80 rounded-full transition-all"
-                  style={{ width: `${Math.min((dlCount / sub.total_episode) * 100, 100)}%` }} />
-              </div>
-              <span className="text-[10px] text-slate-500 flex-shrink-0">{dlCount}/{sub.total_episode}</span>
-            </div>
+        {/* 信息 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-white truncate">{sub.title}</p>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded ${stateColor}`}>{stateLabel}</span>
+            {hasNewRes && <span className="text-[10px] text-amber-400">🔔</span>}
           </div>
-        )}
-        {/* 操作按钮 */}
-        <div className="flex gap-1.5 mt-2">
-          <button onClick={onSearch} title="手动搜索"
-            className="px-2 py-1 text-[10px] text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded transition-all">🔍 搜索</button>
-          <button onClick={onTogglePause} title={sub.state === "paused" ? "恢复" : "暂停"}
-            className="px-2 py-1 text-[10px] text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded transition-all">
-            {sub.state === "paused" ? "▶ 恢复" : "⏸ 暂停"}
-          </button>
-          <button onClick={onDelete} title="删除"
-            className="px-2 py-1 text-[10px] text-red-400/60 bg-white/[0.04] hover:bg-red-500/10 rounded transition-all">🗑 删除</button>
+          <div className="flex items-center gap-2 mt-1">
+            {sub.year && <span className="text-[10px] text-slate-500">{sub.year}</span>}
+            <span className="text-[10px] text-slate-500">{isTV ? "剧集" : "电影"}</span>
+            <span className="text-[10px] text-slate-500">{sub.quality}</span>
+            <span className="text-[10px] text-slate-600">{sub.mode === "auto" ? "自动" : "通知"}</span>
+          </div>
+          {/* 搜索状态 */}
+          <p className="text-[9px] text-slate-600 mt-1">{searchInfo}</p>
+          {/* 剧集进度 */}
+          {isTV && sub.total_episode > 0 && (
+            <div className="mt-1.5">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500/80 rounded-full transition-all"
+                    style={{ width: `${Math.min((dlCount / sub.total_episode) * 100, 100)}%` }} />
+                </div>
+                <span className="text-[10px] text-slate-500 flex-shrink-0">{dlCount}/{sub.total_episode}</span>
+              </div>
+            </div>
+          )}
+          {/* 操作按钮 */}
+          <div className="flex gap-1.5 mt-2">
+            <button onClick={onSearch} title="手动搜索"
+              className="px-2 py-1 text-[10px] text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded transition-all">🔍 搜索</button>
+            <button onClick={onTogglePause} title={sub.state === "paused" ? "恢复" : "暂停"}
+              className="px-2 py-1 text-[10px] text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded transition-all">
+              {sub.state === "paused" ? "▶ 恢复" : "⏸ 暂停"}
+            </button>
+            <button onClick={onDelete} title="删除"
+              className="px-2 py-1 text-[10px] text-red-400/60 bg-white/[0.04] hover:bg-red-500/10 rounded transition-all">🗑 删除</button>
+          </div>
         </div>
       </div>
+      {/* 找到的资源列表 */}
+      {hasNewRes && (
+        <FoundResourcesList
+          resources={sub.found_resources}
+          subscriptionId={sub.id}
+          subscriptionTitle={sub.title}
+          savePath={sub.save_path || ""}
+          mediaType={sub.type}
+          onDownloaded={onRefresh}
+        />
+      )}
     </div>
   );
 }

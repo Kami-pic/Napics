@@ -19,6 +19,9 @@ export interface SubscriptionItem {
   downloaded_episodes: Record<string, any>;
   found_resources: any[];
   created_at: string;
+  last_search?: string;
+  search_count?: number;
+  save_path?: string;
 }
 
 export function useSubscriptions() {

@@ -86,6 +86,45 @@ def toggle_source(name: str, req: dict):
     return {"status": "not_found"}
 
 
+@router.get("/subscribe/calendar")
+def get_calendar():
+    """订阅日历：返回剧集订阅的播出时间线"""
+    mgr = _get_sub_manager()
+    tmdb = _tmdb_client()
+    if not tmdb:
+        return []
+
+    active_tv = [s for s in mgr.get_all() if s.type == "tv" and s.state in ("active", "paused") and s.tmdb_id]
+    calendar = []
+    for sub in active_tv:
+        try:
+            season_num = sub.season or 1
+            # 直接调用 TMDB API 获取 season 详情（含每集 air_date）
+            raw = tmdb._get(f"/tv/{sub.tmdb_id}/season/{season_num}")
+            episodes = raw.get("episodes", [])
+            downloaded = set(sub.downloaded_episodes.keys())
+            for ep in episodes:
+                ep_num = ep.get("episode_number", 0)
+                air_date = ep.get("air_date", "")
+                if not air_date or not ep_num:
+                    continue
+                calendar.append({
+                    "subscription_id": sub.id,
+                    "title": sub.title,
+                    "season": season_num,
+                    "episode": ep_num,
+                    "episode_title": ep.get("name", ""),
+                    "air_date": air_date,
+                    "downloaded": str(ep_num) in downloaded,
+                    "poster": sub.poster,
+                })
+        except Exception as e:
+            print(f"[Calendar] {sub.title} 获取失败: {e}")
+
+    calendar.sort(key=lambda x: x.get("air_date", ""))
+    return calendar
+
+
 # ── CRUD 路由（参数路由放最后，避免和固定路径冲突）──
 
 @router.post("/subscribe")

@@ -69,8 +69,8 @@
 - 订阅系统 TODO：`.kiro/docs/subscribe-todo.md`（子阶段 A+B 完成，C 待做）
 - 阶段 2 已完成：探索 5 源筛选（豆瓣电影/剧集+TMDB电影/剧集+Bangumi）、综合推荐算法、TOP250 排序标签、评分双滑块、候补机制、详情匹配修复、滚动自动加载、磁吸阻尼吸附、本地媒体库感知、Fallback 补位
 - 阶段 2 剩余：详情候选选择、匹配算法优化（冷门片 TMDB 覆盖率）
-- 阶段 3 订阅系统子阶段 A+B 已完成：CRUD + 前端 + RSS 框架 + Prowlarr 源 + 匹配引擎 + 定时调度
-- 待做：订阅子阶段 C（日历+洗版）、B.6 前端增强（搜索状态展示）、新源接入（Mikan/Nyaa/人人影视）
+- 阶段 3 订阅系统子阶段 A+B+C 核心已完成：CRUD + 前端 + RSS 框架 + Prowlarr 源 + 匹配引擎 + 定时调度 + 资源列表 + 日历 + 媒体库联动
+- 待做：C.2 千年女优 bug、C.4 日历自动触发搜索、新源接入（Mikan/Nyaa/人人影视）、阶段 4 评分+洗版
 
 ## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级+阶段2探索筛选完成）
 - `douban_api_v2.py`：豆瓣 App API v2 签名鉴权，9 个榜单 + 探索 + 搜索 + 详情
@@ -134,10 +134,16 @@
   - `rss_engine.py`：RSSSourceManager（源注册/启用/禁用）+ SubscriptionScheduler（定时调度+频率衰减）
   - 频率衰减：前72h每4h → 3-14天每12h → 14-30天每24h → 30天无果自动暂停
   - 新增源只需实现 RSSSourceBase 并注册，不改框架代码
+- 子阶段 C 收尾：
+  - `FoundResourcesList.tsx`：资源列表组件（标题+质量+大小+做种数+下载按钮）
+  - SubscribePanel 搜索状态展示（last_search/search_count）
+  - `GET /subscribe/calendar`：从 TMDB 拉剧集播出日期，返回时间线
+  - 媒体库联动：新增剧集订阅时自动扫描已有集数，填充 downloaded_episodes（source="local"）
+  - subscriber.py 新增 `_scan_local_episodes` + `_extract_episode_from_filename`
 - 前端：useSubscriptions hook、ExpandDetail 订阅按钮、DiscoverCard 📌 角标
 - 前端：SubscribePanel 侧边抽屉（海报+状态+进度条+暂停/恢复/删除/搜索）
 - 前端：Header 订阅入口按钮、api.ts 10 个订阅 API 函数（含源管理）
-- 测试：后端 33+19 单元/E2E + 前端 50+7 组件测试 = 109 项全通过
+- 测试：后端 33+19+18 单元/E2E + 前端 50+7+9 组件测试 = 136 项全通过
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符
