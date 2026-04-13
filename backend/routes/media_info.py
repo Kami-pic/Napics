@@ -385,12 +385,11 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
         if not results:
             print(f"[MediaInfo._try_douban] 搜索无结果")
             return None
-        best = results[0]
-        if year:
-            for r in results:
-                if r.get("year") == year:
-                    best = r
-                    break
+        # 模糊匹配：找最佳候选（标题相似度 + 年份匹配）
+        best = _pick_best_douban_result(results, title, year)
+        if not best:
+            print(f"[MediaInfo._try_douban] 无匹配候选")
+            return None
         did = best.get("douban_id")
         if not did:
             return None
@@ -401,6 +400,53 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
     except Exception as e:
         print(f"[MediaInfo] 豆瓣详情失败: {e}")
         return None
+
+
+def _pick_best_douban_result(results: list, query_title: str, year: str) -> dict | None:
+    """从豆瓣搜索结果中选最佳匹配。
+
+    策略：
+    1. 精确匹配标题 + 年份 → 直接返回
+    2. 模糊匹配：中文字符重叠率 >= 0.7 → 候选
+    3. 候选中年份匹配的优先
+    4. 无候选 → 返回 None（不强行匹配，避免错误）
+    """
+    import re
+    query_cn = re.sub(r"[^\u4e00-\u9fff]", "", query_title)
+
+    candidates = []
+    for r in results:
+        r_title = r.get("title", "")
+        r_year = r.get("year", "")
+        r_cn = re.sub(r"[^\u4e00-\u9fff]", "", r_title)
+
+        # 精确匹配
+        if r_title == query_title:
+            if not year or r_year == year:
+                return r
+            candidates.insert(0, r)
+            continue
+
+        # 中文字符重叠率
+        if query_cn and r_cn:
+            common = sum(1 for c in query_cn if c in r_cn)
+            overlap = common / max(len(query_cn), 1)
+            if overlap >= 0.7:
+                candidates.append(r)
+        elif not query_cn:
+            # 纯英文标题，用子串匹配
+            if query_title.lower() in r_title.lower() or r_title.lower() in query_title.lower():
+                candidates.append(r)
+
+    if not candidates:
+        return None
+
+    # 年份匹配的优先
+    if year:
+        for c in candidates:
+            if c.get("year") == year:
+                return c
+    return candidates[0]
 
 
 def _format_douban_detail(detail: dict) -> dict:

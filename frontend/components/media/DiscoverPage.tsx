@@ -84,10 +84,10 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     return () => window.removeEventListener("resize", calc);
   }, []);
 
-  const scrollToDiscover = useCallback(() => {
+  const scrollToDiscover = useCallback((instant?: boolean) => {
     if (!stickyHeaderRef.current || !scrollContainerRef?.current) return;
     const headerTop = stickyHeaderRef.current.offsetTop;
-    scrollContainerRef.current.scrollTo({ top: headerTop, behavior: "smooth" });
+    scrollContainerRef.current.scrollTo({ top: headerTop, behavior: instant ? "instant" as ScrollBehavior : "smooth" });
   }, [scrollContainerRef]);
 
   const loadIdRef = useRef(0);

@@ -16,7 +16,7 @@ export interface DiscoverHeaderProps {
   onExitSearch: () => void;
   onRefresh: () => void;
   refreshing: boolean;
-  scrollToDiscover: () => void;
+  scrollToDiscover: (instant?: boolean) => void;
   stickyHeaderRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -34,7 +34,7 @@ export default function DiscoverHeader({
         <div className="flex items-center gap-6 flex-shrink-0">
           {PRIMARY_TABS.map((t) => (
             <button key={t.key}
-              onClick={(e) => { e.stopPropagation(); setPrimaryTab(t.key); scrollToDiscover(); }}
+              onClick={(e) => { e.stopPropagation(); setPrimaryTab(t.key); requestAnimationFrame(() => scrollToDiscover(true)); }}
               className={`transition-colors ${
                 primaryTab === t.key
                   ? "text-[15px] font-bold text-white tracking-tight"
