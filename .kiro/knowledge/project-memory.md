@@ -66,9 +66,11 @@
 - 搜索增强 TODO：`.kiro/docs/search-enhance-todo.md`
 - 自动替换 TODO：`.kiro/docs/auto-replace-todo.md`
 - 发现推荐 TODO：`.kiro/docs/discover-recommend-todo.md`（阶段 1 完成，阶段 2 探索筛选基本完成）
-- 阶段 2 已完成：探索 5 源筛选（豆瓣电影/剧集+TMDB电影/剧集+Bangumi）、综合推荐算法、TOP250 排序标签、评分双滑块、候补机制、详情匹配修复、滚动自动加载、磁吸阻尼吸附
-- 阶段 2 剩余：本地媒体库感知(2.7)、详情候选选择、冷门降权、Fallback 补位
-- 待做：磁力熊直搜、其他网盘转存 API、设置页搜索源开关、转存纳入 DownloadManager
+- 订阅系统 TODO：`.kiro/docs/subscribe-todo.md`（子阶段 A 完成，B/C 待做）
+- 阶段 2 已完成：探索 5 源筛选（豆瓣电影/剧集+TMDB电影/剧集+Bangumi）、综合推荐算法、TOP250 排序标签、评分双滑块、候补机制、详情匹配修复、滚动自动加载、磁吸阻尼吸附、本地媒体库感知、Fallback 补位
+- 阶段 2 剩余：详情候选选择、匹配算法优化（冷门片 TMDB 覆盖率）
+- 阶段 3 订阅系统子阶段 A 已完成：CRUD + 前端订阅按钮/角标/管理面板
+- 待做：订阅子阶段 B（定时搜索+自动下载）、子阶段 C（日历+洗版）、磁力熊直搜、其他网盘转存 API
 
 ## 发现推荐模块（2026-04-10 新增，04-11 大幅增强，04-12 详情面板升级+阶段2探索筛选完成）
 - `douban_api_v2.py`：豆瓣 App API v2 签名鉴权，9 个榜单 + 探索 + 搜索 + 详情
@@ -104,6 +106,34 @@
   - 数据截断到 colCount 整数倍，避免最后一行不满
   - 综合推荐 60 条上限 + 排名角标 + "今天就推荐这么多吧"
   - 媒体库和发现页间距 mt-10（40px）
+- 本地媒体库感知（04-13）：
+  - `local_media_matcher.py`：三层匹配 + 内存索引 + 异步 TMDB ID 补全
+  - 第一层：启动时从 media_library.json 构建内存索引（tmdb_id / title+year / title），save_library 回调自动刷新
+  - 第二层：`id_mapping_cache.json` 持久化 douban_id → tmdb_id 映射
+  - 第三层：后台线程异步用 TMDB API 补全未命中的豆瓣条目，每条间隔 1.5s
+  - 中文匹配用前缀策略（startswith），避免"你的名字"误匹配"以你的名字呼唤我"
+  - height=0 时从文件名解析分辨率兜底（2160p/1080p/720p）
+  - 推荐/探索/搜索三个接口统一注入 local_status + local_folder
+  - 前端卡片角标：✓ 已有（emerald）/ ↑ 可升级（amber），有排名角标时下移避免重叠
+  - 详情面板"查看本地"按钮：点击跳转到媒体库对应目录（page.tsx → navigateTo）
+  - `normalizeItem` 传递 local_status + local_folder
+  - `config_manager.py` 新增 `_on_library_save_callbacks` 回调机制
+  - 综合推荐 Fallback 补位：去重后不足 60 条从 top250 + weekly 补位（`_fallback_fill`）
+
+## 订阅系统（2026-04-13 新增，子阶段 A 完成）
+- `subscriber.py`：订阅管理器，CRUD + JSON 持久化（subscriptions.json）+ 别名预拉取 + 媒体库查重
+- `routes/subscribe.py`：7 个路由（CRUD + check + search 占位），懒加载单例
+- 数据模型：Subscription（含 EpisodeInfo 指纹对象），电影用 "0" 作 key
+- downloaded_episodes 用对象结构存储指纹（info_hash/title/quality_tag/source/channel/task_id/timestamp）
+- 订阅创建时预拉取别名（alias_resolver），存入 aliases 字段（cn/en/jp）
+- 订阅创建时检查媒体库是否已有（local_media_matcher），已有则返回 warning
+- 剧集订阅从 TMDB 获取总集数填入 total_episode
+- DownloadTask 新增 subscription_id + subscription_episode 字段（订阅→下载→回调纽带）
+- 状态机：active ↔ paused，电影下载完成 → completed，剧集全部集数下载完成 → completed
+- 前端：useSubscriptions hook（启动拉取+本地缓存判断）、ExpandDetail 订阅按钮、DiscoverCard 📌 角标
+- 前端：SubscribePanel 侧边抽屉（海报+状态+进度条+暂停/恢复/删除/搜索）
+- 前端：Header 新增"订阅"入口按钮（显示活跃订阅数角标）
+- 集成测试：37 项全通过（单元17 + DownloadTask兼容5 + 路由导入3 + API路由11 + 前端构建1）
 
 ## 已知业务踩坑
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符
@@ -125,3 +155,8 @@
 - React 中 `{0 && <Component />}` 会渲染文本 "0"，falsy 数值条件必须用 `> 0` 或 `!!` 转布尔
 - 扫描/同步的 event_generator 必须整体包 try-except，单文件失败不能中断整个流
 - restart.bat 旧版 timeout 2s 不够导致端口冲突，已改为循环等待端口释放
+- 中文片名匹配用前缀（startswith）而非子串（in），避免"你的名字"误匹配"以你的名字呼唤我"
+- normalize_text 会去掉标点和空格，"你的名字。 Your Name" → "你的名字yourname"，中英混合标题需要分别提取中文部分匹配
+- Python 中 continue 后面的代码是死代码，重构时注意缩进层级
+- media_library.json 中 shadow_tmdb_id 覆盖率极低（3302 条仅 1 条），片名匹配是主力
+- discoverUtils.ts 的 normalizeItem 是所有推荐/探索/搜索数据的入口，新增字段必须在此传递

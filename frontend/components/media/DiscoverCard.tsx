@@ -13,6 +13,7 @@ export interface DiscoverCardProps {
   ratingSource?: "douban" | "tmdb" | "bangumi";
   onClick: () => void;
   style?: React.CSSProperties;
+  isSubscribed?: boolean;
 }
 
 function PosterFallback({ title, failed }: { title: string; failed?: boolean }) {
@@ -25,7 +26,7 @@ function PosterFallback({ title, failed }: { title: string; failed?: boolean }) 
   );
 }
 
-const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRank, showMediaType, ratingSource = "douban", onClick, style }: DiscoverCardProps) {
+const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRank, showMediaType, ratingSource = "douban", onClick, style, isSubscribed }: DiscoverCardProps) {
   const [imgError, setImgError] = useState(false);
   const genres = item.genres?.slice(0, 3) || [];
   const isTV = item.media_type === "tv";
@@ -39,6 +40,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
   const ratingColorMap = { douban: "text-yellow-400", tmdb: "text-blue-400", bangumi: "text-pink-400" };
   const ratingColor = ratingColorMap[ratingSource] || "text-yellow-400";
   const hasRating = item.rating > 0;
+  const localStatus = item.local_status;
 
   return (
     <div data-discover-card style={style}
@@ -67,6 +69,23 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         <span className={`absolute top-3 right-3 bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
           {hasRating ? item.rating : "—"}
         </span>
+        {/* 本地媒体库状态角标 */}
+        {localStatus === "owned_high" && (
+          <span className={`absolute ${showRank ? "top-10" : "top-3"} left-3 bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none flex items-center gap-0.5`}>
+            ✓ 已有
+          </span>
+        )}
+        {localStatus === "owned_low" && (
+          <span className={`absolute ${showRank ? "top-10" : "top-3"} left-3 bg-amber-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none flex items-center gap-0.5`}>
+            ↑ 可升级
+          </span>
+        )}
+        {/* 订阅角标 */}
+        {isSubscribed && !localStatus?.startsWith("owned") && (
+          <span className={`absolute ${showRank ? "top-10" : "top-3"} left-3 bg-violet-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none`}>
+            📌
+          </span>
+        )}
         <div className="absolute bottom-0 left-0 right-0 p-3">
           {(genres.length > 0 || showMediaType) && (
             <div className="flex gap-1 mb-1.5">

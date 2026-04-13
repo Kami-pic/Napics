@@ -28,6 +28,8 @@ export function normalizeItem(item: any): DoubanHotItem {
     countries: item.countries || [],
     media_type: item.media_type || "",
     episodes_info: item.episodes_info || "",
+    local_status: item.local_status || undefined,
+    local_folder: item.local_folder || undefined,
   };
 }
 

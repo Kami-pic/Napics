@@ -34,6 +34,7 @@ from routes.scrape import router as scrape_router
 from routes.media_info import router as media_info_router
 from routes.poster import router as poster_router
 from routes.search import router as search_router
+from routes.subscribe import router as subscribe_router
 from routes.system import router as system_router
 from routes.tools import router as tools_router
 
@@ -59,6 +60,7 @@ app.include_router(scrape_router)
 app.include_router(media_info_router)
 app.include_router(poster_router)
 app.include_router(search_router)
+app.include_router(subscribe_router)
 app.include_router(system_router)
 app.include_router(tools_router)
 

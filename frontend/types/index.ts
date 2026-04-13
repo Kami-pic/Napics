@@ -200,6 +200,9 @@ export interface DoubanHotItem {
   countries?: string[];
   media_type?: string;
   episodes_info?: string;
+  // 本地媒体库感知
+  local_status?: "none" | "owned_low" | "owned_high";
+  local_folder?: string;
 }
 
 export interface AddMediaInfo {

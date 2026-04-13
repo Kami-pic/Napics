@@ -25,11 +25,18 @@ export interface ExpandDetailProps {
   showBangumiRating?: boolean;
   /** 切换数据源刷新（清缓存+重新请求） */
   onRefreshWithSource?: (source: string) => void;
+  /** 跳转到本地媒体库目录 */
+  onNavigateToLocal?: (folderPath: string) => void;
+  /** 订阅按钮回调 */
+  onSubscribe?: () => void;
+  /** 是否已订阅 */
+  isSubscribed?: boolean;
 }
 
 export default function ExpandDetail({
   item, detail, loading, onSearch, onClose, onRetry,
-  defaultSource = "douban", showBangumiRating = false, onRefreshWithSource,
+  defaultSource = "douban", showBangumiRating = false, onRefreshWithSource, onNavigateToLocal,
+  onSubscribe, isSubscribed = false,
 }: ExpandDetailProps) {
   const d = detail?.found ? detail : null;
   const detailPoster = d?.poster_url ? proxyUrl(d.poster_url) : "";
@@ -86,9 +93,9 @@ export default function ExpandDetail({
             <span className="text-xs text-slate-500">加载详情...</span>
           </div>
         ) : !d ? (
-          <NoDetailFallback item={item} onSearch={onSearch} onRetry={handleRefresh} />
+          <NoDetailFallback item={item} onSearch={onSearch} onRetry={handleRefresh} onSubscribe={onSubscribe} isSubscribed={isSubscribed} />
         ) : (
-          <DetailContent item={item} d={d} onSearch={onSearch} showBangumiRating={showBangumiRating} />
+          <DetailContent item={item} d={d} onSearch={onSearch} showBangumiRating={showBangumiRating} onNavigateToLocal={onNavigateToLocal} onSubscribe={onSubscribe} isSubscribed={isSubscribed} />
         )}
       </div>
     </div>
@@ -97,7 +104,7 @@ export default function ExpandDetail({
 
 
 // ── 无详情时的 fallback 展示 ──
-function NoDetailFallback({ item, onSearch, onRetry }: { item: DoubanHotItem; onSearch: () => void; onRetry: () => void }) {
+function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }: { item: DoubanHotItem; onSearch: () => void; onRetry: () => void; onSubscribe?: () => void; isSubscribed?: boolean }) {
   return (
     <div className="mt-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -109,6 +116,14 @@ function NoDetailFallback({ item, onSearch, onRetry }: { item: DoubanHotItem; on
       <p className="text-xs text-slate-500 mt-4">暂无相关数据 <button onClick={onRetry} className="text-blue-400 hover:text-blue-300 ml-2">重试</button></p>
       <div className="flex gap-2 mt-4">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
+        {onSubscribe && (
+          <button onClick={onSubscribe} disabled={isSubscribed}
+            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+              isSubscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
+            }`}>
+            {isSubscribed ? "📌 已订阅" : "📌 订阅"}
+          </button>
+        )}
         {item.douban_id && (
           <a href={`https://movie.douban.com/subject/${item.douban_id}/`} target="_blank" rel="noopener noreferrer"
             className="px-4 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>
@@ -128,8 +143,9 @@ function StarIcon() {
 }
 
 // ── 有详情时的完整展示 ──
-function DetailContent({ item, d, onSearch, showBangumiRating = false }: {
-  item: DoubanHotItem; d: MediaDetail; onSearch: () => void; showBangumiRating?: boolean;
+function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigateToLocal, onSubscribe, isSubscribed }: {
+  item: DoubanHotItem; d: MediaDetail; onSearch: () => void; showBangumiRating?: boolean; onNavigateToLocal?: (folderPath: string) => void;
+  onSubscribe?: () => void; isSubscribed?: boolean;
 }) {
   const ratings = d.ratings || {};
   const doubanRating = ratings.douban || 0;
@@ -181,6 +197,26 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false }: {
       </div>
       <div className="flex items-center gap-2 mt-4 flex-wrap">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
+        {/* 订阅按钮 */}
+        {onSubscribe && (
+          <button onClick={onSubscribe} disabled={isSubscribed}
+            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+              isSubscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
+            }`}>
+            {isSubscribed ? "📌 已订阅" : "📌 订阅"}
+          </button>
+        )}
+        {/* 本地媒体库跳转 */}
+        {item.local_status && item.local_status !== "none" && item.local_folder && onNavigateToLocal && (
+          <button onClick={() => onNavigateToLocal(item.local_folder!)}
+            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+              item.local_status === "owned_high"
+                ? "bg-emerald-600/80 hover:bg-emerald-500 text-white"
+                : "bg-amber-600/80 hover:bg-amber-500 text-white"
+            }`}>
+            {item.local_status === "owned_high" ? "✓ 查看本地" : "↑ 查看本地"}
+          </button>
+        )}
         {/* 豆瓣 */}
         {(() => {
           const searchName = d.title || item.title;

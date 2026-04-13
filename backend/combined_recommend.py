@@ -182,6 +182,72 @@ def _assign_reason(item: Dict) -> str:
     return "综合推荐"
 
 
+def _fallback_fill(current: List[Dict], target: int) -> List[Dict]:
+    """去重后不足 target 条时，从 top250 和 weekly 补位"""
+    need = target - len(current)
+    if need <= 0:
+        return current
+
+    existing_titles = {normalize_text(i.get("title") or "") for i in current}
+    existing_ids = set()
+    for i in current:
+        if i.get("douban_id"):
+            existing_ids.add(str(i["douban_id"]))
+        if i.get("tmdb_id"):
+            existing_ids.add(f"tmdb_{i['tmdb_id']}")
+
+    def _is_dup(item: Dict) -> bool:
+        did = str(item.get("douban_id") or "")
+        if did and did in existing_ids:
+            return True
+        tid = item.get("tmdb_id")
+        if tid and f"tmdb_{tid}" in existing_ids:
+            return True
+        t = normalize_text(item.get("title") or "")
+        return t and t in existing_titles
+
+    fill_items = []
+    # 优先从 top250 补位
+    try:
+        top = douban_api_v2.movie_top250(0, need * 2)
+        for item in (top or []):
+            if not _is_dup(item):
+                item["media_type"] = item.get("media_type") or "movie"
+                item["_source"] = "douban"
+                item["_source_count"] = 1
+                item["_sources"] = ["douban"]
+                item["_normalized_score"] = _normalize_score(item.get("rating", 0), "douban")
+                item["_final_score"] = _calc_final_score(item, 1)
+                fill_items.append(item)
+                existing_titles.add(normalize_text(item.get("title") or ""))
+                if len(fill_items) >= need:
+                    break
+    except Exception as e:
+        print(f"[CombinedRecommend] top250 补位失败: {e}")
+
+    # 仍不足则从 weekly 补位
+    if len(fill_items) < need:
+        try:
+            weekly = douban_api_v2.tv_weekly_chinese(0, 20)
+            weekly = (weekly or []) + (douban_api_v2.tv_weekly_global(0, 20) or [])
+            for item in weekly:
+                if not _is_dup(item):
+                    item["media_type"] = item.get("media_type") or "tv"
+                    item["_source"] = "douban"
+                    item["_source_count"] = 1
+                    item["_sources"] = ["douban"]
+                    item["_normalized_score"] = _normalize_score(item.get("rating", 0), "douban")
+                    item["_final_score"] = _calc_final_score(item, 1)
+                    fill_items.append(item)
+                    existing_titles.add(normalize_text(item.get("title") or ""))
+                    if len(fill_items) >= need:
+                        break
+        except Exception as e:
+            print(f"[CombinedRecommend] weekly 补位失败: {e}")
+
+    return current + fill_items[:need]
+
+
 def _interleave(items: List[Dict]) -> List[Dict]:
     """影剧交叉排列：每 3 条中至少 1 条电影 + 1 条剧集/番剧"""
     movies = [i for i in items if i.get("media_type") == "movie"]
@@ -310,6 +376,10 @@ def get_combined_recommend() -> List[Dict]:
                     final.append(a)
                     extra_needed -= 1
             final = final[:_TARGET_COUNT]
+
+    # Fallback 补位：去重后不足目标数时，从 top250 和 weekly 补位
+    if len(final) < _TARGET_COUNT:
+        final = _fallback_fill(final, _TARGET_COUNT)
 
     # 影剧交叉排列
     final = _interleave(final)

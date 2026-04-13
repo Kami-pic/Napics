@@ -386,4 +386,33 @@ export const api = {
 
   alistMounts: () => request<any>(`${BASE_URL}/alist/mounts`),
   restartSystem: () => request<any>(`${BASE_URL}/api/system/restart`, { method: "POST" }),
+
+  // ── 订阅 ──
+  getSubscriptions: (state?: string) =>
+    request<any[]>(`${BASE_URL}/subscribe${state ? `?state=${state}` : ""}`),
+  getSubscription: (id: string) => request<any>(`${BASE_URL}/subscribe/${id}`),
+  addSubscription: (data: Record<string, any>) =>
+    request<any>(`${BASE_URL}/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  updateSubscription: (id: string, data: Record<string, any>) =>
+    request<any>(`${BASE_URL}/subscribe/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  deleteSubscription: (id: string) =>
+    request<any>(`${BASE_URL}/subscribe/${id}`, { method: "DELETE" }),
+  triggerSubscriptionSearch: (id: string) =>
+    request<any>(`${BASE_URL}/subscribe/${id}/search`, { method: "POST" }),
+  checkSubscribed: (params: { tmdb_id?: number; title?: string; year?: string; season?: number }) => {
+    const qs = new URLSearchParams();
+    if (params.tmdb_id) qs.set("tmdb_id", String(params.tmdb_id));
+    if (params.title) qs.set("title", params.title);
+    if (params.year) qs.set("year", params.year);
+    if (params.season !== undefined) qs.set("season", String(params.season));
+    return request<{ subscribed: boolean }>(`${BASE_URL}/subscribe/check?${qs.toString()}`);
+  },
 };

@@ -17,9 +17,10 @@ interface ExplorePageProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   colCount: number;
+  onNavigateToLocal?: (folderPath: string) => void;
 }
 
-export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount }: ExplorePageProps) {
+export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal }: ExplorePageProps) {
   const tabConfig = EXPLORE_TABS.find(t => t.key === activeTab) || EXPLORE_TABS[0];
   const [filters, setFilters] = useState<Record<string, ExploreFilters>>({});
   const [items, setItems] = useState<DoubanHotItem[]>([]);
@@ -282,7 +283,8 @@ export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, co
                   onClose={closeExpand} onRetry={() => handleRefreshWithSource(ratingSource)}
                   defaultSource={ratingSource}
                   showBangumiRating={tabConfig.provider === "bangumi"}
-                  onRefreshWithSource={handleRefreshWithSource} />
+                  onRefreshWithSource={handleRefreshWithSource}
+                  onNavigateToLocal={onNavigateToLocal} />
               </div>
             )}
           </div>

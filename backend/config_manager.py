@@ -64,6 +64,7 @@ class ConfigManager:
         self.config_path = config_path or os.path.join(base_dir, "config.json")
         self.lib_path = os.path.join(base_dir, "media_library.json")
         self._config = self.load()
+        self._on_library_save_callbacks = []  # save_library 后的回调列表
 
     def load(self) -> AppConfig:
         if os.path.exists(self.config_path):
@@ -108,6 +109,12 @@ class ConfigManager:
         lib_path = "media_library.json"
         with open(lib_path, "w", encoding="utf-8") as f:
             json.dump(deduped, f, indent=4, ensure_ascii=False)
+        # 通知媒体库索引刷新
+        for cb in self._on_library_save_callbacks:
+            try:
+                cb(deduped)
+            except Exception:
+                pass
 
     # 排除列表：移除的文件/文件夹路径，同步时跳过
     def _excluded_path(self):

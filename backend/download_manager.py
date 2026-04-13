@@ -49,6 +49,8 @@ class DownloadTask(BaseModel):
     is_season_pack: bool = False
     season_number: int = 0
     organized: bool = False        # 已执行整理替换，跳过 qB 状态同步
+    subscription_id: Optional[str] = None   # 关联的订阅 ID（订阅触发的下载）
+    subscription_episode: Optional[int] = None  # 关联的集号（剧集订阅用）
     created_at: str = ""
     updated_at: str = ""
 

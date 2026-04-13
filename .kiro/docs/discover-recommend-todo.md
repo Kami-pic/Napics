@@ -156,7 +156,7 @@
 **产出逻辑（40 条）：**
 - [x] 动漫保底：至少 12 条(30%) 动画类资源，不足从 Bangumi 桶补位
 - [x] 影剧交叉：每 3 条中至少 1 条电影 + 1 条剧集/番剧
-- [ ] Fallback：去重后不足 40 条，从 top250 或 weekly 补位
+- [x] Fallback：去重后不足 40 条，从 top250 或 weekly 补位
 - [x] 容错：单源超时/失败不影响其他源，自动降级为双源/单源模式
 
 **返回字段：**
@@ -213,77 +213,18 @@
 - [x] 综合推荐 60 条上限 + 排名角标 + "今天就推荐这么多吧"
 - [x] 磁吸滚动 + 阻尼吸附（`useScrollDamping` hook）
 
-### 2.7 本地媒体库感知（后做）
-- [ ] 推荐/探索接口返回的 items 新增 `local_status` 字段：`none`（未拥有）/ `owned_low`（已有低画质）/ `owned_high`（已有高画质）
-- [ ] 后端根据 TMDB ID 或片名匹配 `media_library.json`，结合 `quality_score` 判断画质等级
-- [ ] 前端海报卡片根据 `local_status` 显示角标：✓ 已有 / ↑ 可升级
+### 2.7 本地媒体库感知（已完成）
+- [x] 推荐/探索接口返回的 items 新增 `local_status` 字段：`none`（未拥有）/ `owned_low`（已有低画质）/ `owned_high`（已有高画质）
+- [x] 后端 `local_media_matcher.py`：三层匹配（TMDB ID 精确 + 片名+年份 + 中文子串/模糊）+ 内存索引 + 异步 TMDB ID 补全
+- [x] 内存索引启动时构建，save_library 后自动刷新
+- [x] ID 映射缓存持久化到 `id_mapping_cache.json`（douban_id → tmdb_id）
+- [x] 异步补全：未匹配的豆瓣条目后台用 TMDB API 搜索补全，下次请求精确匹配
+- [x] 前端海报卡片根据 `local_status` 显示角标：✓ 已有（绿色）/ ↑ 可升级（琥珀色）
 
 ## 阶段 3：订阅系统
 
-### 3.1 后端：订阅管理
-- [ ] 新建 `backend/subscriber.py` — 订阅业务逻辑
-- [ ] 数据持久化：`backend/subscriptions.json`
-- [ ] 订阅数据结构：
-  ```json
-  {
-    "id": "uuid",
-    "title": "流浪地球3",
-    "year": "2027",
-    "type": "movie",          // movie / tv
-    "tmdb_id": 12345,
-    "douban_id": "36104Mo",
-    "season": null,            // 剧集才有，电影为 null
-    "total_episode": 0,        // 剧集总集数
-    "lack_episode": 0,         // 缺失集数（未下载的）
-    "downloaded_episodes": [],  // 已下载的集号列表
-    "quality": "1080p",        // 质量偏好
-    "resolution": "",          // 分辨率偏好
-    "include": "",             // 包含关键词（如 "REMUX"）
-    "exclude": "",             // 排除关键词（如 "CAM"）
-    "save_path": "",           // 下载保存路径
-    "state": "active",         // active / paused / completed / new_res_found
-    "auto_download": false,    // false=通知模式（默认），true=自动下载
-    "found_resources": [],     // 通知模式下暂存的待选资源列表
-    "last_search": "",         // 上次搜索时间
-    "created_at": "",
-    "note": ""                 // 备注/搜索日志
-  }
-  ```
-- [ ] 订阅状态机：`active` ↔ `paused`，下载完成 → `completed`
-
-### 3.2 后端：订阅路由
-- [ ] `POST /subscribe` — 新增订阅（传入 title/year/type/tmdb_id/douban_id/season/quality 等）
-- [ ] `GET /subscribe` — 查询所有订阅列表
-- [ ] `GET /subscribe/{id}` — 查询单个订阅详情
-- [ ] `PUT /subscribe/{id}` — 更新订阅（暂停/恢复/修改过滤条件）
-- [ ] `DELETE /subscribe/{id}` — 删除订阅
-- [ ] `POST /subscribe/{id}/search` — 手动触发单个订阅搜索
-- [ ] `GET /subscribe/calendar` — 订阅日历（返回订阅影片的更新时间线，剧集用 TMDB 的播出日期）
-
-### 3.3 后端：定时搜索任务
-- [ ] 后台线程定时（可配置间隔，默认 6 小时）遍历活跃订阅
-- [ ] 对每个订阅执行搜索（BT + 网盘双通道），匹配到资源后根据模式处理：
-  - `auto_download: true` → 自动下载
-  - `auto_download: false`（默认）→ 标记状态为 `new_res_found`，存储资源链接，前端角标提醒
-- [ ] 后续可扩展外部推送通知（Telegram/PushDeer/Bark 等）
-- [ ] 剧集订阅：追踪缺失集数，搜到新集自动下载，更新 `downloaded_episodes` 和 `lack_episode`
-- [ ] 电影订阅：搜到匹配资源即下载，下载完成后自动标记 `completed`
-- [ ] 下载任务纳入现有 DownloadManager 管理
-- [ ] 搜索间隔随机化（避免同时请求多个源被限频）
-
-### 3.4 后端：订阅与媒体库联动
-- [ ] 新增订阅时检查媒体库是否已有该影片（避免重复订阅已有资源）
-- [ ] 剧集订阅：扫描媒体库已有集数，自动计算缺失集
-- [ ] 下载完成后可选触发整理流水线（归位到媒体库对应目录）
-
-### 3.5 前端：订阅交互
-- [ ] 发现页卡片详情面板新增"订阅"按钮（搜索资源旁边）
-- [ ] 点击订阅弹出配置面板：质量/分辨率偏好、包含/排除关键词、保存路径
-- [ ] 已订阅的卡片显示订阅状态标记（角标或图标）
-- [ ] Header 或 Sidebar 新增"我的订阅"入口
-- [ ] 订阅管理面板：列表展示所有订阅，支持暂停/恢复/删除/手动搜索
-- [ ] 剧集订阅显示进度条（已下载集数 / 总集数）
-- [ ] 订阅日历视图（可选）：时间线展示即将更新的剧集
+> 已独立为 `subscribe-todo.md`，详见该文档。
+> 包含三个子阶段：A（CRUD+前端入口）→ B（定时搜索+自动下载）→ C（日历+媒体库联动+洗版）。
 
 ---
 

@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from shared import (
     config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
-    _tmdb_client, get_clients,
+    _tmdb_client, get_clients, media_matcher,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
 )
 import scanner, searcher, downloader, tmdb_client, config_manager
@@ -30,6 +30,14 @@ from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 
 router = APIRouter()
+
+
+def _inject_local_status(items: list) -> list:
+    """给推荐/探索结果注入 local_status 字段"""
+    if items:
+        media_matcher.match_batch(items)
+    return items
+
 
 @router.get("/movie/poster")
 def get_movie_poster(name: str):
@@ -192,6 +200,7 @@ def douban_search(query: str):
             if poster and "doubanio.com" in poster:
                 r["poster_url_original"] = poster
                 r["poster_url"] = f"/proxy/image?url={requests.utils.quote(poster)}"
+        _inject_local_status(results)
         return {"query": query, "candidates": results}
     # Fallback
     results = douban_client.search(query)
@@ -199,6 +208,7 @@ def douban_search(query: str):
         if r.get("poster_url") and "doubanio.com" in r["poster_url"]:
             r["poster_url_original"] = r["poster_url"]
             r["poster_url"] = f"/proxy/image?url={requests.utils.quote(r['poster_url'])}"
+    _inject_local_status(results)
     return {"query": query, "candidates": results}
 
 @router.post("/add-media")
@@ -307,7 +317,9 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                 if time.time() - mtime < 3600:  # 1 小时缓存
                     with open(cache_path, "r", encoding="utf-8") as f:
                         cached = json.load(f)
-                    return {"source": "combined", "items": cached[start:start + count], "count": len(cached)}
+                    sliced = cached[start:start + count]
+                    _inject_local_status(sliced)
+                    return {"source": "combined", "items": sliced, "count": len(cached)}
             except Exception:
                 pass
         from combined_recommend import get_combined_recommend
@@ -319,7 +331,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                 json.dump(items, f, ensure_ascii=False)
         except Exception:
             pass
-        return {"source": "combined", "items": items[start:start + count], "count": len(items)}
+        return {"source": "combined", "items": _inject_local_status(items[start:start + count]), "count": len(items)}
 
     fetcher = _RECOMMEND_SOURCES.get(source)
     if not fetcher:
@@ -327,7 +339,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
     try:
         items = fetcher(start, count)
         if items:
-            return {"source": source, "items": items, "count": len(items)}
+            return {"source": source, "items": _inject_local_status(items), "count": len(items)}
     except Exception as e:
         print(f"[Discover] recommend/{source} API v2 失败: {e}")
 
@@ -344,7 +356,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
         try:
             print(f"[Discover] {source} fallback 到旧版网页接口")
             items = douban_client.get_hot_list(fb[0], start, fb[1])
-            return {"source": source, "items": items or [], "count": len(items or []), "fallback": True}
+            return {"source": source, "items": _inject_local_status(items or []), "count": len(items or []), "fallback": True}
         except Exception as e2:
             print(f"[Discover] {source} fallback 也失败: {e2}")
     return {"source": source, "items": [], "count": 0}
@@ -422,7 +434,7 @@ def discover_explore(
             )
         else:
             raise HTTPException(status_code=400, detail=f"未知 provider: {provider}")
-        return {"provider": provider, "type": type, "items": items or [], "count": len(items or [])}
+        return {"provider": provider, "type": type, "items": _inject_local_status(items or []), "count": len(items or [])}
     except HTTPException:
         raise
     except Exception as e:

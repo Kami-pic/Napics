@@ -40,6 +40,9 @@ backend/torrent_blacklist.json
 backend/excluded_paths.json
 backend/no_scrape.json
 backend/folder_types.json
+backend/subscriptions.json
+backend/subscriptions.json.tmp
+backend/id_mapping_cache.json
 backend/organize_snapshots/
 backend/recycle_bin/
 

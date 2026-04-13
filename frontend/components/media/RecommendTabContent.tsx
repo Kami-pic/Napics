@@ -43,12 +43,18 @@ export interface RecommendTabContentProps {
   onRefreshWithSource: (source: string) => void;
   onLoadMore: () => void;
   onRetryTab: (tabKey: string) => void;
+  onNavigateToLocal?: (folderPath: string) => void;
+  /** 订阅回调 */
+  onSubscribe?: (item: DoubanHotItem, detail: MediaDetail | null) => void;
+  /** 检查是否已订阅 */
+  checkSubscribed?: (item: DoubanHotItem) => boolean;
 }
 
 export default function RecommendTabContent({
   tabKey, isActive, isSearchMode, data, colCount,
   expandedIndex, detail, detailLoading, loadingMore, rowEndIndex, gridRef,
-  onCardClick, onSelectMedia, onCloseExpand, onRetry, onRefreshWithSource, onLoadMore, onRetryTab,
+  onCardClick, onSelectMedia, onCloseExpand, onRetry, onRefreshWithSource, onLoadMore, onRetryTab, onNavigateToLocal,
+  onSubscribe, checkSubscribed,
 }: RecommendTabContentProps) {
   const tabConfig = RECOMMEND_TABS.find(t => t.key === tabKey) || RECOMMEND_TABS[0];
   const isWeekly = tabKey === "weekly_combined";
@@ -117,7 +123,8 @@ export default function RecommendTabContent({
                 showMediaType={tabConfig.mediaType === "mixed"}
                 ratingSource={tabConfig.ratingSource || "douban"}
                 onClick={() => onCardClick(index)}
-                style={isActive ? { order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 } : undefined} />
+                style={isActive ? { order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 } : undefined}
+                isSubscribed={checkSubscribed?.(item)} />
             ))}
             {isActive && expandedIndex !== null && expandedIndex < tabItems.length && (
               <div key="expand-panel" data-expand-panel
@@ -128,7 +135,10 @@ export default function RecommendTabContent({
                   onClose={onCloseExpand} onRetry={onRetry}
                   defaultSource={tabConfig.ratingSource || "douban"}
                   showBangumiRating={tabConfig.ratingSource === "bangumi" || tabKey === "douban_animation"}
-                  onRefreshWithSource={onRefreshWithSource} />
+                  onRefreshWithSource={onRefreshWithSource}
+                  onNavigateToLocal={onNavigateToLocal}
+                  onSubscribe={onSubscribe ? () => onSubscribe(tabItems[expandedIndex], detail) : undefined}
+                  isSubscribed={checkSubscribed?.(tabItems[expandedIndex])} />
               </div>
             )}
           </div>

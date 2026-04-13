@@ -12,9 +12,11 @@ import ExpandDetail from "./ExpandDetail";
 import DiscoverHeader from "./DiscoverHeader";
 import ExplorePage from "./ExplorePage";
 import RecommendTabContent from "./RecommendTabContent";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
 
 interface DiscoverPageProps {
   onSelectMedia: (item: DoubanHotItem) => void;
+  onNavigateToLocal?: (folderPath: string) => void;
   visible?: boolean;
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
@@ -33,7 +35,7 @@ interface TabState {
 
 const EMPTY_TAB: TabState = { items: [], loading: false, error: false, hasMore: true, page: 0 };
 
-export default function DiscoverPage({ onSelectMedia, visible = true, scrollContainerRef }: DiscoverPageProps) {
+export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible = true, scrollContainerRef }: DiscoverPageProps) {
   const [primaryTab, setPrimaryTab] = useState<PrimaryTab>("recommend");
   const [activeTab, setActiveTab] = useState(RECOMMEND_TABS[0].key);
   const [exploreTab, setExploreTab] = useState(EXPLORE_TABS[0].key);
@@ -187,6 +189,24 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
   const displayItems = isSearchMode ? searchItems
     : activeTab === "weekly_combined" ? [...(curTabData.weeklyChineseItems || []), ...(curTabData.weeklyGlobalItems || [])]
     : curTabData.items;
+
+  // ── 订阅状态 ──
+  const { isSubscribed, subscribe: doSubscribe } = useSubscriptions();
+
+  const handleSubscribe = useCallback(async (item: DoubanHotItem, d: MediaDetail | null) => {
+    const mediaType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
+    const result = await doSubscribe({
+      title: item.title,
+      year: item.year || d?.year || "",
+      type: mediaType,
+      tmdb_id: d?.tmdb_id || d?.external_ids?.tmdb_id || undefined,
+      douban_id: item.douban_id || undefined,
+      poster: item.cover_url || d?.poster_url || "",
+    });
+    if (result.status === "ok" && result.warning) {
+      console.log(`[Subscribe] ${result.warning}`);
+    }
+  }, [doSubscribe, activeTabConfig]);
 
   // ── 首次可见或切 tab 时加载（仅未加载过的 tab 才发请求）──
   useEffect(() => {
@@ -350,7 +370,8 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
                 {searchItems.map((item, index) => (
                   <DiscoverCard key={`search-${item.douban_id || item.title}-${index}`}
                     item={item} index={index} isActive={expandedIndex === index}
-                    showRank={false} showMediaType ratingSource="douban" onClick={() => handleCardClick(index)} />
+                    showRank={false} showMediaType ratingSource="douban" onClick={() => handleCardClick(index)}
+                    style={{ order: index <= rowEndIndex || expandedIndex === null ? index : index + 1 }} />
                 ))}
                 {expandedIndex !== null && expandedIndex < searchItems.length && (
                   <div key="expand-panel" data-expand-panel
@@ -360,7 +381,10 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
                       onSearch={() => onSelectMedia({...searchItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
                       onClose={closeExpand} onRetry={handleRetry}
                       defaultSource="douban"
-                      onRefreshWithSource={handleRefreshWithSource} />
+                      onRefreshWithSource={handleRefreshWithSource}
+                      onNavigateToLocal={onNavigateToLocal}
+                      onSubscribe={() => handleSubscribe(searchItems[expandedIndex], detail)}
+                      isSubscribed={isSubscribed(undefined, searchItems[expandedIndex]?.title, searchItems[expandedIndex]?.year)} />
                   </div>
                 )}
               </div>
@@ -376,13 +400,16 @@ export default function DiscoverPage({ onSelectMedia, visible = true, scrollCont
             loadingMore={loadingMore} rowEndIndex={rowEndIndex} gridRef={gridRef}
             onCardClick={handleCardClick} onSelectMedia={onSelectMedia} onCloseExpand={closeExpand}
             onRetry={handleRetry} onRefreshWithSource={handleRefreshWithSource}
-            onLoadMore={loadMore} onRetryTab={handleRetryTab} />
+            onLoadMore={loadMore} onRetryTab={handleRetryTab}
+            onNavigateToLocal={onNavigateToLocal}
+            onSubscribe={handleSubscribe}
+            checkSubscribed={(item) => isSubscribed(undefined, item.title, item.year)} />
         ))}
 
         {/* 探索页 */}
         {primaryTab === "explore" && !isSearchMode && (
           <ExplorePage onSelectMedia={onSelectMedia} activeTab={exploreTab} setActiveTab={setExploreTab}
-            colCount={colCount} />
+            colCount={colCount} onNavigateToLocal={onNavigateToLocal} />
         )}
       </div>
     </div>

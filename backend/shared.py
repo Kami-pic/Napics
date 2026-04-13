@@ -46,6 +46,7 @@ from torrent_blacklist import TorrentBlacklist
 from analysis_cache import AnalysisCache
 from pan_search_service import PanSearchService
 from pan_models import PanSearchResponse, TransferRequest, TransferResult
+from local_media_matcher import LocalMediaMatcher
 
 # ── 全局单例 ──
 
@@ -55,6 +56,17 @@ indexer_m = IndexerPriorityManager()
 indexer_m.load()
 torrent_bl = TorrentBlacklist()
 analysis_cache = AnalysisCache()
+media_matcher = LocalMediaMatcher()
+
+# 启动时构建媒体库索引
+try:
+    _init_lib = config_m.load_library()
+    media_matcher.build_index(_init_lib)
+except Exception as _e:
+    print(f"[Shared] 媒体库索引构建失败: {_e}")
+
+# 注册回调：save_library 后自动刷新索引
+config_m._on_library_save_callbacks.append(lambda lib: media_matcher.build_index(lib))
 
 _download_manager: Optional[DownloadManager] = None
 _pan_search_service: Optional[PanSearchService] = None
