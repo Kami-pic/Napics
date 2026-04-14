@@ -106,27 +106,20 @@
   - [x] 8.5 转存路径复用 savePath
   - [x] 8.6 转存状态 toast（成功/失败/空间不足/链接失效）
 
-## 阶段四：磁力直搜补充
+## 阶段四：BT 直搜补充 ✅
 
-- [x] 9. Bitsearch (bitsearch.to) BT 搜索 `bt_scraper_bitsearch.py`
-  - [x] 9.1 JSON API 搜索（GET /api/v1/search?q=关键词&page=1）
-  - [x] 9.2 返回 title/infohash/size/seeders/leechers/category/verified
-  - [x] 9.3 转换为 SearchResult 格式，合并到 bt_results
-  - [x] 9.4 按 infohash 去重（和 Prowlarr 结果不重复）
-  - [x] 9.5 curl_cffi 浏览器指纹 + 代理
-  - [x] 9.6 支持中英文搜索，分页
-  - ✅ 当前状态：正常可用，欧美影视剧覆盖好，API 限频用延迟缓解
+> 详细设计和进度见 `bt-expand-todo.md`
 
-- [ ] 10. 磁力熊 (cilixiong.org) 爬虫
-  - [ ] 10.1 搜索 + 详情页 → 磁力链接
-  - [ ] 10.2 合并到 BT/磁力 Tab
-  - [ ] 10.3 按 btih hash 去重
+- [x] 9. Bitsearch (bitsearch.to) — JSON API，欧美片源核心，curl_cffi+代理
+- [x] 10. 磁力熊 (cilixiong.org) — POST 搜索→详情页→磁力，国产片补充，直连
+- [x] 11. XL720 (xl720.com) — GET 搜索→详情页→磁力+迅雷，国产片补充，直连
+- [x] 12. Nyaa (nyaa.si) — HTML 表格解析，动画/日剧核心，代理直连绕过 Prowlarr
+- [x] 13. 蜜柑计划 (mikanani.me) — RSS 搜索+订阅框架注册，番剧订阅核心，代理
+- [x] 14. 反爬基础设施：scraper_base 新增 curl_cffi + CF 统一检测 is_cf_blocked()
+- [x] 15. 搜索路由重构：_merge_bt_extra_sources() 统一合并 5 源，infohash 去重
+- [x] 16. 前端适配：索引器标签品牌色（蓝/橙/紫/粉）+ IndexerSelect 品牌色圆点
 
-- [ ] 11. XL720 (xl720.com) 爬虫
-  - [ ] 11.1 搜索 + 详情页 → 磁力+迅雷链接
-  - [ ] 11.2 合并到 BT/磁力 Tab
-
-## 阶段五：配置
+## 阶段五：配置（后续优化）
 
 - [ ] 10. 设置页
   - [ ] 10.1 PanSou API 地址（可选）
