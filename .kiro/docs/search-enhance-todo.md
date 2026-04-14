@@ -4,7 +4,7 @@
 
 搜索弹窗分两个 Tab：
 - **网盘** — pansearch + PanSou(增强版) + 通用站点(凌风云/盘搜搜/小白盘/趣盘搜) + 慢读搜索 + 我能搜 + rrdynb + ddys → Alist 转存（夸克/阿里/百度/115/PikPak）
-- **BT/磁力** — Prowlarr + 磁力熊直搜 → qB 下载
+- **BT/磁力** — Prowlarr + Bitsearch + 磁力熊 + XL720 + Nyaa + 蜜柑 → qB 下载
 
 ## 阶段一：网盘爬虫 ✅
 
@@ -17,20 +17,21 @@
   - [x] 1.6 敏感词过滤器（content_filter.py，后端过滤不合适的结果）
 
 - [x] 2. 人人电影网 (rrdynb.com) 爬虫 `pan_scraper_rrdynb.py`
-  - [x] 2.1 搜索接口（cloudscraper 绕过 Cloudflare）
-  - [x] 2.2 搜索结果页解析
-  - [x] 2.3 详情页解析（提取网盘链接 + 提取码）
+  - [x] 2.1 搜索接口（GET /plus/search.php?q=关键词，普通 session 即可）
+  - [x] 2.2 搜索结果页解析（dl.item-third-dl 选择器）
+  - [x] 2.3 详情页解析（a 标签 + 正则双路径提取网盘链接 + 提取码）
   - [x] 2.4 统一输出：PanResult 模型
-  - ⚠️ 当前状态：Cloudflare 拦截，需 Playwright 才能稳定使用
+  - [x] 2.5 非分享链接过滤（pan.baidu.com/download 等）
+  - ✅ 当前状态：正常可用，多次搜索后可能触发限频（请求间延迟 1.5-3s 缓解）
 
 - [x] 3. 低端影视 (ddys.io) 爬虫 `pan_scraper_ddys.py`
-  - [x] 3.1 搜索接口
-  - [x] 3.2 搜索结果页解析
-  - [x] 3.3 网盘链接解析
-  - [x] 3.4 提取码匹配
-  - [x] 3.5 cloudscraper 实现
+  - [x] 3.1 JSON API 搜索（POST /api/search-netdisk {"q": "关键词"}）
+  - [x] 3.2 base64 链接解码（link 字段 → 真实网盘 URL）
+  - [x] 3.3 disk_type 中文映射 + URL 域名降级识别
+  - [x] 3.4 提取码字段直接从 API 获取
+  - [x] 3.5 域名从 ddys.pro 更新为 ddys.io
   - [x] 3.6 统一输出格式
-  - ⚠️ 当前状态：域名不可达，需 Playwright
+  - ✅ 当前状态：正常可用，JSON API 稳定，单次搜索 100+ 条结果
 
 - [x] 4. PanSou 集成 `pan_scraper_pansou.py`
   - [x] 4.1 调用 API，过滤目标网盘类型
@@ -107,11 +108,23 @@
 
 ## 阶段四：磁力直搜补充
 
-- [ ] 9. 磁力熊 (cilixiong.org) 爬虫
-  - [ ] 9.1 搜索 + 详情页 → 磁力链接
-  - [ ] 9.2 合并到 BT/磁力 Tab
-  - [ ] 9.3 按 btih hash 去重
-  - [ ] 9.4 "最后更新时间"权重（静态做种数不可靠）
+- [x] 9. Bitsearch (bitsearch.to) BT 搜索 `bt_scraper_bitsearch.py`
+  - [x] 9.1 JSON API 搜索（GET /api/v1/search?q=关键词&page=1）
+  - [x] 9.2 返回 title/infohash/size/seeders/leechers/category/verified
+  - [x] 9.3 转换为 SearchResult 格式，合并到 bt_results
+  - [x] 9.4 按 infohash 去重（和 Prowlarr 结果不重复）
+  - [x] 9.5 curl_cffi 浏览器指纹 + 代理
+  - [x] 9.6 支持中英文搜索，分页
+  - ✅ 当前状态：正常可用，欧美影视剧覆盖好，API 限频用延迟缓解
+
+- [ ] 10. 磁力熊 (cilixiong.org) 爬虫
+  - [ ] 10.1 搜索 + 详情页 → 磁力链接
+  - [ ] 10.2 合并到 BT/磁力 Tab
+  - [ ] 10.3 按 btih hash 去重
+
+- [ ] 11. XL720 (xl720.com) 爬虫
+  - [ ] 11.1 搜索 + 详情页 → 磁力+迅雷链接
+  - [ ] 11.2 合并到 BT/磁力 Tab
 
 ## 阶段五：配置
 
@@ -127,7 +140,8 @@
 - 转存 ≠ 下载：同盘转存秒完成，跨盘走离线下载（异步）
 - 提取码必须和 share_url 一起提取，否则 Alist 无法转存
 - Alist 挂载前置检查：未挂载的网盘类型前端置灰
-- rrdynb/ddys 当前被反爬拦截，需要 Playwright 才能稳定使用
+- rrdynb 启用 curl_cffi 浏览器指纹，多次搜索后可能触发 CF 限频（临时性）
+- ddys 已升级为 JSON API（POST /api/search-netdisk），不再需要 HTML 解析
 - pansearch.me 是当前主力源，连续搜索会被限频需间隔
 - 夸克转存 API：stoken 含特殊字符需 URL 编码，fid_token_list 用 share_fid_token
 - Alist 离线下载不支持网盘分享链接，只支持 magnet/http/ed2k

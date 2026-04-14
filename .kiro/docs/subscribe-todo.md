@@ -162,7 +162,7 @@
 
 ### B.7 预留：后续源接入清单（不在本阶段实现）
 
-- [ ] `rss_source_mikan.py` — 蜜柑计划（动画字幕组聚合，按番剧 RSS 订阅）
+- [x] `rss_source_mikan.py` — 蜜柑计划（动画字幕组聚合，按番剧 RSS 订阅）
 - [ ] `rss_source_nyaa.py` — Nyaa.si（日本动画/日剧 BT 站 RSS）
 - [ ] `rss_source_rryingshi.py` — 人人影视（需攻克反爬/登录）
 - [ ] 其他字幕组 RSS（ANi、喵萌、恋恋等）
