@@ -29,8 +29,6 @@ fileMatchPattern: "**/*.{py,tsx,ts,js,json}"
 - 后端当前缺失的依赖（待补）：beautifulsoup4、lxml
 
 ## 架构约束
-- 后端模块化入口 main.py（薄壳）+ routes/ 路由模块 + shared.py 共享层
-- 启动方式：`cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000`
 - 不用 --reload 启动 uvicorn（会导致 import 链路崩溃）
 - NAS 路径通过 SMB 访问（\\DS218play\share\视频\），注意超时和编码问题
 - JSON 文件读写需考虑并发安全和备份

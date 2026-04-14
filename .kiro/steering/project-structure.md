@@ -17,30 +17,27 @@ inclusion: always
 │   └── organize-workflow.md  # [fileMatch] 整理流水线规范（改整理代码时加载）
 │
 ├── knowledge/         # 项目知识库（AI 按需读取，了解项目是什么）
-│   ├── project-memory.md     # 项目记忆：业务逻辑细节、踩坑经验、当前进度
+│   ├── project-memory.md     # 项目记忆：跨域知识+核心红线+领域索引
+│   ├── devlog.md             # 开发日志：里程碑归档（变更+决策+踩坑），只追加不删除
 │   ├── api-reference.md      # API 清单（路径+方法+用途）
 │   ├── data-models.md        # 核心数据结构（JSON 字段说明、状态机）
-│   ├── organize-pipeline-v3.md # 整理流水线 V3 完整设计（三段式解耦架构）
-│   ├── pan-search-pipeline.md  # 网盘搜索流水线（4源聚合+筛选+转存）
-│   ├── bt-search-pipeline.md   # BT 搜索流水线（回退链+二次匹配+评分排序）
-│   └── download-replace-pipeline.md # 下载与归位替换流水线（双通道+两段式推演）
+│   ├── organize-pipeline-v3.md   # 整理流水线 V3 完整设计
+│   ├── pan-search-pipeline.md    # 网盘搜索流水线（4源聚合+筛选+转存）
+│   ├── bt-search-pipeline.md     # BT 搜索流水线（回退链+二次匹配+评分排序）
+│   ├── download-replace-pipeline.md # 下载与归位替换流水线
+│   ├── discover-recommend.md     # 发现推荐模块（三源数据+探索筛选+本地感知）
+│   ├── subscribe-system.md       # 订阅系统（RSS框架+匹配引擎+洗版+日历）
+│   └── scroll-damping-interaction.md # 滚动阻尼交互设计
 │
 ├── docs/              # 设计文档与 TODO 清单
-│   ├── media-organize-architecture.md # [当前] 分类体系+整理架构+前端展示规则
-│   ├── auto-replace-todo.md          # [TODO] 下载自动替换（核心归位已完成，自动化待做）
-│   └── search-enhance-todo.md        # [TODO] 搜索增强（阶段1-3已完成，磁力直搜+配置待做）
+│   └── *-todo.md             # 进行中的任务清单（临时性，完成后归档到 devlog）
 │
-└── specs/             # Kiro Spec（历史存档，当前用 TODO 驱动，保留供追溯）
-    ├── media-organize/        # v1.0 2026-04-03 [已完成] 整理功能补全（备份/快照/season.nfo/分片合并）
-    ├── search-accuracy/       # v1.0 2026-04-03 [已完成] 搜索匹配准确性（影子名/增强评分/索引器优先级）
-    ├── search-download/       # v1.0 2026-04-03 [已完成] 搜索下载优化（质量解析/剧集搜索/下载管理/归位）
-    ├── video-search-upgrade/  # v1.0 2026-04-03 [已完成] 搜索升级+新增影片（豆瓣发现/批量升级）
-    └── search-enhance/        # v1.0 2026-04-03 [进行中] 搜索增强双通道（网盘爬虫+转存）
+└── specs/             # Kiro Spec 历史存档（当前用 TODO 驱动，保留供追溯）
 ```
 
 ## 约定
 
-- `steering/` 里的 `.md` 文件带 `inclusion: always` 前置元数据，每次对话自动加载
+- `steering/` 文件通过前置元数据控制加载时机，具体见目录树中每个文件的标注
 - `knowledge/project-memory.md` 是项目业务知识库，AI 在涉及相关功能时按需读取
 - 新增设计文档放 `docs/`，行为规则放 `steering/`，项目知识放 `knowledge/`
 - 不要在其他位置维护重复内容

@@ -1,6 +1,6 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "**/main.py"
+fileMatchPattern: "**/routes/*.py,**/main.py"
 ---
 
 # API 约定
