@@ -160,12 +160,12 @@
 - [x] 一级tab点击+搜索框聚焦时自动置顶
 - [x] 订阅按钮即时反馈（localSubscribed + justSubscribed）
 
-### B.7 预留：后续源接入清单（不在本阶段实现）
+### B.7 后续源接入清单
 
-- [x] `rss_source_mikan.py` — 蜜柑计划（动画字幕组聚合，按番剧 RSS 订阅）
-- [ ] `rss_source_nyaa.py` — Nyaa.si（日本动画/日剧 BT 站 RSS）
-- [ ] `rss_source_rryingshi.py` — 人人影视（需攻克反爬/登录）
-- [ ] 其他字幕组 RSS（ANi、喵萌、恋恋等）
+- [x] `rss_source_mikan.py` — 蜜柑计划（动画字幕组聚合，按番剧 RSS 订阅，已注册到 RSSSourceManager）
+- [ ] `rss_source_nyaa.py` — Nyaa.si（日本动画/日剧 BT 站 RSS，BT 搜索爬虫已完成，RSS 源待接入订阅框架）
+- [x] `rss_source_rryingshi.py` — ~~人人影视~~ 已确认不可用（域名不可达），放弃
+- [ ] 其他字幕组 RSS（ANi、喵萌、恋恋等）— 低优先级
 
 ---
 
@@ -225,7 +225,7 @@
 - [x] C.4 新集播出当天自动触发搜索（日历触发，绕过频率衰减）
 - [x] C.3 下载完成后自动通知订阅管理器更新 downloaded_episodes + 洗版模式自动归位（file_relocator）
 - [x] C.4 前端日历视图（SubscribeCalendar 组件，列表/日历切换）
-- [ ] B.7 新源接入：Mikan / Nyaa / 人人影视 / 字幕组 RSS
+- [x] B.7 新源接入：Mikan 已完成，Nyaa BT 搜索已完成（RSS 源待接入），人人影视已放弃
 
 ---
 
