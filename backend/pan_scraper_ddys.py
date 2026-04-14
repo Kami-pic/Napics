@@ -1,29 +1,40 @@
 """低端影视 (ddys.io) 爬虫。
 
-反爬较强（Cloudflare/JS 验证），降级策略：
-1. Cloudscraper 优先绕过 Cloudflare
-2. 失败 → Playwright 轻量实例获取 Token
-3. 整体超时 5 秒强制返回（不阻塞其他搜索源）
+ddys 已从 WordPress 站点升级为自建站，提供 JSON API：
+- POST /api/search-netdisk {"q": "关键词"} — 网盘资源搜索
+- POST /api/search-online {"q": "关键词"} — 在线播放源搜索
+- GET /api/hot-movies — 热门影片
 
-资源链接通常是加密 ID，需要 JS 解密逻辑还原真实网盘地址。
+网盘搜索返回的 link 字段是 base64 编码的真实网盘链接。
+disk_type 字段标识网盘类型（"夸克网盘"/"阿里云盘"/"百度网盘" 等）。
 """
 
 import base64
-import re
-import time
 import logging
+import re
 from typing import List, Optional
-from urllib.parse import urljoin, urlparse
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
-
-from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 
 from scraper_base import ScraperBase
 from pan_models import PanResult, PanType, VALID_PAN_DOMAINS
 
 logger = logging.getLogger(__name__)
 
-# 网盘域名 → PanType
+# disk_type 中文 → PanType 映射
+_DISK_TYPE_MAP = {
+    "夸克网盘": PanType.QUARK,
+    "夸克": PanType.QUARK,
+    "阿里云盘": PanType.ALIYUN,
+    "阿里": PanType.ALIYUN,
+    "百度网盘": PanType.BAIDU,
+    "百度": PanType.BAIDU,
+    "115网盘": PanType.PAN115,
+    "115": PanType.PAN115,
+    "PikPak": PanType.PIKPAK,
+    "pikpak": PanType.PIKPAK,
+}
+
+# 域名 → PanType 降级映射（disk_type 匹配不到时用）
 _DOMAIN_TO_PAN_TYPE = {
     "pan.quark.cn": PanType.QUARK,
     "drive.quark.cn": PanType.QUARK,
@@ -35,310 +46,177 @@ _DOMAIN_TO_PAN_TYPE = {
     "mypikpak.com": PanType.PIKPAK,
 }
 
-# 提取码正则
-_PASSWORD_RE = re.compile(
-    r"(?:提取码|密码|访问码)\s*[:：]\s*([a-zA-Z0-9]{4,8})",
-)
-
-# 网盘链接正则
-_PAN_URL_RE = re.compile(
-    r"https?://(?:" +
-    "|".join(re.escape(d) for d in VALID_PAN_DOMAINS) +
-    r")[^\s\"'<>]*",
-)
-
-# 整体搜索超时（秒）
-SEARCH_TIMEOUT = 5
-
 
 class DdysScraper(ScraperBase):
-    """低端影视爬虫 — 继承 ScraperBase。
+    """低端影视爬虫 — 通过 JSON API 搜索网盘资源。"""
 
-    降级链：Cloudscraper → Playwright → 空结果。
-    整体 5 秒超时强制返回。
-    """
-
-    BASE_URL = "https://ddys.pro"
+    BASE_URL = "https://ddys.io"
     SOURCE_NAME = "ddys"
-    MAX_DETAIL_PAGES = 3  # ddys 反爬强，少请求
 
     def __init__(self, proxy: Optional[str] = None):
         super().__init__(proxy=proxy)
-        self._cloudscraper = None
         self._warmed_up = False
 
     def warm_up(self) -> None:
-        """会话预热：请求首页获取 Cookie/Token。"""
+        """预热：访问首页获取 cookie。"""
         if self._warmed_up:
             return
         try:
-            # 优先尝试 cloudscraper
-            cs = self._get_cloudscraper()
-            if cs:
-                resp = cs.get(self.BASE_URL, timeout=10)
-                if resp.status_code == 200:
-                    self._warmed_up = True
-                    logger.info("[ddys] cloudscraper 预热成功")
-                    return
-
-            # 降级：普通 session 请求首页
             resp = self.request_with_backoff(self.BASE_URL, timeout=10)
             if resp.status_code == 200:
                 self._warmed_up = True
-                logger.info("[ddys] session 预热成功")
+                logger.info("[ddys] 预热成功")
         except Exception as e:
             logger.warning("[ddys] 预热失败: %s", str(e))
 
-    def _get_cloudscraper(self):
-        """懒加载 cloudscraper 实例。"""
-        if self._cloudscraper is not None:
-            return self._cloudscraper
-        try:
-            import cloudscraper
-            self._cloudscraper = cloudscraper.create_scraper(
-                browser={"browser": "chrome", "platform": "windows"}
-            )
-            if self.proxy:
-                self._cloudscraper.proxies = {
-                    "http": self.proxy, "https": self.proxy
-                }
-            return self._cloudscraper
-        except ImportError:
-            logger.warning("[ddys] cloudscraper 未安装，跳过")
-            self._cloudscraper = False  # 标记为不可用
-            return None
-
     def search(self, keyword: str) -> List[PanResult]:
-        """搜索并返回 PanResult 列表。5 秒超时强制返回。"""
+        """搜索网盘资源，返回 PanResult 列表。"""
         cached = self.get_cached(keyword)
         if cached is not None:
             return cached
 
-        # 用线程池实现 5 秒超时
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(self._search_internal, keyword)
-            try:
-                results = future.result(timeout=SEARCH_TIMEOUT)
-            except (FuturesTimeout, Exception) as e:
-                logger.warning("[ddys] 搜索超时或异常 (%s)，返回空结果", str(e))
-                return []
-
-        self.set_cached(keyword, results)
-        return results
-
-    def _search_internal(self, keyword: str) -> List[PanResult]:
-        """实际搜索逻辑（在超时线程中执行）。"""
-        # 确保预热
         if not self._warmed_up:
             self.warm_up()
 
         try:
-            search_items = self._do_search(keyword)
-            if not search_items:
-                return []
-
-            all_results: List[PanResult] = []
-            for item in search_items[:self.MAX_DETAIL_PAGES]:
-                self.random_delay()
-                detail_results = self._parse_detail_page(
-                    item["url"], item["title"]
-                )
-                all_results.extend(detail_results)
-
-            logger.info("[ddys] 搜索 '%s' 获取 %d 条结果", keyword, len(all_results))
-            return all_results
-
+            results = self._search_netdisk(keyword)
+            self.set_cached(keyword, results)
+            logger.info("[ddys] 搜索 '%s' 获取 %d 条结果", keyword, len(results))
+            return results
         except Exception as e:
             logger.error("[ddys] 搜索异常: %s", str(e))
             return []
 
-    def _do_search(self, keyword: str) -> List[dict]:
-        """执行搜索请求（Cloudscraper 优先 → Session 降级）。"""
-        search_url = f"{self.BASE_URL}/?s={keyword}&post_type=post"
-
-        # 尝试 cloudscraper
-        cs = self._get_cloudscraper()
-        if cs:
-            try:
-                resp = cs.get(search_url, timeout=10)
-                if resp.status_code == 200:
-                    return self._parse_search_page(resp.text)
-            except Exception as e:
-                logger.warning("[ddys] cloudscraper 搜索失败: %s", str(e))
-
-        # 降级：普通 session
+    def _search_netdisk(self, keyword: str) -> List[PanResult]:
+        """调用 /api/search-netdisk 搜索网盘资源。"""
+        url = f"{self.BASE_URL}/api/search-netdisk"
         try:
-            resp = self.request_with_backoff(search_url, timeout=10)
-            if resp.status_code == 200:
-                return self._parse_search_page(resp.text)
-        except Exception as e:
-            logger.warning("[ddys] session 搜索也失败: %s", str(e))
-
-        return []
-
-    def _parse_search_page(self, html: str) -> List[dict]:
-        """解析搜索结果页。"""
-        soup = BeautifulSoup(html, "html.parser")
-        items = []
-
-        # ddys 搜索结果通常在 article 或 .post-title 中
-        for article in soup.select("article, .post-box, .search-result"):
-            a = article.select_one("a[href]")
-            if not a:
-                continue
-            title = a.get_text(strip=True)
-            href = a.get("href", "")
-            if not title or not href:
-                continue
-            full_url = urljoin(self.BASE_URL, href)
-            items.append({"title": title, "url": full_url})
-
-        # 如果上面没匹配到，尝试更宽泛的选择器
-        if not items:
-            for a in soup.select("h2 a[href], h3 a[href], .entry-title a[href]"):
-                title = a.get_text(strip=True)
-                href = a.get("href", "")
-                if title and href and href != "#":
-                    full_url = urljoin(self.BASE_URL, href)
-                    items.append({"title": title, "url": full_url})
-
-        # 去重
-        seen = set()
-        deduped = []
-        for item in items:
-            if item["url"] not in seen:
-                seen.add(item["url"])
-                deduped.append(item)
-
-        return deduped
-
-    def _parse_detail_page(self, url: str, page_title: str) -> List[PanResult]:
-        """解析详情页，提取网盘链接。"""
-        try:
-            cs = self._get_cloudscraper()
-            html = None
-
-            if cs:
-                try:
-                    resp = cs.get(url, timeout=10)
-                    if resp.status_code == 200:
-                        html = resp.text
-                except Exception:
-                    pass
-
-            if html is None:
-                resp = self.request_with_backoff(url, timeout=10)
-                if resp.status_code == 200:
-                    html = resp.text
-
-            if not html:
+            resp = self.session.post(
+                url,
+                json={"q": keyword},
+                timeout=15,
+                headers={
+                    "Referer": f"{self.BASE_URL}/search",
+                    "Origin": self.BASE_URL,
+                    "Content-Type": "application/json",
+                },
+            )
+            if resp.status_code != 200:
+                logger.warning("[ddys] API 返回 %d", resp.status_code)
                 return []
 
-            # 先尝试解密加密资源 ID
-            decrypted_urls = self._decrypt_resource_ids(html)
+            data = resp.json()
+            if not data.get("success"):
+                msg = data.get("message", "未知错误")
+                logger.warning("[ddys] API 返回失败: %s", msg)
+                return []
 
-            # 再直接正则匹配明文网盘链接
-            plain_urls = _PAN_URL_RE.findall(html)
+            items = data.get("data", [])
+            if not isinstance(items, list):
+                logger.warning("[ddys] API 返回数据格式异常")
+                return []
 
-            all_urls = list(set(decrypted_urls + plain_urls))
-            return self._build_results(all_urls, html, page_title)
+            return self._parse_items(items)
 
         except Exception as e:
-            logger.warning("[ddys] 详情页解析失败 %s: %s", url, str(e))
+            logger.error("[ddys] API 请求失败: %s", str(e))
             return []
 
-    def _decrypt_resource_ids(self, html: str) -> List[str]:
-        """解密页面中的加密资源 ID。
+    def _parse_items(self, items: list) -> List[PanResult]:
+        """解析 API 返回的条目列表。
 
-        ddys 常见加密方式：
-        1. Base64 编码的网盘链接
-        2. 简单位移加密（Caesar cipher 变体）
-        3. data-* 属性中的加密值
+        每条数据结构：
+        {
+            "name": "流浪地球1+2 4K蓝光原盘...",
+            "link": "aHR0cHM6Ly9wYW4ucXVhcmsuY24vcy8yNjYwNjg0N2UwOTk=",  # base64
+            "link_display": "quark.ddys.io/s/••••••",
+            "time": "28天前",
+            "disk_type": "夸克网盘",
+            "password": "",
+            "source": "pansou"
+        }
         """
-        decrypted = []
+        results: List[PanResult] = []
+        seen_urls = set()
 
-        # 模式 1：Base64 编码的链接（data-url 或 data-link 属性）
-        soup = BeautifulSoup(html, "html.parser")
-        for el in soup.select("[data-url], [data-link], [data-src]"):
-            for attr in ["data-url", "data-link", "data-src"]:
-                val = el.get(attr, "")
-                if val:
-                    decoded = self._try_base64_decode(val)
-                    if decoded and decoded.startswith("http"):
-                        decrypted.append(decoded)
-
-        # 模式 2：JS 变量中的 Base64 字符串
-        b64_pattern = re.compile(
-            r'["\']([A-Za-z0-9+/=]{20,})["\']'
-        )
-        for match in b64_pattern.finditer(html):
-            decoded = self._try_base64_decode(match.group(1))
-            if decoded and any(d in decoded for d in VALID_PAN_DOMAINS):
-                decrypted.append(decoded)
-
-        return decrypted
-
-    @staticmethod
-    def _try_base64_decode(encoded: str) -> Optional[str]:
-        """尝试 Base64 解码，失败返回 None。"""
-        try:
-            # 标准 Base64
-            decoded = base64.b64decode(encoded).decode("utf-8", errors="ignore")
-            if decoded.startswith("http"):
-                return decoded.strip()
-        except Exception:
-            pass
-
-        try:
-            # URL-safe Base64
-            decoded = base64.urlsafe_b64decode(encoded).decode("utf-8", errors="ignore")
-            if decoded.startswith("http"):
-                return decoded.strip()
-        except Exception:
-            pass
-
-        return None
-
-    def _build_results(self, urls: List[str], html: str,
-                       page_title: str) -> List[PanResult]:
-        """从 URL 列表构建 PanResult。"""
-        results = []
-        seen = set()
-
-        for raw_url in urls:
-            url = raw_url.rstrip(".,;:!?\"')")
-            if url in seen:
-                continue
-            seen.add(url)
-
-            # 域名检测
-            domain = urlparse(url).netloc.lower()
-            pan_type = None
-            for d, pt in _DOMAIN_TO_PAN_TYPE.items():
-                if d in domain:
-                    pan_type = pt
-                    break
-            if pan_type is None:
-                continue
-
-            # 提取码
-            idx = html.find(raw_url)
-            password = ""
-            if idx >= 0:
-                context = html[max(0, idx - 200):idx + len(raw_url) + 200]
-                m = _PASSWORD_RE.search(context)
-                if m:
-                    password = m.group(1)
-
+        for item in items:
             try:
+                name = item.get("name", "").strip()
+                link_b64 = item.get("link", "")
+                disk_type = item.get("disk_type", "")
+                password = item.get("password", "") or ""
+
+                if not name or not link_b64:
+                    continue
+
+                # 解码 base64 链接
+                share_url = self._decode_link(link_b64)
+                if not share_url:
+                    continue
+
+                # 去重
+                if share_url in seen_urls:
+                    continue
+                seen_urls.add(share_url)
+
+                # 识别网盘类型
+                pan_type = self._detect_pan_type(disk_type, share_url)
+                if pan_type is None:
+                    continue
+
                 results.append(PanResult(
-                    title=page_title,
+                    title=name,
                     pan_type=pan_type,
-                    share_url=url,
+                    share_url=share_url,
                     password=password,
                     source=self.SOURCE_NAME,
                 ))
-            except ValueError:
+            except (ValueError, Exception) as e:
+                logger.debug("[ddys] 解析条目失败: %s", str(e))
                 continue
 
         return results
+
+    @staticmethod
+    def _decode_link(encoded: str) -> Optional[str]:
+        """解码 base64 编码的网盘链接。"""
+        if not encoded:
+            return None
+        try:
+            decoded = base64.b64decode(encoded).decode("utf-8", errors="ignore").strip()
+            if decoded.startswith("http"):
+                # 验证域名在白名单中
+                domain = urlparse(decoded).netloc.lower()
+                if any(d in domain for d in VALID_PAN_DOMAINS):
+                    return decoded
+            return None
+        except Exception:
+            pass
+
+        # 尝试 URL-safe base64
+        try:
+            decoded = base64.urlsafe_b64decode(encoded).decode("utf-8", errors="ignore").strip()
+            if decoded.startswith("http"):
+                domain = urlparse(decoded).netloc.lower()
+                if any(d in domain for d in VALID_PAN_DOMAINS):
+                    return decoded
+            return None
+        except Exception:
+            return None
+
+    @staticmethod
+    def _detect_pan_type(disk_type: str, url: str) -> Optional[PanType]:
+        """识别网盘类型：优先用 disk_type 字段，降级用 URL 域名。"""
+        # 优先匹配 disk_type
+        if disk_type:
+            for keyword, pt in _DISK_TYPE_MAP.items():
+                if keyword in disk_type:
+                    return pt
+
+        # 降级：从 URL 域名匹配
+        domain = urlparse(url).netloc.lower()
+        for d, pt in _DOMAIN_TO_PAN_TYPE.items():
+            if d in domain:
+                return pt
+
+        return None

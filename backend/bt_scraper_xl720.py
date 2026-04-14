@@ -1,0 +1,162 @@
+"""迅雷电影天堂 (xl720.com) BT 搜索爬虫。
+
+搜索流程：GET /search/关键词 → 搜索结果页 → 详情页 /thunder/xxxx.html → 磁力+迅雷链接。
+直连无需代理，中文电影/剧集。
+"""
+
+import base64
+import re
+import logging
+from typing import List, Optional
+from urllib.parse import urljoin
+
+from bs4 import BeautifulSoup
+
+from scraper_base import ScraperBase
+from quality_parser import parse_quality, get_quality_level
+
+logger = logging.getLogger(__name__)
+
+_MAGNET_RE = re.compile(r"magnet:\?xt=urn:btih:([a-fA-F0-9]{40})[^\s\"'<>]*")
+_THUNDER_RE = re.compile(r"thunder://([A-Za-z0-9+/=]+)")
+
+
+class XL720Scraper(ScraperBase):
+    """迅雷电影天堂 BT 搜索爬虫。"""
+
+    BASE_URL = "https://www.xl720.com"
+    SOURCE_NAME = "xl720"
+    MAX_DETAIL_PAGES = 5
+
+    def __init__(self, proxy: Optional[str] = None):
+        super().__init__(proxy=proxy, use_curl_cffi=True, cache_ttl=600)
+
+    def search_as_search_results(self, keyword: str, max_results: int = 20):
+        """搜索并返回 SearchResult 格式。"""
+        from searcher import SearchResult
+
+        cached = self.get_cached(keyword)
+        if cached is not None:
+            return cached
+
+        try:
+            detail_items = self._do_search(keyword)
+            if not detail_items:
+                logger.info("[xl720] 搜索 '%s' 无结果", keyword)
+                return []
+
+            all_results: List[SearchResult] = []
+            seen_hashes = set()
+
+            for item in detail_items[:self.MAX_DETAIL_PAGES]:
+                self.random_delay(2.0, 3.0)
+                magnets = self._parse_detail_page(item["url"])
+                for magnet_url, infohash in magnets:
+                    if infohash in seen_hashes:
+                        continue
+                    seen_hashes.add(infohash)
+
+                    title = item["title"]
+                    quality = parse_quality(title)
+                    quality_level = get_quality_level(quality)
+                    all_results.append(SearchResult(
+                        title=title,
+                        size_gb=0,
+                        indexer=self.SOURCE_NAME,
+                        seeders=0,
+                        leechers=0,
+                        download_url=magnet_url,
+                        info_url=item["url"],
+                        quality_tag=quality.display if quality.display else "Unknown",
+                        quality=quality,
+                        quality_rank=quality_level.rank,
+                    ))
+
+                if len(all_results) >= max_results:
+                    break
+
+            self.set_cached(keyword, all_results)
+            logger.info("[xl720] 搜索 '%s' 获取 %d 条结果", keyword, len(all_results))
+            return all_results
+
+        except Exception as e:
+            logger.error("[xl720] 搜索异常: %s", str(e))
+            return []
+
+    def _do_search(self, keyword: str) -> List[dict]:
+        """GET 搜索，返回详情页链接列表。"""
+        url = f"{self.BASE_URL}/search/{keyword}"
+        try:
+            resp = self.request_with_backoff(url, timeout=15)
+            if resp.status_code != 200:
+                logger.warning("[xl720] 搜索返回 %d", resp.status_code)
+                return []
+            return self._parse_search_page(resp.text)
+        except Exception as e:
+            logger.error("[xl720] 搜索请求失败: %s", str(e))
+            return []
+
+    def _parse_search_page(self, html: str) -> List[dict]:
+        """解析搜索结果页。"""
+        soup = BeautifulSoup(html, "html.parser")
+        items = []
+        seen = set()
+
+        for a in soup.select("a[href*='/thunder/']"):
+            href = a.get("href", "")
+            text = a.get_text(strip=True)
+            if not text or len(text) < 5 or not href.endswith(".html"):
+                continue
+            full_url = urljoin(self.BASE_URL, href)
+            if full_url in seen:
+                continue
+            seen.add(full_url)
+            items.append({"title": text.strip(), "url": full_url})
+
+        return items
+
+    def _parse_detail_page(self, url: str) -> List[tuple]:
+        """解析详情页，提取磁力链接。迅雷链接尝试解码为磁力。"""
+        try:
+            resp = self.request_with_backoff(url, timeout=15)
+            if resp.status_code != 200:
+                return []
+
+            results = []
+            seen_hashes = set()
+
+            # 直接提取磁力链接
+            for match in _MAGNET_RE.finditer(resp.text):
+                infohash = match.group(1).upper()
+                if infohash not in seen_hashes:
+                    seen_hashes.add(infohash)
+                    results.append((match.group(0), infohash))
+
+            # 迅雷链接解码（thunder:// → base64 → 可能是磁力链接）
+            for match in _THUNDER_RE.finditer(resp.text):
+                decoded = self._decode_thunder(match.group(1))
+                if decoded:
+                    magnet_match = _MAGNET_RE.search(decoded)
+                    if magnet_match:
+                        infohash = magnet_match.group(1).upper()
+                        if infohash not in seen_hashes:
+                            seen_hashes.add(infohash)
+                            results.append((magnet_match.group(0), infohash))
+
+            return results
+
+        except Exception as e:
+            logger.warning("[xl720] 详情页失败 %s: %s", url, str(e))
+            return []
+
+    @staticmethod
+    def _decode_thunder(encoded: str) -> Optional[str]:
+        """解码迅雷链接（base64 → 去掉 AA 前缀和 ZZ 后缀）。"""
+        try:
+            decoded = base64.b64decode(encoded).decode("utf-8", errors="ignore")
+            # 迅雷格式：AA + 真实链接 + ZZ
+            if decoded.startswith("AA") and decoded.endswith("ZZ"):
+                return decoded[2:-2]
+            return decoded
+        except Exception:
+            return None

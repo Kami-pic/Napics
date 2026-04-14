@@ -44,19 +44,27 @@ _UA_POOL = [
 
 
 class ScraperBase:
-    """所有爬虫的基类。子类必须实现 search() 方法。"""
+    """所有爬虫的基类。子类必须实现 search() 方法。
+
+    use_curl_cffi=True 时使用 curl_cffi 模拟浏览器 TLS 指纹，
+    能有效绕过 Cloudflare 的中低级保护（频率触发型 JS Challenge）。
+    """
 
     # 指数退避间隔（秒）
     BACKOFF_DELAYS = [2, 4, 8]
     # 需要重试的 HTTP 状态码
     RETRY_STATUS_CODES = {429, 503}
 
-    def __init__(self, proxy: Optional[str] = None, cache_ttl: int = 300):
+    def __init__(self, proxy: Optional[str] = None, cache_ttl: int = 600,
+                 use_curl_cffi: bool = False, impersonate: str = "chrome131"):
         self.proxy = proxy
-        self.cache_ttl = cache_ttl          # 缓存 TTL（秒），默认 5 分钟
+        self.cache_ttl = cache_ttl          # 缓存 TTL（秒），默认 10 分钟
         self.max_retries = 3
-        self.session = requests.Session()
+        self.use_curl_cffi = use_curl_cffi
+        self._impersonate = impersonate
         self._cache: Dict[str, tuple] = {}  # {cache_key: (timestamp, results)}
+        self._cf_session = None             # curl_cffi session（懒加载）
+        self.session = requests.Session()
         self._init_session()
 
     def _init_session(self) -> None:
@@ -69,6 +77,19 @@ class ScraperBase:
         })
         if self.proxy:
             self.session.proxies = {"http": self.proxy, "https": self.proxy}
+
+    def _get_cf_session(self):
+        """懒加载 curl_cffi session。"""
+        if self._cf_session is not None:
+            return self._cf_session
+        try:
+            from curl_cffi import requests as cf_requests
+            self._cf_session = cf_requests.Session(impersonate=self._impersonate)
+            return self._cf_session
+        except ImportError:
+            logger.warning("[%s] curl_cffi 未安装，降级到 requests", self.__class__.__name__)
+            self.use_curl_cffi = False
+            return None
 
     def warm_up(self) -> None:
         """会话预热：请求目标站点首页获取必要的 Cookie/Token。
@@ -99,6 +120,7 @@ class ScraperBase:
 
         429/503/超时自动重试，最多 3 次，退避 2s/4s/8s。
         每次重试前轮换 UA。
+        use_curl_cffi=True 时优先用 curl_cffi（浏览器 TLS 指纹），失败降级到 requests。
         """
         last_exc: Optional[Exception] = None
 
@@ -106,8 +128,24 @@ class ScraperBase:
             try:
                 self._rotate_ua()
                 if attempt > 0:
-                    self.random_delay()
+                    self.random_delay(2.0, 4.0)
 
+                # 优先用 curl_cffi
+                if self.use_curl_cffi:
+                    resp = self._curl_cffi_request(url, method, timeout, **kwargs)
+                    if resp is not None:
+                        if resp.status_code in self.RETRY_STATUS_CODES and attempt < self.max_retries:
+                            backoff = self.BACKOFF_DELAYS[min(attempt, len(self.BACKOFF_DELAYS) - 1)]
+                            logger.warning(
+                                "[%s] %s 返回 %d，%ds 后重试 (%d/%d)",
+                                self.__class__.__name__, url, resp.status_code,
+                                backoff, attempt + 1, self.max_retries,
+                            )
+                            time.sleep(backoff)
+                            continue
+                        return resp
+
+                # 降级到 requests
                 resp = self.session.request(
                     method, url, timeout=timeout, **kwargs
                 )
@@ -135,8 +173,60 @@ class ScraperBase:
                     )
                     time.sleep(backoff)
                     continue
+            except Exception as e:
+                last_exc = e
+                if attempt < self.max_retries:
+                    backoff = self.BACKOFF_DELAYS[min(attempt, len(self.BACKOFF_DELAYS) - 1)]
+                    logger.warning(
+                        "[%s] %s 异常: %s，%ds 后重试 (%d/%d)",
+                        self.__class__.__name__, url, str(e),
+                        backoff, attempt + 1, self.max_retries,
+                    )
+                    time.sleep(backoff)
+                    continue
 
         raise last_exc or requests.RequestException(f"请求失败: {url}")
+
+    def _curl_cffi_request(self, url: str, method: str, timeout: float, **kwargs):
+        """用 curl_cffi 发请求，返回 requests.Response 兼容对象。"""
+        cf = self._get_cf_session()
+        if cf is None:
+            return None
+        try:
+            proxy = self.proxy if self.proxy else None
+            # curl_cffi 的参数名和 requests 略有不同
+            cf_kwargs = {}
+            if "params" in kwargs:
+                cf_kwargs["params"] = kwargs["params"]
+            if "data" in kwargs:
+                cf_kwargs["data"] = kwargs["data"]
+            if "json" in kwargs:
+                cf_kwargs["json"] = kwargs["json"]
+            if "headers" in kwargs:
+                cf_kwargs["headers"] = kwargs["headers"]
+
+            resp = cf.request(method, url, timeout=timeout, proxy=proxy, **cf_kwargs)
+            return resp
+        except Exception as e:
+            logger.debug("[%s] curl_cffi 请求失败: %s，降级到 requests", self.__class__.__name__, str(e))
+            return None
+
+    # ──────────────────────────────────────────
+    # Cloudflare 拦截检测
+    # ──────────────────────────────────────────
+
+    @staticmethod
+    def is_cf_blocked(response) -> bool:
+        """检测响应是否被 Cloudflare 拦截。
+
+        检测 JS Challenge / Managed Challenge / Turnstile 等。
+        返回 True 表示被拦截，调用方应跳过解析直接返回空结果。
+        """
+        if response.status_code == 403:
+            text = response.text[:3000].lower() if hasattr(response, "text") else ""
+            if any(k in text for k in ["just a moment", "challenge-platform", "cf-chl", "turnstile", "cloudflare"]):
+                return True
+        return False
 
     # ──────────────────────────────────────────
     # 缓存

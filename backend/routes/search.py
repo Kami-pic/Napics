@@ -19,6 +19,8 @@ from pydantic import BaseModel
 from shared import (
     config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
+    _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper,
+    _get_mikan_scraper,
     _tmdb_client, get_clients,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
 )
@@ -40,6 +42,49 @@ def _enrich_result(r) -> dict:
     else:
         d["quality_score"] = 0
     return d
+
+
+def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
+    """合并直搜源（Bitsearch/磁力熊/XL720/Nyaa）的结果到已有列表。
+
+    按 infohash 去重，直搜源结果追加到末尾。
+    """
+    # 收集已有的 infohash
+    existing_hashes = set()
+    for r in existing_results:
+        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+        if h:
+            existing_hashes.add(h.group(1).upper())
+
+    merged = list(existing_results)
+
+    # 逐个调用直搜源（失败不影响其他源）
+    scrapers = [
+        ("bitsearch", _get_bitsearch_scraper),
+        ("cilixiong", _get_cilixiong_scraper),
+        ("xl720", _get_xl720_scraper),
+        ("nyaa", _get_nyaa_scraper),
+        ("mikan", _get_mikan_scraper),
+    ]
+    for name, getter in scrapers:
+        try:
+            scraper = getter()
+            results = scraper.search_as_search_results(keyword, max_results=20)
+            added = 0
+            for r in results:
+                h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+                if h:
+                    hash_upper = h.group(1).upper()
+                    if hash_upper not in existing_hashes:
+                        existing_hashes.add(hash_upper)
+                        merged.append(r)
+                        added += 1
+            if added:
+                print(f"[Search] {name} 补充 {added} 条结果")
+        except Exception as e:
+            print(f"[Search] {name} 失败: {e}")
+
+    return merged
 
 @router.get("/api/search")
 def search_resources(
@@ -89,13 +134,18 @@ def search_resources(
             clean_name=clean_name,
             global_filter=gf,
         )
+
+        # 合并直搜源结果
+        bt_keyword = resp.hit_keyword or query
+        bt_results_list = _merge_bt_extra_sources(bt_keyword, list(resp.results))
+
         return {
             "query": query,
-            "bt_count": len(resp.results),
-            "bt_results": [_enrich_result(r) for r in resp.results],
+            "bt_count": len(bt_results_list),
+            "bt_results": [_enrich_result(r) for r in bt_results_list],
             "hit_keyword": resp.hit_keyword,
             "total_raw": resp.total_raw,
-            "total_filtered": resp.total_filtered,
+            "total_filtered": len(bt_results_list),
             "enhanced": True,
         }
     except Exception as e:
@@ -103,6 +153,10 @@ def search_resources(
 
     # fallback 到普通搜索（不经过回退链和过滤）
     bt_results = clients["search"].search(query)
+
+    # 合并直搜源
+    bt_results = _merge_bt_extra_sources(query, bt_results)
+
     return {
         "query": query,
         "bt_count": len(bt_results),

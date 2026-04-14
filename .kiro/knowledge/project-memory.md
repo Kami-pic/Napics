@@ -50,6 +50,9 @@
 - normalize_text 会去掉标点和空格，中英混合标题需分别提取中文部分匹配
 - 快速同步新增超过 50 个文件时自动切换快速模式（跳过 ffprobe）
 - 搜索缓存只缓存有结果的，空结果不缓存
+- BT 直搜源统一输出 SearchResult 格式，按 infohash 去重合并到 Prowlarr 结果
+- Bitsearch API 有 429 限频，缓存 10 分钟 + 请求间延迟 2-4s
+- curl_cffi 是绕 CF 中低级保护的关键，所有有 CF 风险的爬虫必须启用
 
 ## 领域索引
 

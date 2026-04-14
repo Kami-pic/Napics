@@ -5,6 +5,11 @@
 
 ---
 
+## 2026-04-14 搜索源大扩展（网盘修复 + BT 5 源 + 反爬升级）
+**变更**: 网盘搜索修复 rrdynb(CSS选择器重写)+ddys(改JSON API)；BT 新增 5 个直搜源(Bitsearch/磁力熊/XL720/Nyaa/蜜柑)；scraper_base 新增 curl_cffi 浏览器指纹+CF 统一检测；前端 indexer 标签品牌色；蜜柑 RSS 接入订阅框架
+**决策**: Bitsearch JSON API 作为欧美片源核心补充（Prowlarr 不可达时的替代）；1337x/TorrentGalaxy CF 高级保护无法绕过，放弃；所有有 CF 风险的爬虫统一启用 curl_cffi；搜索路由用 _merge_bt_extra_sources 统一合并+infohash 去重
+**踩坑**: rrdynb 多次搜索触发 CF 限频（临时性，过段时间自动解除）；ddys 已从 WordPress 升级为自建站有 JSON API；Bitsearch HTML 是 JS 渲染但有隐藏的 /api/v1/search JSON API；1337x.is/1337x.so 镜像站能通但数据为空
+
 ## 2026-04-14 .kiro 架构重组
 **变更**: ai-rules 从 80 行精简到 35 行，project-memory 从 200 行精简到 55 行
 **决策**: memory 定位为"跨域知识+核心红线+领域索引"，特定领域拆到独立 knowledge 文件

@@ -1,6 +1,24 @@
 "use client";
 import type { FilterState, EnhancedSearchResult } from "@/types";
 
+// ── 直搜源品牌色（圆点 + 标签背景）──
+// Prowlarr 站点无特殊颜色，用默认灰色
+export const INDEXER_DOT_COLOR: Record<string, string> = {
+  bitsearch: "bg-blue-500",    // 欧美
+  cilixiong: "bg-orange-500",  // 国产
+  xl720: "bg-orange-500",      // 国产
+  nyaa: "bg-purple-500",       // 动画
+  mikan: "bg-pink-500",        // 番剧
+};
+
+export const INDEXER_TAG_STYLE: Record<string, string> = {
+  bitsearch: "bg-blue-500/15 text-blue-400",
+  cilixiong: "bg-orange-500/15 text-orange-400",
+  xl720: "bg-orange-500/15 text-orange-400",
+  nyaa: "bg-purple-500/15 text-purple-400",
+  mikan: "bg-pink-500/15 text-pink-400",
+};
+
 // ── 分辨率数值映射（用于"不低于"比较） ──
 const RESOLUTION_RANK: Record<string, number> = {
   "": 0,
@@ -203,6 +221,7 @@ function IndexerSelect({
                 onChange={() => toggle(idx)}
                 className="w-3.5 h-3.5 rounded border-white/10 bg-white/[0.04] text-blue-600 focus:ring-0 focus:ring-offset-0"
               />
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${INDEXER_DOT_COLOR[idx] || "bg-slate-600"}`} />
               <span className="text-[12px] text-slate-300 truncate">{idx}</span>
             </label>
           ))}

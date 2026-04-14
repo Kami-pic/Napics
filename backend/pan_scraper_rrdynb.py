@@ -1,8 +1,8 @@
 """人人电影网 (rrdynb.com) 爬虫。
 
-搜索接口被 Cloudflare 保护，使用 cloudscraper 绕过。
-搜索路径：/plus/search.php?q=关键词
-搜索流程：cloudscraper 预热首页 → GET 搜索 → 解析结果页 → 逐条访问详情页 → 提取网盘链接+提取码。
+搜索路径：GET /plus/search.php?q=关键词
+搜索流程：session 预热首页 → GET 搜索 → 解析结果页（dl.item-third-dl）→ 逐条访问详情页 → 提取网盘链接+提取码。
+多次搜索后可能触发 Cloudflare 验证，通过请求间延迟 + UA 轮换缓解。
 """
 
 import re
@@ -43,9 +43,32 @@ _PAN_URL_RE = re.compile(
 
 _YEAR_RE = re.compile(r"((?:19|20)\d{2})")
 
+# 非分享链接黑名单（百度网盘下载页、工具页等）
+_NON_SHARE_PATHS = ["/download", "/disk/home", "/disk/main", "/s/1nvT6eE1", "/s/1kVQSszd"]
+
+
+def _is_non_share_url(url: str) -> bool:
+    """检测是否为非分享链接（工具页/下载页/通用短链）。"""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/")
+    # 黑名单路径
+    if any(path == p or path.startswith(p + "/") for p in _NON_SHARE_PATHS):
+        return True
+    # 百度网盘分享链接格式：/s/ 后跟较长的 ID
+    if "pan.baidu.com" in parsed.netloc and "/s/" in path:
+        share_id = path.split("/s/")[-1]
+        if len(share_id) < 10:
+            return True
+    return False
+
 
 class RrdynbScraper(ScraperBase):
-    """人人电影网爬虫 — 使用 cloudscraper 绕过 Cloudflare。"""
+    """人人电影网爬虫。
+
+    搜索结果在 dl.item-third-dl 容器中，详情页链接格式 /movie/年/月日/id.html。
+    详情页直接包含网盘链接（夸克/阿里/百度/迅雷等）。
+    """
 
     BASE_URL = "https://www.rrdynb.com"
     SEARCH_PATH = "/plus/search.php"
@@ -53,50 +76,20 @@ class RrdynbScraper(ScraperBase):
     MAX_DETAIL_PAGES = 5
 
     def __init__(self, proxy: Optional[str] = None):
-        super().__init__(proxy=proxy)
-        self._cs = None
+        super().__init__(proxy=proxy, use_curl_cffi=True)
         self._warmed_up = False
 
-    def _get_cs(self):
-        """懒加载 cloudscraper 实例。"""
-        if self._cs is not None:
-            return self._cs
-        try:
-            import cloudscraper
-            self._cs = cloudscraper.create_scraper(
-                browser={"browser": "chrome", "platform": "windows"}
-            )
-            if self.proxy:
-                self._cs.proxies = {"http": self.proxy, "https": self.proxy}
-            return self._cs
-        except ImportError:
-            logger.warning("[rrdynb] cloudscraper 未安装")
-            return None
-
     def warm_up(self) -> None:
-        """预热：访问首页获取 Cloudflare cookie。"""
+        """预热：访问首页获取 cookie。"""
         if self._warmed_up:
             return
-        cs = self._get_cs()
-        if cs:
-            try:
-                resp = cs.get(self.BASE_URL, timeout=15)
-                if resp.status_code == 200:
-                    self._warmed_up = True
-                    logger.info("[rrdynb] cloudscraper 预热成功")
-            except Exception as e:
-                logger.warning("[rrdynb] 预热失败: %s", str(e))
-
-    def _request(self, url: str, **kwargs):
-        """优先用 cloudscraper，降级用 session。"""
-        cs = self._get_cs()
-        if cs:
-            try:
-                return cs.get(url, timeout=kwargs.get("timeout", 15))
-            except Exception as e:
-                logger.warning("[rrdynb] cloudscraper 请求失败: %s", str(e))
-        # 降级
-        return self.request_with_backoff(url, timeout=kwargs.get("timeout", 15))
+        try:
+            resp = self.request_with_backoff(self.BASE_URL, timeout=10)
+            if resp.status_code == 200:
+                self._warmed_up = True
+                logger.info("[rrdynb] 预热成功")
+        except Exception as e:
+            logger.warning("[rrdynb] 预热失败: %s", str(e))
 
     def search(self, keyword: str) -> List[PanResult]:
         """搜索并返回 PanResult 列表。"""
@@ -115,7 +108,7 @@ class RrdynbScraper(ScraperBase):
 
             all_results: List[PanResult] = []
             for item in search_items[:self.MAX_DETAIL_PAGES]:
-                self.random_delay()
+                self.random_delay(1.5, 3.0)
                 detail_results = self._parse_detail_page(
                     item["url"], item["title"]
                 )
@@ -133,16 +126,16 @@ class RrdynbScraper(ScraperBase):
         """GET /plus/search.php?q=关键词"""
         url = f"{self.BASE_URL}{self.SEARCH_PATH}"
         try:
-            cs = self._get_cs()
-            if cs:
-                resp = cs.get(url, params={"q": keyword, "pagesize": 10}, timeout=15)
-            else:
-                resp = self.request_with_backoff(
-                    url, params={"q": keyword, "pagesize": 10}, timeout=15
-                )
-
+            resp = self.request_with_backoff(
+                url, params={"q": keyword, "pagesize": 10}, timeout=15
+            )
             if resp.status_code != 200:
                 logger.warning("[rrdynb] 搜索返回 %d", resp.status_code)
+                return []
+
+            # 检测 Cloudflare 拦截
+            if self.is_cf_blocked(resp):
+                logger.warning("[rrdynb] 搜索被 Cloudflare 拦截")
                 return []
 
             return self._parse_search_page(resp.text)
@@ -152,51 +145,51 @@ class RrdynbScraper(ScraperBase):
             return []
 
     def _parse_search_page(self, html: str) -> List[dict]:
-        """解析搜索结果页。"""
+        """解析搜索结果页。
+
+        rrdynb 搜索结果结构：
+        <dl class="item-third-dl">
+          <div class="item-third">
+            <a href="/movie/2023/0414/34378.html" title="...">
+        """
         soup = BeautifulSoup(html, "html.parser")
         items = []
 
-        # 尝试多种选择器适配不同模板
-        for selector in [
-            ".stui-vodlist__box a",       # stui 模板
-            ".module-item a",             # module 模板
-            ".search-list a",             # 搜索列表
-            "li .title a",               # 通用列表
-            ".vodlist_item a",            # vodlist 模板
-        ]:
-            links = soup.select(selector)
-            if links:
-                for a in links:
-                    href = a.get("href", "")
-                    title = a.get("title", "") or a.get_text(strip=True)
-                    if title and href and href != "#" and len(title) > 1:
-                        full_url = urljoin(self.BASE_URL, href)
-                        year_match = _YEAR_RE.search(title)
-                        items.append({
-                            "title": title,
-                            "url": full_url,
-                            "year": year_match.group(1) if year_match else "",
-                        })
-                break  # 找到匹配的选择器就停
+        # 主选择器：dl.item-third-dl 内的链接
+        for dl in soup.select("dl.item-third-dl"):
+            for a in dl.select("a[href]"):
+                href = a.get("href", "")
+                title = a.get("title", "") or a.get_text(strip=True)
+                if not title or len(title) < 3 or not href:
+                    continue
+                # 只要详情页链接（/movie/ 或 .html 结尾）
+                if not any(p in href for p in ["/movie/", "/tv/", "/detail/"]):
+                    if not href.endswith(".html"):
+                        continue
+                full_url = urljoin(self.BASE_URL, href)
+                # 去掉 font 标签中的高亮标记，提取纯文本
+                title = re.sub(r"<[^>]+>", "", title).strip()
+                if title:
+                    items.append({
+                        "title": title,
+                        "url": full_url,
+                    })
 
-        # 如果上面都没匹配到，用宽泛选择器
+        # 降级：如果主选择器没匹配到，用宽泛选择器
         if not items:
             for a in soup.select("a[href]"):
                 href = a.get("href", "")
-                title = a.get_text(strip=True)
-                if not title or len(title) < 3:
+                title = a.get("title", "") or a.get_text(strip=True)
+                if not title or len(title) < 4:
                     continue
-                if not any(p in href for p in ["/vod/", "/movie/", "/tv/", "/detail/", ".html"]):
+                if not any(p in href for p in ["/movie/", "/tv/", "/detail/"]):
                     continue
                 if href in ("#", "/", self.BASE_URL, self.BASE_URL + "/"):
                     continue
                 full_url = urljoin(self.BASE_URL, href)
-                year_match = _YEAR_RE.search(title)
-                items.append({
-                    "title": title,
-                    "url": full_url,
-                    "year": year_match.group(1) if year_match else "",
-                })
+                title = re.sub(r"<[^>]+>", "", title).strip()
+                if title:
+                    items.append({"title": title, "url": full_url})
 
         # 去重
         seen = set()
@@ -210,9 +203,15 @@ class RrdynbScraper(ScraperBase):
     def _parse_detail_page(self, url: str, page_title: str) -> List[PanResult]:
         """解析详情页，提取网盘链接+提取码。"""
         try:
-            resp = self._request(url, timeout=15)
+            resp = self.request_with_backoff(url, timeout=15)
             if resp.status_code != 200:
                 return []
+
+            # 检测 Cloudflare 拦截
+            if self.is_cf_blocked(resp):
+                logger.warning("[rrdynb] 详情页被 Cloudflare 拦截: %s", url)
+                return []
+
             return self._extract_pan_links(resp.text, page_title)
         except Exception as e:
             logger.warning("[rrdynb] 详情页解析失败 %s: %s", url, str(e))
@@ -223,19 +222,22 @@ class RrdynbScraper(ScraperBase):
         results: List[PanResult] = []
         seen_urls = set()
 
-        pan_urls = _PAN_URL_RE.findall(html)
-        for raw_url in pan_urls:
-            url = raw_url.rstrip(".,;:!?\"')")
+        # 优先从 a 标签提取（更准确）
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.select("a[href]"):
+            href = a.get("href", "")
+            if not href.startswith("http"):
+                continue
+            if _is_non_share_url(href):
+                continue
+            pan_type = self._detect_pan_type(href)
+            if pan_type is None:
+                continue
+            url = href.rstrip(".,;:!?\"')")
             if url in seen_urls:
                 continue
             seen_urls.add(url)
-
-            pan_type = self._detect_pan_type(url)
-            if pan_type is None:
-                continue
-
-            password = self._find_nearby_password(html, raw_url)
-
+            password = self._find_nearby_password(html, href)
             try:
                 results.append(PanResult(
                     title=page_title,
@@ -244,8 +246,32 @@ class RrdynbScraper(ScraperBase):
                     password=password,
                     source=self.SOURCE_NAME,
                 ))
-            except ValueError as e:
-                logger.debug("[rrdynb] PanResult 校验失败: %s", str(e))
+            except ValueError:
+                continue
+
+        # 补充：正则匹配 HTML 中的明文链接（a 标签可能遗漏）
+        pan_urls = _PAN_URL_RE.findall(html)
+        for raw_url in pan_urls:
+            # 过滤非分享链接（如 pan.baidu.com/download）
+            if _is_non_share_url(raw_url):
+                continue
+            url = raw_url.rstrip(".,;:!?\"')")
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+            pan_type = self._detect_pan_type(url)
+            if pan_type is None:
+                continue
+            password = self._find_nearby_password(html, raw_url)
+            try:
+                results.append(PanResult(
+                    title=page_title,
+                    pan_type=pan_type,
+                    share_url=url,
+                    password=password,
+                    source=self.SOURCE_NAME,
+                ))
+            except ValueError:
                 continue
 
         return results

@@ -34,6 +34,8 @@ PanSearchService.search_sync()  ← 聚合调度层
 | PanSou | pan_scraper_pansou.py | API | GET pansou.app/api/search | plugins+channels, TG频道代搜 |
 | 狗狗盘搜 | pan_scraper_gogopanso.py | API | GET gogopanso.com:3642/search | 每日更新, 存活率100% |
 | GitHub | pan_scraper_github.py | 本地索引 | raw.githubusercontent.com | 1374条夸克, 24h刷新 |
+| 人人电影 | pan_scraper_rrdynb.py | 爬虫 | GET rrdynb.com/plus/search.php | 搜索+详情页提取, 多次请求后限频 |
+| 低端影视 | pan_scraper_ddys.py | API | POST ddys.io/api/search-netdisk | JSON API, base64链接, 单次100+条 |
 
 ## 数据流转
 

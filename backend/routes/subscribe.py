@@ -37,6 +37,14 @@ def _get_source_manager() -> RSSSourceManager:
             from searcher import ProwlarrClient
             prowlarr_source.set_client(ProwlarrClient(conf.prowlarr_url, conf.prowlarr_api_key))
         _source_manager.register(prowlarr_source)
+        # 注册蜜柑计划 RSS 源
+        try:
+            from rss_source_mikan import MikanRSSSource
+            proxy = getattr(conf, "http_proxy", "") or ""
+            mikan_source = MikanRSSSource(proxy=proxy)
+            _source_manager.register(mikan_source)
+        except Exception as e:
+            print(f"[Subscribe] 蜜柑 RSS 源注册失败: {e}")
     return _source_manager
 
 

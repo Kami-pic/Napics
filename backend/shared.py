@@ -72,6 +72,7 @@ _download_manager: Optional[DownloadManager] = None
 _pan_search_service: Optional[PanSearchService] = None
 _recycle_bin: Optional[RecycleBin] = None
 _file_relocator: Optional[FileRelocator] = None
+_bitsearch_scraper = None
 
 
 def _get_pan_search_service() -> PanSearchService:
@@ -86,8 +87,8 @@ def _get_pan_search_service() -> PanSearchService:
                 "sites": False,      # 通用站点：大多需登录或被反爬，暂关
                 "slowread": False,   # 慢读：纯 JS 渲染，需逆向 API，暂关
                 "wnsearch": False,   # 我能搜：纯 JS 渲染，需逆向 API，暂关
-                "rrdynb": False,
-                "ddys": False,
+                "rrdynb": True,      # 人人电影：搜索+详情页提取，多次请求后限频
+                "ddys": True,        # 低端影视：JSON API，单次100+条
             },
             pansou_api_url="https://pansou.app",
         )
@@ -130,6 +131,62 @@ def _get_file_relocator() -> FileRelocator:
             run_pipeline_fn=organize_full,
         )
     return _file_relocator
+
+
+def _get_bitsearch_scraper():
+    """懒加载 Bitsearch BT 搜索爬虫。"""
+    global _bitsearch_scraper
+    if _bitsearch_scraper is None:
+        from bt_scraper_bitsearch import BitsearchScraper
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+        _bitsearch_scraper = BitsearchScraper(proxy=proxy or None)
+    return _bitsearch_scraper
+
+
+_cilixiong_scraper = None
+_xl720_scraper = None
+_nyaa_scraper = None
+
+
+def _get_cilixiong_scraper():
+    """懒加载磁力熊 BT 搜索爬虫。"""
+    global _cilixiong_scraper
+    if _cilixiong_scraper is None:
+        from bt_scraper_cilixiong import CilixiongScraper
+        _cilixiong_scraper = CilixiongScraper()
+    return _cilixiong_scraper
+
+
+def _get_xl720_scraper():
+    """懒加载 XL720 BT 搜索爬虫。"""
+    global _xl720_scraper
+    if _xl720_scraper is None:
+        from bt_scraper_xl720 import XL720Scraper
+        _xl720_scraper = XL720Scraper()
+    return _xl720_scraper
+
+
+def _get_nyaa_scraper():
+    """懒加载 Nyaa BT 搜索爬虫。"""
+    global _nyaa_scraper
+    if _nyaa_scraper is None:
+        from bt_scraper_nyaa import NyaaScraper
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+        _nyaa_scraper = NyaaScraper(proxy=proxy or None)
+    return _nyaa_scraper
+
+
+_mikan_scraper = None
+
+
+def _get_mikan_scraper():
+    """懒加载蜜柑计划 BT 搜索爬虫。"""
+    global _mikan_scraper
+    if _mikan_scraper is None:
+        from bt_scraper_mikan import MikanScraper
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+        _mikan_scraper = MikanScraper(proxy=proxy or None)
+    return _mikan_scraper
 
 
 def _tmdb_client():

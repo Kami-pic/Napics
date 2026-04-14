@@ -9,14 +9,15 @@ enhanced_search() ← searcher.py
     ├── 1. 别名解析: AliasResolver → 豆瓣/Bangumi 获取中英日别名
     ├── 2. 回退链搜索: shadow_name → clean_name → cnName → enName
     ├── 3. Prowlarr 调用: ProwlarrClient.search() → 多索引器并发
-    └── 4. (未来) 磁力熊补充: CilixiongScraper
+    └── 4. Bitsearch 补充: BitsearchScraper.search_as_search_results()
     ↓
 后处理流水线
     ├── 1. 二次匹配: SecondaryMatcher (标题相似度 + 年份校验)
     ├── 2. 全局过滤: GlobalFilter (must_include / must_exclude)
     ├── 3. 索引器优先级: IndexerPriorityManager (按站点权重排序)
     ├── 4. 综合评分: sort_weights (标题匹配/分辨率/编码/做种/字幕/大小)
-    └── 5. 种子黑名单: TorrentBlacklist (已知无效种子过滤)
+    ├── 5. 种子黑名单: TorrentBlacklist (已知无效种子过滤)
+    └── 6. infohash 去重: Prowlarr + Bitsearch 结果按 btih 去重
     ↓
 前端展示 (SearchModal BT Tab)
     ├── 筛选器: 索引器 / 分辨率 / 来源 / 编码 / 音频 / 大小 / 做种数
@@ -36,6 +37,7 @@ enhanced_search() ← searcher.py
 | 模块 | 文件 | 职责 |
 |---|---|---|
 | Prowlarr 客户端 | searcher.py | 调用 Prowlarr API, 解析种子结果 |
+| Bitsearch 爬虫 | bt_scraper_bitsearch.py | JSON API 搜索, 欧美片源补充, curl_cffi+代理 |
 | 别名解析 | alias_resolver.py | 豆瓣/Bangumi 获取多语言别名 |
 | 二次匹配 | secondary_matcher.py | 标题相似度过滤, 防止误匹配 |
 | 全局过滤 | global_filter.py | 关键词黑白名单 |

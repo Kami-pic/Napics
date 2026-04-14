@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
 import { api } from "@/lib/api";
-import FilterBar, { DEFAULT_FILTERS, applyFilters } from "./FilterBar";
+import FilterBar, { DEFAULT_FILTERS, applyFilters, INDEXER_TAG_STYLE } from "./FilterBar";
 import EpisodeTable from "./EpisodeTable";
 import PanFilterBar, { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
 import PanResultsView from "./PanResultsView";
@@ -272,8 +272,8 @@ export default function SearchModal({
                   {q.audio_codec}
                 </span>
               )}
-              {/* 索引器 */}
-              <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.04] text-slate-500">{res.indexer}</span>
+              {/* 索引器（直搜源品牌色）*/}
+              <span className={`text-[10px] px-2 py-0.5 rounded ${INDEXER_TAG_STYLE[res.indexer] || "bg-white/[0.04] text-slate-500"}`}>{res.indexer}</span>
               {/* 中字高亮 */}
               {q?.has_chinese_sub && <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">中字</span>}
               {/* 整季包高亮 */}
