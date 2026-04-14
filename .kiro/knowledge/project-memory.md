@@ -5,6 +5,14 @@
 
 ## 跨域业务知识
 
+### 搜索架构（BT/磁力 + 网盘 双 Tab）
+- BT/磁力：Prowlarr（主力）+ 5 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑）
+- 直搜源统一输出 SearchResult 格式，routes/search.py 的 `_merge_bt_extra_sources()` 合并去重
+- 网盘：6 个源（pansearch/pansou/gogopanso/github/rrdynb/ddys），pan_search_service.py 聚合
+- 需代理的源（Bitsearch/Nyaa/蜜柑）从 config.http_proxy 读取，和 TMDB 共用
+- 直连源（磁力熊/XL720/rrdynb）不走代理
+- 所有有 CF 风险的爬虫启用 curl_cffi（scraper_base.py 的 use_curl_cffi=True）
+
 ### 搜索词构造
 - cnName：从 clean_name 提取中文字符，cnParts 用 Set 去重
 - enName：shadow_name 去年份再去中文字符 > clean_name 中英文部分
@@ -50,9 +58,13 @@
 - normalize_text 会去掉标点和空格，中英混合标题需分别提取中文部分匹配
 - 快速同步新增超过 50 个文件时自动切换快速模式（跳过 ffprobe）
 - 搜索缓存只缓存有结果的，空结果不缓存
-- BT 直搜源统一输出 SearchResult 格式，按 infohash 去重合并到 Prowlarr 结果
+- BT 直搜源统一输出 SearchResult 格式，按 infohash（大写）去重合并到 Prowlarr 结果
 - Bitsearch API 有 429 限频，缓存 10 分钟 + 请求间延迟 2-4s
 - curl_cffi 是绕 CF 中低级保护的关键，所有有 CF 风险的爬虫必须启用
+- rrdynb 多次搜索会触发 CF 限频（临时性，过段时间自动解除），请求间延迟 1.5-3s
+- ddys 已升级为 JSON API（POST /api/search-netdisk），link 字段是 base64 编码
+- 蜜柑 RSS 同时服务于 BT 搜索（即时）和订阅系统（定时轮询），共用 rss_source_mikan.py
+- 新增 BT 直搜源步骤：写爬虫(继承 ScraperBase) → shared.py 加 getter → routes/search.py 的 scrapers 列表加一行
 
 ## 领域索引
 
@@ -65,3 +77,4 @@
 - 滚动交互 → `knowledge/scroll-damping-interaction.md`
 - API 清单 → `knowledge/api-reference.md`
 - 数据结构 → `knowledge/data-models.md`
+- BT 搜索扩展 TODO → `docs/bt-expand-todo.md`
