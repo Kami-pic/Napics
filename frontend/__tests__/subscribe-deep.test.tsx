@@ -124,7 +124,7 @@ describe("SubscribePanel 交互深度测试", () => {
 
     // 卡片容器应该有 opacity-50 和 pointer-events-none
     await waitFor(() => {
-      const card = screen.getByText("操作中测试片").closest(".flex.gap-3.p-3");
+      const card = screen.getByText("操作中测试片").closest(".p-3.rounded-xl");
       expect(card?.className).toContain("opacity-50");
       expect(card?.className).toContain("pointer-events-none");
     });
@@ -187,13 +187,13 @@ describe("DiscoverCard 边界情况", () => {
         onClick={vi.fn()} isSubscribed={true}
       />
     );
-    // 本地角标"可升级"应该显示
-    expect(screen.getByText(/可升级/)).toBeInTheDocument();
-    // 📌不应该显示
-    expect(screen.queryByText("📌")).not.toBeInTheDocument();
+    // 本地角标"升级·订阅"应该显示（合并标签）
+    expect(screen.getByText(/升级·订阅/)).toBeInTheDocument();
+    // 📌不应该单独显示
+    expect(screen.queryByText("📌 已订阅")).not.toBeInTheDocument();
   });
 
-  it("showRank=true 且 isSubscribed=true 时，📌角标位置下移（top-10）", async () => {
+  it("showRank=true 且 isSubscribed=true 时，📌角标在底部信息行", async () => {
     const { default: DiscoverCard } = await import("@/components/media/DiscoverCard");
     const { container } = render(
       <DiscoverCard
@@ -202,13 +202,13 @@ describe("DiscoverCard 边界情况", () => {
         onClick={vi.fn()} isSubscribed={true}
       />
     );
-    const badge = screen.getByText("📌");
+    const badge = screen.getByText("📌 已订阅");
     expect(badge).toBeInTheDocument();
-    // showRank=true 时角标用 top-10
-    expect(badge.className).toContain("top-10");
+    // 状态标签在底部信息行，不是绝对定位角标
+    expect(badge.className).toContain("text-violet-400");
   });
 
-  it("showRank=false 且 isSubscribed=true 时，📌角标位置在 top-3", async () => {
+  it("showRank=false 且 isSubscribed=true 时，📌角标在底部信息行", async () => {
     const { default: DiscoverCard } = await import("@/components/media/DiscoverCard");
     render(
       <DiscoverCard
@@ -217,8 +217,8 @@ describe("DiscoverCard 边界情况", () => {
         onClick={vi.fn()} isSubscribed={true}
       />
     );
-    const badge = screen.getByText("📌");
-    expect(badge.className).toContain("top-3");
+    const badge = screen.getByText("📌 已订阅");
+    expect(badge.className).toContain("text-violet-400");
   });
 
   it("isActive=true 时卡片边框高亮（border-blue-500）", async () => {

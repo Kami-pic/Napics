@@ -137,7 +137,7 @@ describe("DiscoverCard 订阅角标", () => {
         isSubscribed={true}
       />
     );
-    expect(screen.getByText("📌")).toBeInTheDocument();
+    expect(screen.getByText("📌 已订阅")).toBeInTheDocument();
   });
 
   it("已订阅但已有本地资源时不显示📌角标（本地角标优先）", async () => {

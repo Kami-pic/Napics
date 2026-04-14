@@ -137,7 +137,7 @@ describe("SubscribePanel 搜索按钮增强", () => {
     fireEvent.click(screen.getByText("🔍 搜索"));
 
     await waitFor(() => {
-      const card = screen.getByText("搜索中状态测试").closest(".flex.gap-3.p-3");
+      const card = screen.getByText("搜索中状态测试").closest(".p-3.rounded-xl");
       expect(card?.className).toContain("opacity-50");
       expect(card?.className).toContain("pointer-events-none");
     });
