@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-04-15 TODO 清理 + 5 项功能补完 + AI 规则升级
+**变更**: 
+- 对照代码逐项校验 6 个 TODO 文件，10 项标记未完成但实际已实现的更正为 ✅
+- 实现 5 项真正未完成的功能：SSE 搜索进度(/api/search/stream)、下载完成自动局部刷新(_trigger_local_refresh)、发现页候选面板(ExpandDetail 内嵌 TMDB+豆瓣候选)、榜单 tmdb_id 主动补全(_async_enrich_tmdb_ids)、BT 各源结果数量统计
+- AI 规则升级：融入 Karpathy LLM 编码原则，新增最小改动原则(#2)、多步任务计划(#4)、前后端同时验证(#3 强化)
+- 测试修复：test 辅助函数改名 run_case 避免 pytest fixture 冲突；requirements.txt 补 pytest
+- 技术债务记录：Pydantic V1 迁移、路由文件超长(search.py 507行/discover.py 700+行)、日志迁移
+**决策**: AI 规则参考 forrestchang/andrej-karpathy-skills（Karpathy 的 4 原则：Think Before Coding / Simplicity First / Surgical Changes / Goal-Driven Execution），结合项目实际痛点（前端验证遗漏）定制；sub-agent 审查后微调了"手术式修改"的例外条件和"多步任务"的触发范围
+**踩坑**: 测试文件中定义 `def test(name, fn)` 辅助函数会被 pytest 误收集为测试用例（name 参数当 fixture 找不到报错），改名为 run_case 解决；`sys.exit(1)` 在模块顶层会在 pytest 收集阶段执行导致 INTERNALERROR，需加 `if __name__ == "__main__"` 守卫
+
 ## 2026-04-14 搜索源大扩展（网盘修复 + BT 5 源 + 反爬升级）
 **变更**: 网盘搜索修复 rrdynb(CSS选择器重写)+ddys(改JSON API)；BT 新增 5 个直搜源(Bitsearch/磁力熊/XL720/Nyaa/蜜柑)；scraper_base 新增 curl_cffi 浏览器指纹+CF 统一检测；前端 indexer 标签品牌色；蜜柑 RSS 接入订阅框架
 **决策**: Bitsearch JSON API 作为欧美片源核心补充（Prowlarr 不可达时的替代）；1337x/TorrentGalaxy CF 高级保护无法绕过，放弃；所有有 CF 风险的爬虫统一启用 curl_cffi；搜索路由用 _merge_bt_extra_sources 统一合并+infohash 去重
