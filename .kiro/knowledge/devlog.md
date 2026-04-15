@@ -5,6 +5,12 @@
 
 ---
 
+## 2026-04-15 查漏补缺 — 30 项 Bug 修复 + P2 功能完善
+**变更**: 修复用户报告的 30 个 Bug（订阅 tab 高度/BT 搜索不工作/综合推荐匹配错误/封面错位等）；完成 13 项 P2 功能（订阅配置面板/Nyaa RSS/搜索设置面板/日历视图/冷门降权/手动洗版增强等）；新增 4 个前端组件（SearchSettingsPanel/SubscribeConfigModal/SubscribeSourceSelect/rss_source_nyaa）；新增 2 个后端接口（/search/sources GET+PUT）
+**架构改动**: 探索二级 tab 从 ExplorePage 移到 DiscoverHeader 统一高度；订阅筛选栏合并到 DiscoverHeader 一行；/search/single 的 skip_filter 模式改为线程池并行调用 5 个直搜源；发现页统一使用 SearchModal 作为搜索下载入口
+**决策**: BT 搜索不工作的根因是 /search/single skip_filter 模式只返回 Prowlarr 结果没合并直搜源，改为 ThreadPoolExecutor 并行调用 5 源；综合推荐匹配错误（航海王→跨界电影）通过加严 _is_same_media 解决（短标题完全包含+长标题 70% 重叠）
+**踩坑**: 订阅 tab 高度问题反复修了 4 轮（#2/#16/#17/#18），根因是多个 tab 容器高度不统一，最终方案是所有 tab 共用同一个 flex 容器；切换 tab 回顶部不稳定需要 setTimeout 50ms 延迟等 DOM 更新完成
+
 ## 2026-04-15 TODO 清理 + 5 项功能补完 + AI 规则升级
 **变更**: 
 - 对照代码逐项校验 6 个 TODO 文件，10 项标记未完成但实际已实现的更正为 ✅
