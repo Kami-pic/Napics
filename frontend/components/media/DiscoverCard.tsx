@@ -72,7 +72,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
         {showRank && (
-          <span className={`absolute top-0 left-0 w-8 h-8 flex items-center justify-center text-sm font-black rounded-br-lg ${
+          <span className={`absolute top-1.5 left-1.5 min-w-[24px] h-6 flex items-center justify-center text-[11px] font-black px-1.5 rounded-md ${
             index < 3 ? "bg-yellow-500/90 text-black" : "bg-black/70 text-white/80"
           }`}>
             {index + 1}

@@ -20,9 +20,11 @@ interface ExplorePageProps {
   onNavigateToLocal?: (folderPath: string) => void;
   onSubscribe?: (item: DoubanHotItem, detail: MediaDetail | null) => void;
   checkSubscribed?: (item: DoubanHotItem) => boolean;
+  refreshTrigger?: number;
+  onRefreshingChange?: (refreshing: boolean) => void;
 }
 
-export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal, onSubscribe, checkSubscribed }: ExplorePageProps) {
+export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal, onSubscribe, checkSubscribed, refreshTrigger, onRefreshingChange }: ExplorePageProps) {
   const tabConfig = EXPLORE_TABS.find(t => t.key === activeTab) || EXPLORE_TABS[0];
   const [filters, setFilters] = useState<Record<string, ExploreFilters>>({});
   const [items, setItems] = useState<DoubanHotItem[]>([]);
@@ -154,14 +156,24 @@ export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, co
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    onRefreshingChange?.(true);
     closeExpand();
-    // 清除当前 tab+筛选的缓存
     const cacheKey = getCacheKey();
     delete dataCacheRef.current[cacheKey];
     const id = ++loadIdRef.current;
     await loadData(0, false, id);
     setRefreshing(false);
-  }, [loadData, closeExpand, getCacheKey]);
+    onRefreshingChange?.(false);
+  }, [loadData, closeExpand, getCacheKey, onRefreshingChange]);
+
+  // 外部触发刷新（DiscoverHeader 的刷新按钮）
+  const prevTrigger = useRef(refreshTrigger);
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger !== prevTrigger.current) {
+      prevTrigger.current = refreshTrigger;
+      handleRefresh();
+    }
+  }, [refreshTrigger, handleRefresh]);
 
   const handleFilterChange = useCallback((newFilters: ExploreFilters) => {
     setFilters(prev => ({ ...prev, [activeTab]: newFilters }));
@@ -224,39 +236,6 @@ export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, co
 
   return (
     <div>
-      {/* 二级 tab（sticky 吸附在一级 header 下方） */}
-      <div className="sticky top-[52px] z-10 bg-[#0f0f0f] -mx-6 px-6">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-3 border-b border-white/[0.04]">
-          {EXPLORE_TABS.map(t => {
-            const isActive = activeTab === t.key;
-            // 电影蓝/剧集绿色彩规范
-            const coloredLabel = t.label.replace(/(电影)/g, "##MOVIE##").replace(/(剧集)/g, "##TV##");
-            const parts = coloredLabel.split(/(##MOVIE##|##TV##)/);
-            return (
-            <button key={t.key} onClick={() => { if (t.key !== activeTab) setActiveTab(t.key); }}
-              className={`px-4 py-1.5 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
-                isActive ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"
-              }`}>
-              <span>{parts.map((p, i) =>
-                p === "##MOVIE##" ? <span key={i} className="text-blue-400">电影</span> :
-                p === "##TV##" ? <span key={i} className="text-green-400">剧集</span> :
-                <span key={i}>{p}</span>
-              )}</span>
-              {isActive && (
-                <span onClick={(e) => { e.stopPropagation(); handleRefresh(); }}
-                  className={`inline-flex items-center justify-center w-4 h-4 rounded hover:bg-white/10 transition-all cursor-pointer ${refreshing ? "animate-spin" : ""}`}
-                  title="刷新">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </span>
-              )}
-            </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 筛选栏（不吸附，跟随滚动） */}
       <ExploreFilterBar provider={tabConfig.provider} type={tabConfig.type}
         filters={currentFilters} onChange={handleFilterChange} />

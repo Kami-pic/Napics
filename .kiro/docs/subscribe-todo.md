@@ -1,7 +1,7 @@
 # [TODO] 订阅系统（阶段 3 + 阶段 4）
 
 > 用户在发现页/搜索结果中订阅影片 → 系统定时自动搜索资源 → 通知或自动下载 → 归位到媒体库。
-> 阶段 3（A+B+C）+ 阶段 4 核心已完成。剩余低优先级尾巴见底部。
+> 阶段 3（A+B+C）+ 阶段 4 核心已完成。剩余未完成项已转移到 `polish-todo.md` 统一跟踪。
 
 ---
 
@@ -67,7 +67,7 @@
 
 - [x] `DownloadTask` 新增 `subscription_id: Optional[str]` 字段
 - [x] `DownloadTask` 新增 `subscription_episode: Optional[int]` 字段
-- [ ] 下载完成回调时，通过这两个字段反向更新订阅的 `downloaded_episodes`
+- [x] 下载完成回调时，通过这两个字段反向更新订阅的 `downloaded_episodes`（download_manager._notify_subscription_complete）
 - [x] 确保 `download_tasks.json` 序列化/反序列化兼容新字段（旧数据缺失时默认 None）
 
 ### A.3 后端：订阅路由
@@ -84,7 +84,7 @@
 ### A.4 前端：订阅按钮与入口
 
 - [x] 发现页详情面板（ExpandDetail）新增"订阅"按钮（搜索资源按钮旁边）
-- [ ] 点击订阅弹出配置面板：质量偏好、包含/排除关键词、通知/自动模式、保存路径
+- [x] 点击订阅弹出配置面板：SubscribeConfigModal（质量偏好、包含/排除关键词、通知/自动模式、保存路径）
 - [x] 已订阅的卡片显示 📌 角标（DiscoverCard 组件）
 - [x] 前端 `api.ts` 新增订阅相关 API 调用函数
 - [x] 订阅状态通过 `/subscribe` 接口查询，前端启动时拉取一次缓存
@@ -141,7 +141,7 @@
 - [x] 结果处理：notify → 存入 found_resources，auto → DownloadManager.submit()
 - [x] 自动下载选择最佳条目（电影取最高 seeders，剧集每集取最高 seeders）
 - [x] 启动时自动启动调度器（懒加载）
-- [ ] `config.json` 新增 `subscribe_interval_hours`（基础间隔，默认 4）
+- [x] `config.json` 新增 `subscribe_interval_hours`（基础间隔，默认 4.0）— config_manager.py 已实现
 
 ### B.5 后端：RSS 源管理路由
 
@@ -149,9 +149,9 @@
 - [x] `PUT /subscribe/sources/{name}` — 启用/禁用某个源
 - [x] 手动搜索路由 `POST /subscribe/{id}/search` 真正实现（替换 A 阶段占位）
 
-### B.6 前端：订阅管理增强
+### xiaoB.6 前端：订阅管理增强
 
-- [ ] 订阅面板显示搜索状态：上次搜索时间、累计搜索次数
+- [搁置] 订阅面板显示搜索状态：上次搜索时间、累计搜索次数（→ 订阅面板整体重做时一并处理）
 - [x] 通知模式：`found_resources` 不为空时 🔔 角标 + 资源列表，用户手动选择下载
 - [x] 手动搜索按钮真正生效
 - [x] 订阅卡片状态标签：右下角信息行半透明样式（✓已有 / ↑可升级 / 📌已订阅 / 合并标签）
@@ -163,9 +163,9 @@
 ### B.7 后续源接入清单
 
 - [x] `rss_source_mikan.py` — 蜜柑计划（动画字幕组聚合，按番剧 RSS 订阅，已注册到 RSSSourceManager）
-- [ ] `rss_source_nyaa.py` — Nyaa.si（日本动画/日剧 BT 站 RSS，BT 搜索爬虫已完成，RSS 源待接入订阅框架）
+- [x] `rss_source_nyaa.py` — Nyaa.si RSS 源已完成，已注册到 RSSSourceManager
 - [x] `rss_source_rryingshi.py` — ~~人人影视~~ 已确认不可用（域名不可达），放弃
-- [ ] 其他字幕组 RSS（ANi、喵萌、恋恋等）— 低优先级
+- [搁置] 其他字幕组 RSS（ANi、喵萌、恋恋等）— 低优先级，按需接入
 
 ---
 
@@ -183,20 +183,21 @@
 
 ### C.2 质量状态更新 bug 修复（千年女优问题）
 
-- [ ] 手动替换文件后，快速同步应检测文件变化并重新 ffprobe 更新 height/resolution
-- [ ] 确认快速同步的文件大小变化检测（差异>5%）是否覆盖了替换场景
-- [ ] 如果文件名不变但内容变了（大小变了），也要触发重新扫描
+> 已转移到 polish-todo 2.2 统一跟踪
+
+- [x] 手动替换文件后，快速同步检测文件大小变化（差异>5%）并重新 ffprobe（routes/library.py quick_sync 已实现）
+- [x] 文件名不变但大小变了也会触发重新扫描（同上）
 
 ### C.3 媒体库联动
 
 - [x] 新增剧集订阅时自动扫描媒体库已有集数，填充 `downloaded_episodes`（标记 source="local"）
-- [ ] 下载完成后可选触发整理流水线归位（`file_relocator`）
+- [x] 下载完成后可选触发整理流水线归位（download_manager._notify_subscription_complete + _auto_relocate）
 
 ### C.4 剧集日历
 
 - [x] `GET /subscribe/calendar` — 从 TMDB 拉剧集播出日期，返回时间线
-- [ ] 新集播出当天自动触发一次搜索（不等定时任务）
-- [ ] 前端日历视图（可选，优先级低）
+- [x] 新集播出当天自动触发一次搜索（rss_engine._check_calendar_trigger 已实现）
+- [x] 前端日历视图（SubscribeCalendar 组件，列表/日历切换）
 
 ### C.5 洗版对接
 
@@ -215,7 +216,7 @@
 - [x] 4.2 `local_media_matcher` 质量判断升级（优先用 quality_score，回退到 height）
 - [x] 4.3 `rss_matcher._filter_episodes()` 支持 best_version 洗版模式
 - [x] 4.3 `rss_engine._select_best_version()` 洗版模式质量比较（按集独立比较分数）
-- [ ] 4.4 手动洗版增强：搜索结果按 quality_score 降序，标记比当前更好的
+- [x] 4.4 手动洗版增强：SearchModal 已显示 quality_score + isHigher 升级标记
 
 ---
 

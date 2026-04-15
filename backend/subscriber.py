@@ -51,6 +51,7 @@ class Subscription(BaseModel):
     save_path: str = ""
     search_keyword: str = ""      # 自定义搜索词（空则用 title）
     aliases: Dict[str, List[str]] = Field(default_factory=lambda: {"cn": [], "en": [], "jp": []})
+    sources: List[str] = Field(default_factory=list)  # 指定搜索源（空=用全局设置）
     state: str = "active"         # active / paused / completed
     mode: str = "notify"          # notify / auto
     found_resources: List[Dict[str, Any]] = Field(default_factory=list)
@@ -97,6 +98,29 @@ class SubscriptionManager:
         year = str(data.get("year", "")).strip()
         tmdb_id = data.get("tmdb_id")
         season = data.get("season")
+
+        # 自动补全 tmdb_id（用 TMDB 搜索）
+        if not tmdb_id and tmdb and title:
+            try:
+                media_type = data.get("type", "movie")
+                if media_type == "tv":
+                    results = tmdb.search_tv(title)
+                else:
+                    results = tmdb.search_movie(title)
+                if results:
+                    best = results[0]
+                    # 年份校验（避免匹配到同名不同年份的作品）
+                    candidate_id = best.get("id")
+                    candidate_date = best.get("first_air_date") or best.get("release_date") or ""
+                    if candidate_id:
+                        if not year or not candidate_date or candidate_date.startswith(year):
+                            tmdb_id = candidate_id
+                            data["tmdb_id"] = tmdb_id
+                            print(f"[Subscriber] TMDB 自动补全: {title} → tmdb_id={tmdb_id}")
+                        else:
+                            print(f"[Subscriber] TMDB 年份不匹配: {title} 期望{year} 实际{candidate_date[:4]}")
+            except Exception as e:
+                print(f"[Subscriber] TMDB 补全失败: {e}")
         for sub in self.subscriptions:
             if tmdb_id and sub.tmdb_id == tmdb_id and sub.season == season:
                 return {"status": "error", "message": f"已订阅: {sub.title}"}

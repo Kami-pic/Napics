@@ -61,6 +61,13 @@ export const api = {
     }
   },
 
+  // SSE 流式搜索（逐源返回进度）
+  searchStream: (keyword: string, options?: { media_type?: string }) => {
+    const p = new URLSearchParams({ query: keyword });
+    if (options?.media_type) p.set("media_type", options.media_type);
+    return `${BASE_URL}/api/search/stream?${p.toString()}`;
+  },
+
   download: (url: string, savePath: string, downloadType: "qb" | "alist" = "qb") => request<any>(`${BASE_URL}/download`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -424,4 +431,13 @@ export const api = {
       body: JSON.stringify({ enabled }),
     }),
   getSubscriptionCalendar: () => request<any[]>(`${BASE_URL}/subscribe/calendar`),
+
+  // ── 搜索源管理 ──
+  getSearchSources: () => request<any>(`${BASE_URL}/search/sources`),
+  toggleSearchSource: (name: string, enabled: boolean) =>
+    request<any>(`${BASE_URL}/search/sources/${name}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }),
 };

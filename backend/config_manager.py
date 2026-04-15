@@ -56,6 +56,10 @@ class AppConfig(BaseModel):
     sort_weights: SortWeightsConfig = SortWeightsConfig()  # 种子排序权重
     torrent_blacklist: List[str] = []             # 无效种子黑名单（download_url）
     torrent_blacklist_updated: str = ""           # 黑名单最后更新时间
+    subscribe_interval_hours: float = 4.0         # 订阅搜索基础间隔（小时）
+    # 搜索源开关
+    bt_search_sources: dict = {}                  # BT 源开关 {"bitsearch": true, "cilixiong": true, ...}
+    pan_search_sources: dict = {}                 # 网盘源开关 {"pansearch": true, "rrdynb": true, ...}
 
 class ConfigManager:
     def __init__(self, config_path: str = None):

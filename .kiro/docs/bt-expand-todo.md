@@ -97,11 +97,12 @@
 - [x] `shared.py` 新增 `_get_nyaa_scraper()` 单例
 - [x] `routes/search.py` 合并 Nyaa 结果
 
-### 4.3 Nyaa RSS 源（接入订阅框架）
-- [ ] 新建 `rss_source_nyaa.py`，实现 RSSSourceBase
-- [ ] RSS URL：https://nyaa.si/?page=rss&q=关键词&c=0_0&f=0
-- [ ] 解析 RSS XML → RSSItem 列表
-- [ ] 注册到 RSSSourceManager
+### 4.3 Nyaa RSS 源（接入订阅框架）✅
+
+- [x] 新建 `rss_source_nyaa.py`，实现 RSSSourceBase
+- [x] RSS URL：https://nyaa.si/?page=rss&q=关键词&c=0_0&f=0
+- [x] 解析 RSS XML → RSSItem 列表
+- [x] 注册到 RSSSourceManager（routes/subscribe.py）
 
 ---
 
@@ -149,13 +150,17 @@
 - [x] IndexerSelect 下拉列表加品牌色圆点（INDEXER_DOT_COLOR）
 
 ### 6.3 搜索状态增强
-- [ ] 搜索进度条显示各源状态（Prowlarr ✓ / Bitsearch ✓ / 磁力熊 加载中...）— 后续优化
-- [ ] 各源搜索结果数量统计（类似网盘 Tab 的 source_statuses）— 后续优化
 
-### 6.4 搜索源开关（设置页）
-- [ ] 设置页新增 BT 搜索源开关（Prowlarr / Bitsearch / 磁力熊 / XL720 / Nyaa / 蜜柑）— 后续优化
-- [ ] 开关状态存入 config.json（bt_search_sources）
-- [ ] 后端根据开关决定是否调用对应爬虫
+> 已转移到 polish-todo 2.6 统一跟踪
+
+- [x] 搜索进度条显示各源状态（SSE /api/search/stream + 前端 sourceStatuses 实时渲染）
+- [x] 各源搜索结果数量统计（SSE 返回每源 count）
+
+### 6.4 搜索源开关（设置页）✅
+
+- [x] SearchSettingsPanel.tsx — SearchModal 内搜索源开关面板
+- [x] 开关状态存入 config.json（bt_search_sources / pan_search_sources）
+- [x] 后端 /search/sources GET/PUT 端点 + 根据开关决定是否调用对应爬虫
 
 ---
 

@@ -244,6 +244,8 @@ class DownloadManager:
             if moved > 0:
                 print(f"[DownloadManager] 已转移 {moved} 个文件到 {task.save_path}")
                 task.status = "completed"
+                # 自动触发局部刷新（后台线程，不阻塞）
+                self._trigger_local_refresh(task.save_path)
             # 清理空沙盒
             try:
                 if os.path.isdir(task.download_dir) and not os.listdir(task.download_dir):
@@ -253,6 +255,31 @@ class DownloadManager:
         except Exception as e:
             print(f"[DownloadManager] 转移失败: {e}")
             task.error = f"转移失败: {e}"
+
+    def _trigger_local_refresh(self, save_path: str):
+        """下载完成后自动触发该文件夹的局部刷新（后台线程）。"""
+        import threading
+        def _do_refresh():
+            try:
+                from config_manager import ConfigManager
+                cm = ConfigManager()
+                library = cm.load_library()
+                if not library:
+                    return
+                # 找到 save_path 下的新文件，和 library 对比
+                import scanner
+                new_files = scanner.scan_folder(save_path)
+                if not new_files:
+                    return
+                existing_paths = {v.get("file_path") for v in library}
+                added = [f for f in new_files if f.get("file_path") not in existing_paths]
+                if added:
+                    library.extend(added)
+                    cm.save_library(library)
+                    print(f"[DownloadManager] 局部刷新：{save_path} 新增 {len(added)} 个文件")
+            except Exception as e:
+                print(f"[DownloadManager] 局部刷新失败: {e}")
+        threading.Thread(target=_do_refresh, daemon=True).start()
 
     def _sync_qb_progress(self, task: DownloadTask):
         """通过 qBittorrent API 同步单个任务的进度。"""

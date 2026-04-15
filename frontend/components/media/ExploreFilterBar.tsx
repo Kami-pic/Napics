@@ -1,6 +1,6 @@
 // 探索页筛选栏（铺开式设计，完全对齐 MoviePilot 筛选维度）
 "use client";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 export interface ExploreFilters {
   sort: string;
@@ -40,16 +40,28 @@ const DOUBAN_TV_SORTS = [
   { value: "S", label: "高分优先" },
   { value: "R", label: "首播时间" },
 ];
-// 电影和剧集共用同一套风格标签
-const DOUBAN_TAGS = [
+// 电影和剧集共用同一套风格标签（剧集额外包含综艺）
+const DOUBAN_MOVIE_TAGS = [
   "喜剧", "爱情", "动作", "科幻", "动画", "悬疑", "犯罪", "惊悚",
   "冒险", "音乐", "历史", "奇幻", "恐怖", "战争", "传记", "歌舞",
   "武侠", "情色", "灾难", "西部", "纪录片", "短片",
 ];
-// 常用地区 + 其他（整合冷门地区）
+const DOUBAN_TV_TAGS = [
+  "喜剧", "爱情", "动作", "科幻", "动画", "悬疑", "犯罪", "惊悚",
+  "冒险", "音乐", "历史", "奇幻", "恐怖", "战争", "传记", "歌舞",
+  "武侠", "情色", "灾难", "西部", "纪录片", "短片", "综艺",
+];
+// 常用地区（"其他"代表所有不在列表中的冷门地区）
 const DOUBAN_AREAS = [
   "华语", "欧美", "韩国", "日本", "中国大陆", "美国", "中国香港", "中国台湾",
   "英国", "法国", "德国", "意大利", "西班牙", "印度", "泰国",
+];
+// 被收进"其他"的冷门地区
+const DOUBAN_OTHER_AREAS = [
+  "俄罗斯", "加拿大", "澳大利亚", "爱尔兰", "瑞典", "巴西", "丹麦",
+  "波兰", "荷兰", "比利时", "土耳其", "伊朗", "墨西哥", "阿根廷",
+  "挪威", "芬兰", "新西兰", "以色列", "奥地利", "瑞士", "捷克",
+  "南非", "马来西亚", "新加坡", "菲律宾", "印度尼西亚", "越南",
 ];
 // 年代：固定年代段 + 动态最近6年
 const DOUBAN_YEARS = (() => {
@@ -164,9 +176,12 @@ export default function ExploreFilterBar({ provider, type, filters, onChange }: 
     onChange({ ...filters, [key]: value });
   }, [filters, onChange]);
 
+  const [showOtherAreas, setShowOtherAreas] = useState(false);
+
   const isDouban = provider === "douban";
   const isTmdb = provider === "tmdb";
   const isBangumi = provider === "bangumi";
+  const isOtherArea = DOUBAN_OTHER_AREAS.includes(filters.area);
 
   return (
     <div className="flex flex-col gap-0.5 py-2">
@@ -180,20 +195,29 @@ export default function ExploreFilterBar({ provider, type, filters, onChange }: 
         ))}
       </FilterRow>
 
-      {/* 豆瓣：风格 */}
+      {/* 豆瓣：风格（剧集额外包含综艺） */}
       {isDouban && (
         <FilterRow label="风格">
           <Pill label="全部" active={!filters.tags} onClick={() => set("tags", "")} />
-          {DOUBAN_TAGS.map(t => (
+          {(type === "tv" ? DOUBAN_TV_TAGS : DOUBAN_MOVIE_TAGS).map(t => (
             <Pill key={t} label={t} active={filters.tags === t} onClick={() => set("tags", t)} />
           ))}
         </FilterRow>
       )}
-      {/* 豆瓣：地区（常用 + 其他） */}
+      {/* 豆瓣：地区（常用 + "其他"聚合冷门地区） */}
       {isDouban && (
         <FilterRow label="地区">
-          <Pill label="全部" active={!filters.area} onClick={() => set("area", "")} />
+          <Pill label="全部" active={!filters.area && !isOtherArea} onClick={() => { set("area", ""); setShowOtherAreas(false); }} />
           {DOUBAN_AREAS.map(a => (
+            <Pill key={a} label={a} active={filters.area === a} onClick={() => { set("area", a); setShowOtherAreas(false); }} />
+          ))}
+          <Pill label="其他" active={isOtherArea || showOtherAreas} onClick={() => setShowOtherAreas(!showOtherAreas)} />
+        </FilterRow>
+      )}
+      {/* 展开的冷门地区 */}
+      {isDouban && showOtherAreas && (
+        <FilterRow label="">
+          {DOUBAN_OTHER_AREAS.map(a => (
             <Pill key={a} label={a} active={filters.area === a} onClick={() => set("area", a)} />
           ))}
         </FilterRow>

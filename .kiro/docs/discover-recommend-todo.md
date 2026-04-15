@@ -21,7 +21,8 @@
 - [x] 实现 `search(keyword)` — 搜索（比网页版 suggest 接口结果更全）
 - [x] 保留现有 `douban_client.py` 作为 fallback，新代码优先走 API v2
 - [x] 豆瓣 API v2 防封策略：请求间随机延迟 1-3 秒 + 随机 User-Agent 池
-- [ ] 豆瓣 ID → TMDB ID 映射：榜单数据获取后用 TMDB 搜索静默补充 tmdb_id，结果缓存到 `scrape_cache/`
+- [x] 豆瓣 ID → TMDB ID 映射：local_media_matcher.py 异步补全 + id_mapping_cache.json 持久化（本地匹配用）
+- [x] 豆瓣 ID → TMDB ID 映射：榜单数据获取后主动补充 tmdb_id（routes/discover.py _async_enrich_tmdb_ids）
 
 ### 1.2 后端：刮削模块切换到 API v2
 - [x] `routes/scrape.py` 中豆瓣搜索和详情改为优先调用 `douban_api_v2`
@@ -106,8 +107,9 @@
 - [x] 详情加载速度优化：_enrich_ratings 改为并行（豆瓣先跑拿 original_title，TMDB+Bangumi 线程池并行）
 - [x] 链接按钮始终可用：有精确 ID 用详情页链接（正常亮度），无 ID 用搜索页链接（变灰区分）
 - [x] 卡片封面 genres 标签上限从 2 个改为 3 个
-- [ ] 详情匹配错误时的候选选择（类似刮削候选面板，显示多个候选让用户手动选）
-- [ ] 匹配算法优化：当前中文搜 TMDB 覆盖率有限，部分冷门片搜不到；Bangumi calendar API 的 bgm_id 和卡片标题偶尔错位z
+- [x] 详情匹配错误时的候选选择：刮削用 CandidatePicker 已完成（TMDB/豆瓣/Bangumi 三源候选）
+- [x] 发现页 ExpandDetail 中详情匹配错误时的候选选择（NoDetailFallback 内嵌候选面板）
+- [ ] 匹配算法优化：当前中文搜 TMDB 覆盖率有限，部分冷门片搜不到；Bangumi calendar API 的 bgm_id 和卡片标题偶尔错位z（→ 已转移到 polish-todo 1.4 专项排查）
 
 ---
 
@@ -151,7 +153,7 @@
 - [x] 动漫爱好者加成：genres 含"动画/Animation/Anime" → +0.8
 - [x] 当季新番加成：源自 Bangumi 且首播当年 → +0.8
 - [x] 多源共振：2 源命中 → +1.0，3 源命中 → +2.0
-- [ ] 冷门降权：单源且评价人数极少 → score × 0.8
+- [ ] 冷门降权：单源且评价人数极少 → score × 0.8（→ 已转移到 polish-todo 2.9）
 
 **产出逻辑（40 条）：**
 - [x] 动漫保底：至少 12 条(30%) 动画类资源，不足从 Bangumi 桶补位
@@ -162,7 +164,7 @@
 **返回字段：**
 - [x] `reason`: "全网热门" / "高分番剧" / "豆瓣热榜" / "当季新番" 等
 - [x] `is_new_anime`: true/false（180 天内新番，前端高亮）
-- [ ] `local_status`: 暂不实现，留到 2.7
+- [搁置] `local_status`: 综合推荐暂不实现本地状态注入，留到后续优化
 
 ### 2.1 豆瓣电影探索
 - [x] 后端路由 `/discover/explore?provider=douban&type=movie&sort=T&tags=&page=1`
@@ -230,41 +232,42 @@
 
 ## 阶段 4：质量评分升级 + 自动洗版
 
-> 核心已完成（100分制评分+save_library注入+洗版匹配），详见 `subscribe-todo.md`。
-> 剩余：4.4 手动洗版增强（搜索结果按 quality_score 排序标记）。
+> ✅ 核心已完成（100分制评分+save_library注入+洗版匹配），详见 `subscribe-todo.md`。
+> 剩余 4.4 手动洗版增强已转移到 `polish-todo.md` 2.11。
+> 以下为原始设计记录，实际完成状态以 subscribe-todo.md 为准。
 
 ### 4.1 升级质量评分系统
-- [ ] 在 `quality_parser.py` 新增 `compute_quality_score(tag: QualityTag) -> int` 综合评分函数（100 分制）
-- [ ] 评分维度及权重（参考值，可调）：
+- [x] 在 `quality_parser.py` 新增 `compute_quality_score(tag: QualityTag) -> int` 综合评分函数（100 分制）
+- [x] 评分维度及权重（参考值，可调）：
   - 分辨率（40 分）：2160p=40, 1080p=25, 720p=12, SD=0
   - 来源（25 分）：Remux=25, Bluray=20, WEB-DL=12, HDTV=6
   - 音频编码（20 分）：Atmos=20, TrueHD=17, DTS-HD=14, DDP5.1=10, DD5.1=8, DTS=7, AAC=3
   - 视频编码（10 分）：x265/HEVC=10, AV1=10, x264=6
   - 中文字幕（5 分）：有=5, 无=0
-- [ ] 保留现有 `get_quality_level()` 不动（搜索结果排序仍用它），新函数用于洗版比较
-- [ ] 新增 `compare_quality_score(current_score: int, new_score: int, threshold: int = 5) -> bool`
+- [x] 保留现有 `get_quality_level()` 不动（搜索结果排序仍用它），新函数用于洗版比较
+- [x] 新增 `compare_quality_score(current_score: int, new_score: int, threshold: int = 5) -> bool`
   - 新分数比旧分数高出 threshold 分才返回 True（避免微小差异频繁替换）
 
 ### 4.2 媒体库已有资源评分
-- [ ] 扫描/同步时，对每个视频文件用 `parse_quality()` + `compute_quality_score()` 算分
-- [ ] 分数存入 `media_library.json` 的视频条目中（新增 `quality_score` 字段）
-- [ ] 前端详情面板展示质量分数（可选）
+- [x] 扫描/同步时，对每个视频文件用 `parse_quality()` + `compute_quality_score()` 算分
+- [x] 分数存入 `media_library.json` 的视频条目中（新增 `quality_score` 字段）
+- [x] 前端详情面板展示质量分数（SearchModal 中 quality_score 显示 + isHigher 升级标记）
 
 ### 4.3 订阅自动洗版
-- [ ] 订阅数据结构新增 `best_version: bool`（是否开启洗版）和 `current_score: int`（已下载最高分）
-- [ ] 订阅搜索时：
+- [x] 订阅数据结构新增 `best_version: bool`（是否开启洗版）和 `current_score: int`（已下载最高分）
+- [x] 订阅搜索时：
   1. 搜索到资源 → `parse_quality()` 解析 → `compute_quality_score()` 打分
   2. 比较 `新分数 > current_score + threshold`？
   3. 是 → 下载 → `file_relocator` 归位替换 → 更新 `current_score`
   4. 否 → 跳过
-- [ ] 电影洗版：下载完成后不自动标记 completed，继续搜索直到用户手动关闭洗版
-- [ ] 剧集洗版：按集追踪，每集独立比较分数
+- [x] 电影洗版：下载完成后不自动标记 completed，继续搜索直到用户手动关闭洗版
+- [x] 剧集洗版：按集追踪，每集独立比较分数
 
-### 4.4 手动洗版（批量升级增强）
-- [ ] 现有"批量搜索升级"功能对接新评分系统
-- [ ] 搜索结果按 `quality_score` 降序排列
-- [ ] 自动标记哪些结果比当前版本更好（高亮显示）
-- [ ] 一键选择最高分资源下载替换
+### 4.4 手动洗版（批量升级增强）✅
+- [x] 现有"批量搜索升级"功能对接新评分系统（SearchModal quality_score + isHigher）
+- [x] 搜索结果按 `quality_score` 降序排列
+- [x] 自动标记哪些结果比当前版本更好（高亮显示）
+- [x] 一键选择最高分资源下载替换
 
 ---
 

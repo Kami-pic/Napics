@@ -138,7 +138,7 @@ function PanResultCard({ result: r, onTransfer }: { result: PanResult; onTransfe
             }`}>{r.resolution}</span>
           )}
           {!r.is_complete && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">碎片</span>}
-          <span className="text-[10px] text-slate-600">{r.source}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400">{r.source}</span>
           {r.password && (
             <span className="text-[10px] text-slate-500">
               码: {r.password} {copied && <span className="text-green-400">✓已复制</span>}

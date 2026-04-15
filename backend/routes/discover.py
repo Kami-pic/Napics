@@ -39,6 +39,55 @@ def _inject_local_status(items: list) -> list:
     return items
 
 
+def _async_enrich_tmdb_ids(items: list):
+    """后台线程：为豆瓣榜单数据补全 tmdb_id（用 TMDB 搜索），结果缓存到 id_mapping_cache。"""
+    def _do_enrich():
+        try:
+            tmdb = _tmdb_client()
+            if not tmdb:
+                return
+            enriched = 0
+            for item in items:
+                if item.get("tmdb_id"):
+                    continue
+                douban_id = item.get("douban_id")
+                if not douban_id:
+                    continue
+                # 检查 matcher 缓存
+                cached_tid = media_matcher._id_cache.get(str(douban_id))
+                if cached_tid:
+                    item["tmdb_id"] = cached_tid
+                    enriched += 1
+                    continue
+                # TMDB 搜索补全
+                title = item.get("original_title") or item.get("title") or ""
+                if not title:
+                    continue
+                year = item.get("year", "")
+                media_type = item.get("media_type", "movie")
+                try:
+                    if media_type == "tv":
+                        results = tmdb.search_tv(title)
+                    else:
+                        results = tmdb.search_movie(title)
+                    if results:
+                        best = results[0]
+                        tid = best.get("id")
+                        if tid:
+                            item["tmdb_id"] = tid
+                            media_matcher.add_id_mapping(str(douban_id), tid)
+                            enriched += 1
+                    time.sleep(0.5)  # 避免 TMDB 限频
+                except Exception:
+                    pass
+            if enriched > 0:
+                media_matcher._save_id_cache()
+                print(f"[Discover] 榜单 tmdb_id 补全: {enriched} 条")
+        except Exception as e:
+            print(f"[Discover] tmdb_id 补全失败: {e}")
+    threading.Thread(target=_do_enrich, daemon=True).start()
+
+
 @router.get("/movie/poster")
 def get_movie_poster(name: str):
     """从 TMDB 获取电影海报并缓存到本地"""
@@ -339,6 +388,9 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
     try:
         items = fetcher(start, count)
         if items:
+            # 豆瓣源：后台异步补全 tmdb_id
+            if source.startswith("douban"):
+                _async_enrich_tmdb_ids(items)
             return {"source": source, "items": _inject_local_status(items), "count": len(items)}
     except Exception as e:
         print(f"[Discover] recommend/{source} API v2 失败: {e}")

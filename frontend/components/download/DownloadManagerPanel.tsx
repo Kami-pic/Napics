@@ -247,11 +247,19 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                       </div>
                       <div className="flex items-center gap-2">
                         {isDone && (
+                          <>
+                          {task.save_path && (
+                            <button onClick={() => { onClose(); /* 通过 URL hash 或事件通知媒体库跳转 */ window.dispatchEvent(new CustomEvent("navigate-to-folder", { detail: task.save_path })); }}
+                              className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all">
+                              📂 查看
+                            </button>
+                          )}
                           <button onClick={() => handleEnterWash(task.id, task.media_name)} disabled={isSyncing}
                             className="px-4 py-1.5 rounded-lg text-[11px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-all flex items-center gap-2">
                             {isSyncing ? <div className="w-3 h-3 border-2 border-blue-400/20 border-t-blue-400 rounded-full animate-spin" /> : null}
                             整理替换
                           </button>
+                          </>
                         )}
                         <button onClick={() => handleDelete(task.id)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-400">✕</button>
                       </div>

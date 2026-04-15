@@ -58,8 +58,19 @@ def _is_same_media(a: Dict, b: Dict) -> bool:
         # 中文字重叠兜底（短标题场景）
         a_chars = _extract_chinese(a.get("title") or "")
         b_chars = _extract_chinese(b.get("title") or "")
-        if not a_chars or not b_chars or len(a_chars & b_chars) < 2:
+        if not a_chars or not b_chars:
             return False
+        overlap = len(a_chars & b_chars)
+        min_len = min(len(a_chars), len(b_chars))
+        max_len = max(len(a_chars), len(b_chars))
+        # 短标题（<= 3 字）要求完全包含（overlap == min_len 且长度差 <= 1）
+        if min_len <= 3:
+            if overlap < min_len or max_len - min_len > 1:
+                return False
+        else:
+            # 长标题要求重叠比例 >= 70%
+            if overlap < max(2, int(min_len * 0.7)):
+                return False
 
     # 年份校验
     a_year = a.get("year") or ""
@@ -124,6 +135,12 @@ def _calc_final_score(item: Dict, source_count: int) -> float:
     elif source_count >= 2:
         base += 1.0
 
+    # 冷门降权：单源且评价人数极少
+    if source_count <= 1:
+        vote_count = item.get("vote_count") or item.get("rating_count") or 0
+        if isinstance(vote_count, (int, float)) and vote_count < 100:
+            base *= 0.8
+
     return round(base, 2)
 
 
@@ -148,10 +165,14 @@ def _dedup_and_merge(all_items: List[Tuple[Dict, str]]) -> List[Dict]:
                 new_score = _normalize_score(item.get("rating", 0), source)
                 if new_score > existing.get("_normalized_score", 0):
                     existing["_normalized_score"] = new_score
-                    # 更新封面（优先 TMDB 封面，质量更好）
-                    if source == "tmdb" and item.get("poster_url"):
-                        existing["poster_url"] = item["poster_url"]
-                        existing["cover_url"] = item.get("cover_url") or item.get("poster_url")
+                # 更新封面（仅 ID 精确匹配时才覆盖，避免模糊匹配导致封面错误）
+                has_id_match = (
+                    (existing.get("tmdb_id") and item.get("tmdb_id") and existing["tmdb_id"] == item["tmdb_id"]) or
+                    (existing.get("douban_id") and item.get("douban_id") and existing["douban_id"] == item["douban_id"])
+                )
+                if has_id_match and source == "tmdb" and item.get("poster_url"):
+                    existing["poster_url"] = item["poster_url"]
+                    existing["cover_url"] = item.get("cover_url") or item.get("poster_url")
                 found = True
                 break
 

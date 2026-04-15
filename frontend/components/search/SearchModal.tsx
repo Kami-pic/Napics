@@ -7,6 +7,7 @@ import FilterBar, { DEFAULT_FILTERS, applyFilters, INDEXER_TAG_STYLE } from "./F
 import EpisodeTable from "./EpisodeTable";
 import PanFilterBar, { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
 import PanResultsView from "./PanResultsView";
+import SearchSettingsPanel from "./SearchSettingsPanel";
 
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 type SearchTab = "bt" | "pan";
@@ -54,7 +55,8 @@ export default function SearchModal({
   const [hitKeyword, setHitKeyword] = useState("");
   const [totalRaw, setTotalRaw] = useState(0);
   const [smartFilter, setSmartFilter] = useState(false);  // 默认关闭过滤
-  const [savePath, setSavePath] = useState(defaultSavePath);
+  const [savePath, setSavePath] = useState("");
+  // savePath 为空时下载用 defaultSavePath
   // 搜索标签系统（按确认的规则生成）
   const searchTags = useMemo(() => {
     const tags: { label: string; keyword: string }[] = [];
@@ -78,8 +80,9 @@ export default function SearchModal({
       if (cn) tags.push({ label: cn, keyword: cn });
       if (en && !isSame) tags.push({ label: en, keyword: en });
     } else {
-      if (cn && en && !isSame) tags.push({ label: `${cn} ${en}`, keyword: `${cn} ${en}` });
+      // 默认场景：纯中文排最前（网盘搜索优先中文）
       if (cn) tags.push({ label: cn, keyword: cn });
+      if (cn && en && !isSame) tags.push({ label: `${cn} ${en}`, keyword: `${cn} ${en}` });
       if (en && !isSame) tags.push({ label: en, keyword: en });
     }
 
@@ -106,15 +109,15 @@ export default function SearchModal({
   const [panTotal, setPanTotal] = useState(0);
   const panCache = useRef<Map<string, { results: PanResult[]; groups: Record<string, PanResult[]>; statuses: PanSourceStatus[]; total: number }>>(new Map());
   const [panFilters, setPanFilters] = useState<PanFilterState>(DEFAULT_PAN_FILTERS);
+  const [showSettings, setShowSettings] = useState(false);
 
-  useEffect(() => { setSavePath(defaultSavePath); }, [defaultSavePath]);
   useEffect(() => { setKeyword(query); }, [query]);
   useEffect(() => {
     if (open && query) doSearch(query);
     if (!open) {
       setResults([]); setError(""); setToast(null); setHitKeyword("");
       setFilters(DEFAULT_FILTERS); setDownloadingUrl(null);
-      setSearchingStep(""); setSearching(false);
+      setSearchingStep(""); setSearching(false); setSavePath("");
       searchCache.current.clear();
       setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
       panCache.current.clear();
@@ -123,6 +126,8 @@ export default function SearchModal({
   }, [open, query]);
 
   const [searchingStep, setSearchingStep] = useState("");
+  // 搜索源状态（SSE 实时更新）
+  const [sourceStatuses, setSourceStatuses] = useState<Record<string, { status: string; count: number }>>({});
 
   // 垃圾版本排除词（前端过滤用）
   const JUNK_PATTERNS = /\b(TS|CAM|HDTC|TC|TELECINE|HDTS|TELESYNC)\b/i;
@@ -142,30 +147,72 @@ export default function SearchModal({
     }
 
     setSearching(true); setResults([]); setError(""); setToast(null);
-    setHitKeyword("");
+    setHitKeyword(""); setSourceStatuses({});
 
     try {
       setKeyword(q);
       setSearchingStep(`搜索：${q}`);
 
-      // 永远走 skip_filter=true，拿全部结果
-      const d = await api.searchSingle(q, { skip_filter: true });
-      const raw: EnhancedSearchResult[] = (d.bt_results || []).map((r: any) => ({
-        ...r,
-        quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
-        quality_rank: r.quality_rank ?? 0,
-      }));
+      // 尝试 SSE 流式搜索
+      const sseUrl = api.searchStream(q);
+      const es = new EventSource(sseUrl);
+      let sseResults: EnhancedSearchResult[] = [];
+      let sseDone = false;
 
-      // 写入缓存（只缓存有结果的）
-      if (raw.length > 0) {
-        searchCache.current.set(cacheKey, { results: raw, totalRaw: d.total_raw || raw.length });
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, 60000);
+
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "status") {
+              setSourceStatuses(prev => ({
+                ...prev,
+                [data.source]: { status: data.status, count: data.count ?? 0 },
+              }));
+              const statusLabel = data.status === "searching" ? "搜索中..." :
+                data.status === "done" ? `✓ ${data.count || 0}条` : "✗ 失败";
+              setSearchingStep(`${data.source}: ${statusLabel}`);
+            } else if (data.type === "done") {
+              sseDone = true;
+              sseResults = (data.bt_results || []).map((r: any) => ({
+                ...r,
+                quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+                quality_rank: r.quality_rank ?? 0,
+              }));
+              clearTimeout(timeout);
+              es.close();
+              resolve();
+            }
+          } catch { /* 忽略解析错误 */ }
+        };
+        es.onerror = () => { clearTimeout(timeout); es.close(); reject(new Error("sse_error")); };
+      });
+
+      if (sseDone && sseResults.length > 0) {
+        searchCache.current.set(cacheKey, { results: sseResults, totalRaw: sseResults.length });
       }
-
-      setResults(raw);
+      setResults(sseResults);
       setHitKeyword(q);
-      setTotalRaw(d.total_raw || raw.length);
+      setTotalRaw(sseResults.length);
     } catch {
-      setError("搜索失败，请检查 Prowlarr 配置后重试");
+      // SSE 失败，fallback 到普通搜索
+      try {
+        const d = await api.searchSingle(q, { skip_filter: true });
+        const raw: EnhancedSearchResult[] = (d.bt_results || []).map((r: any) => ({
+          ...r,
+          quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+          quality_rank: r.quality_rank ?? 0,
+        }));
+        if (raw.length > 0) {
+          searchCache.current.set(q, { results: raw, totalRaw: d.total_raw || raw.length });
+        }
+        setResults(raw);
+        setHitKeyword(q);
+        setTotalRaw(d.total_raw || raw.length);
+      } catch {
+        setError("搜索失败，请检查 Prowlarr 配置后重试");
+      }
     }
     setSearching(false);
     setSearchingStep("");
@@ -207,6 +254,14 @@ export default function SearchModal({
   }, [results, smartFilter]);
   const filtered = applyFilters(displayResults, filters);
   const isHigher = (res: EnhancedSearchResult) => {
+    // 优先用 quality_score 比较（100 分制），回退到分辨率比较
+    const resScore = (res as any).quality_score ?? 0;
+    if (resScore > 0 && curRes) {
+      const curScore = RES_RANK[curRes] ?? 0;
+      // 粗略映射：2160p≈80, 1080p≈50, 720p≈25
+      const curEstimate = curScore === 3 ? 80 : curScore === 2 ? 50 : curScore === 1 ? 25 : 0;
+      return resScore > curEstimate + 5;
+    }
     const rr = RES_RANK[res.quality?.resolution ?? ""] ?? 0;
     const cr = RES_RANK[curRes] ?? 0;
     return cr > 0 && rr > cr;
@@ -223,7 +278,7 @@ export default function SearchModal({
     try {
       const d = await api.submitDownload({
         media_name: query, download_url: res.download_url,
-        save_path: savePath, channel,
+        save_path: savePath || defaultSavePath, channel,
       });
       if (d.success) { setToast({ msg: "任务已提交到下载队列", ok: true }); }
       else { setToast({ msg: "失败: " + (d.task?.error || "未知错误"), ok: false }); }
@@ -280,6 +335,10 @@ export default function SearchModal({
               {seasonPack && <span className="text-[10px] px-2 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-medium">整季</span>}
               {/* 发布组 */}
               {q?.release_group && <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.04] text-slate-500">{q.release_group}</span>}
+              {/* 质量评分 */}
+              {(res as any).quality_score > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.04] text-slate-500 font-mono">{(res as any).quality_score}分</span>
+              )}
             </div>
           </div>
           {/* 右侧：大小 + 做种 + 下载按钮并排 */}
@@ -320,7 +379,13 @@ export default function SearchModal({
                   }`}>{tag.label}</button>
               ))}
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
+            <div className="flex items-center gap-1 relative">
+              <button onClick={() => setShowSettings(!showSettings)}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${showSettings ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-white hover:bg-white/10"}`}
+                title="搜索源设置">⚙️</button>
+              <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
+              <SearchSettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
+            </div>
           </div>
           <div className="flex gap-2">
             <div className="flex-1 relative">
@@ -366,9 +431,9 @@ export default function SearchModal({
             
             <div className="flex-1 relative group">
               <input value={savePath} onChange={(e) => setSavePath(e.target.value)}
-                placeholder="保存到：下载保存路径..."
+                placeholder={defaultSavePath ? `保存到：${defaultSavePath}` : "保存到：下载保存路径..."}
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500/50 font-mono transition-all group-hover:bg-white/[0.06]"
-                title={savePath} />
+                title={savePath || defaultSavePath} />
             </div>
           </div>
           {activeTab === "bt" && (
@@ -398,7 +463,21 @@ export default function SearchModal({
           {searching ? (
             <div className="flex flex-col items-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3" />
-              <p className="text-[13px] text-slate-500">{searchingStep || "搜罗全网资源..."}</p>
+              <p className="text-[13px] text-slate-500 mb-3">{searchingStep || "搜罗全网资源..."}</p>
+              {/* 各源实时状态 */}
+              {Object.keys(sourceStatuses).length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {Object.entries(sourceStatuses).map(([name, s]) => (
+                    <span key={name} className={`text-[10px] px-2 py-0.5 rounded ${
+                      s.status === "done" ? "bg-green-500/10 text-green-400" :
+                      s.status === "failed" ? "bg-red-500/10 text-red-400" :
+                      "bg-blue-500/10 text-blue-400 animate-pulse"
+                    }`}>
+                      {name} {s.status === "done" ? `✓ ${s.count}` : s.status === "failed" ? "✗" : "..."}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ) : error ? (
             <div className="text-center py-10">

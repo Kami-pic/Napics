@@ -45,17 +45,26 @@ def _get_source_manager() -> RSSSourceManager:
             _source_manager.register(mikan_source)
         except Exception as e:
             print(f"[Subscribe] 蜜柑 RSS 源注册失败: {e}")
+        # 注册 Nyaa RSS 源
+        try:
+            from rss_source_nyaa import NyaaRSSSource
+            proxy = getattr(conf, "http_proxy", "") or ""
+            nyaa_source = NyaaRSSSource(proxy=proxy)
+            _source_manager.register(nyaa_source)
+        except Exception as e:
+            print(f"[Subscribe] Nyaa RSS 源注册失败: {e}")
     return _source_manager
 
 
 def _get_scheduler() -> SubscriptionScheduler:
     global _scheduler
     if _scheduler is None:
-        from shared import _get_download_manager
+        from shared import _get_download_manager, config_m
         _scheduler = SubscriptionScheduler(
             sub_manager=_get_sub_manager(),
             source_manager=_get_source_manager(),
             download_manager=_get_download_manager(),
+            base_interval_hours=getattr(config_m.config, "subscribe_interval_hours", 4.0),
         )
         _scheduler.start()
     return _scheduler

@@ -4,21 +4,20 @@ import { useState, useCallback } from "react";
 import type { SubscriptionItem } from "@/hooks/useSubscriptions";
 import { api } from "@/lib/api";
 import { proxyUrl } from "./discoverUtils";
-import FoundResourcesList from "./FoundResourcesList";
 import SubscribeCalendar from "./SubscribeCalendar";
 
 export interface SubscribeInlineProps {
   subscriptions: SubscriptionItem[];
   onRefresh: () => void;
+  onOpenSearch?: (item: SubscriptionItem) => void;
+  view?: string;
+  filter?: string;
 }
 
-type FilterState = "all" | "active" | "paused" | "completed";
-type SubView = "list" | "calendar";
-
-export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeInlineProps) {
-  const [filter, setFilter] = useState<FilterState>("all");
+export default function SubscribeInline({ subscriptions, onRefresh, onOpenSearch, view: externalView, filter: externalFilter }: SubscribeInlineProps) {
   const [operating, setOperating] = useState("");
-  const [view, setView] = useState<SubView>("list");
+  const view = externalView || "list";
+  const filter = externalFilter || "all";
 
   const filtered = filter === "all" ? subscriptions : subscriptions.filter(s => s.state === filter);
 
@@ -47,27 +46,6 @@ export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeI
 
   return (
     <div>
-      {/* 筛选栏 */}
-      <div className="flex gap-2 py-3">
-        <button onClick={() => setView("list")}
-          className={`px-3 py-1.5 rounded-lg text-xs transition-all ${view === "list" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}>
-          列表
-        </button>
-        <button onClick={() => setView("calendar")}
-          className={`px-3 py-1.5 rounded-lg text-xs transition-all ${view === "calendar" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}>
-          日历
-        </button>
-        <div className="flex-1" />
-        {view === "list" && (["all", "active", "paused", "completed"] as FilterState[]).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-              filter === f ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"
-            }`}>
-            {f === "all" ? `全部 (${subscriptions.length})` : f === "active" ? "活跃" : f === "paused" ? "已暂停" : "已完成"}
-          </button>
-        ))}
-      </div>
-
       {/* 日历视图 */}
       {view === "calendar" && <SubscribeCalendar />}
 
@@ -127,7 +105,7 @@ export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeI
                     )}
                     {/* 操作 */}
                     <div className="flex gap-2 mt-2">
-                      <button onClick={() => handleAction("search", sub)}
+                      <button onClick={() => onOpenSearch ? onOpenSearch(sub) : handleAction("search", sub)}
                         className="px-3 py-1 text-[11px] text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded-lg transition-all">🔍 搜索</button>
                       <button onClick={() => handleAction(sub.state === "paused" ? "resume" : "pause", sub)}
                         className="px-3 py-1 text-[11px] text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded-lg transition-all">
@@ -138,11 +116,13 @@ export default function SubscribeInline({ subscriptions, onRefresh }: SubscribeI
                     </div>
                   </div>
                 </div>
-                {/* 资源列表 */}
+                {/* 资源通知（不再展开列表，改为角标提示） */}
                 {hasNewRes && (
-                  <FoundResourcesList resources={sub.found_resources} subscriptionId={sub.id}
-                    subscriptionTitle={sub.title} savePath={sub.save_path || ""} mediaType={sub.type}
-                    onDownloaded={onRefresh} />
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-[10px] text-amber-400">🔔 RSS 找到 {sub.found_resources.length} 条资源</span>
+                    <button onClick={() => onOpenSearch ? onOpenSearch(sub) : handleAction("search", sub)}
+                      className="text-[10px] text-blue-400 hover:text-blue-300">查看并下载 →</button>
+                  </div>
                 )}
               </div>
             );

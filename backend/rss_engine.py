@@ -179,6 +179,13 @@ class SubscriptionScheduler:
         if not sources:
             return []
 
+        # 订阅级别源过滤：sub.sources 非空时只用指定源
+        if hasattr(sub, "sources") and sub.sources:
+            sources = [s for s in sources if s.name in sub.sources]
+            if not sources:
+                print(f"[RSSEngine] {sub.title}: 指定的源都未启用")
+                return []
+
         all_items: List[RSSItem] = []
         for source in sources:
             try:

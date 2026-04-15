@@ -109,6 +109,16 @@ export default function Home() {
     }
   }, [fileTree, navigateTo, scrollContainerRef]);
 
+  // 监听下载面板的"查看"按钮事件
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const folderPath = (e as CustomEvent).detail;
+      if (folderPath) handleNavigateToLocal(folderPath);
+    };
+    window.addEventListener("navigate-to-folder", handler);
+    return () => window.removeEventListener("navigate-to-folder", handler);
+  }, [handleNavigateToLocal]);
+
   const currentVideoResolution = detailTarget?.type === "video" ? detailTarget.video.resolution : undefined;
   const qbConfigured = !!config.qb_url;
   const alistConfigured = !!config.alist_url && !!config.alist_token;
@@ -241,7 +251,7 @@ export default function Home() {
           {/* 发现区域：根目录时显示，滚动到此处时懒加载 */}
           {showDiscover && (
             <div ref={discoverRef} className="min-h-[200px] mt-10">
-              <DiscoverPage onSelectMedia={handleSelectDoubanMedia} onNavigateToLocal={handleNavigateToLocal} visible={discoverVisible} scrollContainerRef={scrollContainerRef} />
+              <DiscoverPage onSelectMedia={handleSelectDoubanMedia} onNavigateToLocal={handleNavigateToLocal} visible={discoverVisible} scrollContainerRef={scrollContainerRef} defaultSavePath={config.nas_paths?.[0] || config.nas_path || ""} />
             </div>
           )}
         </div>

@@ -14,12 +14,16 @@ import ExplorePage from "./ExplorePage";
 import RecommendTabContent from "./RecommendTabContent";
 import SubscribeInline from "./SubscribeInline";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import SearchModal from "@/components/search/SearchModal";
+import SubscribeConfigModal from "./SubscribeConfigModal";
+import type { SubscribeConfig } from "./SubscribeConfigModal";
 
 interface DiscoverPageProps {
   onSelectMedia: (item: DoubanHotItem) => void;
   onNavigateToLocal?: (folderPath: string) => void;
   visible?: boolean;
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  defaultSavePath?: string;
 }
 
 // 每个 tab 的独立状态
@@ -36,10 +40,15 @@ interface TabState {
 
 const EMPTY_TAB: TabState = { items: [], loading: false, error: false, hasMore: true, page: 0 };
 
-export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible = true, scrollContainerRef }: DiscoverPageProps) {
+export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible = true, scrollContainerRef, defaultSavePath = "" }: DiscoverPageProps) {
   const [primaryTab, setPrimaryTab] = useState<PrimaryTab>("recommend");
   const [activeTab, setActiveTab] = useState(RECOMMEND_TABS[0].key);
   const [exploreTab, setExploreTab] = useState(EXPLORE_TABS[0].key);
+  // 探索刷新
+  const [exploreRefreshTrigger, setExploreRefreshTrigger] = useState(0);
+  const [exploreRefreshing, setExploreRefreshing] = useState(false);
+  const [subscribeView, setSubscribeView] = useState("list");
+  const [subscribeFilter, setSubscribeFilter] = useState("all");
   // 按 tab 存储数据，已加载的 tab 保持在 DOM 中
   const [tabDataMap, setTabDataMap] = useState<Record<string, TabState>>({});
   // 记录哪些 tab 曾经加载过（用于保持 DOM 不销毁）
@@ -64,6 +73,22 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
   const [refreshing, setRefreshing] = useState(false);
   // 加载中（用于骨骼屏）
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // ── 搜索资源弹窗（SearchModal）──
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [searchModalItem, setSearchModalItem] = useState<DoubanHotItem | null>(null);
+  const [searchModalDetail, setSearchModalDetail] = useState<MediaDetail | null>(null);
+
+  // ── 订阅配置弹窗 ──
+  const [subConfigOpen, setSubConfigOpen] = useState(false);
+  const [subConfigItem, setSubConfigItem] = useState<DoubanHotItem | null>(null);
+  const [subConfigDetail, setSubConfigDetail] = useState<MediaDetail | null>(null);
+
+  const openSearchModal = useCallback((item: DoubanHotItem, d: MediaDetail | null) => {
+    setSearchModalItem(item);
+    setSearchModalDetail(d);
+    setSearchModalOpen(true);
+  }, []);
 
   // ── 响应式列数 ──
   const [colCount, setColCount] = useState(5);
@@ -203,7 +228,18 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
   }, [_isSubscribed, justSubscribed]);
 
   const handleSubscribe = useCallback(async (item: DoubanHotItem, d: MediaDetail | null) => {
+    // 打开配置弹窗而非直接订阅
+    setSubConfigItem(item);
+    setSubConfigDetail(d);
+    setSubConfigOpen(true);
+  }, []);
+
+  const handleSubscribeConfirm = useCallback(async (config: SubscribeConfig) => {
+    if (!subConfigItem) return;
     setSubscribing(true);
+    setSubConfigOpen(false);
+    const item = subConfigItem;
+    const d = subConfigDetail;
     try {
       const mediaType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
       const result = await doSubscribe({
@@ -213,17 +249,26 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         tmdb_id: d?.tmdb_id || d?.external_ids?.tmdb_id || undefined,
         douban_id: item.douban_id || undefined,
         poster: item.cover_url || d?.poster_url || "",
+        quality: config.quality,
+        include: config.include,
+        exclude: config.exclude,
+        mode: config.mode,
+        best_version: config.best_version,
+        save_path: config.save_path,
+        search_keyword: config.search_keyword,
+        sources: config.sources,
       });
       if (result.status === "ok") {
-        // 立即标记为已订阅（不等列表刷新）
         setJustSubscribed(prev => new Set(prev).add(`${item.title}|${item.year || d?.year || ""}`));
       }
     } catch (e) {
       console.error("[Subscribe] 异常:", e);
     } finally {
       setSubscribing(false);
+      setSubConfigItem(null);
+      setSubConfigDetail(null);
     }
-  }, [doSubscribe, activeTabConfig]);
+  }, [doSubscribe, activeTabConfig, subConfigItem, subConfigDetail]);
 
   // ── 首次可见或切 tab 时加载（仅未加载过的 tab 才发请求）──
   useEffect(() => {
@@ -364,17 +409,28 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
   }, [loadTab]);
 
   return (
-    <div className="mt-8">
+    <div className="mt-8" style={{ minHeight: "100vh" }}>
       <DiscoverHeader
-        primaryTab={primaryTab} setPrimaryTab={setPrimaryTab}
+        primaryTab={primaryTab} setPrimaryTab={(tab) => { setPrimaryTab(tab); closeExpand(); setTimeout(() => scrollToDiscover(true), 50); }}
         activeTab={activeTab} setActiveTab={setActiveTab}
+        exploreTab={exploreTab} setExploreTab={setExploreTab}
         isSearchMode={isSearchMode} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
         onSearch={doSearch} onExitSearch={exitSearch}
         onRefresh={handleRefresh} refreshing={refreshing}
         scrollToDiscover={scrollToDiscover} stickyHeaderRef={stickyHeaderRef}
+        subscribeView={subscribeView} onSetSubscribeView={setSubscribeView}
+        subscribeFilter={subscribeFilter} onSetSubscribeFilter={setSubscribeFilter}
+        subscribeFilterTabs={[
+          { key: "all", label: `全部 (${subscriptions.length})` },
+          { key: "active", label: "活跃" },
+          { key: "paused", label: "已暂停" },
+          { key: "completed", label: "已完成" },
+        ]}
+        onExploreRefresh={() => setExploreRefreshTrigger(n => n + 1)}
+        exploreRefreshing={exploreRefreshing}
       />
 
-      <div style={{ minHeight: "80vh" }}>
+      <div style={{ minHeight: "100vh" }}>
         {/* 搜索模式 */}
         {isSearchMode && (
           <div>
@@ -396,7 +452,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
                     className="col-span-full bg-[#141414] border border-white/[0.06] rounded-xl p-5 animate-in fade-in duration-200"
                     style={{ order: rowEndIndex >= 0 ? rowEndIndex + 1 : 9999 }}>
                     <ExpandDetail item={searchItems[expandedIndex]} detail={detail} loading={detailLoading}
-                      onSearch={() => onSelectMedia({...searchItems[expandedIndex], _tmdb_original_title: detail?.original_title || ""} as any)}
+                      onSearch={() => openSearchModal(searchItems[expandedIndex], detail)}
                       onClose={closeExpand} onRetry={handleRetry}
                       defaultSource="douban"
                       onRefreshWithSource={handleRefreshWithSource}
@@ -416,7 +472,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
             isSearchMode={isSearchMode} data={tabDataMap[tabKey] || { items: [], loading: false, error: false, hasMore: true, page: 0 }}
             colCount={colCount} expandedIndex={expandedIndex} detail={detail} detailLoading={detailLoading}
             loadingMore={loadingMore} rowEndIndex={rowEndIndex} gridRef={gridRef}
-            onCardClick={handleCardClick} onSelectMedia={onSelectMedia} onCloseExpand={closeExpand}
+            onCardClick={handleCardClick} onSelectMedia={(item) => openSearchModal(item, detail)} onCloseExpand={closeExpand}
             onRetry={handleRetry} onRefreshWithSource={handleRefreshWithSource}
             onLoadMore={loadMore} onRetryTab={handleRetryTab}
             onNavigateToLocal={onNavigateToLocal}
@@ -426,17 +482,42 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
 
         {/* 探索页 */}
         {primaryTab === "explore" && !isSearchMode && (
-          <ExplorePage onSelectMedia={onSelectMedia} activeTab={exploreTab} setActiveTab={setExploreTab}
+          <ExplorePage onSelectMedia={(item) => openSearchModal(item, detail)} activeTab={exploreTab} setActiveTab={setExploreTab}
             colCount={colCount} onNavigateToLocal={onNavigateToLocal}
             onSubscribe={handleSubscribe}
-            checkSubscribed={(item) => justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)} />
+            checkSubscribed={(item) => justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)}
+            refreshTrigger={exploreRefreshTrigger} onRefreshingChange={setExploreRefreshing} />
         )}
 
         {/* 订阅页 */}
         {primaryTab === "subscribe" && !isSearchMode && (
-          <SubscribeInline subscriptions={subscriptions} onRefresh={refreshSubs} />
+          <SubscribeInline subscriptions={subscriptions} onRefresh={refreshSubs}
+            onOpenSearch={(item) => openSearchModal({ title: item.title, year: item.year || "", rating: 0, cover_url: item.poster || "", subtitle: "", episode: "", douban_id: item.douban_id || "", media_type: item.type === "tv" ? "tv" : "movie" } as DoubanHotItem, null)}
+            view={subscribeView} filter={subscribeFilter} />
         )}
       </div>
+
+      {/* 搜索资源弹窗 */}
+      {searchModalOpen && searchModalItem && (
+        <SearchModal
+          open={searchModalOpen}
+          query={searchModalItem.title}
+          onClose={() => { setSearchModalOpen(false); setSearchModalItem(null); setSearchModalDetail(null); }}
+          defaultSavePath={defaultSavePath}
+          cnName={searchModalItem.title}
+          enName={searchModalDetail?.original_title || (searchModalItem as any)._tmdb_original_title || searchModalItem.subtitle || ""}
+          mediaType={searchModalItem.media_type || activeTabConfig.mediaType || "movie"}
+        />
+      )}
+
+      {/* 订阅配置弹窗 */}
+      <SubscribeConfigModal
+        open={subConfigOpen}
+        onClose={() => { setSubConfigOpen(false); setSubConfigItem(null); setSubConfigDetail(null); }}
+        onConfirm={handleSubscribeConfirm}
+        title={subConfigItem?.title || ""}
+        mediaType={activeTabConfig.mediaType === "tv" ? "tv" : "movie"}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import type { DoubanHotItem } from "@/types";
 import type { MediaDetail } from "./discoverUtils";
 import { proxyUrl } from "./discoverUtils";
 import { getRatingColor } from "@/lib/mediaColors";
+import { api } from "@/lib/api";
 
 const SOURCE_OPTIONS = [
   { value: "douban", label: "豆瓣" },
@@ -106,7 +107,55 @@ export default function ExpandDetail({
 // ── 无详情时的 fallback 展示 ──
 function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }: { item: DoubanHotItem; onSearch: () => void; onRetry: () => void; onSubscribe?: () => void; isSubscribed?: boolean }) {
   const [localSubscribed, setLocalSubscribed] = useState(false);
+  const [showCandidates, setShowCandidates] = useState(false);
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [candidateLoading, setCandidateLoading] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<MediaDetail | null>(null);
   const subscribed = isSubscribed || localSubscribed;
+
+  const searchCandidates = async () => {
+    setShowCandidates(true);
+    setCandidateLoading(true);
+    try {
+      const name = item.title || "";
+      const [tmdb, douban] = await Promise.allSettled([
+        api.scrapeCandidates(name),
+        api.scrapeDoubanCandidates(name),
+      ]);
+      const all: any[] = [];
+      if (tmdb.status === "fulfilled") {
+        (tmdb.value.candidates || []).forEach((c: any) => all.push({ ...c, _src: "tmdb" }));
+      }
+      if (douban.status === "fulfilled") {
+        (douban.value.candidates || []).slice(0, 5).forEach((c: any) => all.push({ ...c, _src: "douban" }));
+      }
+      setCandidates(all);
+    } catch { setCandidates([]); }
+    setCandidateLoading(false);
+  };
+
+  const selectCandidate = async (c: any) => {
+    const detail: MediaDetail = {
+      found: true,
+      tmdb_id: c.tmdb_id || 0,
+      title: c.title || c.name || "",
+      original_title: c.original_title || "",
+      year: c.year || c.release_date?.slice(0, 4) || c.first_air_date?.slice(0, 4) || "",
+      poster_url: c.poster_url || "",
+      overview: c.overview || "",
+      rating: c.vote_average || c.rating || 0,
+      genres: c.genres || [],
+      source: c._src === "douban" ? "douban" : "tmdb",
+      ratings: c._src === "douban" ? { douban: c.rating || 0 } : { tmdb: c.vote_average || 0 },
+    };
+    setSelectedDetail(detail);
+    setShowCandidates(false);
+  };
+
+  if (selectedDetail) {
+    return <DetailContent item={item} d={selectedDetail} onSearch={onSearch} onSubscribe={onSubscribe} isSubscribed={isSubscribed} />;
+  }
+
   return (
     <div className="mt-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -118,6 +167,7 @@ function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }
       <p className="text-xs text-slate-500 mt-4">暂无相关数据 <button onClick={onRetry} className="text-blue-400 hover:text-blue-300 ml-2">重试</button></p>
       <div className="flex gap-2 mt-4">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
+        <button onClick={searchCandidates} className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 rounded-lg text-xs font-medium text-amber-400 transition-colors">重新匹配</button>
         {onSubscribe && (
           <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }} disabled={subscribed}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
@@ -131,6 +181,45 @@ function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }
             className="px-4 py-2 bg-white/[0.06] hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors">豆瓣</a>
         )}
       </div>
+      {/* 候选列表 */}
+      {showCandidates && (
+        <div className="mt-3 border border-white/[0.06] rounded-lg p-3 bg-[#141414]">
+          {candidateLoading ? (
+            <div className="flex items-center gap-2 py-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+              <span className="text-xs text-slate-500">搜索候选...</span>
+            </div>
+          ) : candidates.length === 0 ? (
+            <p className="text-xs text-slate-600 py-2">未找到候选</p>
+          ) : (
+            <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+              {candidates.map((c, i) => (
+                <button key={i} onClick={() => selectCandidate(c)}
+                  className="w-full flex gap-2.5 p-2 rounded-lg text-left bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/[0.08] transition-all">
+                  {(c.poster_url || c.poster_path) && (
+                    <img src={proxyUrl(c.poster_url || `https://image.tmdb.org/t/p/w92${c.poster_path}`)} alt="" className="w-8 h-12 rounded object-cover flex-shrink-0" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-slate-200 truncate">{c.title || c.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`text-[10px] px-1 py-0.5 rounded ${c._src === "douban" ? "bg-green-500/10 text-green-400" : "bg-blue-500/10 text-blue-400"}`}>
+                        {c._src === "douban" ? "豆瓣" : "TMDB"}
+                      </span>
+                      {(c.year || c.release_date || c.first_air_date) && (
+                        <span className="text-[10px] text-slate-500">{c.year || (c.release_date || c.first_air_date || "").slice(0, 4)}</span>
+                      )}
+                      {(c.vote_average || c.rating) > 0 && (
+                        <span className="text-[10px] text-slate-400">⭐{c.vote_average || c.rating}</span>
+                      )}
+                      {c.media_type && <span className="text-[10px] text-slate-600">{c.media_type === "movie" ? "电影" : "剧集"}</span>}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

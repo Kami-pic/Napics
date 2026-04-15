@@ -58,7 +58,8 @@ def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
 
     merged = list(existing_results)
 
-    # 逐个调用直搜源（失败不影响其他源）
+    # 逐个调用直搜源（失败不影响其他源，尊重配置开关）
+    bt_overrides = config_m.config.bt_search_sources or {}
     scrapers = [
         ("bitsearch", _get_bitsearch_scraper),
         ("cilixiong", _get_cilixiong_scraper),
@@ -67,6 +68,8 @@ def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
         ("mikan", _get_mikan_scraper),
     ]
     for name, getter in scrapers:
+        if not bt_overrides.get(name, True):
+            continue  # 用户禁用了此源
         try:
             scraper = getter()
             results = scraper.search_as_search_results(keyword, max_results=20)
@@ -97,21 +100,9 @@ def search_resources(
     season: int = 0,
     total_episodes: int = 0,
 ):
-    """搜索资源。增强搜索：回退链 + 二次匹配 + 全局过滤 + 综合排序。
-
-    参数:
-        query: 搜索关键词（TMDB 中文标题）
-        media_type: "movie" / "tv" / "anime"
-        year: 年份
-        shadow_name: 影子名（回退链最高优先级）
-        clean_name: 清洗名（回退链第二优先级）
-        season: 季号（tv 类型时触发剧集搜索策略，暂预留）
-        total_episodes: 总集数（tv 类型时用于整季包验证，暂预留）
-    """
+    """搜索资源。增强搜索：回退链 + 二次匹配 + 全局过滤 + 综合排序。"""
     clients = get_clients()
     conf = config_m.config
-
-    # 构建全局过滤器
     gf = GlobalFilter(
         must_include=conf.search_filter.must_include,
         must_exclude=conf.search_filter.must_exclude if conf.search_filter.must_exclude else None,
@@ -120,14 +111,14 @@ def search_resources(
     try:
         from alias_resolver import AliasResolver, AliasSet
         resolver = AliasResolver(douban_client, bangumi_client)
-        aliases = resolver.resolve(query, "", media_type)  # 不传年份
+        aliases = resolver.resolve(query, "", media_type)
         indexer_m.load()
 
         resp = searcher.enhanced_search(
             client=clients["search"],
             title=query,
             aliases=aliases,
-            year="",  # 不传年份
+            year="",
             media_type=media_type,
             indexer_manager=indexer_m,
             shadow_name=shadow_name,
@@ -135,7 +126,6 @@ def search_resources(
             global_filter=gf,
         )
 
-        # 合并直搜源结果
         bt_keyword = resp.hit_keyword or query
         bt_results_list = _merge_bt_extra_sources(bt_keyword, list(resp.results))
 
@@ -151,10 +141,7 @@ def search_resources(
     except Exception as e:
         print(f"[Search] Enhanced search failed, fallback: {e}")
 
-    # fallback 到普通搜索（不经过回退链和过滤）
     bt_results = clients["search"].search(query)
-
-    # 合并直搜源
     bt_results = _merge_bt_extra_sources(query, bt_results)
 
     return {
@@ -166,6 +153,99 @@ def search_resources(
         "total_filtered": len(bt_results),
         "enhanced": False,
     }
+
+
+@router.get("/api/search/stream")
+def search_resources_stream(
+    query: str,
+    media_type: str = "",
+    shadow_name: str = "",
+    clean_name: str = "",
+):
+    """SSE 流式搜索：逐源返回进度和结果，前端实时更新。"""
+    def _generate():
+        import concurrent.futures
+        clients = get_clients()
+        conf = config_m.config
+        bt_overrides = conf.bt_search_sources or {}
+        existing_hashes = set()
+        all_results = []
+
+        # 第一步：Prowlarr 搜索
+        yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'searching'})}\n\n"
+        try:
+            gf = GlobalFilter(
+                must_include=conf.search_filter.must_include,
+                must_exclude=conf.search_filter.must_exclude if conf.search_filter.must_exclude else None,
+            )
+            from alias_resolver import AliasResolver
+            resolver = AliasResolver(douban_client, bangumi_client)
+            aliases = resolver.resolve(query, "", media_type)
+            indexer_m.load()
+            resp = searcher.enhanced_search(
+                client=clients["search"], title=query, aliases=aliases,
+                year="", media_type=media_type, indexer_manager=indexer_m,
+                shadow_name=shadow_name, clean_name=clean_name, global_filter=gf,
+            )
+            prowlarr_results = list(resp.results)
+        except Exception as e:
+            print(f"[Search/Stream] Prowlarr 失败: {e}")
+            try:
+                prowlarr_results = clients["search"].search(query)
+            except Exception:
+                prowlarr_results = []
+
+        for r in prowlarr_results:
+            h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+            if h:
+                existing_hashes.add(h.group(1).upper())
+        all_results.extend(prowlarr_results)
+        yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results)})}\n\n"
+
+        # 第二步：直搜源并发
+        scrapers = [
+            ("bitsearch", _get_bitsearch_scraper),
+            ("cilixiong", _get_cilixiong_scraper),
+            ("xl720", _get_xl720_scraper),
+            ("nyaa", _get_nyaa_scraper),
+            ("mikan", _get_mikan_scraper),
+        ]
+        enabled_scrapers = [(n, g) for n, g in scrapers if bt_overrides.get(n, True)]
+        for name, _ in enabled_scrapers:
+            yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
+
+        def _search_one(name_getter):
+            name, getter = name_getter
+            try:
+                s = getter()
+                return name, s.search_as_search_results(query, max_results=20), None
+            except Exception as e:
+                return name, [], str(e)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+            futures = {pool.submit(_search_one, sg): sg[0] for sg in enabled_scrapers}
+            for future in concurrent.futures.as_completed(futures, timeout=30):
+                try:
+                    name, results, err = future.result(timeout=5)
+                    added = 0
+                    for r in results:
+                        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+                        if h:
+                            hu = h.group(1).upper()
+                            if hu not in existing_hashes:
+                                existing_hashes.add(hu)
+                                all_results.append(r)
+                                added += 1
+                    status = "done" if not err else "failed"
+                    yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': status, 'count': added, 'error': err or ''})}\n\n"
+                except Exception:
+                    name = futures[future]
+                    yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'failed', 'count': 0, 'error': 'timeout'})}\n\n"
+
+        # 最终结果
+        yield f"data: {json.dumps({'type': 'done', 'total': len(all_results), 'bt_results': [_enrich_result(r) for r in all_results]})}\n\n"
+
+    return StreamingResponse(_generate(), media_type="text/event-stream")
 
 @router.get("/search/pan")
 def search_pan(keyword: str, media_type: str = ""):
@@ -257,14 +337,61 @@ def search_single_keyword(
             seen.add(r.download_url)
             deduped.append(r)
 
-    # 裸搜模式：跳过所有过滤
+    # 裸搜模式：跳过所有过滤，合并直搜源（后台线程，不阻塞返回）
     if skip_filter:
+        # 先返回 Prowlarr 结果，直搜源结果通过 /api/search 接口获取
+        all_results = list(deduped)
+        # 尝试快速合并直搜源（有缓存时秒返回）
+        try:
+            bt_overrides = config_m.config.bt_search_sources or {}
+            from shared import _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper, _get_mikan_scraper
+            scrapers = [
+                ("bitsearch", _get_bitsearch_scraper),
+                ("cilixiong", _get_cilixiong_scraper),
+                ("xl720", _get_xl720_scraper),
+                ("nyaa", _get_nyaa_scraper),
+                ("mikan", _get_mikan_scraper),
+            ]
+            existing_hashes = set()
+            for r in all_results:
+                h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+                if h:
+                    existing_hashes.add(h.group(1).upper())
+
+            import concurrent.futures
+            def _search_source(name_getter):
+                name, getter = name_getter
+                if not bt_overrides.get(name, True):
+                    return []
+                try:
+                    scraper = getter()
+                    return scraper.search_as_search_results(keyword, max_results=20)
+                except:
+                    return []
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+                futures = {pool.submit(_search_source, sg): sg[0] for sg in scrapers}
+                for future in concurrent.futures.as_completed(futures, timeout=30):
+                    try:
+                        results = future.result(timeout=5)
+                        for r in results:
+                            h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+                            if h:
+                                hash_upper = h.group(1).upper()
+                                if hash_upper not in existing_hashes:
+                                    existing_hashes.add(hash_upper)
+                                    all_results.append(r)
+                    except:
+                        pass
+        except Exception as e:
+            print(f"[Search/Single] 直搜源合并失败: {e}")
+
         return {
             "keyword": keyword,
-            "bt_count": len(deduped),
-            "bt_results": [r.dict() for r in deduped],
+            "bt_count": len(all_results),
+            "bt_results": [_enrich_result(r) for r in all_results],
             "total_raw": total_raw,
-            "total_filtered": len(deduped),
+            "total_filtered": len(all_results),
         }
 
     # 智能过滤模式
@@ -315,3 +442,67 @@ def search_single_keyword(
         raw = clients["search"].search(keyword)
         return {"keyword": keyword, "bt_count": len(raw), "bt_results": [r.dict() for r in raw], "total_raw": len(raw), "total_filtered": len(raw)}
 
+
+# ── 搜索源管理 ──
+
+# BT 源默认配置
+_BT_SOURCE_DEFAULTS = {
+    "prowlarr": {"label": "Prowlarr", "enabled": True, "type": "bt"},
+    "bitsearch": {"label": "Bitsearch", "enabled": True, "type": "bt"},
+    "cilixiong": {"label": "磁力熊", "enabled": True, "type": "bt"},
+    "xl720": {"label": "XL720", "enabled": True, "type": "bt"},
+    "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt"},
+    "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt"},
+}
+# 网盘源默认配置
+_PAN_SOURCE_DEFAULTS = {
+    "pansearch": {"label": "PanSearch", "enabled": True, "type": "pan"},
+    "gogopanso": {"label": "狗狗盘搜", "enabled": True, "type": "pan"},
+    "github": {"label": "GitHub", "enabled": True, "type": "pan"},
+    "rrdynb": {"label": "人人电影", "enabled": True, "type": "pan"},
+    "ddys": {"label": "低端影视", "enabled": True, "type": "pan"},
+    "pansou": {"label": "PanSou", "enabled": False, "type": "pan"},
+}
+
+
+@router.get("/search/sources")
+def get_search_sources():
+    """获取所有搜索源及启用状态。"""
+    conf = config_m.config
+    bt_overrides = conf.bt_search_sources or {}
+    pan_overrides = conf.pan_search_sources or {}
+
+    sources = []
+    for name, info in _BT_SOURCE_DEFAULTS.items():
+        sources.append({
+            "name": name, "label": info["label"], "type": info["type"],
+            "enabled": bt_overrides.get(name, info["enabled"]),
+        })
+    for name, info in _PAN_SOURCE_DEFAULTS.items():
+        sources.append({
+            "name": name, "label": info["label"], "type": info["type"],
+            "enabled": pan_overrides.get(name, info["enabled"]),
+        })
+    return {"sources": sources}
+
+
+@router.put("/search/sources/{name}")
+def toggle_search_source(name: str, req: dict):
+    """切换搜索源启用/禁用。"""
+    enabled = req.get("enabled", True)
+    conf = config_m.config
+
+    # 判断是 BT 源还是网盘源
+    if name in _BT_SOURCE_DEFAULTS:
+        if not conf.bt_search_sources:
+            conf.bt_search_sources = {}
+        conf.bt_search_sources[name] = enabled
+    elif name in _PAN_SOURCE_DEFAULTS:
+        if not conf.pan_search_sources:
+            conf.pan_search_sources = {}
+        conf.pan_search_sources[name] = enabled
+    else:
+        raise HTTPException(status_code=404, detail=f"未知搜索源: {name}")
+
+    config_m.save(conf)
+    return {"ok": True, "name": name, "enabled": enabled}
