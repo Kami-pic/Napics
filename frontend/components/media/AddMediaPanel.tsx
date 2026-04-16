@@ -98,7 +98,7 @@ export default function AddMediaPanel({
               {searching ? "搜索中..." : "搜索"}
             </button>
           </div>
-          <FilterBar filters={filters} onChange={setFilters} onClear={() => setFilters(DEFAULT_FILTERS)} />
+          <FilterBar filters={filters} onChange={setFilters} onClear={() => setFilters(DEFAULT_FILTERS)} btSources={[]} sourceStatuses={{}} />
         </div>
 
         {/* Toast */}

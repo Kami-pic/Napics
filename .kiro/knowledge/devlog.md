@@ -5,6 +5,11 @@
 
 ---
 
+## 2026-04-15 搜索源状态栏改造（BT + 网盘固定源列表）
+**变更**: BT FilterBar 和网盘 PanFilterBar 的源列表从"搜索结果动态提取"改为"从 /search/sources 获取固定列表"，搜索前就显示所有源+状态（idle/searching/done/failed）；索引器筛选改为"来源筛选"，区分 Prowlarr 和直搜源；SSE 搜索进度实时更新每个源的状态标签
+**决策**: Prowlarr 内部的索引器（1337x、nyaa 等）和我们的直搜源（bitsearch、nyaa 等）是独立的，前端需要区分显示；源列表在 SearchModal 打开时加载一次，不依赖搜索结果
+**踩坑**: AddMediaPanel 也引用了 FilterBar，新增 btSources/sourceStatuses 必填 props 后需要同步更新；SourceStatus 的 status 字段用联合类型而非 string，SSE 回调需要 as cast
+
 ## 2026-04-15 查漏补缺 — 30 项 Bug 修复 + P2 功能完善
 **变更**: 修复用户报告的 30 个 Bug（订阅 tab 高度/BT 搜索不工作/综合推荐匹配错误/封面错位等）；完成 13 项 P2 功能（订阅配置面板/Nyaa RSS/搜索设置面板/日历视图/冷门降权/手动洗版增强等）；新增 4 个前端组件（SearchSettingsPanel/SubscribeConfigModal/SubscribeSourceSelect/rss_source_nyaa）；新增 2 个后端接口（/search/sources GET+PUT）
 **架构改动**: 探索二级 tab 从 ExplorePage 移到 DiscoverHeader 统一高度；订阅筛选栏合并到 DiscoverHeader 一行；/search/single 的 skip_filter 模式改为线程池并行调用 5 个直搜源；发现页统一使用 SearchModal 作为搜索下载入口

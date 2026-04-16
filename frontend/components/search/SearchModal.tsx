@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
 import { api } from "@/lib/api";
-import FilterBar, { DEFAULT_FILTERS, applyFilters, INDEXER_TAG_STYLE } from "./FilterBar";
+import FilterBar, { DEFAULT_FILTERS, applyFilters, INDEXER_TAG_STYLE, type SourceStatus } from "./FilterBar";
 import EpisodeTable from "./EpisodeTable";
 import PanFilterBar, { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
 import PanResultsView from "./PanResultsView";
@@ -111,6 +111,19 @@ export default function SearchModal({
   const [panFilters, setPanFilters] = useState<PanFilterState>(DEFAULT_PAN_FILTERS);
   const [showSettings, setShowSettings] = useState(false);
 
+  // ── 固定源列表（打开时加载一次）──
+  const [btSources, setBtSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
+  const [panSources, setPanSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
+  useEffect(() => {
+    if (open) {
+      api.getSearchSources().then((d: any) => {
+        const sources = d.sources || [];
+        setBtSources(sources.filter((s: any) => s.type === "bt"));
+        setPanSources(sources.filter((s: any) => s.type === "pan"));
+      }).catch(() => {});
+    }
+  }, [open]);
+
   useEffect(() => { setKeyword(query); }, [query]);
   useEffect(() => {
     if (open && query) doSearch(query);
@@ -127,7 +140,7 @@ export default function SearchModal({
 
   const [searchingStep, setSearchingStep] = useState("");
   // 搜索源状态（SSE 实时更新）
-  const [sourceStatuses, setSourceStatuses] = useState<Record<string, { status: string; count: number }>>({});
+  const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({});
 
   // 垃圾版本排除词（前端过滤用）
   const JUNK_PATTERNS = /\b(TS|CAM|HDTC|TC|TELECINE|HDTS|TELESYNC)\b/i;
@@ -168,7 +181,7 @@ export default function SearchModal({
             if (data.type === "status") {
               setSourceStatuses(prev => ({
                 ...prev,
-                [data.source]: { status: data.status, count: data.count ?? 0 },
+                [data.source]: { status: data.status as SourceStatus["status"], count: data.count ?? 0 },
               }));
               const statusLabel = data.status === "searching" ? "搜索中..." :
                 data.status === "done" ? `✓ ${data.count || 0}条` : "✗ 失败";
@@ -266,12 +279,6 @@ export default function SearchModal({
     const cr = RES_RANK[curRes] ?? 0;
     return cr > 0 && rr > cr;
   };
-
-  const availableIndexers = useMemo(() => {
-    const s = new Set<string>();
-    results.forEach(r => { if (r.indexer) s.add(r.indexer); });
-    return Array.from(s);
-  }, [results]);
 
   const handleDownload = async (res: EnhancedSearchResult, channel: "qb" | "alist") => {
     setDownloadingUrl(res.download_url); setToast(null);
@@ -442,12 +449,13 @@ export default function SearchModal({
                 filters={filters} 
                 onChange={setFilters} 
                 onClear={() => setFilters(DEFAULT_FILTERS)} 
-                availableIndexers={availableIndexers}
+                btSources={btSources}
+                sourceStatuses={sourceStatuses}
               />
             </div>
           )}
           {activeTab === "pan" && (
-            <PanFilterBar filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} />
+            <PanFilterBar filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} panSources={panSources} />
           )}
         </div>
 
