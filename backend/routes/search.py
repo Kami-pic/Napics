@@ -172,32 +172,35 @@ def search_resources_stream(
     shadow_name: str = "",
     clean_name: str = "",
 ):
-    """SSE 流式搜索：逐源返回进度和结果，前端实时更新。"""
+    """SSE 流式搜索：所有源全部并行，谁先完成谁先推。"""
     def _generate():
         import concurrent.futures
+        import queue as queue_mod
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
-        all_results = []
 
-        # 第一步：Prowlarr 裸搜
-        yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'searching'})}\n\n"
-        prowlarr_results = []
-        try:
-            raw = clients["search"].search(query)
-            seen = set()
-            for r in raw:
-                if r.download_url and r.download_url not in seen:
-                    seen.add(r.download_url)
-                    prowlarr_results.append(r)
-        except Exception as e:
-            print(f"[Search/Stream] Prowlarr 失败: {e}")
+        # 所有源（Prowlarr + 直搜源）统一并行
+        def _search_prowlarr():
+            try:
+                raw = clients["search"].search(query)
+                seen = set()
+                deduped = []
+                for r in raw:
+                    if r.download_url and r.download_url not in seen:
+                        seen.add(r.download_url)
+                        deduped.append(r)
+                return "prowlarr", deduped, None
+            except Exception as e:
+                return "prowlarr", [], str(e)
 
-        all_results.extend(prowlarr_results)
-        prowlarr_enriched = [_enrich_result(r) for r in prowlarr_results]
-        yield f"data: {json.dumps({'type': 'source_done', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results), 'added': len(prowlarr_results), 'error': '', 'results': prowlarr_enriched}, default=str)}\n\n"
+        def _search_direct(name, getter):
+            try:
+                s = getter()
+                return name, s.search_as_search_results(query, max_results=20), None
+            except Exception as e:
+                return name, [], str(e)
 
-        # 第二步：直搜源并发
         scrapers = [
             ("bitsearch", _get_bitsearch_scraper),
             ("cilixiong", _get_cilixiong_scraper),
@@ -205,45 +208,58 @@ def search_resources_stream(
             ("nyaa", _get_nyaa_scraper),
             ("mikan", _get_mikan_scraper),
         ]
-        enabled_scrapers = [(n, g) for n, g in scrapers if bt_overrides.get(n, True)]
-        for name, _ in enabled_scrapers:
+
+        # 构建任务列表
+        tasks = []
+        if bt_overrides.get("prowlarr", True):
+            tasks.append(("prowlarr", None))
+        for name, getter in scrapers:
+            if bt_overrides.get(name, True):
+                tasks.append((name, getter))
+
+        # 推送所有源的 searching 状态
+        for name, _ in tasks:
             yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
 
-        def _search_one(name_getter):
-            name, getter = name_getter
+        # 全部并行提交
+        result_queue = queue_mod.Queue()
+
+        def _worker(name, getter):
+            if name == "prowlarr":
+                result = _search_prowlarr()
+            else:
+                result = _search_direct(name, getter)
+            result_queue.put(result)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            for name, getter in tasks:
+                pool.submit(_worker, name, getter)
+
+        # 逐个读取结果，谁先完成谁先推
+        completed = 0
+        total_tasks = len(tasks)
+        while completed < total_tasks:
             try:
-                s = getter()
-                return name, s.search_as_search_results(query, max_results=20), None
-            except Exception as e:
-                return name, [], str(e)
+                name, results, err = result_queue.get(timeout=45)
+                completed += 1
+                # 同源内去重
+                source_deduped = []
+                source_hashes = set()
+                for r in results:
+                    h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+                    if h:
+                        hu = h.group(1).upper()
+                        if hu in source_hashes:
+                            continue
+                        source_hashes.add(hu)
+                    source_deduped.append(r)
+                status = "done" if not err else "failed"
+                enriched = [_enrich_result(r) for r in source_deduped]
+                yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'results': enriched}, default=str)}\n\n"
+            except queue_mod.Empty:
+                break
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-            futures = {pool.submit(_search_one, sg): sg[0] for sg in enabled_scrapers}
-            for future in concurrent.futures.as_completed(futures, timeout=30):
-                try:
-                    name, results, err = future.result(timeout=5)
-                    added = 0
-                    total_found = len(results)
-                    source_deduped = []
-                    source_hashes = set()
-                    for r in results:
-                        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-                        if h:
-                            hu = h.group(1).upper()
-                            if hu in source_hashes:
-                                continue
-                            source_hashes.add(hu)
-                        source_deduped.append(r)
-                        added += 1
-                    all_results.extend(source_deduped)
-                    status = "done" if not err else "failed"
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or '', 'results': [_enrich_result(r) for r in source_deduped]}, default=str)}\n\n"
-                except Exception:
-                    name = futures[future]
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': 'timeout', 'results': []})}\n\n"
-
-        # 最终完成信号（不再重复发全量结果）
-        yield f"data: {json.dumps({'type': 'done', 'total': len(all_results)})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'total': completed})}\n\n"
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
 

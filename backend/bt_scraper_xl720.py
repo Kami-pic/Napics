@@ -71,6 +71,8 @@ class XL720Scraper(ScraperBase):
                         quality=quality,
                         quality_rank=quality_level.rank,
                     ))
+                    if len(all_results) >= max_results:
+                        break
 
                 if len(all_results) >= max_results:
                     break
