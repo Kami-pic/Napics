@@ -45,6 +45,11 @@ class XL720Scraper(ScraperBase):
                 logger.info("[xl720] 搜索 '%s' 无结果", keyword)
                 return []
 
+            # 标题相关性过滤：搜索词的中文字符必须在标题中出现
+            cn_chars = re.sub(r"[^\u4e00-\u9fff]", "", keyword)
+            if cn_chars and len(cn_chars) >= 2:
+                detail_items = [item for item in detail_items if any(c in item["title"] for c in cn_chars[:3])]
+
             all_results: List[SearchResult] = []
             seen_hashes = set()
 
@@ -63,7 +68,8 @@ class XL720Scraper(ScraperBase):
                         dn_title = unquote(dn_match.group(1)).replace("+", " ").strip()
                         title = dn_title if len(dn_title) > 5 else item["title"]
                     else:
-                        title = item["title"]
+                        # 没有 dn 参数，用搜索标题 + infohash 前8位区分
+                        title = f"{item['title']} [{infohash[:8]}]"
 
                     quality = parse_quality(title)
                     quality_level = get_quality_level(quality)

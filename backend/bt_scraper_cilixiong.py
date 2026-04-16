@@ -44,6 +44,11 @@ class CilixiongScraper(ScraperBase):
                 logger.info("[cilixiong] 搜索 '%s' 无结果", keyword)
                 return []
 
+            # 标题相关性过滤
+            cn_chars = re.sub(r"[^\u4e00-\u9fff]", "", keyword)
+            if cn_chars and len(cn_chars) >= 2:
+                detail_items = [item for item in detail_items if any(c in item["title"] for c in cn_chars[:3])]
+
             all_results: List[SearchResult] = []
             seen_hashes = set()
 
