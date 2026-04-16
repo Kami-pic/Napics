@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-04-16 搜索弹窗二轮修复 + 下拉样式统一 + 搜索匹配 TODO
+**变更**:
+- 源开关点击后立即过滤结果（applyFilters 接受 disabledSources 参数）
+- 索引器 label 改为"Prowlarr 索引器"，和源开关区分
+- 直搜源之间不再互相去重（只和 Prowlarr 去重），避免不同片源结果被误删
+- 排序加匹配准确度（标题包含搜索词的排前面）
+- 全站 select 下拉框背景色从 bg-white/[0.04] 改为 bg-[#1a1a1a]（深色背景，option 不再白底灰字）
+- 新建 search-matching-todo.md：搜索词构造策略 + 结果匹配算法 + 排序优化 + XL720 速度优化
+**踩坑**: 浏览器原生 select 的 option 元素无法用 Tailwind 的 [&>option] 自定义背景色（部分浏览器不支持），直接给 select 本身设 bg-[#1a1a1a] 更可靠
+
 ## 2026-04-16 搜索弹窗 7 项 Bug 修复
 **变更**:
 1. Prowlarr 0 结果修复：SSE 端点从 enhanced_search 改为裸搜（和 /search/single?skip_filter=true 一致）

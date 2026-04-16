@@ -27,12 +27,17 @@ export const DEFAULT_FILTERS: FilterState = {
   minSeeders: 1, surroundOnly: false, indexers: [],
 };
 
-export function applyFilters(results: EnhancedSearchResult[], filters: FilterState): EnhancedSearchResult[] {
+export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>): EnhancedSearchResult[] {
+  // 先过滤被禁用的源
+  let filtered = results;
+  if (disabledSources && disabledSources.size > 0) {
+    filtered = filtered.filter(r => !disabledSources.has(r.indexer));
+  }
   const isDefault = filters.resolution === "" && filters.source === "" && filters.videoCodec === "" &&
     filters.audioCodec === "" && !filters.chineseSubOnly && !filters.surroundOnly &&
     filters.minSizeGb === null && filters.maxSizeGb === null && filters.minSeeders <= 1 && filters.indexers.length === 0;
-  if (isDefault) return results;
-  return results.filter((r) => {
+  if (isDefault) return filtered;
+  return filtered.filter((r) => {
     if (filters.resolution) {
       const res = r.quality?.resolution || "";
       if (filters.resolution === "1080p" && res !== "1080p") return false;
@@ -108,7 +113,7 @@ function IndexerSelect({ selected, options, onChange }: {
   };
   return (
     <div className="flex flex-col gap-1 text-xs text-slate-400 relative" ref={ref}>
-      索引器
+      Prowlarr 索引器
       <button type="button" onClick={() => setOpen(!open)}
         className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 text-left min-w-[120px] h-[26px] flex items-center justify-between hover:bg-white/[0.08]">
         <span className="truncate">{selected.length === 0 ? "全部站点" : `已选 ${selected.length} 个`}</span>
@@ -138,7 +143,7 @@ function Select({ label, value, options, onChange }: {
     <label className="flex flex-col gap-1 text-xs text-slate-400">
       {label}
       <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-blue-500/50 min-w-[90px]">
+        className="bg-[#1a1a1a] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-blue-500/50 min-w-[90px]">
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </label>

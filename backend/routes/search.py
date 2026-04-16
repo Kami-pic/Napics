@@ -168,15 +168,13 @@ def search_resources_stream(
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
-        existing_hashes = set()
         all_results = []
 
-        # 第一步：Prowlarr 裸搜（不做 enhanced_search 过滤，和 /search/single?skip_filter=true 一致）
+        # 第一步：Prowlarr 裸搜
         yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'searching'})}\n\n"
         prowlarr_results = []
         try:
             raw = clients["search"].search(query)
-            # 去重
             seen = set()
             for r in raw:
                 if r.download_url and r.download_url not in seen:
@@ -185,10 +183,12 @@ def search_resources_stream(
         except Exception as e:
             print(f"[Search/Stream] Prowlarr 失败: {e}")
 
+        # 收集 Prowlarr 的 infohash（仅用于和直搜源去重）
+        prowlarr_hashes = set()
         for r in prowlarr_results:
             h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
             if h:
-                existing_hashes.add(h.group(1).upper())
+                prowlarr_hashes.add(h.group(1).upper())
         all_results.extend(prowlarr_results)
         yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results)})}\n\n"
 
@@ -220,13 +220,14 @@ def search_resources_stream(
                     added = 0
                     total_found = len(results)
                     for r in results:
+                        # 只和 Prowlarr 去重，直搜源之间不去重
                         h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                         if h:
                             hu = h.group(1).upper()
-                            if hu not in existing_hashes:
-                                existing_hashes.add(hu)
-                                all_results.append(r)
-                                added += 1
+                            if hu in prowlarr_hashes:
+                                continue  # 和 Prowlarr 重复，跳过
+                        all_results.append(r)
+                        added += 1
                     status = "done" if not err else "failed"
                     yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or ''})}\n\n"
                 except Exception:

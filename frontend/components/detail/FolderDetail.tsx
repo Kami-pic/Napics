@@ -247,7 +247,7 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
               });
               await onRefresh();
             } catch {}
-          }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-white/[0.06] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
+          }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#1a1a1a] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
             {[
               {v: "movie", l: "电影"},
               {v: "tv", l: "剧集"},
@@ -269,7 +269,7 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
               });
               await onRefresh();
             } catch {}
-          }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-white/[0.06] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
+          }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#1a1a1a] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
             {(parentCategoryTag === "tv"
               ? ["tv", "season", "mixed"]
               : (() => {

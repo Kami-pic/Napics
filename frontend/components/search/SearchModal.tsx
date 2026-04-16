@@ -284,8 +284,13 @@ export default function SearchModal({
     if (smartFilter) {
       list = list.filter(r => !JUNK_PATTERNS.test(r.title));
     }
-    // 排序：quality_score 降序 > seeders 降序 > size_gb 降序
+    // 排序：匹配准确度 > quality_score > seeders > size_gb（全部降序）
     list = [...list].sort((a, b) => {
+      // 匹配准确度：标题包含搜索词的排前面
+      const kw = keyword.toLowerCase();
+      const aMatch = a.title.toLowerCase().includes(kw) ? 1 : 0;
+      const bMatch = b.title.toLowerCase().includes(kw) ? 1 : 0;
+      if (bMatch !== aMatch) return bMatch - aMatch;
       const sa = (a as any).quality_score ?? 0;
       const sb = (b as any).quality_score ?? 0;
       if (sb !== sa) return sb - sa;
@@ -294,7 +299,7 @@ export default function SearchModal({
     });
     return list;
   }, [results, smartFilter]);
-  const filtered = applyFilters(displayResults, filters);
+  const filtered = applyFilters(displayResults, filters, disabledSources);
   const isHigher = (res: EnhancedSearchResult) => {
     // 优先用 quality_score 比较（100 分制），回退到分辨率比较
     const resScore = (res as any).quality_score ?? 0;

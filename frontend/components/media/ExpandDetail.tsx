@@ -75,7 +75,7 @@ export default function ExpandDetail({
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {/* 数据源下拉 + 刷新按钮 */}
             <select value={selectedSource} onChange={(e) => setSelectedSource(e.target.value as any)}
-              className="bg-white/[0.04] border border-white/[0.06] rounded px-1.5 py-1 text-[10px] text-slate-400 outline-none focus:border-blue-500/50">
+              className="bg-[#1a1a1a] border border-white/[0.06] rounded px-1.5 py-1 text-[10px] text-slate-400 outline-none focus:border-blue-500/50">
               {SOURCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <button onClick={handleRefresh} disabled={loading}

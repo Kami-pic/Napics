@@ -99,7 +99,7 @@ export default function PanFilterBar({ filters, onChange, groups, sourceStatuses
         <label className="flex flex-col gap-1 text-xs text-slate-400">
           网盘
           <select value={filters.panType} onChange={(e) => set("panType", e.target.value)}
-            className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
+            className="bg-[#1a1a1a] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
             <option value="">不限</option>
             {panTypes.map((pt) => <option key={pt} value={pt}>{PAN_TYPE_LABELS[pt] || pt}</option>)}
           </select>
@@ -107,7 +107,7 @@ export default function PanFilterBar({ filters, onChange, groups, sourceStatuses
         <label className="flex flex-col gap-1 text-xs text-slate-400">
           来源
           <select value={filters.source} onChange={(e) => set("source", e.target.value)}
-            className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
+            className="bg-[#1a1a1a] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
             <option value="">不限</option>
             {panSources.filter(s => s.enabled).map((s) => <option key={s.name} value={s.name}>{s.label}</option>)}
           </select>
@@ -115,7 +115,7 @@ export default function PanFilterBar({ filters, onChange, groups, sourceStatuses
         <label className="flex flex-col gap-1 text-xs text-slate-400">
           分辨率
           <select value={filters.resolution} onChange={(e) => set("resolution", e.target.value)}
-            className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
+            className="bg-[#1a1a1a] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-emerald-500/50 min-w-[90px]">
             <option value="">不限</option>
             <option value="2160p">4K</option>
             <option value="1080p">1080p</option>

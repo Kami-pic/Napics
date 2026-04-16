@@ -279,7 +279,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               <label className="text-[10px] text-slate-500">编码偏好</label>
               <select value={config.preferred_codec || "x265"}
                 onChange={(e) => setConfig({ ...config, preferred_codec: e.target.value })}
-                className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-white outline-none">
+                className="bg-[#1a1a1a] border border-white/[0.06] rounded px-2 py-1 text-xs text-white outline-none">
                 <option value="x265">x265 / HEVC</option>
                 <option value="x264">x264 / AVC</option>
                 <option value="AV1">AV1</option>
