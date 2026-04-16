@@ -73,6 +73,12 @@ export default function SearchModal({
       if (cn && en && !isSame) tags.push({ label: `${cn} ${en}`, keyword: `${cn} ${en}` });
       if (cn) tags.push({ label: cn, keyword: cn });
       if (en && !isSame) tags.push({ label: en, keyword: en });
+    } else if ((folderType === "tv" || folderType === "series") && sNum) {
+      // tv/series 文件夹也支持季搜索
+      if (cn) tags.push({ label: `${cn} 第${sNum}季`, keyword: `${cn} 第${sNum}季` });
+      if (en && sTag && !isSame) tags.push({ label: `${en} ${sTag}`, keyword: `${en} ${sTag}` });
+      if (cn) tags.push({ label: cn, keyword: cn });
+      if (en && !isSame) tags.push({ label: en, keyword: en });
     } else if (episodeTag) {
       if (cn) tags.push({ label: `${cn} ${episodeTag}`, keyword: `${cn} ${episodeTag}` });
       if (en && !isSame) tags.push({ label: `${en} ${episodeTag}`, keyword: `${en} ${episodeTag}` });
@@ -114,6 +120,7 @@ export default function SearchModal({
   // ── 固定源列表（打开时加载一次）──
   const [btSources, setBtSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
   const [panSources, setPanSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
+  const [disabledSources, setDisabledSources] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (open) {
       api.getSearchSources().then((d: any) => {
@@ -123,6 +130,20 @@ export default function SearchModal({
       }).catch(() => {});
     }
   }, [open]);
+  const toggleSource = useCallback((name: string) => {
+    setDisabledSources(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  }, []);
+
+  // Prowlarr 索引器（从搜索结果动态提取）
+  const availableIndexers = useMemo(() => {
+    const s = new Set<string>();
+    results.forEach(r => { if (r.indexer) s.add(r.indexer); });
+    return Array.from(s);
+  }, [results]);
 
   useEffect(() => { setKeyword(query); }, [query]);
   useEffect(() => {
@@ -263,6 +284,14 @@ export default function SearchModal({
     if (smartFilter) {
       list = list.filter(r => !JUNK_PATTERNS.test(r.title));
     }
+    // 排序：quality_score 降序 > seeders 降序 > size_gb 降序
+    list = [...list].sort((a, b) => {
+      const sa = (a as any).quality_score ?? 0;
+      const sb = (b as any).quality_score ?? 0;
+      if (sb !== sa) return sb - sa;
+      if (b.seeders !== a.seeders) return b.seeders - a.seeders;
+      return b.size_gb - a.size_gb;
+    });
     return list;
   }, [results, smartFilter]);
   const filtered = applyFilters(displayResults, filters);
@@ -370,9 +399,9 @@ export default function SearchModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">
-      <div className="bg-[var(--background)] border border-white/[0.06] rounded-2xl w-full max-w-[1200px] max-h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-[var(--background)] border border-white/[0.06] rounded-2xl w-full max-w-[1200px] max-h-[85vh] flex flex-col">
         {/* 顶栏 */}
-        <div className="p-5 border-b border-white/[0.06] space-y-3">
+        <div className="p-5 border-b border-white/[0.06] space-y-3 flex-shrink-0 overflow-visible relative z-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <h2 className="text-[15px] font-bold text-white">搜索资源</h2>
@@ -451,6 +480,9 @@ export default function SearchModal({
                 onClear={() => setFilters(DEFAULT_FILTERS)} 
                 btSources={btSources}
                 sourceStatuses={sourceStatuses}
+                disabledSources={disabledSources}
+                onToggleSource={toggleSource}
+                availableIndexers={availableIndexers}
               />
             </div>
           )}

@@ -171,29 +171,19 @@ def search_resources_stream(
         existing_hashes = set()
         all_results = []
 
-        # 第一步：Prowlarr 搜索
+        # 第一步：Prowlarr 裸搜（不做 enhanced_search 过滤，和 /search/single?skip_filter=true 一致）
         yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'searching'})}\n\n"
+        prowlarr_results = []
         try:
-            gf = GlobalFilter(
-                must_include=conf.search_filter.must_include,
-                must_exclude=conf.search_filter.must_exclude if conf.search_filter.must_exclude else None,
-            )
-            from alias_resolver import AliasResolver
-            resolver = AliasResolver(douban_client, bangumi_client)
-            aliases = resolver.resolve(query, "", media_type)
-            indexer_m.load()
-            resp = searcher.enhanced_search(
-                client=clients["search"], title=query, aliases=aliases,
-                year="", media_type=media_type, indexer_manager=indexer_m,
-                shadow_name=shadow_name, clean_name=clean_name, global_filter=gf,
-            )
-            prowlarr_results = list(resp.results)
+            raw = clients["search"].search(query)
+            # 去重
+            seen = set()
+            for r in raw:
+                if r.download_url and r.download_url not in seen:
+                    seen.add(r.download_url)
+                    prowlarr_results.append(r)
         except Exception as e:
             print(f"[Search/Stream] Prowlarr 失败: {e}")
-            try:
-                prowlarr_results = clients["search"].search(query)
-            except Exception:
-                prowlarr_results = []
 
         for r in prowlarr_results:
             h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
@@ -228,6 +218,7 @@ def search_resources_stream(
                 try:
                     name, results, err = future.result(timeout=5)
                     added = 0
+                    total_found = len(results)
                     for r in results:
                         h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                         if h:
@@ -237,7 +228,7 @@ def search_resources_stream(
                                 all_results.append(r)
                                 added += 1
                     status = "done" if not err else "failed"
-                    yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': status, 'count': added, 'error': err or ''})}\n\n"
+                    yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or ''})}\n\n"
                 except Exception:
                     name = futures[future]
                     yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'failed', 'count': 0, 'error': 'timeout'})}\n\n"

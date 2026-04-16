@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-04-16 搜索弹窗 7 项 Bug 修复
+**变更**:
+1. Prowlarr 0 结果修复：SSE 端点从 enhanced_search 改为裸搜（和 /search/single?skip_filter=true 一致）
+2. 源标签改为可点击开关：SourceToggleBar 组件，点击切换启用/禁用，禁用的源灰色+删除线
+3. Prowlarr 索引器恢复：IndexerSelect 下拉从搜索结果动态提取（和源开关并存）
+4. 直搜源 count 改为搜到总数（而非去重后新增数），避免"✓9 但筛选为空"的困惑
+5. 弹窗筛选器不被切割：顶栏 overflow-visible + z-10，弹窗去掉 overflow-hidden
+6. 季搜索标签：tv/series 文件夹有 seasonNumber 时也生成"第N季"和"S0N"标签
+7. 搜索结果排序：quality_score 降序 > seeders 降序 > size_gb 降序
+**决策**: 源开关和索引器筛选是两个不同维度——源开关控制"从哪些源搜索"，索引器筛选控制"显示哪些 Prowlarr 站点的结果"；SSE 端点 Prowlarr 搜索用裸搜而非 enhanced_search，因为前端已有智能过滤开关让用户自己控制
+**踩坑**: SSE 端点用 enhanced_search 导致 alias 解析失败时 Prowlarr 返回 0 结果；弹窗 overflow-hidden 会裁剪 absolute 定位的下拉弹出层
+
 ## 2026-04-15 搜索源状态栏改造（BT + 网盘固定源列表）
 **变更**: BT FilterBar 和网盘 PanFilterBar 的源列表从"搜索结果动态提取"改为"从 /search/sources 获取固定列表"，搜索前就显示所有源+状态（idle/searching/done/failed）；索引器筛选改为"来源筛选"，区分 Prowlarr 和直搜源；SSE 搜索进度实时更新每个源的状态标签
 **决策**: Prowlarr 内部的索引器（1337x、nyaa 等）和我们的直搜源（bitsearch、nyaa 等）是独立的，前端需要区分显示；源列表在 SearchModal 打开时加载一次，不依赖搜索结果
