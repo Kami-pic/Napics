@@ -286,7 +286,6 @@ export default function SearchModal({
     }
     // 排序：匹配准确度 > quality_score > seeders > size_gb（全部降序）
     list = [...list].sort((a, b) => {
-      // 匹配准确度：标题包含搜索词的排前面
       const kw = keyword.toLowerCase();
       const aMatch = a.title.toLowerCase().includes(kw) ? 1 : 0;
       const bMatch = b.title.toLowerCase().includes(kw) ? 1 : 0;
@@ -294,7 +293,10 @@ export default function SearchModal({
       const sa = (a as any).quality_score ?? 0;
       const sb = (b as any).quality_score ?? 0;
       if (sb !== sa) return sb - sa;
-      if (b.seeders !== a.seeders) return b.seeders - a.seeders;
+      // 磁力链接源（seeders=0 且 size=0）视为有效资源，给基础分 1
+      const aSeeders = (a.seeders === 0 && a.size_gb === 0) ? 1 : a.seeders;
+      const bSeeders = (b.seeders === 0 && b.size_gb === 0) ? 1 : b.seeders;
+      if (bSeeders !== aSeeders) return bSeeders - aSeeders;
       return b.size_gb - a.size_gb;
     });
     return list;
@@ -385,9 +387,12 @@ export default function SearchModal({
           {/* 右侧：大小 + 做种 + 下载按钮并排 */}
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="text-right min-w-[65px]">
-              <p className="text-[13px] font-bold text-slate-200">{res.size_gb} GB</p>
+              <p className="text-[13px] font-bold text-slate-200">{res.size_gb > 0 ? `${res.size_gb} GB` : "—"}</p>
               <p className="text-[11px] text-slate-500">
-                做种 <span className={res.seeders > 10 ? "text-green-400" : res.seeders > 0 ? "text-yellow-400" : "text-red-400"}>{res.seeders}</span>
+                {res.seeders === 0 && res.size_gb === 0
+                  ? <span className="text-slate-500">磁力</span>
+                  : <>做种 <span className={res.seeders > 10 ? "text-green-400" : res.seeders > 0 ? "text-yellow-400" : "text-red-400"}>{res.seeders}</span></>
+                }
               </p>
             </div>
             <div className="flex gap-1.5">

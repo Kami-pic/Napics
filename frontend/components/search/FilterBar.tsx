@@ -58,7 +58,11 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
     if (filters.seasonPackOnly && !isSeasonPack(r.title)) return false;
     if (filters.minSizeGb !== null && r.size_gb < filters.minSizeGb) return false;
     if (filters.maxSizeGb !== null && r.size_gb > filters.maxSizeGb) return false;
-    if (filters.minSeeders > 0 && r.seeders < filters.minSeeders) return false;
+    if (filters.minSeeders > 0 && r.seeders < filters.minSeeders) {
+      // 磁力链接源（seeders=0 且 size=0）不受做种数筛选影响
+      const isMagnetOnly = r.seeders === 0 && r.size_gb === 0;
+      if (!isMagnetOnly) return false;
+    }
     if (filters.indexers.length > 0 && !filters.indexers.includes(r.indexer)) return false;
     return true;
   });
