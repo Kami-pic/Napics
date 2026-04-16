@@ -7,11 +7,16 @@
 
 ### 搜索架构（BT/磁力 + 网盘 双 Tab）
 - BT/磁力：Prowlarr（主力）+ 5 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑）
-- 直搜源统一输出 SearchResult 格式，routes/search.py 的 `_merge_bt_extra_sources()` 合并去重
+- SSE 全源并行搜索（/api/search/stream），as_completed 逐个推送，前端增量追加
+- 去重：同源内 infohash 去重，跨源不去重
+- 磁力链接源（磁力熊/XL720）seeders=0 且 size=0，不受做种数筛选影响
+- 直搜源统一输出 SearchResult 格式，routes/search.py 的 SSE 端点合并
 - 网盘：6 个源（pansearch/pansou/gogopanso/github/rrdynb/ddys），pan_search_service.py 聚合
+- 前端三层分离：results(全量) → displayResults(智能过滤+排序) → filtered(筛选器+源开关)
+- 搜索设置在 SearchModal ⚙️ 二级菜单（搜索源/过滤规则/索引器/排序权重），不在总设置页
 - 需代理的源（Bitsearch/Nyaa/蜜柑）从 config.http_proxy 读取，和 TMDB 共用
 - 直连源（磁力熊/XL720/rrdynb）不走代理
-- 所有有 CF 风险的爬虫启用 curl_cffi（scraper_base.py 的 use_curl_cffi=True）
+- XL720 响应极慢（超时 12s + 1 次重试），搜索质量差需中文子串过滤
 
 ### 搜索词构造
 - cnName：从 clean_name 提取中文字符，cnParts 用 Set 去重

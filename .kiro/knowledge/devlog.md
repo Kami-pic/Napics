@@ -5,89 +5,59 @@
 
 ---
 
-## 2026-04-16 搜索弹窗二轮修复 + 下拉样式统一 + 搜索匹配 TODO
+## 2026-04-16 搜索弹窗全面改造（SSE 并行 + 筛选器 + 设置弹窗）
 **变更**:
-- 源开关点击后立即过滤结果（applyFilters 接受 disabledSources 参数）
-- 索引器 label 改为"Prowlarr 索引器"，和源开关区分
-- 直搜源之间不再互相去重（只和 Prowlarr 去重），避免不同片源结果被误删
-- 排序加匹配准确度（标题包含搜索词的排前面）
-- 全站 select 下拉框背景色从 bg-white/[0.04] 改为 bg-[#1a1a1a]（深色背景，option 不再白底灰字）
-- 新建 search-matching-todo.md：搜索词构造策略 + 结果匹配算法 + 排序优化 + XL720 速度优化
-**踩坑**: 浏览器原生 select 的 option 元素无法用 Tailwind 的 [&>option] 自定义背景色（部分浏览器不支持），直接给 select 本身设 bg-[#1a1a1a] 更可靠
-
-## 2026-04-16 搜索弹窗 7 项 Bug 修复
-**变更**:
-1. Prowlarr 0 结果修复：SSE 端点从 enhanced_search 改为裸搜（和 /search/single?skip_filter=true 一致）
-2. 源标签改为可点击开关：SourceToggleBar 组件，点击切换启用/禁用，禁用的源灰色+删除线
-3. Prowlarr 索引器恢复：IndexerSelect 下拉从搜索结果动态提取（和源开关并存）
-4. 直搜源 count 改为搜到总数（而非去重后新增数），避免"✓9 但筛选为空"的困惑
-5. 弹窗筛选器不被切割：顶栏 overflow-visible + z-10，弹窗去掉 overflow-hidden
-6. 季搜索标签：tv/series 文件夹有 seasonNumber 时也生成"第N季"和"S0N"标签
-7. 搜索结果排序：quality_score 降序 > seeders 降序 > size_gb 降序
-**决策**: 源开关和索引器筛选是两个不同维度——源开关控制"从哪些源搜索"，索引器筛选控制"显示哪些 Prowlarr 站点的结果"；SSE 端点 Prowlarr 搜索用裸搜而非 enhanced_search，因为前端已有智能过滤开关让用户自己控制
-**踩坑**: SSE 端点用 enhanced_search 导致 alias 解析失败时 Prowlarr 返回 0 结果；弹窗 overflow-hidden 会裁剪 absolute 定位的下拉弹出层
-
-## 2026-04-15 搜索源状态栏改造（BT + 网盘固定源列表）
-**变更**: BT FilterBar 和网盘 PanFilterBar 的源列表从"搜索结果动态提取"改为"从 /search/sources 获取固定列表"，搜索前就显示所有源+状态（idle/searching/done/failed）；索引器筛选改为"来源筛选"，区分 Prowlarr 和直搜源；SSE 搜索进度实时更新每个源的状态标签
-**决策**: Prowlarr 内部的索引器（1337x、nyaa 等）和我们的直搜源（bitsearch、nyaa 等）是独立的，前端需要区分显示；源列表在 SearchModal 打开时加载一次，不依赖搜索结果
-**踩坑**: AddMediaPanel 也引用了 FilterBar，新增 btSources/sourceStatuses 必填 props 后需要同步更新；SourceStatus 的 status 字段用联合类型而非 string，SSE 回调需要 as cast
+- SSE 搜索改为全源并行（Prowlarr + 5 直搜源同时搜索，as_completed 逐个推送，增量追加到前端）
+- FilterBar 全面改造：源开关标签（可点击切换）+ MultiSelect 多选筛选器 + Prowlarr 索引器仅开启时显示
+- FilterState 从单选 string 改为多选 string[]；网盘 PanFilterBar 同步改造
+- 搜索设置从总设置页分离到 SearchModal ⚙️ 二级菜单（4 tab：搜索源/过滤规则/索引器/排序权重）
+- 去重逻辑：同源内 infohash 去重，跨源不去重
+- 磁力链接源不受做种数筛选影响，显示"磁力"而非"做种 0"
+- 排序：匹配准确度 > quality_score > seeders > size_gb
+- XL720/磁力熊标题过滤加严（连续中文子串匹配）+ 磁力熊标题从 dn 参数提取
+- 全站 select 深色背景；设置页布局调整（分组+分割线+顺序优化）
+- 新建 search-matching-todo.md（搜索词构造+匹配算法+过滤策略+排序优化）
+**决策**: 源开关和索引器筛选是两个维度；SSE 用 as_completed 而非 queue（queue 阻塞不流式）；XL720 搜索质量差但保留（降低超时 12s + 1 次重试）
+**踩坑**: queue.get 阻塞 SSE generator；Pydantic model quality 字段无法 json.dumps 序列化致 SSE 崩溃；XL720 网站响应极慢；弹窗 overflow-hidden 裁剪下拉层；浏览器原生 select option 无法自定义背景色
 
 ## 2026-04-15 查漏补缺 — 30 项 Bug 修复 + P2 功能完善
-**变更**: 修复用户报告的 30 个 Bug（订阅 tab 高度/BT 搜索不工作/综合推荐匹配错误/封面错位等）；完成 13 项 P2 功能（订阅配置面板/Nyaa RSS/搜索设置面板/日历视图/冷门降权/手动洗版增强等）；新增 4 个前端组件（SearchSettingsPanel/SubscribeConfigModal/SubscribeSourceSelect/rss_source_nyaa）；新增 2 个后端接口（/search/sources GET+PUT）
-**架构改动**: 探索二级 tab 从 ExplorePage 移到 DiscoverHeader 统一高度；订阅筛选栏合并到 DiscoverHeader 一行；/search/single 的 skip_filter 模式改为线程池并行调用 5 个直搜源；发现页统一使用 SearchModal 作为搜索下载入口
-**决策**: BT 搜索不工作的根因是 /search/single skip_filter 模式只返回 Prowlarr 结果没合并直搜源，改为 ThreadPoolExecutor 并行调用 5 源；综合推荐匹配错误（航海王→跨界电影）通过加严 _is_same_media 解决（短标题完全包含+长标题 70% 重叠）
-**踩坑**: 订阅 tab 高度问题反复修了 4 轮（#2/#16/#17/#18），根因是多个 tab 容器高度不统一，最终方案是所有 tab 共用同一个 flex 容器；切换 tab 回顶部不稳定需要 setTimeout 50ms 延迟等 DOM 更新完成
+**变更**: 修复 30 个 Bug + 13 项 P2 功能 + 4 个新组件 + 2 个新接口；搜索设置面板、订阅配置弹窗、Nyaa RSS 源等
+**决策**: BT 搜索不工作根因是 skip_filter 模式没合并直搜源；综合推荐匹配错误通过加严 _is_same_media 解决
+**踩坑**: 订阅 tab 高度反复修 4 轮，根因是多 tab 容器高度不统一
 
 ## 2026-04-15 TODO 清理 + 5 项功能补完 + AI 规则升级
-**变更**: 
-- 对照代码逐项校验 6 个 TODO 文件，10 项标记未完成但实际已实现的更正为 ✅
-- 实现 5 项真正未完成的功能：SSE 搜索进度(/api/search/stream)、下载完成自动局部刷新(_trigger_local_refresh)、发现页候选面板(ExpandDetail 内嵌 TMDB+豆瓣候选)、榜单 tmdb_id 主动补全(_async_enrich_tmdb_ids)、BT 各源结果数量统计
-- AI 规则升级：融入 Karpathy LLM 编码原则，新增最小改动原则(#2)、多步任务计划(#4)、前后端同时验证(#3 强化)
-- 测试修复：test 辅助函数改名 run_case 避免 pytest fixture 冲突；requirements.txt 补 pytest
-- 技术债务记录：Pydantic V1 迁移、路由文件超长(search.py 507行/discover.py 700+行)、日志迁移
-**决策**: AI 规则参考 forrestchang/andrej-karpathy-skills（Karpathy 的 4 原则：Think Before Coding / Simplicity First / Surgical Changes / Goal-Driven Execution），结合项目实际痛点（前端验证遗漏）定制；sub-agent 审查后微调了"手术式修改"的例外条件和"多步任务"的触发范围
-**踩坑**: 测试文件中定义 `def test(name, fn)` 辅助函数会被 pytest 误收集为测试用例（name 参数当 fixture 找不到报错），改名为 run_case 解决；`sys.exit(1)` 在模块顶层会在 pytest 收集阶段执行导致 INTERNALERROR，需加 `if __name__ == "__main__"` 守卫
+**变更**: TODO 状态校验（10 项更正）+ 5 项功能实现（SSE 进度/局部刷新/候选面板/tmdb_id 补全/源统计）+ AI 规则升级（Karpathy 原则）
+**决策**: 参考 andrej-karpathy-skills 的 4 原则定制 AI 规则；sub-agent 审查后微调
+**踩坑**: test 辅助函数被 pytest 误收集；sys.exit(1) 在收集阶段执行致 INTERNALERROR
 
 ## 2026-04-14 搜索源大扩展（网盘修复 + BT 5 源 + 反爬升级）
-**变更**: 网盘搜索修复 rrdynb(CSS选择器重写)+ddys(改JSON API)；BT 新增 5 个直搜源(Bitsearch/磁力熊/XL720/Nyaa/蜜柑)；scraper_base 新增 curl_cffi 浏览器指纹+CF 统一检测；前端 indexer 标签品牌色；蜜柑 RSS 接入订阅框架
-**决策**: Bitsearch JSON API 作为欧美片源核心补充（Prowlarr 不可达时的替代）；1337x/TorrentGalaxy CF 高级保护无法绕过，放弃；所有有 CF 风险的爬虫统一启用 curl_cffi；搜索路由用 _merge_bt_extra_sources 统一合并+infohash 去重
-**踩坑**: rrdynb 多次搜索触发 CF 限频（临时性，过段时间自动解除）；ddys 已从 WordPress 升级为自建站有 JSON API；Bitsearch HTML 是 JS 渲染但有隐藏的 /api/v1/search JSON API；1337x.is/1337x.so 镜像站能通但数据为空；订阅系统 6 个前端测试因组件改动未同步（📌角标合并文本+operating 选择器偏移），已修复
+**变更**: 网盘修复 rrdynb+ddys；BT 新增 5 直搜源；scraper_base 新增 curl_cffi+CF 检测；蜜柑 RSS 接入订阅
+**决策**: Bitsearch JSON API 作为欧美片源核心补充；所有 CF 风险爬虫统一 curl_cffi
+**踩坑**: rrdynb 多次搜索触发 CF 限频；Bitsearch 有隐藏 JSON API
 
 ## 2026-04-14 .kiro 架构重组
-**变更**: ai-rules 从 80 行精简到 35 行，project-memory 从 200 行精简到 55 行
-**决策**: memory 定位为"跨域知识+核心红线+领域索引"，特定领域拆到独立 knowledge 文件
-**新增**: discover-recommend.md、subscribe-system.md、devlog.md；ai-rules 加写入纪律和会话接力规则
-**参考**: 综合 Kiro/Gemini/Opus/sub-agent 四方意见，采纳 Keep a Changelog + ADR 的轻量化思路
+**变更**: ai-rules 精简到 35 行，project-memory 精简到 55 行，新增 knowledge 文件
+**决策**: memory 定位为"跨域知识+核心红线+领域索引"
 
 ## 2026-04-13 订阅系统（阶段 3+4 完成）
-**变更**: 订阅 CRUD + RSS 框架(Prowlarr源) + 匹配引擎 + 定时调度 + 频率衰减 + 100分制质量评分 + 洗版匹配 + 前端全套 UI + 日历视图
-**决策**: 频率衰减策略（前72h每4h → 3-14天每12h → 14-30天每24h → 30天无果暂停），避免无效搜索浪费资源
-**踩坑**: 订阅按钮即时反馈需要 localSubscribed 状态，不能等服务端返回；卡片状态标签统一到右下角信息行避免布局冲突
+**变更**: 订阅 CRUD + RSS 框架 + 匹配引擎 + 定时调度 + 100 分制质量评分 + 洗版 + 前端 UI + 日历
+**决策**: 频率衰减策略（前 72h 每 4h → 3-14 天每 12h → 14-30 天每 24h → 30 天无果暂停）
 
 ## 2026-04-13 本地媒体感知
 **变更**: local_media_matcher.py 三层匹配 + 内存索引 + 异步 TMDB ID 补全
-**决策**: 中文匹配用前缀（startswith）而非子串（in），避免"你的名字"误匹配"以你的名字呼唤我"
-**踩坑**: height=0 时需从文件名解析分辨率兜底；id_mapping_cache.json 持久化避免重复 API 调用
+**决策**: 中文匹配用前缀（startswith）避免误匹配
 
-## 2026-04-12 发现页阶段2（探索筛选+滚动阻尼）
-**变更**: 探索页分类筛选（豆瓣/TMDB/Bangumi 三源）、滚动阻尼吸附交互、详情面板外部链接+三源评分
-**决策**: 滚动交互放弃 CSS scroll-snap，改用自定义 hook（snap 在动态高度卡片上不稳定）
-**踩坑**: Bangumi 评分人数少时排序失真需降权；豆瓣探索 sort=T 数据量不稳定，自动用 sort=U 补位
-
-## 2026-04-12 代码大文件拆分
-**变更**: 后端 4 个大文件 + 前端 2 个大组件拆分，67 项回归测试全部通过
-**决策**: 所有拆分通过 re-export 保持向后兼容，前端 api.ts 零改动
-**踩坑**: 循环依赖通过延迟导入解决（函数内部 import）
+## 2026-04-12 发现页阶段2 + 代码拆分
+**变更**: 探索筛选 + 滚动阻尼 + 后端 4 文件 + 前端 2 组件拆分
+**决策**: 滚动交互用自定义 hook 而非 CSS scroll-snap；拆分通过 re-export 保持兼容
 
 ## 2026-04-10 发现页重构 + 网盘搜索扩展
-**变更**: 多源推荐（豆瓣v2+TMDB+Bangumi）、网盘搜索从 1 源扩展到 4 源（pansearch+pansou+gogopanso+github）
-**决策**: 豆瓣用 App API v2 签名鉴权（比 web API 稳定），网盘搜索用通用站点框架方便后续扩展
-**踩坑**: pansearch.me 连续搜索被限频；gogopanso 标题有拼音首字母前缀需清洗
+**变更**: 多源推荐（豆瓣 v2+TMDB+Bangumi）+ 网盘 4 源
+**决策**: 豆瓣用 App API v2 签名鉴权
 
 ## 2026-04-09 后端模块化拆分
-**变更**: 旧 main.py（4163 行）拆分为 67 行入口 + 9 个路由模块 + shared.py
-**决策**: shared.py 作为唯一单例源，路由层只做参数校验和调用业务层
-**踩坑**: 不用 --reload 启动 uvicorn（会导致 import 链路崩溃）
+**变更**: main.py 4163 行拆分为 67 行入口 + 9 路由模块 + shared.py
+**决策**: shared.py 作为唯一单例源
 
 ## 2026-04-03 初始版本
-**变更**: 项目初始化，包含媒体库管理、刮削、搜索下载、整理替换等核心功能
+**变更**: 项目初始化
