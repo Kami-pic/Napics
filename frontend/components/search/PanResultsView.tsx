@@ -7,7 +7,7 @@ import { PanFilterState, applyPanFilters, PAN_TYPE_COLORS, PAN_TYPE_LABELS } fro
 
 // ── 网盘搜索结果视图（纯展示，筛选器已提到外层）──
 export default function PanResultsView({
-  searching, groups, total, sourceStatuses, keyword, filters, onRetry, onTransfer,
+  searching, groups, total, sourceStatuses, keyword, filters, onRetry, onTransfer, disabledSources,
 }: {
   searching: boolean;
   groups: Record<string, PanResult[]>;
@@ -17,6 +17,7 @@ export default function PanResultsView({
   filters: PanFilterState;
   onRetry: () => void;
   onTransfer: (r: PanResult) => void;
+  disabledSources?: Set<string>;
 }) {
   // 展平 + 筛选 + 重新分组
   const allResults = useMemo(() => {
@@ -25,7 +26,7 @@ export default function PanResultsView({
     return all;
   }, [groups]);
 
-  const filteredResults = useMemo(() => applyPanFilters(allResults, filters), [allResults, filters]);
+  const filteredResults = useMemo(() => applyPanFilters(allResults, filters, disabledSources), [allResults, filters, disabledSources]);
 
   const filteredGroups = useMemo(() => {
     const g: Record<string, PanResult[]> = {};
@@ -40,7 +41,7 @@ export default function PanResultsView({
     return ordered;
   }, [filteredResults]);
 
-  const isFiltered = filters.panType || filters.source || filters.resolution || filters.completeOnly;
+  const isFiltered = filters.panType.length > 0 || filters.resolution.length > 0 || filters.completeOnly || filters.chineseSubOnly;
 
   if (searching) {
     return (

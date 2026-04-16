@@ -492,7 +492,7 @@ export default function SearchModal({
             </div>
           )}
           {activeTab === "pan" && (
-            <PanFilterBar filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} panSources={panSources} />
+            <PanFilterBar filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} panSources={panSources} disabledSources={disabledSources} onToggleSource={toggleSource} />
           )}
         </div>
 
@@ -558,6 +558,7 @@ export default function SearchModal({
               sourceStatuses={panSourceStatuses}
               keyword={keyword}
               filters={panFilters}
+              disabledSources={disabledSources}
               onRetry={() => doPanSearch(keyword)}
               onTransfer={async (r) => {
                 setToast(null);

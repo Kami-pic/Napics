@@ -158,16 +158,16 @@ export interface EnhancedSearchResult extends SearchResult {
 }
 
 export interface FilterState {
-  resolution: "" | "720p" | "1080p" | ">1080p" | "<720p";
-  source: "" | "Bluray" | "WEB-DL" | "Remux";
-  videoCodec: "" | "x265" | "x264";
-  audioCodec: "" | "DTS" | "DTS-HD" | "TrueHD" | "Atmos" | "AAC";
+  resolution: string[];   // 多选：["720p", "1080p", "2160p"]
+  source: string[];       // 多选：["Bluray", "WEB-DL", "Remux"]
+  videoCodec: string[];   // 多选：["x265", "x264"]
+  audioCodec: string[];   // 多选：["DTS", "DTS-HD", "TrueHD", "Atmos", "AAC", "surround"]
   chineseSubOnly: boolean;
+  seasonPackOnly: boolean;
   minSizeGb: number | null;
   maxSizeGb: number | null;
   minSeeders: number;
-  surroundOnly: boolean;  // 环绕声 5.1+ 筛选
-  indexers: string[];     // 索引器多选名单
+  indexers: string[];     // Prowlarr 索引器多选
 }
 
 export interface BatchUpgradeTask {
