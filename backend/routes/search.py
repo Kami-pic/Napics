@@ -175,12 +175,10 @@ def search_resources_stream(
     """SSE 流式搜索：所有源全部并行，谁先完成谁先推。"""
     def _generate():
         import concurrent.futures
-        import queue as queue_mod
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
 
-        # 所有源（Prowlarr + 直搜源）统一并行
         def _search_prowlarr():
             try:
                 raw = clients["search"].search(query)
@@ -209,39 +207,33 @@ def search_resources_stream(
             ("mikan", _get_mikan_scraper),
         ]
 
-        # 构建任务列表
-        tasks = []
-        if bt_overrides.get("prowlarr", True):
-            tasks.append(("prowlarr", None))
-        for name, getter in scrapers:
-            if bt_overrides.get(name, True):
-                tasks.append((name, getter))
-
         # 推送所有源的 searching 状态
-        for name, _ in tasks:
+        all_sources = []
+        if bt_overrides.get("prowlarr", True):
+            all_sources.append("prowlarr")
+        for name, _ in scrapers:
+            if bt_overrides.get(name, True):
+                all_sources.append(name)
+        for name in all_sources:
             yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
 
-        # 全部并行提交
-        result_queue = queue_mod.Queue()
-
-        def _worker(name, getter):
-            if name == "prowlarr":
-                result = _search_prowlarr()
-            else:
-                result = _search_direct(name, getter)
-            result_queue.put(result)
-
+        # 全部并行提交，用 as_completed 逐个 yield
         with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-            for name, getter in tasks:
-                pool.submit(_worker, name, getter)
+            future_map = {}
+            if bt_overrides.get("prowlarr", True):
+                f = pool.submit(_search_prowlarr)
+                future_map[f] = "prowlarr"
+            for name, getter in scrapers:
+                if bt_overrides.get(name, True):
+                    f = pool.submit(_search_direct, name, getter)
+                    future_map[f] = name
 
-        # 逐个读取结果，谁先完成谁先推
-        completed = 0
-        total_tasks = len(tasks)
-        while completed < total_tasks:
-            try:
-                name, results, err = result_queue.get(timeout=45)
-                completed += 1
+            for future in concurrent.futures.as_completed(future_map, timeout=45):
+                try:
+                    name, results, err = future.result(timeout=5)
+                except Exception as e:
+                    name = future_map[future]
+                    results, err = [], str(e)
                 # 同源内去重
                 source_deduped = []
                 source_hashes = set()
@@ -256,10 +248,8 @@ def search_resources_stream(
                 status = "done" if not err else "failed"
                 enriched = [_enrich_result(r) for r in source_deduped]
                 yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'results': enriched}, default=str)}\n\n"
-            except queue_mod.Empty:
-                break
 
-        yield f"data: {json.dumps({'type': 'done', 'total': completed})}\n\n"
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
 

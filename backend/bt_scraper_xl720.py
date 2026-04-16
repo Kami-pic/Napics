@@ -56,7 +56,15 @@ class XL720Scraper(ScraperBase):
                         continue
                     seen_hashes.add(infohash)
 
-                    title = item["title"]
+                    # 尝试从磁力链接 dn 参数提取更具体的标题
+                    dn_match = re.search(r"[?&]dn=([^&]+)", magnet_url)
+                    if dn_match:
+                        from urllib.parse import unquote
+                        dn_title = unquote(dn_match.group(1)).replace("+", " ").strip()
+                        title = dn_title if len(dn_title) > 5 else item["title"]
+                    else:
+                        title = item["title"]
+
                     quality = parse_quality(title)
                     quality_level = get_quality_level(quality)
                     all_results.append(SearchResult(
