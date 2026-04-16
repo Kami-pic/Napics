@@ -443,7 +443,7 @@ export default function SearchModal({
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${showSettings ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-white hover:bg-white/10"}`}
                 title="搜索源设置">⚙️</button>
               <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
-              <SearchSettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
+              <SearchSettingsPanel open={showSettings} onClose={() => setShowSettings(false)} searching={searching} />
             </div>
           </div>
           <div className="flex gap-2">

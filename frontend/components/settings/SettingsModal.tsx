@@ -1,7 +1,7 @@
 // 设置弹窗
 "use client";
 import { useState, useEffect } from "react";
-import type { AppConfig, IndexerPriority, SortWeightsConfig } from "@/types";
+import type { AppConfig } from "@/types";
 
 interface SettingsModalProps {
   open: boolean;
@@ -31,19 +31,10 @@ const FIELDS: { label: string; key: string; desc: string; link?: boolean; type?:
 
 export default function SettingsModal({ open, onClose, config, onSave, setConfig, paths, setPaths }: SettingsModalProps) {
   const [cacheInfo, setCacheInfo] = useState<{ size_mb: number; file_count: number } | null>(null);
-  const [indexers, setIndexers] = useState<IndexerPriority[]>([]);
-  const [indexerSaving, setIndexerSaving] = useState(false);
-  const [sortWeights, setSortWeights] = useState<SortWeightsConfig>({
-    title_match: 0.30, resolution_upgrade: 0.25, codec_match: 0.15,
-    seeder_health: 0.15, chinese_sub: 0.10, size_reasonable: 0.05,
-  });
-  const [weightsSaving, setWeightsSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetch("http://localhost:8000/cache/info").then(r => r.json()).then(setCacheInfo).catch(() => {});
-      import("@/lib/api").then(m => m.api.getIndexerPriorities()).then(setIndexers).catch(() => {});
-      import("@/lib/api").then(m => m.api.getSortWeights()).then(setSortWeights).catch(() => {});
     }
   }, [open]);
 
@@ -153,139 +144,12 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               }} className="px-3 py-1.5 bg-white/[0.04] hover:bg-blue-500/10 hover:text-blue-400 rounded-lg text-[10px] text-slate-500 transition-all flex-shrink-0">批量生成</button>
             </div>
           </div>
-          {/* 索引器优先级 */}
-          <div className="pt-4 mt-2 border-t border-white/[0.06]">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <label className="text-sm font-medium text-slate-300">索引器优先级</label>
-                <p className="text-xs text-slate-600 mt-0.5">配置 Prowlarr 索引器的搜索优先级和偏好类型</p>
-              </div>
-              <button onClick={async () => {
-                setIndexerSaving(true);
-                try {
-                  await (await import("@/lib/api")).api.saveIndexerPriorities(indexers);
-                } catch { alert("保存失败"); }
-                setIndexerSaving(false);
-              }} disabled={indexerSaving} className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg text-[10px] text-blue-400 transition-all disabled:opacity-50">
-                {indexerSaving ? "保存中..." : "保存优先级"}
-              </button>
-            </div>
-            {indexers.length === 0 ? (
-              <p className="text-xs text-slate-600 py-2">暂无索引器配置</p>
-            ) : (
-              <div className="space-y-2">
-                {indexers.map((idx, i) => (
-                  <div key={idx.name + i} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => { const n = [...indexers]; n[i] = { ...n[i], enabled: !n[i].enabled }; setIndexers(n); }}
-                          className={`w-8 h-4 rounded-full transition-colors relative ${idx.enabled ? "bg-blue-500" : "bg-white/[0.1]"}`}>
-                          <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${idx.enabled ? "left-4.5" : "left-0.5"}`} />
-                        </button>
-                        <span className={`text-sm ${idx.enabled ? "text-slate-300" : "text-slate-600"}`}>{idx.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-600">优先级</span>
-                        <input type="number" min={0} max={100} value={idx.priority}
-                          onChange={e => { const n = [...indexers]; n[i] = { ...n[i], priority: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) }; setIndexers(n); }}
-                          className="w-14 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 text-center outline-none focus:border-blue-500/30" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-600 mr-1">偏好:</span>
-                      {(["movie", "tv", "anime"] as const).map(t => {
-                        const active = idx.preferred_types.includes(t);
-                        return (
-                          <button key={t} onClick={() => {
-                            const n = [...indexers];
-                            const types = active ? idx.preferred_types.filter(x => x !== t) : [...idx.preferred_types, t];
-                            n[i] = { ...n[i], preferred_types: types as ("anime" | "movie" | "tv")[] };
-                            setIndexers(n);
-                          }} className={`text-[10px] px-2 py-0.5 rounded transition-colors ${active ? "bg-blue-500/20 text-blue-400" : "bg-white/[0.04] text-slate-600 hover:text-slate-400"}`}>
-                            {t === "movie" ? "电影" : t === "tv" ? "剧集" : "动画"}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* ── 种子排序权重配置 ── */}
-          <div className="pt-4 mt-2 border-t border-white/[0.06]">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <label className="text-sm font-medium text-slate-300">排序权重</label>
-                <p className="text-xs text-slate-600 mt-0.5">自定义批量推荐的评分维度权重（总和建议为 1.0）</p>
-              </div>
-              <button onClick={async () => {
-                setWeightsSaving(true);
-                try {
-                  await (await import("@/lib/api")).api.saveSortWeights(sortWeights);
-                } catch { alert("保存失败"); }
-                setWeightsSaving(false);
-              }} disabled={weightsSaving} className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg text-[10px] text-blue-400 transition-all disabled:opacity-50">
-                {weightsSaving ? "保存中..." : "保存权重"}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                { key: "title_match", label: "标题匹配" },
-                { key: "resolution_upgrade", label: "分辨率提升" },
-                { key: "codec_match", label: "编码匹配" },
-                { key: "seeder_health", label: "做种健康" },
-                { key: "chinese_sub", label: "中文字幕" },
-                { key: "size_reasonable", label: "大小合理" },
-              ] as const).map(({ key, label }) => (
-                <div key={key} className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-500 w-16">{label}</span>
-                  <input type="number" step={0.05} min={0} max={1}
-                    value={sortWeights[key]}
-                    onChange={e => setSortWeights({ ...sortWeights, [key]: parseFloat(e.target.value) || 0 })}
-                    className="w-16 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 text-center outline-none focus:border-blue-500/30" />
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-600 mt-2">
-              当前总和: {Object.values(sortWeights).reduce((a, b) => a + b, 0).toFixed(2)}
-            </p>
-          </div>
+          {/* 索引器/排序/过滤已移到搜索弹窗的 ⚙️ 设置中 */}
         </div>
-        {/* ── 搜索过滤规则配置 ── */}
+        {/* ── 回收站配置 ── */}
         <div className="mt-5 border-t border-white/[0.06] pt-4">
-          <h3 className="text-xs font-bold text-slate-300 mb-3">搜索过滤规则</h3>
+          <h3 className="text-xs font-bold text-slate-300 mb-3">回收站</h3>
           <div className="space-y-3">
-            {/* 严格排除 */}
-            <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">严格排除（命中即丢弃）</label>
-              <TagInput
-                tags={config.search_filter?.must_exclude || ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS"]}
-                onChange={(tags) => setConfig({ ...config, search_filter: { ...config.search_filter || { must_include: [], must_exclude: [] }, must_exclude: tags } })}
-                placeholder="输入关键词后回车..."
-              />
-            </div>
-            {/* 必须包含 */}
-            <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">必须包含（至少命中一个）</label>
-              <TagInput
-                tags={config.search_filter?.must_include || []}
-                onChange={(tags) => setConfig({ ...config, search_filter: { ...config.search_filter || { must_include: [], must_exclude: [] }, must_include: tags } })}
-                placeholder="如 HEVC, x265..."
-              />
-            </div>
-            {/* 编码偏好 */}
-            <div className="flex items-center gap-3">
-              <label className="text-[10px] text-slate-500">编码偏好</label>
-              <select value={config.preferred_codec || "x265"}
-                onChange={(e) => setConfig({ ...config, preferred_codec: e.target.value })}
-                className="bg-[#1a1a1a] border border-white/[0.06] rounded px-2 py-1 text-xs text-white outline-none">
-                <option value="x265">x265 / HEVC</option>
-                <option value="x264">x264 / AVC</option>
-                <option value="AV1">AV1</option>
-              </select>
-            </div>
-            {/* 回收站路径 */}
             <div>
               <label className="text-[10px] text-slate-500 mb-1 block">回收站路径（留空使用默认）</label>
               <input value={config.recycle_bin_path || ""}
@@ -293,7 +157,6 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 placeholder="如 \\\\DS218play\\share\\回收站"
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
             </div>
-            {/* 回收站保留天数 */}
             <div className="flex items-center gap-3">
               <label className="text-[10px] text-slate-500">回收站保留天数</label>
               <input type="number" value={config.recycle_bin_retention_days ?? 30} min={1} max={365}
@@ -312,30 +175,3 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   );
 }
 
-// ── Tag 标签输入组件 ──
-function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (t: string[]) => void; placeholder?: string }) {
-  const [input, setInput] = useState("");
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && input.trim()) {
-      e.preventDefault();
-      const newTag = input.trim().toUpperCase();
-      if (!tags.includes(newTag)) onChange([...tags, newTag]);
-      setInput("");
-    }
-    if (e.key === "Backspace" && !input && tags.length > 0) {
-      onChange(tags.slice(0, -1));
-    }
-  };
-  return (
-    <div className="flex flex-wrap gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 py-1.5 min-h-[32px]">
-      {tags.map((tag, i) => (
-        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/[0.06] text-[10px] text-slate-300">
-          {tag}
-          <button onClick={() => onChange(tags.filter((_, j) => j !== i))} className="text-slate-500 hover:text-red-400">×</button>
-        </span>
-      ))}
-      <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
-        placeholder={tags.length === 0 ? placeholder : ""} className="flex-1 min-w-[80px] bg-transparent text-xs text-white outline-none placeholder:text-slate-600" />
-    </div>
-  );
-}
