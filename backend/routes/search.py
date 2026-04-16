@@ -195,7 +195,8 @@ def search_resources_stream(
         def _search_direct(name, getter):
             try:
                 s = getter()
-                return name, s.search_as_search_results(query, max_results=20), None
+                results = s.search_as_search_results(query, max_results=20)
+                return name, results, None
             except Exception as e:
                 return name, [], str(e)
 
@@ -228,9 +229,9 @@ def search_resources_stream(
                     f = pool.submit(_search_direct, name, getter)
                     future_map[f] = name
 
-            for future in concurrent.futures.as_completed(future_map, timeout=45):
+            for future in concurrent.futures.as_completed(future_map, timeout=30):
                 try:
-                    name, results, err = future.result(timeout=5)
+                    name, results, err = future.result(timeout=20)
                 except Exception as e:
                     name = future_map[future]
                     results, err = [], str(e)

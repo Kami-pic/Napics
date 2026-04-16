@@ -26,7 +26,7 @@ class XL720Scraper(ScraperBase):
 
     BASE_URL = "https://www.xl720.com"
     SOURCE_NAME = "xl720"
-    MAX_DETAIL_PAGES = 3
+    MAX_DETAIL_PAGES = 2
 
     def __init__(self, proxy: Optional[str] = None):
         super().__init__(proxy=proxy, use_curl_cffi=True, cache_ttl=600)
@@ -60,7 +60,7 @@ class XL720Scraper(ScraperBase):
             seen_hashes = set()
 
             for item in detail_items[:self.MAX_DETAIL_PAGES]:
-                self.random_delay(1.0, 2.0)
+                self.random_delay(0.5, 1.0)
                 magnets = self._parse_detail_page(item["url"])
                 for magnet_url, infohash in magnets:
                     if infohash in seen_hashes:
@@ -109,7 +109,7 @@ class XL720Scraper(ScraperBase):
         """GET 搜索，返回详情页链接列表。"""
         url = f"{self.BASE_URL}/search/{keyword}"
         try:
-            resp = self.request_with_backoff(url, timeout=15)
+            resp = self.request_with_backoff(url, timeout=8)
             if resp.status_code != 200:
                 logger.warning("[xl720] 搜索返回 %d", resp.status_code)
                 return []
@@ -140,7 +140,7 @@ class XL720Scraper(ScraperBase):
     def _parse_detail_page(self, url: str) -> List[tuple]:
         """解析详情页，提取磁力链接。迅雷链接尝试解码为磁力。"""
         try:
-            resp = self.request_with_backoff(url, timeout=15)
+            resp = self.request_with_backoff(url, timeout=8)
             if resp.status_code != 200:
                 return []
 
