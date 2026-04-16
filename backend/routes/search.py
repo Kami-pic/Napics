@@ -35,13 +35,28 @@ router = APIRouter()
 
 
 def _enrich_result(r) -> dict:
-    """给搜索结果附加 quality_score（100 分制）"""
-    d = r.dict() if hasattr(r, "dict") else dict(r)
-    if r.quality:
-        d["quality_score"] = compute_quality_score(r.quality)
-    else:
-        d["quality_score"] = 0
-    return d
+    """给搜索结果附加 quality_score（100 分制），确保可 JSON 序列化"""
+    try:
+        if hasattr(r, "dict"):
+            d = r.dict()
+        elif hasattr(r, "model_dump"):
+            d = r.model_dump()
+        else:
+            d = dict(r)
+        # quality 字段可能是 Pydantic model，转为 dict
+        if d.get("quality") and hasattr(d["quality"], "dict"):
+            d["quality"] = d["quality"].dict()
+        elif d.get("quality") and hasattr(d["quality"], "model_dump"):
+            d["quality"] = d["quality"].model_dump()
+        if r.quality:
+            d["quality_score"] = compute_quality_score(r.quality)
+        else:
+            d["quality_score"] = 0
+        return d
+    except Exception:
+        return {"title": getattr(r, "title", ""), "download_url": getattr(r, "download_url", ""),
+                "indexer": getattr(r, "indexer", ""), "seeders": getattr(r, "seeders", 0),
+                "size_gb": getattr(r, "size_gb", 0), "quality_score": 0}
 
 
 def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
@@ -180,7 +195,7 @@ def search_resources_stream(
 
         all_results.extend(prowlarr_results)
         prowlarr_enriched = [_enrich_result(r) for r in prowlarr_results]
-        yield f"data: {json.dumps({'type': 'source_done', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results), 'added': len(prowlarr_results), 'error': '', 'results': prowlarr_enriched})}\n\n"
+        yield f"data: {json.dumps({'type': 'source_done', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results), 'added': len(prowlarr_results), 'error': '', 'results': prowlarr_enriched}, default=str)}\n\n"
 
         # 第二步：直搜源并发
         scrapers = [
@@ -222,7 +237,7 @@ def search_resources_stream(
                         added += 1
                     all_results.extend(source_deduped)
                     status = "done" if not err else "failed"
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or '', 'results': [_enrich_result(r) for r in source_deduped]})}\n\n"
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or '', 'results': [_enrich_result(r) for r in source_deduped]}, default=str)}\n\n"
                 except Exception:
                     name = futures[future]
                     yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': 'timeout', 'results': []})}\n\n"

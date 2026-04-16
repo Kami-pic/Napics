@@ -221,6 +221,9 @@ export default function SearchModal({
                 sseResults = [...sseResults, ...newItems];
                 setResults([...sseResults]);
                 setTotalRaw(sseResults.length);
+                // 有结果后停止 loading spinner，让结果列表显示
+                setSearching(false);
+                setSearchingStep("");
               }
             } else if (data.type === "done") {
               sseDone = true;
