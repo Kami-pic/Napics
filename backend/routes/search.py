@@ -49,16 +49,8 @@ def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
 
     按 infohash 去重，直搜源结果追加到末尾。
     """
-    # 收集已有的 infohash
-    existing_hashes = set()
-    for r in existing_results:
-        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-        if h:
-            existing_hashes.add(h.group(1).upper())
-
     merged = list(existing_results)
 
-    # 逐个调用直搜源（失败不影响其他源，尊重配置开关）
     bt_overrides = config_m.config.bt_search_sources or {}
     scrapers = [
         ("bitsearch", _get_bitsearch_scraper),
@@ -69,19 +61,22 @@ def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
     ]
     for name, getter in scrapers:
         if not bt_overrides.get(name, True):
-            continue  # 用户禁用了此源
+            continue
         try:
             scraper = getter()
             results = scraper.search_as_search_results(keyword, max_results=20)
             added = 0
+            # 同源内 infohash 去重
+            source_hashes = set()
             for r in results:
                 h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                 if h:
                     hash_upper = h.group(1).upper()
-                    if hash_upper not in existing_hashes:
-                        existing_hashes.add(hash_upper)
-                        merged.append(r)
-                        added += 1
+                    if hash_upper in source_hashes:
+                        continue
+                    source_hashes.add(hash_upper)
+                merged.append(r)
+                added += 1
             if added:
                 print(f"[Search] {name} 补充 {added} 条结果")
         except Exception as e:
@@ -183,12 +178,6 @@ def search_resources_stream(
         except Exception as e:
             print(f"[Search/Stream] Prowlarr 失败: {e}")
 
-        # 收集 Prowlarr 的 infohash（仅用于和直搜源去重）
-        prowlarr_hashes = set()
-        for r in prowlarr_results:
-            h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-            if h:
-                prowlarr_hashes.add(h.group(1).upper())
         all_results.extend(prowlarr_results)
         yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results)})}\n\n"
 
@@ -219,13 +208,15 @@ def search_resources_stream(
                     name, results, err = future.result(timeout=5)
                     added = 0
                     total_found = len(results)
+                    # 同源内 infohash 去重，跨源不去重
+                    source_hashes = set()
                     for r in results:
-                        # 只和 Prowlarr 去重，直搜源之间不去重
                         h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                         if h:
                             hu = h.group(1).upper()
-                            if hu in prowlarr_hashes:
-                                continue  # 和 Prowlarr 重复，跳过
+                            if hu in source_hashes:
+                                continue  # 同源内重复，跳过
+                            source_hashes.add(hu)
                         all_results.append(r)
                         added += 1
                     status = "done" if not err else "failed"

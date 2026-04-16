@@ -24,7 +24,7 @@ const RESOLUTION_RANK: Record<string, number> = { "": 0, "720p": 1, "1080p": 2, 
 export const DEFAULT_FILTERS: FilterState = {
   resolution: "", source: "", videoCodec: "", audioCodec: "",
   chineseSubOnly: false, minSizeGb: null, maxSizeGb: null,
-  minSeeders: 1, surroundOnly: false, indexers: [],
+  minSeeders: 0, surroundOnly: false, indexers: [],
 };
 
 export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>): EnhancedSearchResult[] {
@@ -35,7 +35,7 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
   }
   const isDefault = filters.resolution === "" && filters.source === "" && filters.videoCodec === "" &&
     filters.audioCodec === "" && !filters.chineseSubOnly && !filters.surroundOnly &&
-    filters.minSizeGb === null && filters.maxSizeGb === null && filters.minSeeders <= 1 && filters.indexers.length === 0;
+    filters.minSizeGb === null && filters.maxSizeGb === null && filters.minSeeders <= 0 && filters.indexers.length === 0;
   if (isDefault) return filtered;
   return filtered.filter((r) => {
     if (filters.resolution) {

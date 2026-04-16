@@ -298,7 +298,7 @@ export default function SearchModal({
       return b.size_gb - a.size_gb;
     });
     return list;
-  }, [results, smartFilter]);
+  }, [results, smartFilter, keyword]);
   const filtered = applyFilters(displayResults, filters, disabledSources);
   const isHigher = (res: EnhancedSearchResult) => {
     // 优先用 quality_score 比较（100 分制），回退到分辨率比较
