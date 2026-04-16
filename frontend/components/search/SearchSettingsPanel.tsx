@@ -74,7 +74,7 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
 
   return (
     <div className="fixed top-0 left-0 w-full h-full z-[60]" onClick={onClose}>
-      <div className="absolute top-12 right-12 w-80 max-h-[70vh] bg-[#141414] border border-white/[0.08] rounded-xl shadow-2xl flex flex-col"
+      <div className="absolute top-12 right-12 w-[420px] max-h-[85vh] bg-[#141414] border border-white/[0.08] rounded-xl shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         {/* 头部 */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2">

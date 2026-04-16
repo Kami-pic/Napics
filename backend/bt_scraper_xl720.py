@@ -30,6 +30,7 @@ class XL720Scraper(ScraperBase):
 
     def __init__(self, proxy: Optional[str] = None):
         super().__init__(proxy=proxy, use_curl_cffi=True, cache_ttl=600)
+        self.max_retries = 1  # XL720 响应慢，只重试 1 次
 
     def search_as_search_results(self, keyword: str, max_results: int = 20):
         """搜索并返回 SearchResult 格式。"""
@@ -109,7 +110,7 @@ class XL720Scraper(ScraperBase):
         """GET 搜索，返回详情页链接列表。"""
         url = f"{self.BASE_URL}/search/{keyword}"
         try:
-            resp = self.request_with_backoff(url, timeout=8)
+            resp = self.request_with_backoff(url, timeout=12)
             if resp.status_code != 200:
                 logger.warning("[xl720] 搜索返回 %d", resp.status_code)
                 return []
@@ -140,7 +141,7 @@ class XL720Scraper(ScraperBase):
     def _parse_detail_page(self, url: str) -> List[tuple]:
         """解析详情页，提取磁力链接。迅雷链接尝试解码为磁力。"""
         try:
-            resp = self.request_with_backoff(url, timeout=8)
+            resp = self.request_with_backoff(url, timeout=12)
             if resp.status_code != 200:
                 return []
 
