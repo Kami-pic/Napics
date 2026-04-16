@@ -44,10 +44,11 @@ class CilixiongScraper(ScraperBase):
                 logger.info("[cilixiong] 搜索 '%s' 无结果", keyword)
                 return []
 
-            # 标题相关性过滤
+            # 标题相关性过滤：搜索词的连续中文子串必须在标题中出现
             cn_chars = re.sub(r"[^\u4e00-\u9fff]", "", keyword)
             if cn_chars and len(cn_chars) >= 2:
-                detail_items = [item for item in detail_items if any(c in item["title"] for c in cn_chars[:3])]
+                cn_sub = cn_chars[:min(4, len(cn_chars))]
+                detail_items = [item for item in detail_items if cn_sub in item["title"]]
 
             all_results: List[SearchResult] = []
             seen_hashes = set()
@@ -60,7 +61,15 @@ class CilixiongScraper(ScraperBase):
                         continue
                     seen_hashes.add(infohash)
 
-                    title = item["title"]
+                    # 优先从磁力链接 dn 参数提取标准名（如 Pennyworth.S01.1080p.BluRay.x265-RARBG）
+                    dn_match = re.search(r"[?&]dn=([^&]+)", magnet_url)
+                    if dn_match:
+                        from urllib.parse import unquote
+                        dn_title = unquote(dn_match.group(1)).replace("+", " ").strip()
+                        title = dn_title if len(dn_title) > 5 else item["title"]
+                    else:
+                        title = item["title"]
+
                     quality = parse_quality(title)
                     quality_level = get_quality_level(quality)
                     all_results.append(SearchResult(

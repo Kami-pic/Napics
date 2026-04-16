@@ -45,10 +45,16 @@ class XL720Scraper(ScraperBase):
                 logger.info("[xl720] 搜索 '%s' 无结果", keyword)
                 return []
 
-            # 标题相关性过滤：搜索词的中文字符必须在标题中出现
+            # 标题相关性过滤：搜索词的连续中文子串必须在标题中出现
             cn_chars = re.sub(r"[^\u4e00-\u9fff]", "", keyword)
             if cn_chars and len(cn_chars) >= 2:
-                detail_items = [item for item in detail_items if any(c in item["title"] for c in cn_chars[:3])]
+                # 取搜索词中文部分的前 N 个字作为子串匹配
+                cn_sub = cn_chars[:min(4, len(cn_chars))]
+                detail_items = [item for item in detail_items if cn_sub in item["title"]]
+                if not detail_items:
+                    logger.info("[xl720] 搜索 '%s' 标题过滤后无结果", keyword)
+                    self.set_cached(keyword, [])
+                    return []
 
             all_results: List[SearchResult] = []
             seen_hashes = set()
