@@ -179,7 +179,8 @@ def search_resources_stream(
             print(f"[Search/Stream] Prowlarr 失败: {e}")
 
         all_results.extend(prowlarr_results)
-        yield f"data: {json.dumps({'type': 'status', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results)})}\n\n"
+        prowlarr_enriched = [_enrich_result(r) for r in prowlarr_results]
+        yield f"data: {json.dumps({'type': 'source_done', 'source': 'prowlarr', 'status': 'done', 'count': len(prowlarr_results), 'added': len(prowlarr_results), 'error': '', 'results': prowlarr_enriched})}\n\n"
 
         # 第二步：直搜源并发
         scrapers = [
@@ -208,25 +209,26 @@ def search_resources_stream(
                     name, results, err = future.result(timeout=5)
                     added = 0
                     total_found = len(results)
-                    # 同源内 infohash 去重，跨源不去重
+                    source_deduped = []
                     source_hashes = set()
                     for r in results:
                         h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                         if h:
                             hu = h.group(1).upper()
                             if hu in source_hashes:
-                                continue  # 同源内重复，跳过
+                                continue
                             source_hashes.add(hu)
-                        all_results.append(r)
+                        source_deduped.append(r)
                         added += 1
+                    all_results.extend(source_deduped)
                     status = "done" if not err else "failed"
-                    yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or ''})}\n\n"
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': total_found, 'added': added, 'error': err or '', 'results': [_enrich_result(r) for r in source_deduped]})}\n\n"
                 except Exception:
                     name = futures[future]
-                    yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'failed', 'count': 0, 'error': 'timeout'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': 'timeout', 'results': []})}\n\n"
 
-        # 最终结果
-        yield f"data: {json.dumps({'type': 'done', 'total': len(all_results), 'bt_results': [_enrich_result(r) for r in all_results]})}\n\n"
+        # 最终完成信号（不再重复发全量结果）
+        yield f"data: {json.dumps({'type': 'done', 'total': len(all_results)})}\n\n"
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
 

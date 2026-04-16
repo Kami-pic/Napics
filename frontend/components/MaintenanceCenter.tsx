@@ -9,8 +9,6 @@ export default function MaintenanceCenter() {
   const [message, setMessage] = useState("");
 
   const handleRestart = async () => {
-    if (!confirm("确定要重启前后端服务吗？页面会短暂不可用。")) return;
-    
     setIsRestarting(true);
     setMessage("正在发送重启指令...");
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";

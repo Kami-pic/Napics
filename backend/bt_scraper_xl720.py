@@ -26,7 +26,7 @@ class XL720Scraper(ScraperBase):
 
     BASE_URL = "https://www.xl720.com"
     SOURCE_NAME = "xl720"
-    MAX_DETAIL_PAGES = 5
+    MAX_DETAIL_PAGES = 3
 
     def __init__(self, proxy: Optional[str] = None):
         super().__init__(proxy=proxy, use_curl_cffi=True, cache_ttl=600)
@@ -49,7 +49,7 @@ class XL720Scraper(ScraperBase):
             seen_hashes = set()
 
             for item in detail_items[:self.MAX_DETAIL_PAGES]:
-                self.random_delay(2.0, 3.0)
+                self.random_delay(1.0, 2.0)
                 magnets = self._parse_detail_page(item["url"])
                 for magnet_url, infohash in magnets:
                     if infohash in seen_hashes:

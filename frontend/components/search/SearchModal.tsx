@@ -200,20 +200,30 @@ export default function SearchModal({
           try {
             const data = JSON.parse(event.data);
             if (data.type === "status") {
+              // 搜索中状态
               setSourceStatuses(prev => ({
                 ...prev,
                 [data.source]: { status: data.status as SourceStatus["status"], count: data.count ?? 0 },
               }));
-              const statusLabel = data.status === "searching" ? "搜索中..." :
-                data.status === "done" ? `✓ ${data.count || 0}条` : "✗ 失败";
-              setSearchingStep(`${data.source}: ${statusLabel}`);
+              setSearchingStep(`${data.source}: 搜索中...`);
+            } else if (data.type === "source_done") {
+              // 单个源完成——立即追加结果
+              setSourceStatuses(prev => ({
+                ...prev,
+                [data.source]: { status: (data.status === "done" ? "done" : "failed") as SourceStatus["status"], count: data.count ?? 0 },
+              }));
+              if (data.results && data.results.length > 0) {
+                const newItems: EnhancedSearchResult[] = data.results.map((r: any) => ({
+                  ...r,
+                  quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+                  quality_rank: r.quality_rank ?? 0,
+                }));
+                sseResults = [...sseResults, ...newItems];
+                setResults([...sseResults]);
+                setTotalRaw(sseResults.length);
+              }
             } else if (data.type === "done") {
               sseDone = true;
-              sseResults = (data.bt_results || []).map((r: any) => ({
-                ...r,
-                quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
-                quality_rank: r.quality_rank ?? 0,
-              }));
               clearTimeout(timeout);
               es.close();
               resolve();
