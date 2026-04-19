@@ -5,7 +5,8 @@ from quality_parser import QualityTag, parse_quality, get_quality_level
 from search_query_builder import SearchQueryBuilder
 from alias_resolver import AliasSet
 from indexer_priority_manager import IndexerPriorityManager
-from text_utils import normalize_text, fuzzy_score
+from text_processing import normalize
+from match_scoring import match_chain
 from secondary_matcher import SecondaryMatcher
 from global_filter import GlobalFilter
 
@@ -156,7 +157,7 @@ def enhanced_search(
     # 索引器优先级：从 Prowlarr API 读取（只读不改）
     indexer_weights: Dict[str, int] = client.get_indexer_priorities()
 
-    query_norm = normalize_text(title)
+    query_norm = normalize(title)
     total_raw = 0
 
     # 回退链搜索（短路返回）
@@ -231,7 +232,8 @@ def _composite_score(
     indexer_weights 来自 Prowlarr 的索引器优先级（priority 越小越优先）。
     转换为 0-1 分数：(50 - priority) / 50，clamp 到 [0, 1]。
     """
-    title_match = fuzzy_score(query_norm, normalize_text(r.title))
+    # 用 L2 match_chain 计算匹配度（0-100），归一化到 0-1
+    title_match = match_chain([query_norm], [normalize(r.title)], []) / 100.0
     # Prowlarr priority: 1=最高优先, 50=最低。转换为 0-1 分数
     raw_priority = indexer_weights.get(r.indexer, 25)
     indexer_score = max(0.0, min(1.0, (50 - raw_priority) / 50))

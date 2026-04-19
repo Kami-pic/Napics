@@ -5,6 +5,25 @@
 
 ## 跨域业务知识
 
+### 搜索匹配过滤排序（通用能力层）
+- 4 个基础模块：text_processing.py（L1）、match_scoring.py（L2）、data_filtering.py（L3）、result_sorting.py（L4）
+- L1 文本处理：normalize（繁简+全角+标点+小写）、detectLanguage、splitByLanguage（数字/字母紧邻CJK归入中文）、isShortName、extractVariants、cleanKeyword（含 blacklist）、tokenize
+- L2 匹配评分：match_chain（快速筛选，0-100 分）、multi_dimension_score（精细排名，多维度+交叉验证+缺失惩罚）
+- L3 数据过滤：include_exclude_filter、threshold_filter（磁力链接豁免）、soft_filter（只标记不排除）、deduplicate、filter_pipeline（完整流水线+统计+filtered_reason）
+- L4 结果排序：multi_level_sort（默认：magnet_only→season_pack→match_score→quality_score→seeders→size）、weighted_sort
+- L2 只算匹配分，质量分（quality_score）是业务逻辑，L4 负责合并
+- 短名字保护：中文≤2字符、英文≤5字符只允许精确匹配
+- 动态 fuzzy 阈值：长度≤4 禁用，5-10 用 0.7，>10 用 0.8
+- 技能文档：`.kiro/skills/L1-text-processing.md` ~ `L4-result-sorting.md`
+- **架构决策**：L1-L4 是通用能力 skill（已完成），业务编排（BT搜索匹配、刮削候选、过滤排序的具体参数和流程）不做独立 skill，而是在接入业务代码时边做边总结到对应的 knowledge 文件中
+
+### 名称可信度机制
+- clean_name 新增 `clean_name_source` 字段，shadow_name 已有 `shadow_name_source`
+- 统一优先级表 `NAME_SOURCE_PRIORITY`（shared.py）：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
+- `safe_set_clean_name()` 辅助函数：低优先级不覆盖高优先级
+- `auto_fill` 已改为分层优先级保护（不只保护 manual，还保护 nfo > tmdb > scrape > parsed）
+- 设计文档：`docs/name-trust-design.md`
+
 ### 搜索架构（BT/磁力 + 网盘 双 Tab）
 - BT/磁力：Prowlarr（主力）+ 5 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑）
 - SSE 全源并行搜索（/api/search/stream），as_completed 逐个推送，前端增量追加
@@ -70,6 +89,7 @@
 - ddys 已升级为 JSON API（POST /api/search-netdisk），link 字段是 base64 编码
 - 蜜柑 RSS 同时服务于 BT 搜索（即时）和订阅系统（定时轮询），共用 rss_source_mikan.py
 - 新增 BT 直搜源步骤：写爬虫(继承 ScraperBase) → shared.py 加 getter → routes/search.py 的 scrapers 列表加一行
+- 搜索匹配通用模块：text_processing.py（L1）→ match_scoring.py（L2）→ data_filtering.py（L3）→ result_sorting.py（L4），业务代码调用这些模块而非自己实现匹配逻辑
 
 ## 领域索引
 
@@ -83,3 +103,10 @@
 - API 清单 → `knowledge/api-reference.md`
 - 数据结构 → `knowledge/data-models.md`
 - BT 搜索扩展 TODO → `docs/bt-expand-todo.md`
+- 搜索匹配过滤调研 → `docs/search-match-filter-research.md`
+- 搜索匹配技能建设 TODO → `docs/skill-build-todo.md`
+- 通用技能 L1-L4 → `skills/L1-text-processing.md` ~ `skills/L4-result-sorting.md`
+
+## 测试沙盒
+
+- `backend/sandbox_real/`：从真实 NAS 媒体库复制的目录结构（空文件），覆盖各种极端命名场景，用于文件整理、匹配、刮削、搜索等功能的集成测试

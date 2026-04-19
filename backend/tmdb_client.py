@@ -5,7 +5,7 @@ import json
 import unicodedata
 from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 from pydantic import BaseModel
-from text_utils import normalize_text
+from text_processing import normalize as normalize_text
 
 if TYPE_CHECKING:
     from enhanced_scorer import EnhancedScorer, MatchResult

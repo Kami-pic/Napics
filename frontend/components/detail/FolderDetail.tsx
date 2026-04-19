@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { FolderNode } from "@/types";
 import { api } from "@/lib/api";
-import { formatSize } from "@/lib/utils";
+import { formatSize, splitByLanguage } from "@/lib/utils";
 import { FOLDER_TYPE_LABELS, isAggregate as isAggregateType } from "@/lib/folderTypes";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
@@ -300,15 +300,12 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
       </div>
       {/* 第一行操作按钮 */}
       {(() => {
-        // cnName：从 clean_name 提取中文部分
+        // cnName：从 clean_name 提取中文部分（数字紧邻中文时归入中文）
         const cleanName = node.clean_name || node.name;
-        const cnParts = cleanName.match(/[\u4e00-\u9fff\u3400-\u4dbf]+/g);
-        const cnName = cnParts ? [...new Set(cnParts)].join("") : cleanName;
-        // enName：shadow_name 去年份 > clean_name 中的英文部分
+        const { cn: cnName, en: enFromClean } = splitByLanguage(cleanName);
+        // enName：shadow_name 去年份的英文部分 > clean_name 的英文部分
         const shadowClean = (node.shadow_name || "").replace(/\s*\(\d{4}\)\s*$/, "").trim();
-        // shadow_name 可能含中文，提取纯英文部分
-        const shadowEn = shadowClean.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, " ").replace(/\s+/g, " ").trim();
-        const enFromClean = cleanName.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, " ").replace(/\s+/g, " ").trim();
+        const { en: shadowEn } = splitByLanguage(shadowClean);
         const enName = shadowEn || enFromClean || "";
         const ft = node.folder_type || "";
         // 季号：从 node.name 中提取

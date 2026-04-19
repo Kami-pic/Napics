@@ -15,7 +15,8 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from text_utils import normalize_text, fuzzy_score
+from text_processing import normalize as normalize_text
+from text_utils import fuzzy_score
 from alias_resolver import AliasSet
 
 

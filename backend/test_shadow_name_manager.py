@@ -109,6 +109,15 @@ class TestAutoFill:
         assert entry.shadow_name == "New Auto"
         assert entry.source == "tmdb"
 
+    def test_auto_fill_blocked_by_higher_priority(self, manager):
+        """nfo(3) 不被 parsed(1) 覆盖"""
+        manager.set("/videos/movie_a.mkv", "NFO Name", "nfo", 1)
+        result = manager.auto_fill("/videos/movie_a.mkv", "Parsed Name", "parsed", 2)
+        assert result is False
+        entry = manager.get("/videos/movie_a.mkv")
+        assert entry.shadow_name == "NFO Name"
+        assert entry.source == "nfo"
+
     def test_auto_fill_nonexistent_path_returns_false(self, manager):
         result = manager.auto_fill("/nonexistent.mkv", "Name", "tmdb")
         assert result is False

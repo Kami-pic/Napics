@@ -163,8 +163,6 @@ export default function SearchModal({
   // 搜索源状态（SSE 实时更新）
   const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({});
 
-  // 垃圾版本排除词（前端过滤用）
-  const JUNK_PATTERNS = /\b(TS|CAM|HDTC|TC|TELECINE|HDTS|TELESYNC)\b/i;
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
@@ -293,27 +291,31 @@ export default function SearchModal({
   // 前端过滤：FilterBar 筛选 + 智能过滤（排除垃圾版本）
   const displayResults = useMemo(() => {
     let list = results;
-    // 智能过滤开启时：排除 TS/CAM/HDTC 等垃圾版本
+    // 智能过滤开启时：排除后端标记的垃圾版本
     if (smartFilter) {
-      list = list.filter(r => !JUNK_PATTERNS.test(r.title));
+      list = list.filter(r => !(r as any).is_junk);
     }
-    // 排序：匹配准确度 > quality_score > seeders > size_gb（全部降序）
+    // 排序：match_score > quality_score > seeders > size_gb
+    // 磁力链接源（seeders=0 且 size=0）排在正常资源后面
     list = [...list].sort((a, b) => {
-      const kw = keyword.toLowerCase();
-      const aMatch = a.title.toLowerCase().includes(kw) ? 1 : 0;
-      const bMatch = b.title.toLowerCase().includes(kw) ? 1 : 0;
+      // 磁力链接排后
+      const aMagnet = a.seeders === 0 && a.size_gb === 0 ? 1 : 0;
+      const bMagnet = b.seeders === 0 && b.size_gb === 0 ? 1 : 0;
+      if (aMagnet !== bMagnet) return aMagnet - bMagnet;
+      // match_score（后端 L2 计算）
+      const aMatch = (a as any).match_score ?? 0;
+      const bMatch = (b as any).match_score ?? 0;
       if (bMatch !== aMatch) return bMatch - aMatch;
+      // quality_score
       const sa = (a as any).quality_score ?? 0;
       const sb = (b as any).quality_score ?? 0;
       if (sb !== sa) return sb - sa;
-      // 磁力链接源（seeders=0 且 size=0）视为有效资源，给基础分 1
-      const aSeeders = (a.seeders === 0 && a.size_gb === 0) ? 1 : a.seeders;
-      const bSeeders = (b.seeders === 0 && b.size_gb === 0) ? 1 : b.seeders;
-      if (bSeeders !== aSeeders) return bSeeders - aSeeders;
+      // seeders
+      if (b.seeders !== a.seeders) return b.seeders - a.seeders;
       return b.size_gb - a.size_gb;
     });
     return list;
-  }, [results, smartFilter, keyword]);
+  }, [results, smartFilter]);
   const filtered = applyFilters(displayResults, filters, disabledSources);
   const isHigher = (res: EnhancedSearchResult) => {
     // 优先用 quality_score 比较（100 分制），回退到分辨率比较

@@ -264,8 +264,38 @@ def _sync_library_paths(ops: list):
         config_m.save_library(library)
 
 
+# ── 名称可信度优先级 ──
+
+# 统一优先级表：manual > nfo > tmdb = douban = bangumi > scrape > parsed > ""
+NAME_SOURCE_PRIORITY = {
+    "manual": 4,
+    "nfo": 3,
+    "tmdb": 3,
+    "douban": 2,
+    "bangumi": 2,
+    "scrape": 2,
+    "parsed": 1,
+    "": 0,
+}
+
+
+def safe_set_clean_name(item: dict, new_name: str, source: str) -> bool:
+    """安全设置 clean_name，低优先级不覆盖高优先级。
+    返回 True 表示设置成功，False 表示被拒绝。"""
+    if not new_name:
+        return False
+    existing_source = item.get("clean_name_source", "")
+    existing_priority = NAME_SOURCE_PRIORITY.get(existing_source, 0)
+    new_priority = NAME_SOURCE_PRIORITY.get(source, 0)
+    if existing_priority > new_priority:
+        return False
+    item["clean_name"] = new_name
+    item["clean_name_source"] = source
+    return True
+
+
 def _update_clean_names_after_scrape(path: str, scrape_result: dict):
-    """刮削成功后，用刮削结果更新 clean_name"""
+    """刮削成功后，用刮削结果更新 clean_name（受 safe_set_clean_name 优先级保护）"""
     try:
         self_data = scrape_result.get("self", {}).get("data") or {}
         title = self_data.get("title", "")
@@ -284,11 +314,10 @@ def _update_clean_names_after_scrape(path: str, scrape_result: dict):
                 ext = os.path.splitext(fp)[1].lower()
                 if ext in video_exts:
                     new_clean = clean_episode_name(v.get("file_name", ""), cn_title)
-                    if new_clean:
-                        v["clean_name"] = new_clean
-                    else:
-                        v["clean_name"] = cn_title
-                    changed = True
+                    if not new_clean:
+                        new_clean = cn_title
+                    if safe_set_clean_name(v, new_clean, "scrape"):
+                        changed = True
         if changed:
             config_m.save_library(library)
     except Exception:

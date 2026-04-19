@@ -2,7 +2,8 @@
 
 核心原则：
 - 复用 tmdb_client.parse_filename 作为唯一解析引擎，不手写 BT 标题正则
-- 复用 text_utils.normalize_text / fuzzy_score 做文本比对
+- 复用 L1 text_processing 做文本标准化和中英文分离
+- 复用 L2 match_scoring 做匹配评分
 """
 
 import re
@@ -10,7 +11,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from tmdb_client import parse_filename
-from text_utils import normalize_text, fuzzy_score
+from text_processing import normalize, split_by_language
+from match_scoring import match_chain
 
 
 class BTTitleInfo(BaseModel):
@@ -26,10 +28,6 @@ class MatchVerdict(BaseModel):
     """匹配判定结果"""
     passed: bool
     reason: str = ""
-
-
-# 标题模糊匹配阈值
-_TITLE_MATCH_THRESHOLD = 0.8
 
 
 class SecondaryMatcher:
@@ -129,73 +127,45 @@ class SecondaryMatcher:
         )
 
     def _split_cn_en(self, name: str) -> tuple:
-        """将混合名拆分为中文部分和英文部分。
-
-        示例:
-            "西部世界 Westworld" → ("西部世界", "Westworld")
-            "Westworld" → ("", "Westworld")
-            "进击的巨人" → ("进击的巨人", "")
-            "The Last of Us 最后生还者" → ("最后生还者", "The Last of Us")
-        """
+        """将混合名拆分为中文部分和英文部分（复用 L1 split_by_language）。"""
         if not name:
             return "", ""
-
-        # 提取连续中文字符段
-        cn_parts = re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]+', name)
-        cn_name = "".join(cn_parts)
-
-        # 提取英文部分（去掉中文后的剩余）
-        en_part = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf]+', ' ', name).strip()
-        en_part = re.sub(r'\s+', ' ', en_part).strip()
-
-        return cn_name, en_part
+        parts = split_by_language(name)
+        return parts["cn"], parts["en"]
 
     def _match_title(
         self, info: BTTitleInfo, target_titles: List[str]
     ) -> tuple:
-        """标题比对：BT 标题中的中英文名至少有一个与目标标题列表模糊匹配通过。
+        """标题比对：用 L2 match_chain 评分，阈值 40 分通过。
 
         返回 (passed: bool, reason: str)
         """
-        # 归一化目标标题
-        target_norms = []
-        for t in target_titles:
-            if not t:
-                continue
-            norm = normalize_text(t)
-            if norm:
-                target_norms.append((t, norm))
-
-        if not target_norms:
+        if not target_titles:
             return False, "目标标题列表为空"
 
         # 收集 BT 标题中的候选名
         candidates = []
         if info.cn_name:
-            candidates.append(("cn", info.cn_name, normalize_text(info.cn_name)))
+            candidates.append(("cn", info.cn_name))
         if info.en_name:
-            candidates.append(("en", info.en_name, normalize_text(info.en_name)))
+            candidates.append(("en", info.en_name))
 
         if not candidates:
-            # parse_filename 解析不出名称，宁可多不可漏，放行
             return True, "BT标题无法解析名称，默认放行"
 
-        # 逐一比对
-        best_score = 0.0
+        # 用 L2 match_chain 逐一比对
+        best_score = 0
         best_match = ""
-        for ctype, cname, cnorm in candidates:
-            if not cnorm:
-                continue
-            for tname, tnorm in target_norms:
-                score = fuzzy_score(cnorm, tnorm)
-                if score > best_score:
-                    best_score = score
-                    best_match = f"{ctype}:{cname} ↔ {tname} ({score:.2f})"
+        for ctype, cname in candidates:
+            score = match_chain([cname], target_titles, [])
+            if score > best_score:
+                best_score = score
+                best_match = f"{ctype}:{cname} ({score})"
 
-        if best_score >= _TITLE_MATCH_THRESHOLD:
+        if best_score >= 40:
             return True, f"标题匹配: {best_match}"
         else:
-            return False, f"标题不匹配(最高{best_score:.2f}<{_TITLE_MATCH_THRESHOLD})"
+            return False, f"标题不匹配(最高{best_score}<40)"
 
     def _match_year(
         self,

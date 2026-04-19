@@ -17,7 +17,8 @@ from pydantic import BaseModel
 
 from searcher import SearchResult
 from quality_parser import parse_quality, QualityTag
-from text_utils import normalize_text, fuzzy_score
+from text_processing import normalize as normalize_text
+from text_utils import fuzzy_score
 
 
 class RecommendResult(BaseModel):

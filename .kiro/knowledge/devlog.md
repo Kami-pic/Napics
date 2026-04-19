@@ -5,7 +5,32 @@
 
 ---
 
-## 2026-04-16 搜索弹窗全面改造（SSE 并行 + 筛选器 + 设置弹窗）
+## 2026-04-19 L1-L4 全场景切换 + 名称流转链路治理（阶段 2 完成）
+**变更**:
+- L1 splitByLanguage bug 修复：数字/字母紧邻 CJK 时归入中文
+- 名称可信度机制：clean_name_source + NAME_SOURCE_PRIORITY + safe_set_clean_name + auto_fill 分层保护
+- 只读审计 media_library.json（3302 条）：零覆盖风险
+- 正式拦截：_update_clean_names_after_scrape / 扫描 / 手动修改 三个写入点接入保护
+- BT 搜索接入：_enrich_result 新增 match_score（L2）+ is_junk（L3），前端排序改用 match_score
+- 全场景切换到 L1-L4：SecondaryMatcher → L1+L2、local_media_matcher → L1、searcher._composite_score → L2、tmdb_client/scraper/enhanced_scorer/combined_recommend/batch_recommend → L1 normalize
+- 前端 splitByLanguage 工具函数（和后端 L1 一致），FolderDetail/VideoDetail cnName 提取切换
+- 22 个集成测试全绿（沙盒 3215 文件 smoke test + SecondaryMatcher + LocalMediaMatcher + 过滤排序端到端）
+- sub-agent 审查：切换完整性 100%，参数正确性 100%，逻辑一致性 100%
+**决策**: 方案 B 分别追踪 clean_name_source/shadow_name_source；source 细分到 nfo/tmdb/douban/bangumi 粒度；L1-L4 是通用能力 skill，业务编排不做独立 skill；2.1.3 多语言搜索词暂缓
+**踩坑**: match_chain 签名是 3 个列表参数不是 2 个字符串；_enrich_result 需要先 parse_filename 提取 clean_name 再匹配（直接传 BT 完整标题会因噪声导致匹配失败）；BT 标题含集号时 clean_name 包含集号导致 fuzzy 匹配度下降
+
+## 2026-04-17 搜索匹配过滤排序 — 通用技能建设（阶段 1 完成）
+**变更**:
+- 调研文档：从 MoviePilot、xhs-mj-workflow、RapidFuzz 等提炼搜索匹配过滤排序的通用模式
+- 4 个通用技能文档：L1 文本处理、L2 匹配评分、L3 数据过滤、L4 结果排序（`.kiro/skills/`）
+- 4 个基础模块实现：text_processing.py、match_scoring.py、data_filtering.py、result_sorting.py
+- 86 个测试全绿（含 sandbox_real 真实数据集成测试）
+- 新增 cleanup-todo.md（遗留清理）、skill-build-todo.md（技能建设 TODO）
+- ai-rules 补充测试沙盒路径（`backend/sandbox_real/`）
+- project-memory 补充领域索引（技能文档、调研文档、沙盒）
+**决策**: 技能分 4 层（L1 文本→L2 评分→L3 过滤→L4 排序），通用能力和业务逻辑分离；匹配度评分只算"有多像"，质量评分是业务逻辑；softFilter 只标记不降分，降分归 L2；名称流转链路用非破坏性三步法治理
+**踩坑**: fsWrite 无法写入 `~` 路径（全局 skills 目录），改为放工作区 `.kiro/skills/`；xhs-mj-workflow 被 Kiro 读取时触发 LF→CRLF 行尾符变更，需 git checkout 恢复；normalize 后去空格导致 fuzzy_score 长度差异过大返回 0，token_set 匹配需要短名字保护防止单字符 token 误匹配
+
 **变更**:
 - SSE 搜索改为全源并行（Prowlarr + 5 直搜源同时搜索，as_completed 逐个推送，增量追加到前端）
 - FilterBar 全面改造：源开关标签（可点击切换）+ MultiSelect 多选筛选器 + Prowlarr 索引器仅开启时显示

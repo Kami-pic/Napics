@@ -79,12 +79,14 @@ async def scan_path(path: str):
             final = kept + results
             
             from analyzer import _clean_filename_for_folder
+            from shared import safe_set_clean_name
             for item in final:
                 if not item.get("clean_name"):
                     fn = item.get("file_name", "")
                     if fn:
                         cleaned = _clean_filename_for_folder(fn)
-                        item["clean_name"] = cleaned if cleaned else os.path.splitext(fn)[0]
+                        new_name = cleaned if cleaned else os.path.splitext(fn)[0]
+                        safe_set_clean_name(item, new_name, "parsed")
             
             config_m.save_library(final)
             yield "data: " + json.dumps({"type": "done", "total": len(results)}) + "\n\n"
@@ -276,7 +278,7 @@ def set_category_tag(req: dict):
 
 @router.post("/library/clean-name")
 def set_clean_name(req: dict):
-    """手动修改清洗名"""
+    """手动修改清洗名（manual 来源，最高优先级）"""
     file_path = req.get("file_path", "")
     clean_name = req.get("clean_name", "")
     if not file_path:
@@ -286,6 +288,7 @@ def set_clean_name(req: dict):
     for v in library:
         if v.get("file_path") == file_path:
             v["clean_name"] = clean_name
+            v["clean_name_source"] = "manual" if clean_name else ""
             config_m.save_library(library)
             return {"status": "ok"}
     return {"status": "not_found"}

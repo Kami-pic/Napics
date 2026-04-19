@@ -34,8 +34,8 @@ from quality_parser import compute_quality_score
 router = APIRouter()
 
 
-def _enrich_result(r) -> dict:
-    """给搜索结果附加 quality_score（100 分制），确保可 JSON 序列化"""
+def _enrich_result(r, search_query: str = "") -> dict:
+    """给搜索结果附加 quality_score（100 分制）和 match_score（0-100），确保可 JSON 序列化"""
     try:
         if hasattr(r, "dict"):
             d = r.dict()
@@ -52,11 +52,34 @@ def _enrich_result(r) -> dict:
             d["quality_score"] = compute_quality_score(r.quality)
         else:
             d["quality_score"] = 0
+        # match_score：用 L2 match_chain 计算搜索词和标题的匹配度
+        if search_query:
+            try:
+                from match_scoring import match_chain
+                from text_processing import split_by_language as _split
+                from tmdb_client import parse_filename as _parse
+                # 从搜索词提取中英文变体作为候选
+                parts = _split(search_query)
+                candidates = [n for n in [search_query, parts["cn"], parts["en"]] if n]
+                # 从 BT 标题提取 clean_name 作为目标
+                parsed = _parse(d.get("title", ""))
+                bt_clean = parsed.get("clean_name", "") or d.get("title", "")
+                bt_parts = _split(bt_clean)
+                targets = [n for n in [bt_clean, bt_parts["cn"], bt_parts["en"]] if n]
+                d["match_score"] = match_chain(candidates, targets, [])
+            except Exception:
+                d["match_score"] = 0
+        else:
+            d["match_score"] = 0
+        # is_junk：用 L3 soft_filter 标记垃圾版本
+        title = d.get("title", "")
+        junk_patterns = ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS", "TELESYNC"]
+        d["is_junk"] = any(re.search(r'\b' + p + r'\b', title, re.I) for p in junk_patterns)
         return d
     except Exception:
         return {"title": getattr(r, "title", ""), "download_url": getattr(r, "download_url", ""),
                 "indexer": getattr(r, "indexer", ""), "seeders": getattr(r, "seeders", 0),
-                "size_gb": getattr(r, "size_gb", 0), "quality_score": 0}
+                "size_gb": getattr(r, "size_gb", 0), "quality_score": 0, "match_score": 0}
 
 
 def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
@@ -142,7 +165,7 @@ def search_resources(
         return {
             "query": query,
             "bt_count": len(bt_results_list),
-            "bt_results": [_enrich_result(r) for r in bt_results_list],
+            "bt_results": [_enrich_result(r, query) for r in bt_results_list],
             "hit_keyword": resp.hit_keyword,
             "total_raw": resp.total_raw,
             "total_filtered": len(bt_results_list),
@@ -157,7 +180,7 @@ def search_resources(
     return {
         "query": query,
         "bt_count": len(bt_results),
-        "bt_results": [_enrich_result(r) for r in bt_results],
+        "bt_results": [_enrich_result(r, query) for r in bt_results],
         "hit_keyword": query,
         "total_raw": len(bt_results),
         "total_filtered": len(bt_results),
@@ -247,7 +270,7 @@ def search_resources_stream(
                         source_hashes.add(hu)
                     source_deduped.append(r)
                 status = "done" if not err else "failed"
-                enriched = [_enrich_result(r) for r in source_deduped]
+                enriched = [_enrich_result(r, query) for r in source_deduped]
                 yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'results': enriched}, default=str)}\n\n"
 
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
@@ -396,7 +419,7 @@ def search_single_keyword(
         return {
             "keyword": keyword,
             "bt_count": len(all_results),
-            "bt_results": [_enrich_result(r) for r in all_results],
+            "bt_results": [_enrich_result(r, keyword) for r in all_results],
             "total_raw": total_raw,
             "total_filtered": len(all_results),
         }

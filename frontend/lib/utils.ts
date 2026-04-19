@@ -35,3 +35,37 @@ export function getFolderDepth(path: string): number {
   if (!path) return 0;
   return path.replace(/\\/g, "/").split("/").filter(Boolean).length;
 }
+
+/** 中英文分离（和后端 L1 splitByLanguage 逻辑一致）
+ * 数字/字母紧邻中文时归入中文（如 "91天" → cn="91天"，"JOJO的奇妙冒险" → cn="JOJO的奇妙冒险"）
+ * 独立的英文单词归入英文 */
+export function splitByLanguage(text: string): { cn: string; en: string } {
+  if (!text) return { cn: "", en: "" };
+  const CJK_RE = /[\u4e00-\u9fff\u3400-\u4dbf]+/;
+  const ALPHA_RE = /^[a-zA-Z]+$/;
+  const DIGIT_RE = /^[0-9]+$/;
+  // 拆分为 token 序列
+  const tokens = text.match(/[\u4e00-\u9fff\u3400-\u4dbf]+|[a-zA-Z]+|[0-9]+|[^\u4e00-\u9fff\u3400-\u4dbfa-zA-Z0-9]+/g) || [];
+  const cnParts: string[] = [];
+  const enParts: string[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    const isCjk = CJK_RE.test(tok);
+    const isAlpha = ALPHA_RE.test(tok);
+    const isDigit = DIGIT_RE.test(tok);
+    if (isCjk) {
+      cnParts.push(tok);
+    } else if (isAlpha) {
+      const prevCjk = i > 0 && CJK_RE.test(tokens[i - 1]);
+      const nextCjk = i < tokens.length - 1 && CJK_RE.test(tokens[i + 1]);
+      if (prevCjk || nextCjk) cnParts.push(tok);
+      else enParts.push(tok);
+    } else if (isDigit) {
+      const prevCjk = i > 0 && CJK_RE.test(tokens[i - 1]);
+      const nextCjk = i < tokens.length - 1 && CJK_RE.test(tokens[i + 1]);
+      if (prevCjk || nextCjk) cnParts.push(tok);
+      else enParts.push(tok);
+    }
+  }
+  return { cn: cnParts.join(""), en: enParts.join(" ").replace(/\s+/g, " ").trim() };
+}

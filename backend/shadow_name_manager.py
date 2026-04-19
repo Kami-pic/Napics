@@ -70,14 +70,18 @@ class ShadowNameManager:
     def auto_fill(self, file_path: str, shadow_name: str,
                   source: str, tmdb_id: Optional[int] = None,
                   organize_status: str = "ok") -> bool:
-        """自动填充影子名（不覆盖 manual 来源）
-        返回 True 表示填充成功，False 表示已有手动设置被跳过
+        """自动填充影子名（分层优先级保护：高优先级不被低优先级覆盖）
+        优先级：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1)
+        返回 True 表示填充成功，False 表示已有更高优先级被跳过
         organize_status: "ok" | "scrape_failed" """
+        # 优先级表（和 shared.py 的 NAME_SOURCE_PRIORITY 保持一致）
+        _PRIORITY = {"manual": 4, "nfo": 3, "tmdb": 3, "douban": 2, "bangumi": 2, "scrape": 2, "parsed": 1, "": 0}
         library = self._load_library()
         item = self._find_item(library, file_path)
         if item is None:
             return False
-        if item.get("shadow_name_source") == "manual":
+        existing_source = item.get("shadow_name_source", "")
+        if _PRIORITY.get(existing_source, 0) > _PRIORITY.get(source, 0):
             return False
         item["shadow_name"] = shadow_name
         item["shadow_name_source"] = source

@@ -8,7 +8,8 @@ import time
 import concurrent.futures
 from typing import List, Dict, Optional, Tuple
 
-from text_utils import normalize_text, fuzzy_score
+from text_processing import normalize as normalize_text
+from text_utils import fuzzy_score
 import douban_api_v2
 import bangumi_client
 

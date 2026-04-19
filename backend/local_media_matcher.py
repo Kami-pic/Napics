@@ -11,7 +11,7 @@ import time
 import threading
 from typing import Dict, List, Optional, Tuple
 
-from text_utils import normalize_text, fuzzy_score
+from text_processing import normalize
 
 # ── 常量 ──
 _FUZZY_THRESHOLD = 0.80  # 片名模糊匹配阈值
@@ -121,7 +121,7 @@ class LocalMediaMatcher:
             for name in all_names:
                 # 提取年份
                 year = _extract_year(name) or _extract_year(fn)
-                norm = normalize_text(name)
+                norm = normalize(name)
                 if not norm:
                     continue
 
@@ -184,7 +184,7 @@ class LocalMediaMatcher:
 
     def _match_by_title(self, title: str, year: str) -> Optional[tuple]:
         """片名匹配内部逻辑，返回 (status, folder) 或 None"""
-        norm = normalize_text(title)
+        norm = normalize(title)
         if not norm:
             return None
 

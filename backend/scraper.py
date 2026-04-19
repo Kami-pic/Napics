@@ -100,7 +100,7 @@ def _search_tmdb(folder_name: str, tmdb_client_instance, prefer_tv: bool = False
                 result = en_result
             else:
                 from tmdb_client import calc_match_score
-                from text_utils import normalize_text
+                from text_processing import normalize as normalize_text
                 cn_s = calc_match_score(normalize_text(search_name), result.title, result.original_title, result.year, folder_year)
                 en_s = calc_match_score(normalize_text(en_query), en_result.title, en_result.original_title, en_result.year, folder_year)
                 if en_s > cn_s:
@@ -788,7 +788,7 @@ def scrape_video(video_path: str, tmdb_client_instance, force: bool = False) -> 
                 result = en_result
             else:
                 from tmdb_client import calc_match_score
-                from text_utils import normalize_text
+                from text_processing import normalize as normalize_text
                 cn_score = calc_match_score(normalize_text(search_name), result.title, result.original_title, result.year, None)
                 en_score = calc_match_score(normalize_text(en_query), en_result.title, en_result.original_title, en_result.year, None)
                 if en_score > cn_score:

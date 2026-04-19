@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
-import { formatSize, formatDuration } from "@/lib/utils";
+import { formatSize, formatDuration, splitByLanguage } from "@/lib/utils";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
 import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge, ScrapeInfo } from "./DetailComponents";
@@ -95,14 +95,11 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
       <ShadowNameSection path={v.file_path} video={v} onRefresh={onRefresh} />
       {/* 第一行：搜索升级 / 一键刮削 / 重新匹配 */}
       {(() => {
-        // 从 clean_name 拆分中英文，英文名优先用 shadow_name（去年份）
+        // 从 clean_name 拆分中英文（数字紧邻中文时归入中文）
         const cleanName = v.clean_name || v.folder_name || v.file_name;
-        const cnParts = cleanName.match(/[\u4e00-\u9fff\u3400-\u4dbf]+/g);
-        const cnName = cnParts ? [...new Set(cnParts)].join("") : cleanName;
+        const { cn: cnName, en: enFromClean } = splitByLanguage(cleanName);
         const shadowClean = (v.shadow_name || "").replace(/\s*\(\d{4}\)\s*$/, "").trim();
-        // shadow_name 可能含中文，提取纯英文部分
-        const shadowEn = shadowClean.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, " ").replace(/\s+/g, " ").trim();
-        const enFromClean = cleanName.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, " ").replace(/\s+/g, " ").trim();
+        const { en: shadowEn } = splitByLanguage(shadowClean);
         const enName = shadowEn || enFromClean || "";
         // 从文件名提取季集号
         const seMatch = v.file_name.match(/S(\d+)E(\d+)/i);
