@@ -1,4 +1,4 @@
-# [TODO] 发现推荐模块改造
+# [废弃] 发现推荐模块改造
 
 > 参考 MoviePilot v2 的发现/推荐/订阅模块，将其核心功能接入 nas-video-upgrader。
 > 分三个阶段，每阶段可独立交付。
@@ -277,3 +277,4 @@
 - 文件缓存统一放 `backend/scrape_cache/`，key 用 md5 哈希
 - 前端新组件放 `frontend/components/media/`，不新建子目录
 - 路由不加 `/api/v1/` 前缀，直接挂根路径
+

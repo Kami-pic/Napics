@@ -83,50 +83,7 @@
 
 ## 技术要点
 - 搜索词构造在前端（SearchModal 的 searchTags）和后端（alias_resolver）都有逻辑，需要统一
-- 匹配准确度评分应在后端计算，作为 SearchResult 的新字段返回
-- 排序在前端做（用户可切换排序方式）
+- 匹配准确度评分应在后端计算，作为 SearchResult 的新字段返回 → ✅ 已实现（_enrich_result match_score）
+- 排序在前端做（用户可切换排序方式）→ ✅ 已实现（displayResults 用 match_score 排序）
 
----
-
-## 6. 2026-04-19 实测发现的问题
-
-### 6.1 Prowlarr 索引器与爬虫源解耦（架构问题）
-- [ ] Prowlarr 中的 mikan、nyaa 索引器和爬虫源（bt_scraper_mikan.py、bt_scraper_nyaa.py）没有解耦
-- [ ] 如果 Prowlarr 里配了 mikan/nyaa 索引器，同时爬虫源也开着，会导致重复搜索
-- [ ] 索引器列表不应该混入非 Prowlarr 的源（如 xl720、磁力熊）
-
-### 6.2 FilterBar 筛选无效（需排查）
-- [ ] 用户反馈"过滤按钮完全没有用，点击不会进行任何过滤"
-- [ ] 可能原因：FilterBar 的 filters state 没有正确传递，或 applyFilters 的 isDefault 判断有问题
-- [ ] 需要重启服务后复现确认
-
-### 6.3 封面丢失（网络/代理问题）
-- [ ] 关闭 clash 后，推荐卡片封面大部分丢失
-- [ ] 详情页加载后却有封面（可能是缓存或不同的图片源）
-- [ ] 需要检查封面 URL 是否走代理，以及 fallback 机制
-
-### 6.4 非 TMDB 源缺少英文名（搜索准确性）
-- [ ] 发现页中豆瓣/Bangumi 来源的条目没有英文名，导致 BT 搜索时只能用中文搜
-- [ ] 媒体库已有英文名获取能力（shadow_name_manager.batch_generate），但发现页没有
-- [ ] 需要在 normalizeItem 中补充英文名获取逻辑（从 TMDB API 查询）
-
----
-
-## 7. 从 skill-build-todo 迁移的未完成项
-
-### 7.1 多语言搜索词构造（原 2.1.3，暂缓）
-- [ ] SSE 搜索时不同源用不同语言搜索词（Prowlarr 英文优先、磁力熊中文优先等）
-- 当前 enhanced_search 回退链 + 前端拼好中英文搜索词够用，等搜索质量问题再优化
-
-### 7.2 L1-L4 实战反馈迭代（原 2.2）
-- [ ] 根据实战反馈修订 skill 文档（match_score 效果、is_junk 准确性等）
-- [ ] 用刮削候选、推荐去重等场景进一步验证 L1-L4
-
-### 7.3 技能沉淀复用（原阶段 3）
-- [ ] 将验证后的 skill 文档定稿
-- [ ] 提取业务无关的通用代码模板到 skill 的 references/ 目录
-- [ ] 提取各场景的配置模板（维度、权重、策略）为 JSON/YAML
-
-### 7.4 已知限制（待优化）
-- [ ] BT 标题含集号时 match_chain 匹配度下降（parse_filename 未识别 `- 01` 为集号）
-- [ ] 多译名匹配依赖目标标题列表完整性（如 `烙印勇士` vs `剑风传奇` 需要别名列表）
+> 第 6、7 节已迁移到 polish-todo.md
