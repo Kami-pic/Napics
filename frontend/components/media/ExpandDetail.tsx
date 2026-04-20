@@ -71,6 +71,9 @@ export default function ExpandDetail({
             {(d?.original_title && d.original_title !== d.title) && (
               <p className="text-xs text-slate-500 mt-0.5">{d.original_title}</p>
             )}
+            {((d as any)?.en_title && (d as any).en_title !== d?.original_title && (d as any).en_title !== d?.title) && (
+              <p className="text-xs text-slate-400 mt-0.5">{(d as any).en_title}</p>
+            )}
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {/* 数据源下拉 + 刷新按钮 */}

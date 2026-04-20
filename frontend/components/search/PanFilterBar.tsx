@@ -81,6 +81,19 @@ export default function PanFilterBar({ filters, onChange, groups, sourceStatuses
     <div className="space-y-2">
       {/* 源开关栏 */}
       <div className="flex flex-wrap items-center gap-1.5">
+        {/* 全选/反选 */}
+        {(() => {
+          const enabledSources = panSources.filter(s => s.enabled);
+          const allDisabled = enabledSources.every(s => disabledSources.has(s.name));
+          const noneDisabled = enabledSources.every(s => !disabledSources.has(s.name));
+          return (
+            <button onClick={() => { enabledSources.forEach(s => { if (allDisabled || !noneDisabled) { if (disabledSources.has(s.name)) onToggleSource(s.name); } else { if (!disabledSources.has(s.name)) onToggleSource(s.name); } }); }}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-500 hover:text-slate-300 hover:bg-white/[0.08] transition-colors"
+              title={noneDisabled ? "全部关闭" : "全部开启"}>
+              {noneDisabled ? "✕ 全关" : "✓ 全开"}
+            </button>
+          );
+        })()}
         {panSources.filter(s => s.enabled).map((s) => {
           const st = statusMap[s.name];
           const disabled = disabledSources.has(s.name);

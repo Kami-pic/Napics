@@ -18,7 +18,10 @@ router = APIRouter()
 def proxy_image(url: str):
     """代理外部图片请求（绕过防盗链 + 走 HTTP 代理）"""
     try:
-        headers = {"Referer": "https://movie.douban.com/", "User-Agent": "Mozilla/5.0"}
+        # 豆瓣图片需要 Referer，TMDB 图片不需要
+        headers = {"User-Agent": "Mozilla/5.0"}
+        if "doubanio.com" in url:
+            headers["Referer"] = "https://movie.douban.com/"
         proxies = None
         http_proxy = getattr(config_m.config, 'http_proxy', '') or ''
         if http_proxy:

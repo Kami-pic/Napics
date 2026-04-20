@@ -349,6 +349,14 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
                     if result.get("rating"): ratings["tmdb"] = result["rating"]
                     if result.get("tmdb_id"): external_ids["tmdb_id"] = result["tmdb_id"]
                     if result.get("imdb_id"): external_ids["imdb_id"] = result["imdb_id"]
+                    # 补全英文名：如果当前 original_title 是非英文（日/韩/中），用 TMDB 的英文名
+                    tmdb_orig = result.get("original_title", "")
+                    if tmdb_orig and tmdb_orig != detail.get("title", ""):
+                        cur_orig = detail.get("original_title", "")
+                        # 如果当前没有 original_title，或当前是非拉丁字符（日/韩/中），用 TMDB 的
+                        import re as _re
+                        if not cur_orig or _re.search(r'[\u3000-\u9fff\uac00-\ud7af]', cur_orig):
+                            detail["en_title"] = tmdb_orig  # 新增英文名字段
                 elif key == "bangumi" and result and result.get("rating"):
                     ratings["bangumi"] = result["rating"]
             except Exception:

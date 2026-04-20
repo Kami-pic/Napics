@@ -138,10 +138,18 @@ export default function SearchModal({
     });
   }, []);
 
-  // Prowlarr 索引器（从搜索结果动态提取）
+  // 已知直搜源名称（用于区分 Prowlarr 索引器）
+  const DIRECT_SOURCES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan"]);
+  // Prowlarr 索引器（仅从 Prowlarr 来源的结果中提取，排除直搜源）
   const availableIndexers = useMemo(() => {
     const s = new Set<string>();
-    results.forEach(r => { if (r.indexer) s.add(r.indexer); });
+    results.forEach(r => {
+      const src = (r as any)._source || r.indexer;
+      // 只有 Prowlarr 来源的结果才提取索引器名
+      if (src === "prowlarr" && r.indexer && !DIRECT_SOURCES.has(r.indexer)) {
+        s.add(r.indexer);
+      }
+    });
     return Array.from(s);
   }, [results]);
 
@@ -186,13 +194,13 @@ export default function SearchModal({
       setSearchingStep(`搜索：${q}`);
 
       // 尝试 SSE 流式搜索
-      const sseUrl = api.searchStream(q);
+      const sseUrl = api.searchStream(q, { cn_name: cnName, en_name: enName });
       const es = new EventSource(sseUrl);
       let sseResults: EnhancedSearchResult[] = [];
       let sseDone = false;
 
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, 60000);
+        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, 90000);
 
         es.onmessage = (event) => {
           try {
@@ -213,6 +221,7 @@ export default function SearchModal({
               if (data.results && data.results.length > 0) {
                 const newItems: EnhancedSearchResult[] = data.results.map((r: any) => ({
                   ...r,
+                  _source: data.source,  // 标记来源（prowlarr / bitsearch / cilixiong 等）
                   quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
                   quality_rank: r.quality_rank ?? 0,
                 }));

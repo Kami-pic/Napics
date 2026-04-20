@@ -12,6 +12,7 @@ import threading
 from typing import Dict, List, Optional, Tuple
 
 from text_processing import normalize
+from text_utils import fuzzy_score
 
 # ── 常量 ──
 _FUZZY_THRESHOLD = 0.80  # 片名模糊匹配阈值

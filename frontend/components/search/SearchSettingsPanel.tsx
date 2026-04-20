@@ -147,20 +147,28 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
                 <>
                   {indexers.length === 0 ? (
                     <p className="text-xs text-slate-600 py-2">暂无索引器配置（需要 Prowlarr 连接）</p>
-                  ) : indexers.map((idx, i) => (
+                  ) : indexers.map((idx, i) => {
+                    const statusColor = idx.status === "ok" ? "bg-green-500" : idx.status === "error" ? "bg-red-500" : idx.status === "warning" ? "bg-yellow-500" : idx.status === "disabled" ? "bg-slate-600" : "bg-slate-500";
+                    const statusText = idx.status === "ok" ? "正常" : idx.status === "error" ? "异常" : idx.status === "warning" ? "警告" : idx.status === "disabled" ? "已禁用" : "未知";
+                    return (
                     <div key={idx.name + i} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2.5 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Toggle label="" enabled={idx.enabled} onChange={(v) => {
                             const n = [...indexers]; n[i] = { ...n[i], enabled: v }; setIndexers(n);
                           }} compact />
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColor}`} title={`${statusText}${idx.status_error ? `: ${idx.status_error}` : ""}`} />
                           <span className={`text-[11px] ${idx.enabled ? "text-slate-300" : "text-slate-600"}`}>{idx.name}</span>
+                          {idx.status === "error" && <span className="text-[9px] text-red-400 truncate max-w-[120px]" title={idx.status_error}>{idx.status_error || "连接异常"}</span>}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] text-slate-600">优先级</span>
                           <input type="number" min={0} max={100} value={idx.priority}
                             onChange={e => { const n = [...indexers]; n[i] = { ...n[i], priority: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) }; setIndexers(n); }}
                             className="w-12 bg-[#1a1a1a] border border-white/[0.06] rounded px-1.5 py-0.5 text-[10px] text-slate-300 text-center outline-none" />
+                          {idx.prowlarr_priority !== undefined && idx.prowlarr_priority > 0 && (
+                            <span className="text-[9px] text-slate-600" title="Prowlarr 原始优先级">P:{idx.prowlarr_priority}</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -179,7 +187,7 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
                         })}
                       </div>
                     </div>
-                  ))}
+                  )})}
                   {indexers.length > 0 && (
                     <button onClick={saveIndexers} disabled={saving}
                       className="w-full py-1.5 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg text-[11px] text-blue-400 transition-colors disabled:opacity-50">

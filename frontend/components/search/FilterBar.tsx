@@ -33,7 +33,10 @@ const isSeasonPack = (title: string) => /S\d{2}/i.test(title) && !/E\d{2}/i.test
 export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>): EnhancedSearchResult[] {
   let list = results;
   if (disabledSources && disabledSources.size > 0) {
-    list = list.filter(r => !disabledSources.has(r.indexer));
+    list = list.filter(r => {
+      const source = (r as any)._source || r.indexer;
+      return !disabledSources.has(source);
+    });
   }
   const isDefault = filters.resolution.length === 0 && filters.source.length === 0 &&
     filters.videoCodec.length === 0 && filters.audioCodec.length === 0 &&
@@ -63,7 +66,11 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
       const isMagnetOnly = r.seeders === 0 && r.size_gb === 0;
       if (!isMagnetOnly) return false;
     }
-    if (filters.indexers.length > 0 && !filters.indexers.includes(r.indexer)) return false;
+    if (filters.indexers.length > 0) {
+      // Prowlarr 索引器筛选：只对 Prowlarr 来源的结果生效，直搜源不受影响
+      const source = (r as any)._source || r.indexer;
+      if (source === "prowlarr" && !filters.indexers.includes(r.indexer)) return false;
+    }
     return true;
   });
 }
@@ -115,10 +122,19 @@ function SourceToggleBar({ sources, statuses, disabledSources, onToggle }: {
   disabledSources: Set<string>;
   onToggle: (name: string) => void;
 }) {
-  if (!sources.length) return null;
+  const enabledSources = sources.filter(s => s.enabled);
+  if (!enabledSources.length) return null;
+  const allDisabled = enabledSources.every(s => disabledSources.has(s.name));
+  const noneDisabled = enabledSources.every(s => !disabledSources.has(s.name));
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {sources.filter(s => s.enabled).map((s) => {
+      {/* 全选/反选 */}
+      <button onClick={() => { enabledSources.forEach(s => { if (allDisabled || !noneDisabled) { if (disabledSources.has(s.name)) onToggle(s.name); } else { if (!disabledSources.has(s.name)) onToggle(s.name); } }); }}
+        className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-500 hover:text-slate-300 hover:bg-white/[0.08] transition-colors"
+        title={noneDisabled ? "全部关闭" : "全部开启"}>
+        {noneDisabled ? "✕ 全关" : "✓ 全开"}
+      </button>
+      {enabledSources.map((s) => {
         const st = statuses[s.name];
         const disabled = disabledSources.has(s.name);
         const statusText = !st || st.status === "idle" ? ""

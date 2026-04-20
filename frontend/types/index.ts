@@ -248,9 +248,12 @@ export interface IndexerPriority {
   indexer_id?: number;
   name: string;
   priority: number;
+  prowlarr_priority?: number;
   enabled: boolean;
   preferred_types: ("anime" | "movie" | "tv")[];
   supports_chinese?: boolean;
+  status?: "ok" | "error" | "warning" | "disabled" | "unknown";
+  status_error?: string;
 }
 
 /** 刮削候选项（含英文名） */

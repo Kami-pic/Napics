@@ -8,6 +8,7 @@ export function proxyUrl(url: string): string {
   if (!url) return "";
   if (url.startsWith("/proxy/")) return `${BASE_URL}/proxy${url.replace("/proxy/", "/")}`;
   if (url.includes("doubanio.com")) return `${BASE_URL}/proxy/image?url=${encodeURIComponent(url)}`;
+  if (url.includes("image.tmdb.org")) return `${BASE_URL}/proxy/image?url=${encodeURIComponent(url)}`;
   return url;
 }
 

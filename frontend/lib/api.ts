@@ -62,9 +62,11 @@ export const api = {
   },
 
   // SSE 流式搜索（逐源返回进度）
-  searchStream: (keyword: string, options?: { media_type?: string }) => {
+  searchStream: (keyword: string, options?: { media_type?: string; cn_name?: string; en_name?: string }) => {
     const p = new URLSearchParams({ query: keyword });
     if (options?.media_type) p.set("media_type", options.media_type);
+    if (options?.cn_name) p.set("cn_name", options.cn_name);
+    if (options?.en_name) p.set("en_name", options.en_name);
     return `${BASE_URL}/api/search/stream?${p.toString()}`;
   },
 

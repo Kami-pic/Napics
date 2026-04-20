@@ -41,57 +41,114 @@ def batch_generate_shadow_names():
 
 @router.get("/config/indexers")
 def get_indexer_priorities():
-    """获取索引器优先级列表，自动从 Prowlarr 同步已有索引器"""
+    """获取索引器优先级列表，每次从 Prowlarr 同步最新状态（含连接状态和优先级）"""
     from indexer_priority_manager import IndexerConfig
     indexer_m.load()
     
-    # 如果本地没有配置，从 Prowlarr 拉取索引器列表
-    if not indexer_m.indexers:
-        try:
-            prowlarr_url = config_m.config.prowlarr_url.rstrip("/")
-            prowlarr_key = config_m.config.prowlarr_api_key
-            if prowlarr_url and prowlarr_key:
-                import requests
-                resp = requests.get(f"{prowlarr_url}/api/v1/indexer",
-                                    params={"apikey": prowlarr_key}, timeout=5)
-                resp.raise_for_status()
-                prowlarr_indexers = resp.json()
-                configs = []
-                for idx in prowlarr_indexers:
-                    if idx.get("enable", True):
-                        name = idx.get("name", "")
-                        # 根据名字猜测类型偏好
-                        types = []
-                        name_lower = name.lower()
-                        if "nyaa" in name_lower:
-                            types = ["anime"]
-                        elif "yts" in name_lower:
-                            types = ["movie"]
-                        configs.append(IndexerConfig(
-                            indexer_id=idx.get("id", 0),
-                            name=name,
-                            priority=50,
-                            enabled=True,
-                            preferred_types=types,
-                            supports_chinese="chinese" in name_lower or "dmhy" in name_lower,
-                        ))
-                if configs:
-                    indexer_m.save(configs)
-                    indexer_m.indexers = configs
-        except Exception as e:
-            print(f"[Indexers] Failed to fetch from Prowlarr: {e}")
+    # 从 Prowlarr 拉取索引器列表（含状态）
+    prowlarr_indexers = []
+    prowlarr_status = {}  # {name: {"status": "ok"|"error"|"unknown", "error": ""}}
+    try:
+        prowlarr_url = config_m.config.prowlarr_url.rstrip("/")
+        prowlarr_key = config_m.config.prowlarr_api_key
+        if prowlarr_url and prowlarr_key:
+            import requests
+            resp = requests.get(f"{prowlarr_url}/api/v1/indexer",
+                                params={"apikey": prowlarr_key}, timeout=5,
+                                proxies={"http": None, "https": None})
+            resp.raise_for_status()
+            prowlarr_indexers = resp.json()
+            # 获取索引器状态（Prowlarr /api/v1/indexerstatus）
+            try:
+                status_resp = requests.get(f"{prowlarr_url}/api/v1/indexerstatus",
+                                           params={"apikey": prowlarr_key}, timeout=5,
+                                           proxies={"http": None, "https": None})
+                if status_resp.status_code == 200:
+                    for s in status_resp.json():
+                        iid = s.get("indexerId", 0)
+                        prowlarr_status[iid] = {
+                            "disabled_till": s.get("disabledTill", ""),
+                            "error": s.get("lastRssSyncError", "") or s.get("lastSearchError", ""),
+                        }
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[Indexers] Failed to fetch from Prowlarr: {e}")
     
-    return [
-        {
-            "indexer_id": idx.indexer_id,
-            "name": idx.name,
-            "priority": idx.priority,
-            "enabled": idx.enabled,
-            "preferred_types": idx.preferred_types,
-            "supports_chinese": idx.supports_chinese,
-        }
-        for idx in indexer_m.indexers
-    ]
+    # 合并 Prowlarr 数据和本地配置
+    local_map = {idx.name: idx for idx in indexer_m.indexers}
+    result = []
+    
+    if prowlarr_indexers:
+        for idx in prowlarr_indexers:
+            name = idx.get("name", "")
+            iid = idx.get("id", 0)
+            prowlarr_priority = idx.get("priority", 25)
+            enabled = idx.get("enable", True)
+            
+            # 本地有配置则合并，否则用 Prowlarr 默认值
+            local = local_map.get(name)
+            
+            # 连接状态判断
+            status_info = prowlarr_status.get(iid, {})
+            if not enabled:
+                conn_status = "disabled"
+            elif status_info.get("disabled_till"):
+                conn_status = "error"
+            elif status_info.get("error"):
+                conn_status = "warning"
+            else:
+                conn_status = "ok"
+            
+            # 根据名字猜测类型偏好
+            types = local.preferred_types if local else []
+            if not types:
+                name_lower = name.lower()
+                if "nyaa" in name_lower:
+                    types = ["anime"]
+                elif "yts" in name_lower:
+                    types = ["movie"]
+            
+            result.append({
+                "indexer_id": iid,
+                "name": name,
+                "priority": local.priority if local else prowlarr_priority,
+                "prowlarr_priority": prowlarr_priority,
+                "enabled": local.enabled if local else enabled,
+                "preferred_types": types,
+                "supports_chinese": local.supports_chinese if local else ("chinese" in name.lower() or "dmhy" in name.lower()),
+                "status": conn_status,
+                "status_error": status_info.get("error", ""),
+            })
+        
+        # 如果本地没有配置，自动保存
+        if not indexer_m.indexers:
+            configs = [
+                IndexerConfig(
+                    indexer_id=r["indexer_id"], name=r["name"],
+                    priority=r["priority"], enabled=r["enabled"],
+                    preferred_types=r["preferred_types"],
+                    supports_chinese=r["supports_chinese"],
+                )
+                for r in result
+            ]
+            indexer_m.save(configs)
+    else:
+        # Prowlarr 不可达，返回本地配置
+        for idx in indexer_m.indexers:
+            result.append({
+                "indexer_id": idx.indexer_id,
+                "name": idx.name,
+                "priority": idx.priority,
+                "prowlarr_priority": 0,
+                "enabled": idx.enabled,
+                "preferred_types": idx.preferred_types,
+                "supports_chinese": idx.supports_chinese,
+                "status": "unknown",
+                "status_error": "Prowlarr 不可达",
+            })
+    
+    return result
 
 class IndexerPriorityItem(BaseModel):
     indexer_id: int = 0

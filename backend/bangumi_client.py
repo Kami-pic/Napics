@@ -101,6 +101,7 @@ def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
             results.append({
                 "douban_id": str(item.get("id", "")),
                 "title": item.get("name_cn", "") or item.get("name", ""),
+                "original_title": item.get("name", ""),
                 "year": (item.get("air_date", "") or "")[:4],
                 "rating": round((item.get("rating", {}) or {}).get("score", 0), 1),
                 "cover_url": poster,

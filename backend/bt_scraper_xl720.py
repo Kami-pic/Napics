@@ -63,20 +63,22 @@ class XL720Scraper(ScraperBase):
             for item in detail_items[:self.MAX_DETAIL_PAGES]:
                 self.random_delay(0.5, 1.0)
                 magnets = self._parse_detail_page(item["url"])
-                for magnet_url, infohash in magnets:
+                for magnet_url, infohash, context in magnets:
                     if infohash in seen_hashes:
                         continue
                     seen_hashes.add(infohash)
 
-                    # 尝试从磁力链接 dn 参数提取更具体的标题
+                    # 标题优先级：dn 参数 > 上下文描述 > 搜索标题
                     dn_match = re.search(r"[?&]dn=([^&]+)", magnet_url)
                     if dn_match:
                         from urllib.parse import unquote
                         dn_title = unquote(dn_match.group(1)).replace("+", " ").strip()
                         title = dn_title if len(dn_title) > 5 else item["title"]
+                    elif context and len(context) > 5 and context != item["title"]:
+                        # 上下文描述（如"流浪地球2.4K.HDR.杜比视界"）
+                        title = context
                     else:
-                        # 没有 dn 参数，用搜索标题 + infohash 前8位区分
-                        title = f"{item['title']} [{infohash[:8]}]"
+                        title = item["title"]
 
                     quality = parse_quality(title)
                     quality_level = get_quality_level(quality)
@@ -139,7 +141,9 @@ class XL720Scraper(ScraperBase):
         return items
 
     def _parse_detail_page(self, url: str) -> List[tuple]:
-        """解析详情页，提取磁力链接。迅雷链接尝试解码为磁力。"""
+        """解析详情页，提取磁力链接及其附近的描述文字。
+        返回 [(magnet_url, infohash, context_text), ...]。
+        """
         try:
             resp = self.request_with_backoff(url, timeout=12)
             if resp.status_code != 200:
@@ -147,16 +151,37 @@ class XL720Scraper(ScraperBase):
 
             results = []
             seen_hashes = set()
+            html = resp.text
 
-            # 直接提取磁力链接
-            for match in _MAGNET_RE.finditer(resp.text):
+            # 用 BeautifulSoup 解析，提取磁力链接所在元素的上下文文字
+            soup = BeautifulSoup(html, "html.parser")
+            # 找所有包含磁力链接的 <a> 标签
+            for a_tag in soup.find_all("a", href=_MAGNET_RE):
+                href = a_tag.get("href", "")
+                m = _MAGNET_RE.search(href)
+                if not m:
+                    continue
+                infohash = m.group(1).upper()
+                if infohash in seen_hashes:
+                    continue
+                seen_hashes.add(infohash)
+                # 提取上下文：a 标签文字 > 父元素文字 > 空
+                context = a_tag.get_text(strip=True)
+                if not context or len(context) < 3:
+                    parent = a_tag.parent
+                    if parent:
+                        context = parent.get_text(strip=True)[:100]
+                results.append((m.group(0), infohash, context or ""))
+
+            # 补充：正则直接从 HTML 提取（可能有些磁力链接不在 <a> 标签里）
+            for match in _MAGNET_RE.finditer(html):
                 infohash = match.group(1).upper()
                 if infohash not in seen_hashes:
                     seen_hashes.add(infohash)
-                    results.append((match.group(0), infohash))
+                    results.append((match.group(0), infohash, ""))
 
-            # 迅雷链接解码（thunder:// → base64 → 可能是磁力链接）
-            for match in _THUNDER_RE.finditer(resp.text):
+            # 迅雷链接解码
+            for match in _THUNDER_RE.finditer(html):
                 decoded = self._decode_thunder(match.group(1))
                 if decoded:
                     magnet_match = _MAGNET_RE.search(decoded)
@@ -164,7 +189,7 @@ class XL720Scraper(ScraperBase):
                         infohash = magnet_match.group(1).upper()
                         if infohash not in seen_hashes:
                             seen_hashes.add(infohash)
-                            results.append((magnet_match.group(0), infohash))
+                            results.append((magnet_match.group(0), infohash, ""))
 
             return results
 

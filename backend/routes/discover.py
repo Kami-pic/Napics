@@ -77,6 +77,10 @@ def _async_enrich_tmdb_ids(items: list):
                             item["tmdb_id"] = tid
                             media_matcher.add_id_mapping(str(douban_id), tid)
                             enriched += 1
+                        # 补全英文名（TMDB original_title/original_name 通常是英文）
+                        en_title = best.get("original_title") or best.get("original_name") or ""
+                        if en_title and en_title != title:
+                            item["original_title"] = en_title
                     time.sleep(0.5)  # 避免 TMDB 限频
                 except Exception:
                     pass
@@ -196,6 +200,10 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
                     tmdb_date = best.get("release_date") or best.get("first_air_date") or ""
                     if tmdb_date:
                         item["year"] = tmdb_date[:4]
+                # 补全英文名
+                en_title = best.get("original_title") or best.get("original_name") or ""
+                if en_title and en_title != title:
+                    item["original_title"] = en_title
                 return
         except:
             pass

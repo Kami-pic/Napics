@@ -194,17 +194,36 @@ def search_resources_stream(
     media_type: str = "",
     shadow_name: str = "",
     clean_name: str = "",
+    cn_name: str = "",
+    en_name: str = "",
 ):
-    """SSE 流式搜索：所有源全部并行，谁先完成谁先推。"""
+    """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词。"""
     def _generate():
         import concurrent.futures
+        from text_processing import split_by_language
+
+        # 构造多语言搜索词
+        # 英文词：en_name > shadow_name 去中文 > query 中英文部分
+        # 中文词：cn_name > query 中中文部分
+        from text_processing import normalize as _normalize
+        parts = split_by_language(query)
+        kw_cn = cn_name.strip() or parts.get("cn", "") or query
+        kw_en = en_name.strip() or shadow_name.strip() or parts.get("en", "") or query
+        # 日文/原名：en_name 可能是日文（Bangumi 源），直接用
+        kw_original = en_name.strip() or query
+        # 清洗：去掉标点、多余空格
+        kw_cn = _normalize(kw_cn) if kw_cn else query
+        kw_en = kw_en.strip() if kw_en else query
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
 
         def _search_prowlarr():
+            """Prowlarr 优先用英文搜索（BT 站英文为主）"""
             try:
-                raw = clients["search"].search(query)
+                # 优先英文，fallback 到原始 query
+                search_kw = kw_en if kw_en and kw_en != kw_cn else query
+                raw = clients["search"].search(search_kw)
                 seen = set()
                 deduped = []
                 for r in raw:
@@ -216,9 +235,17 @@ def search_resources_stream(
                 return "prowlarr", [], str(e)
 
         def _search_direct(name, getter):
+            """直搜源按语言选择搜索词"""
             try:
                 s = getter()
-                results = s.search_as_search_results(query, max_results=20)
+                # 中文源用中文，英文/日文源用对应语言
+                if name in ("cilixiong", "xl720"):
+                    search_kw = kw_cn
+                elif name in ("nyaa", "mikan"):
+                    search_kw = kw_original  # 日文原名或英文
+                else:  # bitsearch
+                    search_kw = kw_en if kw_en and kw_en != kw_cn else query
+                results = s.search_as_search_results(search_kw, max_results=20)
                 return name, results, None
             except Exception as e:
                 return name, [], str(e)
@@ -252,26 +279,35 @@ def search_resources_stream(
                     f = pool.submit(_search_direct, name, getter)
                     future_map[f] = name
 
-            for future in concurrent.futures.as_completed(future_map, timeout=30):
-                try:
-                    name, results, err = future.result(timeout=20)
-                except Exception as e:
-                    name = future_map[future]
-                    results, err = [], str(e)
-                # 同源内去重
-                source_deduped = []
-                source_hashes = set()
-                for r in results:
-                    h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-                    if h:
-                        hu = h.group(1).upper()
-                        if hu in source_hashes:
-                            continue
-                        source_hashes.add(hu)
-                    source_deduped.append(r)
-                status = "done" if not err else "failed"
-                enriched = [_enrich_result(r, query) for r in source_deduped]
-                yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'results': enriched}, default=str)}\n\n"
+            completed_sources = set()
+            try:
+                for future in concurrent.futures.as_completed(future_map, timeout=65):
+                    try:
+                        name, results, err = future.result(timeout=20)
+                    except Exception as e:
+                        name = future_map[future]
+                        results, err = [], str(e)
+                    completed_sources.add(name)
+                    # 同源内去重
+                    source_deduped = []
+                    source_hashes = set()
+                    for r in results:
+                        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+                        if h:
+                            hu = h.group(1).upper()
+                            if hu in source_hashes:
+                                continue
+                            source_hashes.add(hu)
+                        source_deduped.append(r)
+                    status = "done" if not err else "failed"
+                    enriched = [_enrich_result(r, query) for r in source_deduped]
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'results': enriched}, default=str)}\n\n"
+            except concurrent.futures.TimeoutError:
+                pass
+            # 超时未完成的源推送 failed 状态
+            for future, name in future_map.items():
+                if name not in completed_sources:
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': '搜索超时', 'results': []})}\n\n"
 
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 

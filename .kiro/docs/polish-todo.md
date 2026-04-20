@@ -168,21 +168,64 @@
 ## 2026-04-19 实测发现的问题（从 search-matching-todo 迁入）
 
 ### Prowlarr 索引器与爬虫源解耦
-- [ ] Prowlarr 中的 mikan、nyaa 索引器和爬虫源没有解耦，会导致重复搜索
-- [ ] 索引器列表不应该混入非 Prowlarr 的源（如 xl720、磁力熊）
+- [x] Prowlarr 中的 mikan、nyaa 索引器和爬虫源没有解耦，完全混淆，分不清源。
+- [x] 索引器列表不应该混入非 Prowlarr 的源（如 xl720、磁力熊），索引器就是从prowlarr获取的。
+- [x] SSE 结果标记 _source 字段区分来源，disabledSources 按 _source 过滤
+- [x] Prowlarr 索引器下拉只从 _source=prowlarr 的结果中提取
 
 ### FilterBar 筛选无效
-- [ ] 用户反馈"过滤按钮完全没有用"，需重启服务后复现确认
+- [x] 用户反馈"过滤按钮完全没有用"，需重启服务后复现确认，筛选需要重做重新理逻辑。
+- [x] 根因：disabledSources 存 "prowlarr" 但结果的 indexer 是具体索引器名，改为按 _source 过滤
+- [x] Prowlarr 索引器筛选只对 _source=prowlarr 的结果生效，直搜源不受影响
 
 ### 封面丢失
-- [ ] 关闭 clash 后推荐卡片封面丢失，详情页却有封面（缓存/代理问题）
+- [x] 关闭 clash 后推荐卡片封面丢失，详情页却有封面（缓存/代理问题）
+- [x] proxyUrl 增加 image.tmdb.org 代理支持
+- [x] 后端 proxy_image 对非豆瓣图片不带 Referer
 
 ### 非 TMDB 源缺少英文名
-- [ ] 发现页豆瓣/Bangumi 条目没有英文名，导致 BT 搜索只能用中文
-- [ ] 需要在 normalizeItem 中补充英文名获取逻辑
+- [x] 发现页豆瓣/Bangumi 条目没有英文名，导致 BT 搜索只能用中文
+- [x] 需要在 normalizeItem 中补充英文名获取逻辑
+- [x] douban_hot enrich_item 和 _async_enrich_tmdb_ids 补全英文名到 original_title
+- [x] Bangumi get_hot_anime 补充 original_title 字段
+- [ ] 注意：异步补全，首次请求可能无英文名，需清缓存后第二次请求才有
+
+### XL720 标题改进
+- [x] xl720 没有 dn 参数时用序号代替哈希区分
+- [x] 改为 BeautifulSoup 提取 <a> 标签上下文文字
+
+### 索引器连接状态
+- [x] 索引器设置面板显示连接状态（绿/红/黄/灰圆点）
+- [x] 从 Prowlarr API 获取真实优先级（prowlarr_priority）
+- [x] 每次打开设置面板都从 Prowlarr 同步最新索引器列表和状态
+
+### 磁力熊标题改进
+- [x] 用 BeautifulSoup 提取详情页 <a> 标签文字作为文件名
+- [x] 中文搜索标题 + 英文文件名拼接
+
+### SSE 超时修复
+- [x] as_completed 超时后 catch TimeoutError，推送 failed 状态
+- [x] SSE 总超时 65s，前端超时 90s
+- [x] Prowlarr 搜索超时恢复 60s
+
+### 多语言搜索词构造
+- [x] SSE 接口新增 cn_name/en_name 参数
+- [x] Prowlarr/Bitsearch 用英文搜索词
+- [x] 磁力熊/XL720 用中文搜索词
+- [x] Nyaa/蜜柑 用原名（日文/英文）
+- [x] 前端 SearchModal 传递 cnName/enName 到 SSE
+
+### 源开关全选/反选
+- [x] BT FilterBar SourceToggleBar 新增全选/反选
+- [x] 网盘 PanFilterBar 同步新增全选/反选
 
 ### L1-L4 后续迭代（从 skill-build-todo 迁入）
-- [ ] 多语言搜索词构造（SSE 不同源用不同语言搜索词）— 暂缓
+- [x] 多语言搜索词构造（SSE 不同源用不同语言搜索词）— 基础实现完成，完整设计见 multilang-search-todo.md
+- [ ] 前端搜索框交互与多语言分配冲突（用户手动输入后所有源用同一个词）→ 新对话解决
+- [ ] 媒体库清洗名"未设置"问题（树构建时动态计算可能覆盖）→ 新对话排查
+- [ ] 发现页豆瓣信息匹配不上 + 封面丢失（特定条目）→ 新对话排查
+- [ ] 媒体库批量 TMDB 搜索补全英文名（665 条只有中文）→ 新对话执行
+- [ ] 业务 Skill 建设（S1-S5）→ 见 business-skills-plan.md
 - [ ] 根据实战反馈修订 skill 文档
 - [ ] 刮削候选、推荐去重等场景验证 L1-L4
 - [ ] skill 文档定稿 + 通用代码模板 + 配置模板

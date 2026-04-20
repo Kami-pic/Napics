@@ -56,19 +56,24 @@ class CilixiongScraper(ScraperBase):
             for item in detail_items[:self.MAX_DETAIL_PAGES]:
                 self.random_delay(2.0, 3.0)
                 magnets = self._parse_detail_page(item["url"])
-                for magnet_url, infohash in magnets:
+                for magnet_url, infohash, filename in magnets:
                     if infohash in seen_hashes:
                         continue
                     seen_hashes.add(infohash)
 
-                    # 优先从磁力链接 dn 参数提取标准名（如 Pennyworth.S01.1080p.BluRay.x265-RARBG）
-                    dn_match = re.search(r"[?&]dn=([^&]+)", magnet_url)
-                    if dn_match:
-                        from urllib.parse import unquote
-                        dn_title = unquote(dn_match.group(1)).replace("+", " ").strip()
-                        title = dn_title if len(dn_title) > 5 else item["title"]
+                    # 标题优先级：文件名（详情页提取）> dn 参数 > 搜索标题
+                    if filename:
+                        # 中文搜索标题 + 英文文件名拼接
+                        cn_title = re.sub(r"[\d.]+\s*\d{4}$", "", item["title"]).strip()
+                        title = f"{cn_title} | {filename}" if cn_title and cn_title not in filename else filename
                     else:
-                        title = item["title"]
+                        dn_match = re.search(r"[?&]dn=([^&]+)", magnet_url)
+                        if dn_match:
+                            from urllib.parse import unquote
+                            dn_title = unquote(dn_match.group(1)).replace("+", " ").strip()
+                            title = dn_title if len(dn_title) > 5 else item["title"]
+                        else:
+                            title = item["title"]
 
                     quality = parse_quality(title)
                     quality_level = get_quality_level(quality)
@@ -146,17 +151,42 @@ class CilixiongScraper(ScraperBase):
         return items
 
     def _parse_detail_page(self, url: str) -> List[tuple]:
-        """解析详情页，提取磁力链接。返回 [(magnet_url, infohash), ...]。"""
+        """解析详情页，提取磁力链接和文件名。返回 [(magnet_url, infohash, filename), ...]。"""
         try:
             resp = self.request_with_backoff(url, timeout=15)
             if resp.status_code != 200:
                 return []
 
+            soup = BeautifulSoup(resp.text, "html.parser")
             results = []
+            seen_hashes = set()
+
+            # 从 <a> 标签提取磁力链接和文件名
+            for a_tag in soup.find_all("a", href=_MAGNET_RE):
+                href = a_tag.get("href", "")
+                m = _MAGNET_RE.search(href)
+                if not m:
+                    continue
+                infohash = m.group(1).upper()
+                if infohash in seen_hashes:
+                    continue
+                seen_hashes.add(infohash)
+                # 提取文件名（<a> 标签文字，如 "Project.Hail.Mary.2026.1080p.WEB-DL.mkv[18.6G]"）
+                filename = a_tag.get_text(strip=True)
+                # 清理：去掉 [大小] 后缀和"详情"等无关文字
+                if filename:
+                    filename = re.sub(r"\[[\d.]+[GMK]B?\]$", "", filename).strip()
+                    if filename in ("详情", "详细", "") or len(filename) < 5:
+                        filename = ""
+                results.append((m.group(0), infohash, filename))
+
+            # 补充：正则直接提取（可能有些不在 <a> 标签里）
             for match in _MAGNET_RE.finditer(resp.text):
                 infohash = match.group(1).upper()
-                magnet_url = match.group(0)
-                results.append((magnet_url, infohash))
+                if infohash not in seen_hashes:
+                    seen_hashes.add(infohash)
+                    results.append((match.group(0), infohash, ""))
+
             return results
 
         except Exception as e:
