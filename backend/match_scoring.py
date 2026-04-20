@@ -144,19 +144,39 @@ def match_chain(
         if cn in t_alias_norms:
             return 80
 
+    # 3.5 子串包含匹配 → 70分（normalize 后 A 是 B 的子串）
+    # 短名字保护：短名字不允许 contains（防止 "AI" 匹配 "RAIN"）
+    for cn in c_norms:
+        if len(cn) <= 4:
+            continue  # 短名字跳过 contains
+        for tn in t_title_norms + t_alias_norms:
+            if len(tn) <= 4:
+                continue
+            if cn in tn or tn in cn:
+                # 额外约束：子串长度至少是母串的 40%（防止 "流浪" 匹配 "流浪猫鲍勃流浪记"）
+                shorter, longer = (cn, tn) if len(cn) <= len(tn) else (tn, cn)
+                if len(shorter) >= len(longer) * 0.4:
+                    return 70
+
     # 4. 标题拆分匹配 → 60分
     for c_name in candidate_names:
         c_tokens = set(tokenize(c_name))
+        if not c_tokens or len(c_tokens) < 2:
+            continue
         for t_name in target_titles + target_aliases:
             t_tokens = set(tokenize(t_name))
-            if c_tokens and t_tokens and len(t_tokens) >= 2:
-                intersection = c_tokens & t_tokens
-                # 短名字保护：目标 token 只有 1 个且是短 token，跳过
-                if len(t_tokens) == 1:
-                    continue
-                # 目标 tokens 大部分在候选中出现
-                if len(intersection) >= max(2, len(t_tokens) * 0.5):
-                    return 60
+            if not t_tokens:
+                continue
+            intersection = c_tokens & t_tokens
+            # 短名字保护：候选 token 只有 1 个且是短 token，跳过
+            if len(c_tokens) == 1:
+                continue
+            # 候选 tokens 大部分出现在目标中（搜索词短，BT 标题长）
+            # 或者目标 tokens 大部分出现在候选中（BT 标题短，搜索词长）
+            c_ratio = len(intersection) / len(c_tokens) if c_tokens else 0
+            t_ratio = len(intersection) / len(t_tokens) if t_tokens else 0
+            if c_ratio >= 0.7 or (t_ratio >= 0.5 and len(intersection) >= 2):
+                return 60
 
     # 5. 动态 fuzzy 匹配 → 40分
     for cn in c_norms:

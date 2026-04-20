@@ -20,7 +20,8 @@ from shared import (
     config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
     _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper,
-    _get_mikan_scraper,
+    _get_mikan_scraper, _get_yts_scraper, _get_limetorrents_scraper, _get_acgrip_scraper,
+    _get_bangumi_moe_scraper,
     _tmdb_client, get_clients,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
 )
@@ -35,7 +36,7 @@ router = APIRouter()
 
 
 def _enrich_result(r, search_query: str = "") -> dict:
-    """给搜索结果附加 quality_score（100 分制）和 match_score（0-100），确保可 JSON 序列化"""
+    """给搜索结果附加 quality_score（100 分制）、match_score（0-100）、is_junk 标记"""
     try:
         if hasattr(r, "dict"):
             d = r.dict()
@@ -57,13 +58,11 @@ def _enrich_result(r, search_query: str = "") -> dict:
             try:
                 from match_scoring import match_chain
                 from text_processing import split_by_language as _split
-                from tmdb_client import parse_filename as _parse
                 # 从搜索词提取中英文变体作为候选
                 parts = _split(search_query)
                 candidates = [n for n in [search_query, parts["cn"], parts["en"]] if n]
-                # 从 BT 标题提取 clean_name 作为目标
-                parsed = _parse(d.get("title", ""))
-                bt_clean = parsed.get("clean_name", "") or d.get("title", "")
+                # 从 BT 标题提取干净的作品名作为目标
+                bt_clean = _extract_bt_title_for_match(d.get("title", ""))
                 bt_parts = _split(bt_clean)
                 targets = [n for n in [bt_clean, bt_parts["cn"], bt_parts["en"]] if n]
                 d["match_score"] = match_chain(candidates, targets, [])
@@ -71,15 +70,108 @@ def _enrich_result(r, search_query: str = "") -> dict:
                 d["match_score"] = 0
         else:
             d["match_score"] = 0
-        # is_junk：用 L3 soft_filter 标记垃圾版本
-        title = d.get("title", "")
-        junk_patterns = ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS", "TELESYNC"]
-        d["is_junk"] = any(re.search(r'\b' + p + r'\b', title, re.I) for p in junk_patterns)
+        # is_junk + junk_reasons：L3 软过滤标记（多条件，UI 开关控制显示/隐藏）
+        d.update(_compute_junk_flags(d))
         return d
     except Exception:
         return {"title": getattr(r, "title", ""), "download_url": getattr(r, "download_url", ""),
                 "indexer": getattr(r, "indexer", ""), "seeders": getattr(r, "seeders", 0),
-                "size_gb": getattr(r, "size_gb", 0), "quality_score": 0, "match_score": 0}
+                "size_gb": getattr(r, "size_gb", 0), "quality_score": 0, "match_score": 0,
+                "is_junk": False, "junk_reasons": []}
+
+
+# ── BT 标题清洗（专为搜索匹配设计，比 parse_filename 更激进）──
+# 技术标签正则：分辨率、编码、来源、音频、发布组等
+_BT_TECH_TAGS_RE = re.compile(
+    r'(?i)\b('
+    r'2160p|1080p|720p|480p|4K|UHD|FHD|HD|SD|'
+    r'BluRay|Blu-?Ray|WEB-?DL|WEBRip|WEB|HDTV|DVDRip|BDRip|BRRip|Remux|PDTV|'
+    r'x264|x265|H\.?264|H\.?265|HEVC|AVC|MPEG|VP9|AV1|10bit|HDR10\+?|HDR|DV|DoVi|'
+    r'AAC|DTS|DTS-HD|DTS-X|FLAC|Atmos|TrueHD|AC3|EAC3|DD5\.?1|DD\+?|MA\.?5\.?1|7\.?1|5\.?1|2\.?0|'
+    r'PROPER|REPACK|INTERNAL|SUBBED|DUBBED|MULTI|DUAL|'
+    r'TS|CAM|HDTC|TC|TELECINE|HDTS|TELESYNC|HDCAM|'
+    r'CMCT|CHD|Wiki|FLTth|HDChina|MTeam|TTG|FRDS|RARBG|YTS|YIFY|SPARKS|'
+    r'SWTYBLZ|CAKES|NTb|FLUX|NOGRP|GROUP|'
+    r'中英双字|中英字幕|中文字幕|双语字幕|简繁字幕|简体|繁体|中字|英字|字幕组'
+    r')\b'
+)
+# 发布组后缀（-GroupName 格式）
+_RELEASE_GROUP_RE = re.compile(r'-[A-Za-z0-9]{2,15}$')
+
+
+def _extract_bt_title_for_match(title: str) -> str:
+    """从 BT 标题中提取作品名，去掉所有技术标签。
+
+    策略：
+    1. 去掉方括号/圆括号内容（字幕组名、分辨率等）
+    2. 在第一个技术标签处截断（技术标签之后都是噪声）
+    3. 去掉发布组后缀（-GROUP）
+    4. 去掉年份（匹配时不需要）
+    5. 点号/下划线替换为空格
+    """
+    if not title:
+        return ""
+
+    s = title
+
+    # 1. 去掉方括号/圆括号内容
+    s = re.sub(r'[\[\(【（][^\]\)】）]*[\]\)】）]', ' ', s)
+
+    # 2. 点号/下划线替换为空格（BT 标题常用 . 分隔）
+    s = re.sub(r'[._]', ' ', s)
+
+    # 3. 在第一个技术标签处截断
+    m = _BT_TECH_TAGS_RE.search(s)
+    if m:
+        s = s[:m.start()]
+
+    # 4. 去掉发布组后缀
+    s = _RELEASE_GROUP_RE.sub('', s)
+
+    # 5. 去掉年份
+    s = re.sub(r'\b(19|20)\d{2}\b', '', s)
+
+    # 6. 清理残留
+    s = re.sub(r'\s+', ' ', s).strip()
+    s = s.strip(' -·|')
+
+    return s if s else title
+
+
+# 枪版/低质量关键词（词边界匹配）
+_JUNK_QUALITY_PATTERNS = ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS", "TELESYNC", "HDCAM"]
+# 匹配度阈值：低于此分数视为不相关
+_MATCH_SCORE_THRESHOLD = 30
+
+
+def _compute_junk_flags(d: dict) -> dict:
+    """计算 is_junk 和 junk_reasons，供智能过滤使用"""
+    reasons = []
+    title = d.get("title", "")
+    match_score = d.get("match_score", 0)
+    seeders = d.get("seeders", 0)
+    size_gb = d.get("size_gb", 0)
+
+    # 1. 枪版/低质量源
+    for p in _JUNK_QUALITY_PATTERNS:
+        if re.search(r'\b' + p + r'\b', title, re.I):
+            reasons.append(f"low_quality:{p}")
+            break
+
+    # 2. 匹配度过低（有 match_score 且低于阈值）
+    if match_score > 0 and match_score < _MATCH_SCORE_THRESHOLD:
+        reasons.append(f"low_match:{match_score}")
+
+    # 3. 死种（seeders=0 但不是磁力链接源或无 tracker 信息的源）
+    # 磁力链接源特征：seeders=0 且 size_gb=0（无 tracker 信息）
+    # 字幕组站（acgrip/bangumi_moe）不提供做种数，不视为死种
+    is_magnet_only = seeders == 0 and size_gb == 0
+    indexer = d.get("indexer", "")
+    no_seeder_sources = {"acgrip", "bangumi_moe"}
+    if seeders == 0 and not is_magnet_only and indexer not in no_seeder_sources:
+        reasons.append("dead_seed")
+
+    return {"is_junk": len(reasons) > 0, "junk_reasons": reasons}
 
 
 def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
@@ -96,6 +188,10 @@ def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
         ("xl720", _get_xl720_scraper),
         ("nyaa", _get_nyaa_scraper),
         ("mikan", _get_mikan_scraper),
+        ("yts", _get_yts_scraper),
+        ("limetorrents", _get_limetorrents_scraper),
+        ("acgrip", _get_acgrip_scraper),
+        ("bangumi_moe", _get_bangumi_moe_scraper),
     ]
     for name, getter in scrapers:
         if not bt_overrides.get(name, True):
@@ -223,7 +319,12 @@ def search_resources_stream(
             try:
                 # 优先英文，fallback 到原始 query
                 search_kw = kw_en if kw_en and kw_en != kw_cn else query
+                print(f"[SSE/Prowlarr] 搜索词: '{search_kw}' (kw_en='{kw_en}', kw_cn='{kw_cn}', query='{query}')")
+                import time as _t
+                t0 = _t.time()
                 raw = clients["search"].search(search_kw)
+                elapsed = _t.time() - t0
+                print(f"[SSE/Prowlarr] 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
                 seen = set()
                 deduped = []
                 for r in raw:
@@ -232,6 +333,7 @@ def search_resources_stream(
                         deduped.append(r)
                 return "prowlarr", deduped, None
             except Exception as e:
+                print(f"[SSE/Prowlarr] 异常: {e}")
                 return "prowlarr", [], str(e)
 
         def _search_direct(name, getter):
@@ -243,7 +345,11 @@ def search_resources_stream(
                     search_kw = kw_cn
                 elif name in ("nyaa", "mikan"):
                     search_kw = kw_original  # 日文原名或英文
-                else:  # bitsearch
+                elif name in ("yts", "limetorrents", "bitsearch"):
+                    search_kw = kw_en if kw_en and kw_en != kw_cn else query
+                elif name in ("acgrip", "bangumi_moe"):
+                    search_kw = kw_cn  # 中文字幕组站，中文优先
+                else:
                     search_kw = kw_en if kw_en and kw_en != kw_cn else query
                 results = s.search_as_search_results(search_kw, max_results=20)
                 return name, results, None
@@ -256,6 +362,10 @@ def search_resources_stream(
             ("xl720", _get_xl720_scraper),
             ("nyaa", _get_nyaa_scraper),
             ("mikan", _get_mikan_scraper),
+            ("yts", _get_yts_scraper),
+            ("limetorrents", _get_limetorrents_scraper),
+            ("acgrip", _get_acgrip_scraper),
+            ("bangumi_moe", _get_bangumi_moe_scraper),
         ]
 
         # 推送所有源的 searching 状态
@@ -269,7 +379,7 @@ def search_resources_stream(
             yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
 
         # 全部并行提交，用 as_completed 逐个 yield
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
             future_map = {}
             if bt_overrides.get("prowlarr", True):
                 f = pool.submit(_search_prowlarr)
@@ -283,7 +393,7 @@ def search_resources_stream(
             try:
                 for future in concurrent.futures.as_completed(future_map, timeout=65):
                     try:
-                        name, results, err = future.result(timeout=20)
+                        name, results, err = future.result(timeout=65)
                     except Exception as e:
                         name = future_map[future]
                         results, err = [], str(e)
@@ -410,13 +520,17 @@ def search_single_keyword(
         # 尝试快速合并直搜源（有缓存时秒返回）
         try:
             bt_overrides = config_m.config.bt_search_sources or {}
-            from shared import _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper, _get_mikan_scraper
+            from shared import _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper, _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper
             scrapers = [
                 ("bitsearch", _get_bitsearch_scraper),
                 ("cilixiong", _get_cilixiong_scraper),
                 ("xl720", _get_xl720_scraper),
                 ("nyaa", _get_nyaa_scraper),
                 ("mikan", _get_mikan_scraper),
+                ("yts", _get_yts_scraper),
+                ("limetorrents", _get_limetorrents_scraper),
+                ("acgrip", _get_acgrip_scraper),
+                ("bangumi_moe", _get_bangumi_moe_scraper),
             ]
             existing_hashes = set()
             for r in all_results:
@@ -519,6 +633,10 @@ _BT_SOURCE_DEFAULTS = {
     "xl720": {"label": "XL720", "enabled": True, "type": "bt"},
     "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt"},
     "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt"},
+    "yts": {"label": "YTS", "enabled": True, "type": "bt"},
+    "limetorrents": {"label": "LimeTorrents", "enabled": False, "type": "bt"},  # 站点 CF 保护严格，暂不可用
+    "acgrip": {"label": "ACG.RIP", "enabled": True, "type": "bt"},
+    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "type": "bt"},
 }
 # 网盘源默认配置
 _PAN_SOURCE_DEFAULTS = {

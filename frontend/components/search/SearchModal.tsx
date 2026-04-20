@@ -139,7 +139,7 @@ export default function SearchModal({
   }, []);
 
   // 已知直搜源名称（用于区分 Prowlarr 索引器）
-  const DIRECT_SOURCES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan"]);
+  const DIRECT_SOURCES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe"]);
   // Prowlarr 索引器（仅从 Prowlarr 来源的结果中提取，排除直搜源）
   const availableIndexers = useMemo(() => {
     const s = new Set<string>();
@@ -160,7 +160,7 @@ export default function SearchModal({
       setResults([]); setError(""); setToast(null); setHitKeyword("");
       setFilters(DEFAULT_FILTERS); setDownloadingUrl(null);
       setSearchingStep(""); setSearching(false); setSavePath("");
-      searchCache.current.clear();
+      searchCache.current.clear(); userEditedRef.current = false;
       setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
       panCache.current.clear();
       setActiveTab("bt");
@@ -171,6 +171,9 @@ export default function SearchModal({
   // 搜索源状态（SSE 实时更新）
   const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({});
 
+
+  // 跟踪用户是否手动修改过搜索词
+  const userEditedRef = useRef(false);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
@@ -193,8 +196,10 @@ export default function SearchModal({
       setKeyword(q);
       setSearchingStep(`搜索：${q}`);
 
-      // 尝试 SSE 流式搜索
-      const sseUrl = api.searchStream(q, { cn_name: cnName, en_name: enName });
+      // 用户手动输入的搜索词不传 cn_name/en_name，让后端用 query 自行分词
+      // 点击标签或自动搜索时才传 cn_name/en_name 辅助后端选词
+      const isUserEdited = userEditedRef.current;
+      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName });
       const es = new EventSource(sseUrl);
       let sseResults: EnhancedSearchResult[] = [];
       let sseDone = false;
@@ -270,7 +275,7 @@ export default function SearchModal({
     }
     setSearching(false);
     setSearchingStep("");
-  }, []);
+  }, [cnName, enName]);
 
   // ── 网盘搜索 ──
   const doPanSearch = useCallback(async (q: string) => {
@@ -297,10 +302,10 @@ export default function SearchModal({
     setPanSearching(false);
   }, [mediaType]);
 
-  // 前端过滤：FilterBar 筛选 + 智能过滤（排除垃圾版本）
+  // 前端过滤：FilterBar 筛选 + 智能过滤（L2 匹配 + L3 软过滤）
   const displayResults = useMemo(() => {
     let list = results;
-    // 智能过滤开启时：排除后端标记的垃圾版本
+    // 智能过滤开启时：排除后端标记的垃圾版本（枪版+低匹配度+死种）
     if (smartFilter) {
       list = list.filter(r => !(r as any).is_junk);
     }
@@ -443,7 +448,7 @@ export default function SearchModal({
               {hitKeyword && <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">命中：{hitKeyword}</span>}
               {/* 搜索标签（点击快速切换搜索词）*/}
               {searchTags.length > 0 && searchTags.map((tag, ti) => (
-                <button key={ti} onClick={() => doSearch(tag.keyword)}
+                <button key={ti} onClick={() => { userEditedRef.current = false; doSearch(tag.keyword); }}
                   className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
                     keyword === tag.keyword ? "bg-blue-600/30 text-blue-300" : "bg-white/[0.04] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]"
                   }`}>{tag.label}</button>
@@ -459,14 +464,14 @@ export default function SearchModal({
           </div>
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <input value={keyword} onChange={(e) => setKeyword(e.target.value)}
+              <input value={keyword} onChange={(e) => { setKeyword(e.target.value); userEditedRef.current = true; }}
                 onKeyDown={(e) => { if (e.key === "Enter") { activeTab === "bt" ? doSearch(keyword) : doPanSearch(keyword); } }}
                 placeholder="输入搜索关键词..."
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 pr-10 text-sm text-white outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
               {/* 过滤器图标（搜索框内右侧，仅 BT 模式）*/}
               {activeTab === "bt" && (
                 <button onClick={() => setSmartFilter(!smartFilter)}
-                  title={smartFilter ? "智能过滤已开启" : "智能过滤已关闭"}
+                  title={smartFilter ? "智能过滤已开启：隐藏不相关/枪版/死种" : "智能过滤已关闭：显示全部结果"}
                   className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${smartFilter ? "text-green-400 hover:bg-green-600/20" : "text-slate-600 hover:text-slate-400"}`}>
                   {smartFilter ? "🛡️" : "🔓"}
                 </button>

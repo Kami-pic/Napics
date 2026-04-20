@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-04-20 智能过滤业务技能 + match_chain 增强
+**变更**:
+- 智能过滤（smartFilter）从空转升级为三维度判定：枪版检测（TS/CAM/HDTC 等词边界匹配）、匹配度过低（match_score > 0 且 < 30）、死种检测（seeders=0 且非磁力链接源）
+- 新增 `_extract_bt_title_for_match`：专为搜索匹配设计的 BT 标题清洗（比 parse_filename 更激进，在第一个技术标签处截断）
+- match_chain 增强：新增 contains 子串匹配步骤（70 分，normalize 后子串包含 + 40% 长度比例约束）；修正 token_set 比例方向（候选 tokens 70%+ 出现在目标中，而非反向）
+- 新增 `junk_reasons[]` 字段，记录每条结果被标记的具体原因
+- 新增业务 skill 文档 `.kiro/skills/smart-filter.md`
+- 84 个测试全绿（45 基础 + 39 扩展，覆盖 6 种源格式 × 3 条规则 × 边界情况）
+**决策**: match_score=0 不触发低匹配标记（可能是跨语言无法计算而非不相关）；磁力链接源用 seeders=0 && size_gb=0 组合特征判断而非 _source 字段
+**已知问题**: MPEG-TS 被误标记为枪版（中低优先级）；单词搜索 vs 长标题 score=0（contains 40% 比例约束 + token_set 单 token 限制）；"西部世界" vs "西部风云" 漏过（中文 2 字公共前缀触发 token_set 60 分）；跨语言完全无法匹配（需别名系统）
+
+## 2026-04-20 搜索 bug 修复 + 4 个新直搜源
+**变更**:
+- Bug 修复：搜索框手动输入的搜索词不生效 — doSearch 的 useCallback 依赖数组为空 + 后端优先用 cn_name/en_name 覆盖 query。新增 userEditedRef 跟踪用户编辑，手动输入时不传辅助参数
+- Bug 修复：Prowlarr SSE 流中 future.result(timeout=20) 太短，Prowlarr 搜索本身 60s 超时，改为 65s
+- Prowlarr 搜索加详细日志（搜索词、耗时、结果数）
+- 新增 4 个 BT 直搜源：YTS（电影，JSON API，需代理）、LimeTorrents（综合，HTML 爬虫，需代理但站点不可用默认禁用）、ACG.RIP（动画字幕组，HTML 爬虫，直连）、Bangumi Moe（动画字幕组，JSON API，直连）
+- 智能过滤 _compute_junk_flags 增加无做种数信息源豁免（acgrip/bangumi_moe 不标记 dead_seed）
+- SSE 线程池 max_workers 从 6 增加到 11
+- 前端 FilterBar 新增 4 个源的品牌色标签
+**决策**: YTS 用 yts.am 替代 yts.mx（SSL 不通），加 movies-api.accel.li 备用；LimeTorrents 所有域名 CF 保护严格默认禁用；52BT 搜不到公开站点信息暂不接入
+**踩坑**: yts.mx SSL 证书/TLS 配置有问题即使走代理也连不上；Bangumi Moe API v1 返回 500，v2 才正确；Bangumi Moe size 字段是字符串不是字节数；ACG.RIP 没有磁力链接只有 .torrent 下载链接且无做种数信息
+
 ## 2026-04-19 L1-L4 全场景切换 + 名称流转链路治理（阶段 2 完成）
 **变更**:
 - L1 splitByLanguage bug 修复：数字/字母紧邻 CJK 时归入中文
