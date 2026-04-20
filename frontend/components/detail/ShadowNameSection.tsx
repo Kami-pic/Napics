@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
 
-export function ShadowNameSection({ path, video, folderName, folderShadowName, onRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; onRefresh?: () => void }) {
-  // 文件夹模式：用 folderName/folderShadowName；视频模式：用 video 字段
+export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, onRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; onRefresh?: () => void }) {
+  // 文件夹模式：用 folderName/folderShadowName/folderCleanName；视频模式：用 video 字段
   const isFolder = !video && !!folderName;
   const fileName = video?.file_name || folderName || "";
   const shadowName = video?.shadow_name || folderShadowName || "";
-  const cleanName = video?.clean_name || "";
+  const cleanName = video?.clean_name || folderCleanName || "";
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);

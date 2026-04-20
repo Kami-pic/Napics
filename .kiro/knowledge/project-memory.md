@@ -18,24 +18,32 @@
 - **架构决策**：L1-L4 是通用能力 skill（已完成），业务编排（BT搜索匹配、刮削候选、过滤排序的具体参数和流程）不做独立 skill，而是在接入业务代码时边做边总结到对应的 knowledge 文件中
 
 ### 名称可信度机制
-- clean_name 新增 `clean_name_source` 字段，shadow_name 已有 `shadow_name_source`
-- 统一优先级表 `NAME_SOURCE_PRIORITY`（shared.py）：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
-- `safe_set_clean_name()` 辅助函数：低优先级不覆盖高优先级
-- `auto_fill` 已改为分层优先级保护（不只保护 manual，还保护 nfo > tmdb > scrape > parsed）
+- **清洗名系统**（`clean_name_system.py`）：统一入口，所有清洗逻辑集中在此
+  - `CleanNameResult` 结构化输出：cn（中文）/ en（英文）/ original（日文/韩文）/ display（展示名）/ suffix（季集号）
+  - 三层清洗：strip_noise（去噪）→ split_names（语言分离）→ compose_display（组装展示名）
+  - 三个业务入口：`clean_from_filename`（文件名解析）/ `clean_from_scrape`（刮削结果）/ `clean_for_folder`（文件夹）
+  - 搜索词构造：`clean_for_season_search` / `clean_for_episode_search`（对接多语言搜索）
+- 持久化字段：`clean_name`（display，向后兼容）+ `clean_name_cn` / `clean_name_en` / `clean_name_original`（结构化）
+- 统一优先级表 `NAME_SOURCE_PRIORITY`：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
+- `safe_update_clean_name()`：多字段版本的优先级保护写入
+- 旧的 `_clean_filename_for_folder` / `clean_episode_name` / `clean_season_name`（analyzer.py）待逐步替换为新系统
+- 技能文档：`.kiro/skills/clean-name-system.md`
 - 设计文档：`docs/name-trust-design.md`
 
 ### 搜索架构（BT/磁力 + 网盘 双 Tab）
-- BT/磁力：Prowlarr（主力）+ 5 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑）
-- SSE 全源并行搜索（/api/search/stream），as_completed 逐个推送，前端增量追加
+- BT/磁力：Prowlarr（主力）+ 9 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑/YTS/LimeTorrents/ACG.RIP/Bangumi Moe）
+- SSE 全源并行搜索（/api/search/stream），as_completed 逐个推送，前端增量追加，max_workers=11
 - 去重：同源内 infohash 去重，跨源不去重
 - 磁力链接源（磁力熊/XL720）seeders=0 且 size=0，不受做种数筛选影响
+- 无做种数信息源（ACG.RIP/Bangumi Moe）seeders=0 但 size>0，不标记为死种
 - 直搜源统一输出 SearchResult 格式，routes/search.py 的 SSE 端点合并
 - 网盘：6 个源（pansearch/pansou/gogopanso/github/rrdynb/ddys），pan_search_service.py 聚合
 - 前端三层分离：results(全量) → displayResults(智能过滤+排序) → filtered(筛选器+源开关)
 - 搜索设置在 SearchModal ⚙️ 二级菜单（搜索源/过滤规则/索引器/排序权重），不在总设置页
-- 需代理的源（Bitsearch/Nyaa/蜜柑）从 config.http_proxy 读取，和 TMDB 共用
-- 直连源（磁力熊/XL720/rrdynb）不走代理
+- 需代理的源（Bitsearch/Nyaa/蜜柑/YTS/LimeTorrents）从 config.http_proxy 读取，和 TMDB 共用
+- 直连源（磁力熊/XL720/ACG.RIP/Bangumi Moe/rrdynb）不走代理
 - XL720 响应极慢（超时 12s + 1 次重试），搜索质量差需中文子串过滤
+- 搜索词传递：用户手动输入时不传 cn_name/en_name（让后端用 query 分词），点击标签时才传辅助参数
 
 ### 搜索词构造
 - cnName：从 clean_name 提取中文字符，cnParts 用 Set 去重
@@ -88,7 +96,10 @@
 - rrdynb 多次搜索会触发 CF 限频（临时性，过段时间自动解除），请求间延迟 1.5-3s
 - ddys 已升级为 JSON API（POST /api/search-netdisk），link 字段是 base64 编码
 - 蜜柑 RSS 同时服务于 BT 搜索（即时）和订阅系统（定时轮询），共用 rss_source_mikan.py
-- 新增 BT 直搜源步骤：写爬虫(继承 ScraperBase) → shared.py 加 getter → routes/search.py 的 scrapers 列表加一行
+- 新增 BT 直搜源步骤：写爬虫(继承 ScraperBase) → shared.py 加 getter → routes/search.py 的 scrapers 列表加一行 → _BT_SOURCE_DEFAULTS 加配置
+- YTS 主域名 yts.mx SSL 不通，用 yts.am 作主域名、movies-api.accel.li 作备用
+- LimeTorrents 所有域名 CF 保护严格，默认禁用（enabled=False）
+- Bangumi Moe API 端点是 /api/v2/torrent/search（不是 /api/torrent/search），size 字段是字符串格式如 "118.6 GB"
 - 搜索匹配通用模块：text_processing.py（L1）→ match_scoring.py（L2）→ data_filtering.py（L3）→ result_sorting.py（L4），业务代码调用这些模块而非自己实现匹配逻辑
 
 ## 领域索引
@@ -97,6 +108,7 @@
 - 网盘搜索 → `knowledge/pan-search-pipeline.md`
 - BT 搜索 → `knowledge/bt-search-pipeline.md`
 - 下载归位替换 → `knowledge/download-replace-pipeline.md`
+- 清洗名系统 → `skills/clean-name-system.md`
 - 发现推荐 → `knowledge/discover-recommend.md`
 - 订阅系统 → `knowledge/subscribe-system.md`
 - 滚动交互 → `knowledge/scroll-damping-interaction.md`

@@ -5,6 +5,25 @@
 
 ---
 
+## 2026-04-20 清洗名系统重构 + TV 文件夹 clean_name 修复
+**变更**:
+- 修复 TV/season 文件夹 clean_name 显示"未设置"的 bug：ShadowNameSection 组件在文件夹模式下缺少 folderCleanName prop
+- 新建 `clean_name_system.py`：统一清洗名入口，替代散落在 analyzer.py/shared.py 中的多套清洗逻辑
+- 三层清洗架构：strip_noise（去噪 200+ 正则）→ split_names（中/英/日/韩语言分离）→ compose_display（组装展示名）
+- 结构化输出 `CleanNameResult`：cn/en/original/display/suffix/year/source/confidence
+- 搜索词构造：clean_for_season_search / clean_for_episode_search，直接对接多语言搜索 TODO
+- 持久化向后兼容：保留 clean_name 字段，新增 clean_name_cn/en/original 结构化字段
+- 49 个单元测试 + 20 个真实用例测试全绿
+- 新增 skill 文档 `.kiro/skills/clean-name-system.md`
+
+**踩坑**:
+- `SP` 在 `Spirited Away` 中误匹配为特别篇 → 用词边界 `(?<![a-zA-Z])` 保护
+- `AAC5.1` 格式未被 `\bAAC\b` 匹配 → 新增 `AAC\d?\.\d` 正则
+- 广告站名后紧跟 URL（如 `电影天堂www.dytt.com.盗梦空间`）→ 先把 `.` 转空格再去广告
+- FIX字幕侠/深影字幕组/AGE动漫等字幕组名未覆盖 → 扩充字幕组列表
+
+---
+
 ## 2026-04-20 智能过滤业务技能 + match_chain 增强
 **变更**:
 - 智能过滤（smartFilter）从空转升级为三维度判定：枪版检测（TS/CAM/HDTC 等词边界匹配）、匹配度过低（match_score > 0 且 < 30）、死种检测（seeders=0 且非磁力链接源）
