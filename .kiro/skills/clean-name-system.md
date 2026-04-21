@@ -24,7 +24,7 @@ description: >
 class CleanNameResult:
     cn: str           # 中文名（简体）："进击的巨人"
     en: str           # 英文名："Attack on Titan"
-    original: str     # 原始语言名（日文/韩文等）："進撃の巨人"
+    original: str     # 原始语言名（日文/韩文/法语等非中非英语言）："進撃の巨人"
     display: str      # UI 展示用的组合名："进击的巨人 S01E03"
     suffix: str       # 附加尾缀："S01E03" / "第2季" / "剧场版"
     source: str       # 来源："manual" / "nfo" / "tmdb" / "scrape" / "parsed"
@@ -76,7 +76,7 @@ class CleanNameResult:
 → "盗梦空间 Inception 2010"
 ```
 
-**实现**：复用现有 `_clean_filename_for_folder` 的正则，但下沉到 `text_processing.py` 作为 L1 能力。
+**实现**：`clean_name_system.py` 的 `strip_noise()` 函数。
 
 ### Level 1：语言分离（split_names）
 
@@ -117,7 +117,7 @@ class CleanNameResult:
 | 纯集号 | EP03、E03、第3集、03（尾部数字） | suffix="E03" |
 | 绝对集号 | 第148话、148 | suffix="E148" |
 | 季号 | Season 2、第2季、S02 | suffix="第2季"（中文展示）/ "S02"（英文） |
-| 剧场版 | 剧场版、劇場版、Movie | suffix="剧场版" |
+| 剧场版 | 剧场版、劇場版 | suffix="剧场版" |
 | OVA/SP | OVA、OAD、SP、特别篇 | suffix="OVA" / "SP" |
 
 **规则**：
@@ -184,23 +184,27 @@ class CleanNameResult:
 → safe_update（优先级保护写入）
 ```
 
-### 场景 C：树构建时（get_library_tree）
+### 场景 C：树构建时（get_library_tree）— 已接入
 
 ```
-文件夹节点：
-  有 shadow_name → split_names(shadow_name) → compose_display()
-  无 shadow_name → strip_noise(folder_name) → split_names() → compose_display()
+finalize 阶段：
+  文件夹节点 → clean_for_folder(folder_name, shadow_name, folder_type)
+  如果 en/original 为空且有 NFO → 从 NFO 补全（exists 预检避免无用 IO）
 
-视频节点：
-  media_library.json 中已有 clean_name 数据 → 直接用（不覆盖）
-  没有 → strip_noise(file_name) + 继承父文件夹的 cn/en → compose_display()
+post_process 阶段：
+  season 子文件夹 → clean_for_folder(parent_cn=父级cn, folder_type="season", season_num=N)
+  视频节点 → clean_from_filename(parent_cn=父级cn, parent_en=父级en)
+  尊重已有的高优先级 clean_name（manual/nfo/tmdb 不被覆盖）
 ```
 
-### 场景 D：搜索词构造
+### 场景 D：搜索词构造 — 已接入
 
 ```
-CleanNameResult → 按源语言映射表选词：
-  Prowlarr/Bitsearch → en（+ year）
+媒体库搜索：FolderDetail/VideoDetail 直接用 node.clean_name_cn / node.clean_name_en
+发现页搜索：_inject_clean_names() 统一注入 cn/en/original
+前端 SearchModal props：cnName / enName / originalName
+下游按源语言映射表选词：
+  Prowlarr/Bitsearch → en
   磁力熊/XL720 → cn
   Nyaa → original > en
   蜜柑 → cn > original
@@ -249,15 +253,17 @@ CleanNameResult → 按源语言映射表选词：
 
 ## 六、与现有代码的关系
 
-### 替代关系
+### 替代关系（已完成）
 
-| 现有函数 | 新函数 | 说明 |
+| 旧函数 | 新函数 | 状态 |
 |---------|--------|------|
-| `_clean_filename_for_folder` (analyzer.py) | `strip_noise` (text_processing.py) | 正则下沉到 L1 |
-| `_extract_chinese_name` (analyzer.py) | `split_names` 中调用 L1 `split_by_language` | 不再只匹配开头中文 |
-| `clean_season_name` (analyzer.py) | `compose_display(suffix="第X季")` | 组装逻辑统一 |
-| `clean_episode_name` (analyzer.py) | `compose_display(suffix="SxxExx")` | 组装逻辑统一 |
-| `_update_clean_names_after_scrape` (shared.py) | 新的 `update_clean_names` | 写入结构化字段 |
+| `_clean_filename_for_folder` (analyzer.py) | `strip_noise` (clean_name_system.py) | ✅ 树构建已切换 |
+| `_extract_chinese_name` (analyzer.py) | `split_names` 中调用 L1 `split_by_language` | ✅ 树构建已切换 |
+| `clean_season_name` (analyzer.py) | `clean_for_folder(folder_type="season")` | ✅ post_process 已切换 |
+| `clean_episode_name` (analyzer.py) | `clean_from_filename(parent_cn=...)` | ✅ post_process 已切换 |
+| `_update_clean_names_after_scrape` (shared.py) | `clean_from_scrape` + `safe_update_clean_name` | ✅ 已切换 |
+
+> 旧函数仍保留在 analyzer.py 中（其他模块可能还在引用），但树构建和刮削流程已全部切换到新系统。
 
 ### 保留不动
 
