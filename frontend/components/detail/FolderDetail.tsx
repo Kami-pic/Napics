@@ -300,10 +300,20 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
       </div>
       {/* 第一行操作按钮 */}
       {(() => {
-        // 直接用结构化的清洗名字段
-        const cnName = node.clean_name_cn || node.clean_name || node.name;
-        const enName = node.clean_name_en || "";
-        const originalName = (node as any).clean_name_original || "";
+        // 直接用结构化的清洗名字段，旧数据回退时从 clean_name 拆分
+        let cnName = node.clean_name_cn || "";
+        let enName = node.clean_name_en || "";
+        const originalName = node.clean_name_original || "";
+        // 旧数据没有结构化字段时，从 clean_name/name 中拆分中英文
+        if (!cnName && !enName) {
+          const raw = node.clean_name || node.name || "";
+          const cnMatch = raw.match(/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+/g);
+          const enMatch = raw.match(/[a-zA-Z][a-zA-Z0-9\s'.:-]*/g);
+          cnName = cnMatch ? cnMatch.join("").trim() : raw;
+          enName = enMatch ? enMatch.map(s => s.trim()).filter(Boolean).join(" ") : "";
+          if (cnName === enName) enName = "";
+        }
+        if (!cnName) cnName = node.clean_name || node.name;
         const ft = node.folder_type || "";
         // 季号：从 node.name 中提取
         const sMatch = node.name.match(/(?:Season|S)\s*(\d+)/i) || node.name.match(/第(\d+)季/);

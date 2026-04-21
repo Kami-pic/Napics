@@ -130,10 +130,28 @@ def _async_enrich_tmdb_ids(items: list):
                             item["tmdb_id"] = tid
                             media_matcher.add_id_mapping(str(douban_id), tid)
                             enriched += 1
-                        # 补全英文名（TMDB original_title/original_name 通常是英文）
-                        en_title = best.get("original_title") or best.get("original_name") or ""
-                        if en_title and en_title != title:
-                            item["original_title"] = en_title
+                        # 补全英文名：用 _get_english_title 获取真正的英文名
+                        orig = best.get("original_title") or best.get("original_name") or ""
+                        if orig and orig != title:
+                            from text_processing import detect_language as _dl
+                            lang = _dl(orig)
+                            if lang == "en":
+                                item["_tmdb_original_title"] = orig
+                                if not item.get("clean_name_en"):
+                                    item["clean_name_en"] = orig
+                            elif lang in ("jp", "ko"):
+                                if not item.get("clean_name_original"):
+                                    item["clean_name_original"] = orig
+                        # 如果还没有英文名，尝试用 en-US 请求
+                        if not item.get("clean_name_en") and tid:
+                            try:
+                                en_title = tmdb._get_english_title(
+                                    "tv" if media_type == "tv" else "movie", tid, orig or ""
+                                )
+                                if en_title and en_title != title:
+                                    item["clean_name_en"] = en_title
+                            except Exception:
+                                pass
                     time.sleep(0.5)  # 避免 TMDB 限频
                 except Exception:
                     pass

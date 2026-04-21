@@ -95,10 +95,19 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
       <ShadowNameSection path={v.file_path} video={v} onRefresh={onRefresh} />
       {/* 第一行：搜索升级 / 一键刮削 / 重新匹配 */}
       {(() => {
-        // 直接用结构化的清洗名字段
-        const cnName = v.clean_name_cn || v.clean_name || v.folder_name || v.file_name;
-        const enName = v.clean_name_en || "";
-        const originalName = (v as any).clean_name_original || "";
+        // 直接用结构化的清洗名字段，旧数据回退时从 clean_name 拆分
+        let cnName = v.clean_name_cn || "";
+        let enName = v.clean_name_en || "";
+        const originalName = v.clean_name_original || "";
+        if (!cnName && !enName) {
+          const raw = v.clean_name || v.folder_name || v.file_name || "";
+          const cnMatch = raw.match(/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+/g);
+          const enMatch = raw.match(/[a-zA-Z][a-zA-Z0-9\s'.:-]*/g);
+          cnName = cnMatch ? cnMatch.join("").trim() : raw;
+          enName = enMatch ? enMatch.map(s => s.trim()).filter(Boolean).join(" ") : "";
+          if (cnName === enName) enName = "";
+        }
+        if (!cnName) cnName = v.clean_name || v.folder_name || v.file_name;
         // 从文件名提取季集号
         const seMatch = v.file_name.match(/S(\d+)E(\d+)/i);
         const sNum = seMatch ? parseInt(seMatch[1]) : undefined;

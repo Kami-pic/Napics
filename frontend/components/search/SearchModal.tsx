@@ -11,8 +11,15 @@ import SearchSettingsPanel from "./SearchSettingsPanel";
 import SourceTabs from "./SourceTabs";
 import BtResultCard from "./BtResultCard";
 
-const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 type SearchTab = "bt" | "pan";
+
+interface SourceTabState {
+  keyword: string;
+  results: EnhancedSearchResult[];
+  searchedKeywords: string[];
+  hitKeyword: string;
+  searching: boolean;
+}
 
 function normalizeResolution(raw?: string): string {
   if (!raw) return "";
@@ -123,13 +130,6 @@ export default function SearchModal({
   // ── 源 Tab 切换状态 ──
   const [btActiveSource, setBtActiveSource] = useState("all");
   // 每个单源 Tab 的独立状态
-  interface SourceTabState {
-    keyword: string;
-    results: EnhancedSearchResult[];
-    searchedKeywords: string[];
-    hitKeyword: string;
-    searching: boolean;
-  }
   const [sourceTabStates, setSourceTabStates] = useState<Record<string, SourceTabState>>({});
 
   // 源→默认搜索词映射（前端侧，用于切换 Tab 时填入搜索框）
@@ -203,6 +203,7 @@ export default function SearchModal({
       setFilters(DEFAULT_FILTERS); setDownloadingUrl(null);
       setSearchingStep(""); setSearching(false); setSavePath("");
       searchCache.current.clear(); userEditedRef.current = false;
+      if (activeEsRef.current) { activeEsRef.current.close(); activeEsRef.current = null; }
       setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
       panCache.current.clear();
       setActiveTab("bt");
@@ -217,6 +218,8 @@ export default function SearchModal({
 
   // 跟踪用户是否手动修改过搜索词
   const userEditedRef = useRef(false);
+  // 跟踪当前 SSE 连接，新搜索开始时关闭旧的（防止结果混入）
+  const activeEsRef = useRef<EventSource | null>(null);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
@@ -243,7 +246,13 @@ export default function SearchModal({
       // 点击标签或自动搜索时才传 cn_name/en_name 辅助后端选词
       const isUserEdited = userEditedRef.current;
       const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName, original_name: originalName, season_number: seasonNumber });
+      // 关闭上一次未完成的 SSE 连接
+      if (activeEsRef.current) {
+        activeEsRef.current.close();
+        activeEsRef.current = null;
+      }
       const es = new EventSource(sseUrl);
+      activeEsRef.current = es;
       let sseResults: EnhancedSearchResult[] = [];
       let sseDone = false;
 
@@ -291,11 +300,12 @@ export default function SearchModal({
               sseDone = true;
               clearTimeout(timeout);
               es.close();
+              activeEsRef.current = null;
               resolve();
             }
           } catch { /* 忽略解析错误 */ }
         };
-        es.onerror = () => { clearTimeout(timeout); es.close(); reject(new Error("sse_error")); };
+        es.onerror = () => { clearTimeout(timeout); es.close(); activeEsRef.current = null; reject(new Error("sse_error")); };
       });
 
       if (sseDone && sseResults.length > 0) {
