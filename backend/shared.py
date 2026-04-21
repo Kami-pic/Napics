@@ -197,6 +197,52 @@ def _tmdb_client():
     return tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
 
 
+# ── 新增直搜源 getter ──
+
+_yts_scraper = None
+_limetorrents_scraper = None
+_acgrip_scraper = None
+_bangumi_moe_scraper = None
+
+
+def _get_yts_scraper():
+    """懒加载 YTS BT 搜索爬虫（需代理）。"""
+    global _yts_scraper
+    if _yts_scraper is None:
+        from bt_scraper_yts import YTSScraper
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+        _yts_scraper = YTSScraper(proxy=proxy or None)
+    return _yts_scraper
+
+
+def _get_limetorrents_scraper():
+    """懒加载 LimeTorrents BT 搜索爬虫（需代理）。"""
+    global _limetorrents_scraper
+    if _limetorrents_scraper is None:
+        from bt_scraper_limetorrents import LimeTorrentsScraper
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+        _limetorrents_scraper = LimeTorrentsScraper(proxy=proxy or None)
+    return _limetorrents_scraper
+
+
+def _get_acgrip_scraper():
+    """懒加载 ACG.RIP BT 搜索爬虫（国内可直连）。"""
+    global _acgrip_scraper
+    if _acgrip_scraper is None:
+        from bt_scraper_acgrip import ACGRipScraper
+        _acgrip_scraper = ACGRipScraper()
+    return _acgrip_scraper
+
+
+def _get_bangumi_moe_scraper():
+    """懒加载 Bangumi Moe BT 搜索爬虫（国内可直连）。"""
+    global _bangumi_moe_scraper
+    if _bangumi_moe_scraper is None:
+        from bt_scraper_bangumi_moe import BangumiMoeScraper
+        _bangumi_moe_scraper = BangumiMoeScraper()
+    return _bangumi_moe_scraper
+
+
 def get_clients():
     """动态实例化客户端（由配置驱动）"""
     conf = config_m.config
@@ -295,14 +341,18 @@ def safe_set_clean_name(item: dict, new_name: str, source: str) -> bool:
 
 
 def _update_clean_names_after_scrape(path: str, scrape_result: dict):
-    """刮削成功后，用刮削结果更新 clean_name（受 safe_set_clean_name 优先级保护）"""
+    """刮削成功后，用刮削结果更新 clean_name（受优先级保护）"""
     try:
         self_data = scrape_result.get("self", {}).get("data") or {}
         title = self_data.get("title", "")
         if not title:
             return
-        from analyzer import _extract_chinese_name, clean_episode_name
-        cn_title = _extract_chinese_name(title)
+        from clean_name_system import clean_from_scrape, safe_update_clean_name
+        # 提取刮削结果的多语言信息
+        original_title = self_data.get("original_title", "")
+        english_title = self_data.get("english_title", "")
+        year = self_data.get("year", "")
+
         library = config_m.load_library()
         changed = False
         video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
@@ -313,10 +363,15 @@ def _update_clean_names_after_scrape(path: str, scrape_result: dict):
             if fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
                 ext = os.path.splitext(fp)[1].lower()
                 if ext in video_exts:
-                    new_clean = clean_episode_name(v.get("file_name", ""), cn_title)
-                    if not new_clean:
-                        new_clean = cn_title
-                    if safe_set_clean_name(v, new_clean, "scrape"):
+                    result = clean_from_scrape(
+                        title=title,
+                        original_title=original_title,
+                        english_title=english_title,
+                        year=year,
+                        filename=v.get("file_name", ""),
+                        source="scrape",
+                    )
+                    if safe_update_clean_name(v, result):
                         changed = True
         if changed:
             config_m.save_library(library)

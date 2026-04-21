@@ -474,27 +474,36 @@ def get_library_tree():
                     node["shadow_tmdb_id"] = child.get("shadow_tmdb_id")
                     break
 
-        # 文件夹级 clean_name：优先用 shadow_name 去年份，否则清洗原始名
+        # 文件夹级 clean_name：用新的清洗名系统
         if node["path"] and node["path"] != base_path:
-            if node.get("shadow_name"):
-                # 刮削过的文件夹：用 shadow_name 去掉年份
-                import re as _re_cn
-                cn = _re_cn.sub(r'\s*\(\d{4}\)\s*$', '', node["shadow_name"]).strip()
-                node["clean_name"] = cn or node["shadow_name"]
-            else:
-                # 未刮削：用 _clean_filename_for_folder 清洗原始文件夹名
-                from analyzer import _clean_filename_for_folder
-                cleaned = _clean_filename_for_folder(node["name"] + ".tmp")
-                node["clean_name"] = cleaned if cleaned else node["name"]
+            from clean_name_system import clean_for_folder
+            from organizer import _extract_season_number
+            _season_num = _extract_season_number(node["name"]) if node.get("folder_type") == "season" else None
+            _folder_result = clean_for_folder(
+                folder_name=node["name"],
+                shadow_name=node.get("shadow_name", ""),
+                folder_type=node.get("folder_type", ""),
+                season_num=_season_num,
+            )
+            node["clean_name"] = _folder_result.display or node["name"]
+            node["clean_name_cn"] = _folder_result.cn
+            node["clean_name_en"] = _folder_result.en
+            node["clean_name_original"] = _folder_result.original
         else:
             node["clean_name"] = node.get("name", "")
+            node["clean_name_cn"] = ""
+            node["clean_name_en"] = ""
+            node["clean_name_original"] = ""
         return count, has_cover
 
     finalize(root_node)
 
     # 二次遍历：标记 season + 传播 parent_category_tag + 计算层级 clean_name
-    def post_process(node, inherited_tag="", parent_show_clean=""):
+    def post_process(node, inherited_tag="", parent_cn="", parent_en="", parent_original=""):
+        from clean_name_system import clean_for_folder, clean_from_filename
+        from organizer import _extract_season_number
         import re as _re_pp
+
         cat = node.get("category_tag", "") or inherited_tag
         node["parent_category_tag"] = cat
         
@@ -505,36 +514,54 @@ def get_library_tree():
                     node["shadow_name"] = child["shadow_name"]
                     break
 
-        # 当前节点的纯剧名（去年份、去 Season XX）用于传递给子节点
-        raw_clean = node.get("clean_name", "") or parent_show_clean
-        # 去掉尾部年份 (2016)
-        show_clean = _re_pp.sub(r'\s*\(\d{4}\)\s*$', '', raw_clean).strip()
-        # 去掉尾部 Season XX
-        show_clean = _re_pp.sub(r'\s*Season\s*\d+\s*$', '', show_clean, flags=_re_pp.I).strip()
-        if not show_clean:
-            show_clean = parent_show_clean
+        # 当前节点的结构化名称，用于传递给子节点
+        cur_cn = node.get("clean_name_cn", "") or parent_cn
+        cur_en = node.get("clean_name_en", "") or parent_en
+        cur_original = node.get("clean_name_original", "") or parent_original
 
         # tv 的子目录标记为 season + 计算季 clean_name
         if node.get("folder_type") == "tv":
-            from analyzer import clean_season_name
             for child in node.get("children", []):
                 if child.get("folder_type") != "mixed":
                     child["folder_type"] = "season"
-                # 季文件夹 clean_name：剧名 + Season XX（剧名不含年份）
-                if not child.get("shadow_name"):
-                    child["clean_name"] = clean_season_name(child["name"], show_clean)
+                # 季文件夹 clean_name：用新系统，传入父级剧名
+                season_num = _extract_season_number(child["name"])
+                folder_result = clean_for_folder(
+                    folder_name=child["name"],
+                    shadow_name=child.get("shadow_name", ""),
+                    parent_cn=cur_cn,
+                    parent_en=cur_en,
+                    folder_type="season",
+                    season_num=season_num,
+                )
+                child["clean_name"] = folder_result.display or child["name"]
+                child["clean_name_cn"] = folder_result.cn
+                child["clean_name_en"] = folder_result.en
+                child["clean_name_original"] = folder_result.original
 
-        # 视频的 clean_name：纯剧名 + SxxExx（不含年份、不含 Season）
+        # 视频的 clean_name：用新系统，继承父文件夹的结构化名称
         if node.get("folder_type") in ("tv", "season") and node.get("videos"):
-            from analyzer import clean_episode_name
             for v in node["videos"]:
-                if show_clean:
-                    new_clean = clean_episode_name(v.get("file_name", ""), show_clean)
-                    if new_clean:
-                        v["clean_name"] = new_clean
+                # 尊重已有的高优先级 clean_name（manual/nfo/tmdb 不覆盖）
+                existing_source = v.get("clean_name_source", "")
+                if existing_source in ("manual", "nfo", "tmdb"):
+                    continue
+                if cur_cn or cur_en:
+                    result = clean_from_filename(
+                        v.get("file_name", ""),
+                        folder_name=node.get("name", ""),
+                        parent_cn=cur_cn,
+                        parent_en=cur_en,
+                        parent_original=cur_original,
+                    )
+                    if result.display:
+                        v["clean_name"] = result.display
+                        v["clean_name_cn"] = result.cn
+                        v["clean_name_en"] = result.en
+                        v["clean_name_original"] = result.original
 
         for child in node.get("children", []):
-            post_process(child, cat, show_clean)
+            post_process(child, cat, cur_cn, cur_en, cur_original)
     post_process(root_node)
 
     return root_node

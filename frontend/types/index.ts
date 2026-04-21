@@ -21,6 +21,10 @@ export interface VideoInfo {
   shadow_tmdb_id?: number;
   organize_status?: string; // "ok" | "scrape_failed" | undefined(未整理)
   clean_name?: string; // 清洗后的文件名（去广告/标签/编码）
+  clean_name_cn?: string; // 中文清洗名
+  clean_name_en?: string; // 英文清洗名
+  clean_name_original?: string; // 原始语言清洗名（日文/韩文等）
+  clean_name_source?: string; // 清洗名来源
 }
 
 export interface FolderNode {
@@ -36,6 +40,9 @@ export interface FolderNode {
   folder_type?: string;
   shadow_name?: string;
   clean_name?: string;
+  clean_name_cn?: string;
+  clean_name_en?: string;
+  clean_name_original?: string;
   category_tag?: "movie" | "tv" | "";
 }
 
