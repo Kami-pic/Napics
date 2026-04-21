@@ -17,8 +17,8 @@
 | Bitsearch | 英文站 | enName | en → cn | 搜中文基本无结果 |
 | 磁力熊 | 中文为主 | cnName | cn → en | 国产片源站 |
 | XL720 | 中文为主 | cnName | cn → en | 国产片源站 |
-| Nyaa | 日文/英文（动画站） | jpName > enName | jp → en → cn | 日文原名命中率最高 |
-| 蜜柑 | 中文/日文（字幕组） | cnName | cn → jp → en | 字幕组标题通常中文 |
+| Nyaa | 日文/英文（动画站） | originalName > enName | original → en → cn | 日文原名命中率最高 |
+| 蜜柑 | 中文/日文（字幕组） | cnName | cn → original → en | 字幕组标题通常中文 |
 
 ### 网盘（9 源，中文优先但不绝对）
 
@@ -44,9 +44,9 @@
 | 普通搜索（电影/剧集） | 按源语言映射表选词 | 标准流程 |
 | 季搜索 | cnName+"第N季" / enName+"S0N" | 中文源加中文季号，英文源加英文季号 |
 | 单集搜索 | cnName+集号 / enName+S0NE0N | 需要更精确的匹配 |
-| 剧场版/OVA | jpName > enName（精确） | 动画剧场版用日文名最准 |
+| 剧场版/OVA | originalName > enName（精确） | 动画剧场版用原始语言名最准 |
 | 网盘搜索 | 有 cnName 时优先 cnName，否则 enName | 中文优先但不绝对，纯英文片用英文名 |
-| 刮削候选 | cnName（豆瓣）/ enName（TMDB）/ jpName（Bangumi） | 各刮削源用对应语言（不在本 TODO 范围） |
+| 刮削候选 | cnName（豆瓣）/ enName（TMDB）/ originalName（Bangumi） | 各刮削源用对应语言（不在本 TODO 范围） |
 
 ---
 
@@ -73,7 +73,7 @@
    - 筛选器 = 现有逻辑（源开关多选 + 分辨率/编码/大小/做种数）
 
 2. **单源 Tab**：
-   - 切换到该 Tab 时，搜索框自动填入该源的最佳搜索词（cn/en/jp/original）
+   - 切换到该 Tab 时，搜索框自动填入该源的最佳搜索词（cn/en/original）
    - 用户可修改搜索词，修改只对当前 Tab 生效
    - 点搜索 → 只搜该源
    - 筛选器 = 该源专属（后续 TODO 设计）
@@ -120,9 +120,9 @@
 
 **"全部"模式（SSE 流增强）**：
 ```
-GET /api/search/stream?query=xxx&cn_name=xxx&en_name=xxx&jp_name=xxx
+GET /api/search/stream?query=xxx&cn_name=xxx&en_name=xxx&original_name=xxx
 ```
-- 新增 `jp_name` 参数
+- 新增 `original_name` 参数（原 `jp_name`，现统一为 original，支持日/韩/法等所有小语种）
 - 后端 SSE 流内部为每个源选择最佳搜索词（按映射表）
 - 每个源独立回退：0 结果时自动换词再搜
 - 这是解决"精准匹配"的核心改造点——现有 SSE 流已经按源分词，增强回退逻辑即可
@@ -172,7 +172,7 @@ const [sourceTabs, setSourceTabs] = useState<Record<string, SourceTabState>>({})
 
 ### Phase 1：后端多语言搜索词分发 + 回退链
 
-- [x] SSE 端点接收 `jp_name`、`season_number` 参数
+- [x] SSE 端点接收 `original_name`、`season_number` 参数
 - [x] 新建 `search_keyword_mapper.py`：源→语言优先级映射 + 回退链词表生成 + 季号拼接
 - [x] 重构 `_search_prowlarr()` 和 `_search_direct()`：用 mapper 选词 + 回退链（0 结果换词，最多 3 轮）
 - [x] `source_done` 事件新增 `search_keywords` 和 `hit_keyword` 字段
@@ -208,11 +208,12 @@ const [sourceTabs, setSourceTabs] = useState<Record<string, SourceTabState>>({})
    - 影响：该源的 future 耗时会翻倍（最多 3 轮），但不阻塞其他源
    - 超时兜底：单源总超时不变（现有 20s），回退轮次共享这个超时
 
-2. **jpName 数据来源**：当前前端没有 jpName 字段，后端也没接收。
-   - 决策：本 TODO 不负责 jpName 的获取（属于 L1 业务接入），但预留参数位
-   - 前端 SearchModalProps 新增 `jpName?: string`
-   - 后端 SSE 端点新增 `jp_name` 参数
-   - jpName 为空时，Nyaa/蜜柑回退到 enName（已在映射表中体现）
+2. **originalName 数据来源**：由 `clean_name_system.py` 提供，字段为 `clean_name_original`。
+   - 来源：NFO 的 `original_title`、TMDB 的 `original_title`、Bangumi 的日文名
+   - 前端 SearchModalProps 使用 `originalName?: string`（原 `jpName` 已改名）
+   - 后端 SSE 端点使用 `original_name` 参数（原 `jp_name` 已改名）
+   - originalName 为空时，Nyaa/蜜柑回退到 enName（已在映射表中体现）
+   - original 不限于日文，也可能是韩文、法语等，下游用 `detect_language()` 判断具体语言
 
 3. **单源搜索端点的响应格式**：
    - 决策：单源端点返回普通 JSON（不走 SSE），因为只有一个源，不需要流式推送
@@ -224,7 +225,7 @@ const [sourceTabs, setSourceTabs] = useState<Record<string, SourceTabState>>({})
 4. **网盘搜索端点扩展**：`/search/pan` 需新增 `cn_name` / `en_name` 参数，后端按"中文优先"规则选词
 5. **季号参数传递**：SSE 端点新增 `season_number` 参数，后端为中文源拼"第N季"、英文源拼"S0N"
 6. **搜索词分发职责归属**：
-   - "全部"模式：后端负责按源分发搜索词（前端只传 cn/en/jp，不管分发逻辑）
+   - "全部"模式：后端负责按源分发搜索词（前端只传 cn/en/original，不管分发逻辑）
    - 单源模式：前端负责填入搜索词（用户可修改），后端直接用传入的词搜
    - 前端 searchTags 保留但定位改变：从"搜索词候选"变为"Tab 切换时的默认词来源"
 
@@ -241,7 +242,7 @@ const [sourceTabs, setSourceTabs] = useState<Record<string, SourceTabState>>({})
 | 情况 | 处理 |
 |---|---|
 | cnName 和 enName 相同 | 只用一个词，不重复搜，回退链跳过重复词 |
-| jpName 为空 | Nyaa/蜜柑回退到 enName |
+| originalName 为空 | Nyaa/蜜柑回退到 enName |
 | 所有名称都为空 | 用用户输入的 query 原文 |
 | 回退链所有词都 0 结果 | 显示"未搜到资源"，标签显示所有搜过的词 |
 | 用户在单源 Tab 手动改词 | 不触发自动回退（尊重用户意图） |
