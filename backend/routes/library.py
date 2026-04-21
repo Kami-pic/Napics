@@ -476,7 +476,7 @@ def get_library_tree():
 
         # 文件夹级 clean_name：用新的清洗名系统
         if node["path"] and node["path"] != base_path:
-            from clean_name_system import clean_for_folder
+            from clean_name_system import clean_for_folder, clean_from_scrape
             from organizer import _extract_season_number
             _season_num = _extract_season_number(node["name"]) if node.get("folder_type") == "season" else None
             _folder_result = clean_for_folder(
@@ -489,6 +489,28 @@ def get_library_tree():
             node["clean_name_cn"] = _folder_result.cn
             node["clean_name_en"] = _folder_result.en
             node["clean_name_original"] = _folder_result.original
+
+            # 补全：如果 en 或 original 为空，尝试从 NFO 读取
+            if not node["clean_name_en"] or not node["clean_name_original"]:
+                try:
+                    _nfo = scraper.read_nfo(node["path"])
+                    if _nfo:
+                        _nfo_result = clean_from_scrape(
+                            title=_nfo.get("title", ""),
+                            original_title=_nfo.get("original_title", ""),
+                            english_title=_nfo.get("english_title", ""),
+                            year=_nfo.get("year", ""),
+                            source="nfo",
+                        )
+                        if not node["clean_name_en"] and _nfo_result.en:
+                            node["clean_name_en"] = _nfo_result.en
+                        if not node["clean_name_original"] and _nfo_result.original:
+                            node["clean_name_original"] = _nfo_result.original
+                        if not node["clean_name_cn"] and _nfo_result.cn:
+                            node["clean_name_cn"] = _nfo_result.cn
+                            node["clean_name"] = _nfo_result.display or node["clean_name"]
+                except Exception:
+                    pass
         else:
             node["clean_name"] = node.get("name", "")
             node["clean_name_cn"] = ""
