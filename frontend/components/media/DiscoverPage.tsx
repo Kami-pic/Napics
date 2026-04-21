@@ -329,17 +329,17 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     setExpandedIndex(index); setExpandPos({ afterIndex: index });
     const item = displayItems[index];
     if (!item) return;
-    const cacheKey = `${item.title}_${item.year}_${activeTab}`;
-    pendingClickRef.current = cacheKey as any; // 用 cacheKey 做竞态标识
+    const detailSource = activeTabConfig.ratingSource || "tmdb";
+    const cacheKey = `${item.title}_${item.year}_${detailSource}`;
+    pendingClickRef.current = cacheKey as any;
     const cached = getCachedDetail(cacheKey);
     if (cached) { setDetail(cached); setDetailLoading(false); return; }
     setDetail(null); setDetailLoading(true);
     try {
       const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
-      const detailSource = activeTabConfig.ratingSource || "tmdb";
       const itemId = item.douban_id || "";
       const d = await api.mediaInfo(item.title, item.year, tmdbType, item.subtitle || "", detailSource, itemId);
-      if (pendingClickRef.current !== cacheKey) return; // 已被新点击覆盖
+      if (pendingClickRef.current !== cacheKey) return;
       if (d.found) setCachedDetail(cacheKey, d);
       setDetail(d);
     } catch {
@@ -352,11 +352,11 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
   const handleRetry = useCallback(() => {
     if (expandedIndex === null) return;
     const retryItem = displayItems[expandedIndex];
-    const cacheKey = `${retryItem.title}_${retryItem.year}_${activeTab}`;
+    const detailSource = activeTabConfig.ratingSource || "tmdb";
+    const cacheKey = `${retryItem.title}_${retryItem.year}_${detailSource}`;
     pendingClickRef.current = cacheKey;
     setDetail(null); setDetailLoading(true);
     const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
-    const detailSource = activeTabConfig.ratingSource || "tmdb";
     const itemId = retryItem.douban_id || "";
     api.mediaInfo(retryItem.title, retryItem.year, tmdbType as any, retryItem.subtitle || "", detailSource, itemId)
       .then(d => { if (pendingClickRef.current !== cacheKey) return; if (d.found) setCachedDetail(cacheKey, d); setDetail(d); })
@@ -369,13 +369,11 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     if (expandedIndex === null) return;
     const item = displayItems[expandedIndex];
     if (!item) return;
-    // 清除旧缓存（所有源的缓存都清）
-    for (const suffix of ["", "_douban", "_tmdb", "_bangumi"]) {
-      deleteCachedDetail(`${item.title}_${item.year}_${activeTab}${suffix}`);
+    // 清除所有源的缓存
+    for (const src of ["douban", "tmdb", "bangumi"]) {
+      deleteCachedDetail(`${item.title}_${item.year}_${src}`);
     }
-    // 也清除默认 key
-    deleteCachedDetail(`${item.title}_${item.year}_${activeTab}`);
-    const cacheKey = `${item.title}_${item.year}_${activeTab}`;
+    const cacheKey = `${item.title}_${item.year}_${source}`;
     pendingClickRef.current = cacheKey;
     setDetail(null); setDetailLoading(true);
     const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
