@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { FolderNode } from "@/types";
 import { api } from "@/lib/api";
-import { formatSize, splitByLanguage } from "@/lib/utils";
+import { formatSize } from "@/lib/utils";
 import { FOLDER_TYPE_LABELS, isAggregate as isAggregateType } from "@/lib/folderTypes";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
@@ -300,13 +300,9 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
       </div>
       {/* 第一行操作按钮 */}
       {(() => {
-        // cnName：从 clean_name 提取中文部分（数字紧邻中文时归入中文）
-        const cleanName = node.clean_name || node.name;
-        const { cn: cnName, en: enFromClean } = splitByLanguage(cleanName);
-        // enName：shadow_name 去年份的英文部分 > clean_name 的英文部分
-        const shadowClean = (node.shadow_name || "").replace(/\s*\(\d{4}\)\s*$/, "").trim();
-        const { en: shadowEn } = splitByLanguage(shadowClean);
-        const enName = shadowEn || enFromClean || "";
+        // 直接用结构化的清洗名字段
+        const cnName = node.clean_name_cn || node.clean_name || node.name;
+        const enName = node.clean_name_en || "";
         const ft = node.folder_type || "";
         // 季号：从 node.name 中提取
         const sMatch = node.name.match(/(?:Season|S)\s*(\d+)/i) || node.name.match(/第(\d+)季/);

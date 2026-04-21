@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
-import { formatSize, formatDuration, splitByLanguage } from "@/lib/utils";
+import { formatSize, formatDuration } from "@/lib/utils";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
 import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge, ScrapeInfo } from "./DetailComponents";
@@ -95,12 +95,9 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
       <ShadowNameSection path={v.file_path} video={v} onRefresh={onRefresh} />
       {/* 第一行：搜索升级 / 一键刮削 / 重新匹配 */}
       {(() => {
-        // 从 clean_name 拆分中英文（数字紧邻中文时归入中文）
-        const cleanName = v.clean_name || v.folder_name || v.file_name;
-        const { cn: cnName, en: enFromClean } = splitByLanguage(cleanName);
-        const shadowClean = (v.shadow_name || "").replace(/\s*\(\d{4}\)\s*$/, "").trim();
-        const { en: shadowEn } = splitByLanguage(shadowClean);
-        const enName = shadowEn || enFromClean || "";
+        // 直接用结构化的清洗名字段
+        const cnName = v.clean_name_cn || v.clean_name || v.folder_name || v.file_name;
+        const enName = v.clean_name_en || "";
         // 从文件名提取季集号
         const seMatch = v.file_name.match(/S(\d+)E(\d+)/i);
         const sNum = seMatch ? parseInt(seMatch[1]) : undefined;

@@ -39,6 +39,39 @@ def _inject_local_status(items: list) -> list:
     return items
 
 
+def _inject_clean_names(items: list) -> list:
+    """给推荐/探索结果注入结构化清洗名字段（cn/en/original）"""
+    from clean_name_system import clean_from_scrape
+    for item in items:
+        title = item.get("title", "")
+        if not title:
+            continue
+        # 已有结构化字段则跳过
+        if item.get("clean_name_cn"):
+            continue
+        en = item.get("original_title") or item.get("_tmdb_original_title") or ""
+        subtitle = item.get("subtitle", "")
+        # subtitle 可能含英文名（豆瓣格式："Inception / 盗梦空间"）
+        if not en and subtitle:
+            import re
+            # 提取 subtitle 中的英文部分
+            parts = re.split(r'\s*/\s*', subtitle)
+            for p in parts:
+                if re.search(r'[a-zA-Z]{2,}', p):
+                    en = p.strip()
+                    break
+        result = clean_from_scrape(
+            title=title,
+            english_title=en if en and en != title else "",
+            year=item.get("year", ""),
+            source="tmdb",
+        )
+        item["clean_name_cn"] = result.cn
+        item["clean_name_en"] = result.en
+        item["clean_name_original"] = result.original
+    return items
+
+
 def _async_enrich_tmdb_ids(items: list):
     """后台线程：为豆瓣榜单数据补全 tmdb_id（用 TMDB 搜索），结果缓存到 id_mapping_cache。"""
     def _do_enrich():
@@ -235,6 +268,9 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
             item["cover_url"] = proxy
         item.pop("cover_url_proxy", None)
 
+    # 注入结构化清洗名
+    _inject_clean_names(items)
+
     # 保存缓存
     result = {"type": type, "items": items}
     try:
@@ -376,6 +412,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                         cached = json.load(f)
                     sliced = cached[start:start + count]
                     _inject_local_status(sliced)
+                    _inject_clean_names(sliced)
                     return {"source": "combined", "items": sliced, "count": len(cached)}
             except Exception:
                 pass
@@ -388,7 +425,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                 json.dump(items, f, ensure_ascii=False)
         except Exception:
             pass
-        return {"source": "combined", "items": _inject_local_status(items[start:start + count]), "count": len(items)}
+        return {"source": "combined", "items": _inject_clean_names(_inject_local_status(items[start:start + count])), "count": len(items)}
 
     fetcher = _RECOMMEND_SOURCES.get(source)
     if not fetcher:
@@ -399,7 +436,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
             # 豆瓣源：后台异步补全 tmdb_id
             if source.startswith("douban"):
                 _async_enrich_tmdb_ids(items)
-            return {"source": source, "items": _inject_local_status(items), "count": len(items)}
+            return {"source": source, "items": _inject_clean_names(_inject_local_status(items)), "count": len(items)}
     except Exception as e:
         print(f"[Discover] recommend/{source} API v2 失败: {e}")
 
@@ -416,7 +453,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
         try:
             print(f"[Discover] {source} fallback 到旧版网页接口")
             items = douban_client.get_hot_list(fb[0], start, fb[1])
-            return {"source": source, "items": _inject_local_status(items or []), "count": len(items or []), "fallback": True}
+            return {"source": source, "items": _inject_clean_names(_inject_local_status(items or [])), "count": len(items or []), "fallback": True}
         except Exception as e2:
             print(f"[Discover] {source} fallback 也失败: {e2}")
     return {"source": source, "items": [], "count": 0}
@@ -494,7 +531,7 @@ def discover_explore(
             )
         else:
             raise HTTPException(status_code=400, detail=f"未知 provider: {provider}")
-        return {"provider": provider, "type": type, "items": _inject_local_status(items or []), "count": len(items or [])}
+        return {"provider": provider, "type": type, "items": _inject_clean_names(_inject_local_status(items or [])), "count": len(items or [])}
     except HTTPException:
         raise
     except Exception as e:
