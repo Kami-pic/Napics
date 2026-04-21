@@ -78,15 +78,18 @@ async def scan_path(path: str):
             kept = [v for v in existing if not v.get("file_path", "").startswith(path)]
             final = kept + results
             
-            from analyzer import _clean_filename_for_folder
-            from shared import safe_set_clean_name
+            from clean_name_system import clean_from_filename, safe_update_clean_name as _safe_update
             for item in final:
                 if not item.get("clean_name"):
                     fn = item.get("file_name", "")
                     if fn:
-                        cleaned = _clean_filename_for_folder(fn)
-                        new_name = cleaned if cleaned else os.path.splitext(fn)[0]
-                        safe_set_clean_name(item, new_name, "parsed")
+                        result = clean_from_filename(fn, source="parsed")
+                        if result.display:
+                            item["clean_name"] = result.display
+                            item["clean_name_cn"] = result.cn
+                            item["clean_name_en"] = result.en
+                            item["clean_name_original"] = result.original
+                            item["clean_name_source"] = "parsed"
             
             config_m.save_library(final)
             yield "data: " + json.dumps({"type": "done", "total": len(results)}) + "\n\n"

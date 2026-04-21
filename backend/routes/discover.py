@@ -41,7 +41,9 @@ def _inject_local_status(items: list) -> list:
 
 def _inject_clean_names(items: list) -> list:
     """给推荐/探索结果注入结构化清洗名字段（cn/en/original）"""
+    import re
     from clean_name_system import clean_from_scrape
+    from text_processing import detect_language
     for item in items:
         title = item.get("title", "")
         if not title:
@@ -49,20 +51,38 @@ def _inject_clean_names(items: list) -> list:
         # 已有结构化字段则跳过
         if item.get("clean_name_cn"):
             continue
-        en = item.get("original_title") or item.get("_tmdb_original_title") or ""
+        raw_original = item.get("original_title") or item.get("_tmdb_original_title") or ""
         subtitle = item.get("subtitle", "")
-        # subtitle 可能含英文名（豆瓣格式："Inception / 盗梦空间"）
+
+        # 判断 original_title 的语言，正确分配到 en 或 original
+        en = ""
+        original = ""
+        if raw_original and raw_original != title:
+            lang = detect_language(raw_original)
+            if lang == "en":
+                en = raw_original
+            elif lang in ("jp", "ko", "mixed"):
+                original = raw_original
+            # lang == "cn" 时不赋值（和 title 重复）
+
+        # 从 subtitle 中提取英文名（豆瓣格式："Inception / 盗梦空间"）
         if not en and subtitle:
-            import re
-            # 提取 subtitle 中的英文部分
             parts = re.split(r'\s*/\s*', subtitle)
             for p in parts:
-                if re.search(r'[a-zA-Z]{2,}', p):
-                    en = p.strip()
+                p = p.strip()
+                if not p or p == title:
+                    continue
+                lang = detect_language(p)
+                if lang == "en":
+                    en = p
                     break
+                elif lang in ("jp", "ko") and not original:
+                    original = p
+
         result = clean_from_scrape(
             title=title,
-            english_title=en if en and en != title else "",
+            original_title=original,
+            english_title=en,
             year=item.get("year", ""),
             source="tmdb",
         )
