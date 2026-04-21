@@ -118,6 +118,9 @@ def search_resources_stream(
             query=query, season_number=season_number,
         )
 
+        # 构造匹配名称列表（传给 enrich_result 解决跨语言匹配）
+        _match_names = [n for n in [kw_cn, kw_en, kw_original] if n and n != query]
+
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
@@ -227,7 +230,7 @@ def search_resources_stream(
                             source_hashes.add(hu)
                         source_deduped.append(r)
                     status = "done" if not err else "failed"
-                    enriched = [_enrich_result(r, query) for r in source_deduped]
+                    enriched = [_enrich_result(r, query, match_names=_match_names) for r in source_deduped]
                     yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'search_keywords': searched, 'hit_keyword': hit_kw, 'results': enriched}, default=str)}\n\n"
             except concurrent.futures.TimeoutError:
                 pass

@@ -52,6 +52,7 @@ def compute_junk_flags(d: dict) -> dict:
     match_score = d.get("match_score", 0)
     seeders = d.get("seeders", 0)
     size_gb = d.get("size_gb", 0)
+    has_multilang = d.get("_has_multilang_candidates", False)
 
     for p in _JUNK_QUALITY_PATTERNS:
         if re.search(r'\b' + p + r'\b', title, re.I):
@@ -61,18 +62,23 @@ def compute_junk_flags(d: dict) -> dict:
     if match_score > 0 and match_score < _MATCH_SCORE_THRESHOLD:
         reasons.append(f"low_match:{match_score}")
 
+    # match_score=0 且有多语言候选 → 完全不匹配（跨语言也试过了）
+    if match_score == 0 and has_multilang:
+        reasons.append("unmatched")
+
     is_magnet_only = seeders == 0 and size_gb == 0
-    # 磁力链接源（seeders=0 且 size=0）豁免死种标记
-    # 注意：acgrip/bangumi_moe 虽然可能没有做种数信息，但仍标记为 dead_seed
-    # 让智能过滤能过滤掉它们，排序层已单独处理这些源的降权
     if seeders == 0 and not is_magnet_only:
         reasons.append("dead_seed")
 
     return {"is_junk": len(reasons) > 0, "junk_reasons": reasons}
 
 
-def enrich_result(r, search_query: str = "") -> dict:
-    """给搜索结果附加 quality_score、match_score、is_junk 标记"""
+def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
+    """给搜索结果附加 quality_score、match_score、is_junk 标记
+
+    match_names: 额外的匹配候选名称列表（cn_name/en_name/original_name），
+                 和 search_query 一起构造 candidates，解决跨语言匹配问题。
+    """
     try:
         if hasattr(r, "dict"):
             d = r.dict()
@@ -92,14 +98,32 @@ def enrich_result(r, search_query: str = "") -> dict:
             try:
                 from match_scoring import match_chain
                 from text_processing import split_by_language as _split
+                # 从搜索词 + 额外名称构造候选列表
                 parts = _split(search_query)
                 candidates = [n for n in [search_query, parts["cn"], parts["en"]] if n]
+                # 追加额外的匹配名称（cn_name/en_name/original_name）
+                if match_names:
+                    for name in match_names:
+                        name = name.strip() if name else ""
+                        if name and name not in candidates:
+                            candidates.append(name)
+                            # 也拆分中英文部分
+                            name_parts = _split(name)
+                            for p in [name_parts["cn"], name_parts["en"]]:
+                                if p and p not in candidates:
+                                    candidates.append(p)
+                # 去重
+                candidates = list(dict.fromkeys(candidates))
+                # 从 BT 标题提取干净的作品名作为目标
                 bt_clean = extract_bt_title_for_match(d.get("title", ""))
                 bt_parts = _split(bt_clean)
                 targets = [n for n in [bt_clean, bt_parts["cn"], bt_parts["en"]] if n]
                 d["match_score"] = match_chain(candidates, targets, [])
+                # 标记是否有多语言候选（用于 junk_flags 判断 match_score=0 的含义）
+                d["_has_multilang_candidates"] = len(candidates) >= 3
             except Exception:
                 d["match_score"] = 0
+                d["_has_multilang_candidates"] = False
         else:
             d["match_score"] = 0
         d.update(compute_junk_flags(d))

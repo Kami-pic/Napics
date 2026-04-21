@@ -78,8 +78,9 @@ TS, CAM, HDTC, TC, TELECINE, HDTS, TELESYNC, HDCAM
 **阈值**：30 分（可配置）
 
 **为什么 match_score=0 不标记**：
-- match_score=0 表示 match_chain 计算失败或未传入搜索词，不代表不相关
+- match_score=0 在无多语言候选时表示 match_chain 计算失败或未传入搜索词，不代表不相关
 - 只有"算了但分数低"才是不相关的信号
+- 但如果有多语言候选（cn_name + en_name 都传了），match_score=0 就是真的不匹配，见规则 4
 
 **match_chain 评分参考**：
 - 90-100：精确匹配（标题完全一致）
@@ -105,6 +106,21 @@ TS, CAM, HDTC, TC, TELECINE, HDTS, TELESYNC, HDCAM
 - 不要用 `_source` 字段判断是否磁力源（前端可能没传）
 - 用 `seeders==0 && size_gb==0` 的组合特征判断更可靠
 - 某些 Prowlarr 索引器可能返回 seeders=0 但实际有种（API 延迟），这是可接受的误伤
+
+### 规则 4：完全不匹配（跨语言）
+
+**触发条件**：`match_score == 0 且 _has_multilang_candidates == true`
+
+**原理**：
+- `enrich_result` 接受 `match_names` 参数（cn_name/en_name/original_name）
+- 当有多语言候选时，candidates 包含中文名、英文名、原名等多种变体
+- 如果所有变体都无法匹配 BT 标题，说明结果确实不相关
+- 典型场景：搜"芙莉莲第二季"（cn_name="芙莉莲"，en_name="Frieren"），Prowlarr 返回 Zootopia
+
+**Gotchas**：
+- 用户手动输入搜索词时没有 match_names，`_has_multilang_candidates=false`，不触发此规则
+- 磁力源也受此规则影响（不相关的磁力链接也应被过滤）
+- 前端传 cn_name/en_name 的质量直接影响过滤效果，如果名称不准确可能误伤
 
 ## 前端交互
 

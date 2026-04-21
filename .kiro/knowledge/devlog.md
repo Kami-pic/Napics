@@ -95,6 +95,15 @@
 
 ---
 
+## 2026-04-21 智能过滤增强：跨语言匹配 + unmatched 规则
+**变更**:
+- enrich_result 新增 match_names 参数，SSE 搜索时传入 cn_name/en_name/original_name，解决跨语言匹配问题
+- 新增规则 4（unmatched）：match_score=0 且有多语言候选时标记为不匹配，过滤 Prowlarr 返回的完全不相关结果
+- 用户手动搜索（无 match_names）时不触发 unmatched 规则，避免误伤
+- 94 个测试全绿（基础45 + 扩展39 + 跨语言10）
+**决策**: 用 _has_multilang_candidates 标记区分"有多语言候选但不匹配"和"无候选无法计算"两种 match_score=0 的含义
+**踩坑**: search_helpers.py 已从 routes/search.py 拆出（之前的重构），函数名去掉了下划线前缀
+
 ## 2026-04-20 智能过滤业务技能 + match_chain 增强
 **变更**:
 - 智能过滤（smartFilter）从空转升级为三维度判定：枪版检测（TS/CAM/HDTC 等词边界匹配）、匹配度过低（match_score > 0 且 < 30）、死种检测（seeders=0 且非磁力链接源）
