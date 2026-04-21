@@ -19,12 +19,13 @@ interface ExplorePageProps {
   colCount: number;
   onNavigateToLocal?: (folderPath: string) => void;
   onSubscribe?: (item: DoubanHotItem, detail: MediaDetail | null) => void;
+  onUnsubscribe?: (item: DoubanHotItem) => void;
   checkSubscribed?: (item: DoubanHotItem) => boolean;
   refreshTrigger?: number;
   onRefreshingChange?: (refreshing: boolean) => void;
 }
 
-export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal, onSubscribe, checkSubscribed, refreshTrigger, onRefreshingChange }: ExplorePageProps) {
+export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, colCount, onNavigateToLocal, onSubscribe, onUnsubscribe, checkSubscribed, refreshTrigger, onRefreshingChange }: ExplorePageProps) {
   const tabConfig = EXPLORE_TABS.find(t => t.key === activeTab) || EXPLORE_TABS[0];
   const [filters, setFilters] = useState<Record<string, ExploreFilters>>({});
   const [items, setItems] = useState<DoubanHotItem[]>([]);
@@ -268,6 +269,7 @@ export default function ExplorePage({ onSelectMedia, activeTab, setActiveTab, co
                   onRefreshWithSource={handleRefreshWithSource}
                   onNavigateToLocal={onNavigateToLocal}
                   onSubscribe={onSubscribe ? () => onSubscribe(items[expandedIndex], detail) : undefined}
+                  onUnsubscribe={onUnsubscribe ? () => onUnsubscribe(items[expandedIndex]) : undefined}
                   isSubscribed={checkSubscribed?.(items[expandedIndex])} />
               </div>
             )}

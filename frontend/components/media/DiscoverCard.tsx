@@ -72,7 +72,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
         {showRank && (
-          <span className={`absolute top-1.5 left-1.5 min-w-[24px] h-6 flex items-center justify-center text-[11px] font-black px-1.5 rounded-md ${
+          <span className={`absolute top-3 left-1.5 min-w-[24px] h-[22px] flex items-center justify-center text-[11px] font-black px-1.5 rounded-md ${
             index < 3 ? "bg-yellow-500/90 text-black" : "bg-black/70 text-white/80"
           }`}>
             {index + 1}
@@ -83,11 +83,6 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
           <span className={`bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
             {hasRating ? item.rating : "—"}
           </span>
-          {ratingSource !== "tmdb" && (
-            <span className={`bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-bold ${item.tmdb_rating && item.tmdb_rating > 0 ? "text-blue-400" : "text-slate-600"}`}>
-              T {item.tmdb_rating && item.tmdb_rating > 0 ? item.tmdb_rating : "—"}
-            </span>
-          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-3">
           {(genres.length > 0 || showMediaType) && (

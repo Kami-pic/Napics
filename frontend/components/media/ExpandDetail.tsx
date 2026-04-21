@@ -30,6 +30,8 @@ export interface ExpandDetailProps {
   onNavigateToLocal?: (folderPath: string) => void;
   /** 订阅按钮回调 */
   onSubscribe?: () => void;
+  /** 取消订阅回调 */
+  onUnsubscribe?: () => void;
   /** 是否已订阅 */
   isSubscribed?: boolean;
 }
@@ -37,7 +39,7 @@ export interface ExpandDetailProps {
 export default function ExpandDetail({
   item, detail, loading, onSearch, onClose, onRetry,
   defaultSource = "douban", showBangumiRating = false, onRefreshWithSource, onNavigateToLocal,
-  onSubscribe, isSubscribed = false,
+  onSubscribe, onUnsubscribe, isSubscribed = false,
 }: ExpandDetailProps) {
   const d = detail?.found ? detail : null;
   const detailPoster = d?.poster_url ? proxyUrl(d.poster_url) : "";
@@ -103,9 +105,9 @@ export default function ExpandDetail({
             <span className="text-xs text-slate-500">加载详情...</span>
           </div>
         ) : !d ? (
-          <NoDetailFallback item={item} onSearch={onSearch} onRetry={handleRefresh} onSubscribe={onSubscribe} isSubscribed={isSubscribed} />
+          <NoDetailFallback item={item} onSearch={onSearch} onRetry={handleRefresh} onSubscribe={onSubscribe} onUnsubscribe={onUnsubscribe} isSubscribed={isSubscribed} />
         ) : (
-          <DetailContent item={item} d={d} onSearch={onSearch} showBangumiRating={showBangumiRating} onNavigateToLocal={onNavigateToLocal} onSubscribe={onSubscribe} isSubscribed={isSubscribed} />
+          <DetailContent item={item} d={d} onSearch={onSearch} showBangumiRating={showBangumiRating} onNavigateToLocal={onNavigateToLocal} onSubscribe={onSubscribe} onUnsubscribe={onUnsubscribe} isSubscribed={isSubscribed} />
         )}
       </div>
     </div>
@@ -114,7 +116,7 @@ export default function ExpandDetail({
 
 
 // ── 无详情时的 fallback 展示 ──
-function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }: { item: DoubanHotItem; onSearch: () => void; onRetry: () => void; onSubscribe?: () => void; isSubscribed?: boolean }) {
+function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, onUnsubscribe, isSubscribed }: { item: DoubanHotItem; onSearch: () => void; onRetry: () => void; onSubscribe?: () => void; onUnsubscribe?: () => void; isSubscribed?: boolean }) {
   const [localSubscribed, setLocalSubscribed] = useState(false);
   const [showCandidates, setShowCandidates] = useState(false);
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -162,7 +164,7 @@ function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }
   };
 
   if (selectedDetail) {
-    return <DetailContent item={item} d={selectedDetail} onSearch={onSearch} onSubscribe={onSubscribe} isSubscribed={isSubscribed} />;
+    return <DetailContent item={item} d={selectedDetail} onSearch={onSearch} onSubscribe={onSubscribe} onUnsubscribe={onUnsubscribe} isSubscribed={isSubscribed} />;
   }
 
   return (
@@ -177,12 +179,17 @@ function NoDetailFallback({ item, onSearch, onRetry, onSubscribe, isSubscribed }
       <div className="flex gap-2 mt-4">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
         <button onClick={searchCandidates} className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 rounded-lg text-xs font-medium text-amber-400 transition-colors">重新匹配</button>
-        {onSubscribe && (
-          <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }} disabled={subscribed}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-              subscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
-            }`}>
-            {subscribed ? "📌 已订阅" : "📌 订阅"}
+        {onSubscribe && !subscribed && (
+          <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }}
+            className="px-4 py-2 rounded-lg text-xs font-medium transition-colors bg-amber-600 hover:bg-amber-500 text-white">
+            📌 订阅
+          </button>
+        )}
+        {subscribed && (
+          <button onClick={() => { if (onUnsubscribe) { onUnsubscribe(); setLocalSubscribed(false); } }}
+            className="px-4 py-2 rounded-lg text-xs font-medium transition-colors bg-emerald-600/60 text-emerald-200 hover:bg-red-600/60 hover:text-red-200"
+            title="点击取消订阅">
+            📌 已订阅
           </button>
         )}
         {item.douban_id && (
@@ -243,9 +250,9 @@ function StarIcon() {
 }
 
 // ── 有详情时的完整展示 ──
-function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigateToLocal, onSubscribe, isSubscribed }: {
+function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigateToLocal, onSubscribe, onUnsubscribe, isSubscribed }: {
   item: DoubanHotItem; d: MediaDetail; onSearch: () => void; showBangumiRating?: boolean; onNavigateToLocal?: (folderPath: string) => void;
-  onSubscribe?: () => void; isSubscribed?: boolean;
+  onSubscribe?: () => void; onUnsubscribe?: () => void; isSubscribed?: boolean;
 }) {
   const [localSubscribed, setLocalSubscribed] = useState(false);
   const subscribed = isSubscribed || localSubscribed;
@@ -295,12 +302,17 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigat
       <div className="flex items-center gap-2 mt-4 flex-wrap">
         <button onClick={onSearch} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors">搜索资源</button>
         {/* 订阅按钮 */}
-        {onSubscribe && (
-          <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }} disabled={subscribed}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-              subscribed ? "bg-emerald-600/60 text-emerald-200 cursor-default" : "bg-amber-600 hover:bg-amber-500 text-white"
-            }`}>
-            {subscribed ? "📌 已订阅" : "📌 订阅"}
+        {onSubscribe && !subscribed && (
+          <button onClick={() => { onSubscribe(); setLocalSubscribed(true); }}
+            className="px-4 py-2 rounded-lg text-xs font-medium transition-colors bg-amber-600 hover:bg-amber-500 text-white">
+            📌 订阅
+          </button>
+        )}
+        {subscribed && (
+          <button onClick={() => { if (onUnsubscribe) { onUnsubscribe(); setLocalSubscribed(false); } }}
+            className="px-4 py-2 rounded-lg text-xs font-medium transition-colors bg-emerald-600/60 text-emerald-200 hover:bg-red-600/60 hover:text-red-200"
+            title="点击取消订阅">
+            📌 已订阅
           </button>
         )}
         {/* 本地媒体库跳转 */}

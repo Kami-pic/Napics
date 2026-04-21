@@ -33,6 +33,7 @@
 ### 已知但暂不处理
 
 - [ ] 异步补全首次请求可能无英文名（需清缓存后第二次才有）— 已有 C+E 方案缓解
+- [ ] 多译名匹配依赖目标列表完整性（别名列表补充）
 
 ---
 
@@ -55,12 +56,3 @@
 - [x] 智能过滤：`search_helpers.py` compute_junk_flags（枪版/低匹配/死种）
 - [x] 前端三层分离：results → displayResults → filtered
 - [x] 综合排序：`result_sorting.py` multi_level_sort（match_score → quality_score → seeders → size）
-
-### 待后续对话处理
-
-- [ ] 媒体库清洗名"未设置"问题（树构建时动态计算可能覆盖）
-- [ ] 发现页豆瓣信息匹配不上 + 封面丢失（特定条目）
-- [ ] 媒体库批量 TMDB 搜索补全英文名（665 条只有中文）
-- [ ] 业务 Skill 建设（S1-S5）→ 见 business-skills-plan.md
-- [ ] BT 标题含集号时 match_chain 匹配度下降
-- [ ] 多译名匹配依赖目标列表完整性（别名列表补充）

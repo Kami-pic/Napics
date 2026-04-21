@@ -46,6 +46,8 @@ export interface RecommendTabContentProps {
   onNavigateToLocal?: (folderPath: string) => void;
   /** 订阅回调 */
   onSubscribe?: (item: DoubanHotItem, detail: MediaDetail | null) => void;
+  /** 取消订阅回调 */
+  onUnsubscribe?: (item: DoubanHotItem) => void;
   /** 检查是否已订阅 */
   checkSubscribed?: (item: DoubanHotItem) => boolean;
 }
@@ -54,7 +56,7 @@ export default function RecommendTabContent({
   tabKey, isActive, isSearchMode, data, colCount,
   expandedIndex, detail, detailLoading, loadingMore, rowEndIndex, gridRef,
   onCardClick, onSelectMedia, onCloseExpand, onRetry, onRefreshWithSource, onLoadMore, onRetryTab, onNavigateToLocal,
-  onSubscribe, checkSubscribed,
+  onSubscribe, onUnsubscribe, checkSubscribed,
 }: RecommendTabContentProps) {
   const tabConfig = RECOMMEND_TABS.find(t => t.key === tabKey) || RECOMMEND_TABS[0];
   const isWeekly = tabKey === "weekly_combined";
@@ -138,6 +140,7 @@ export default function RecommendTabContent({
                   onRefreshWithSource={onRefreshWithSource}
                   onNavigateToLocal={onNavigateToLocal}
                   onSubscribe={onSubscribe ? () => onSubscribe(tabItems[expandedIndex], detail) : undefined}
+                  onUnsubscribe={onUnsubscribe ? () => onUnsubscribe(tabItems[expandedIndex]) : undefined}
                   isSubscribed={checkSubscribed?.(tabItems[expandedIndex])} />
               </div>
             )}

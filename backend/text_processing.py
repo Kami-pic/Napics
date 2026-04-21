@@ -73,6 +73,27 @@ _SUBTITLE_SEPS = ['：', ':', ' - ', '～', '~']
 _CN_SEASON_RE = re.compile(r'第(\d+)季')
 _CN_EPISODE_RE = re.compile(r'第(\d+)集')
 
+# ── 中文数字季号正则（第一季~第二十季）──
+_CN_NUM_MAP = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7,
+               "八": 8, "九": 9, "十": 10, "十一": 11, "十二": 12, "十三": 13,
+               "十四": 14, "十五": 15, "十六": 16, "十七": 17, "十八": 18,
+               "十九": 19, "二十": 20}
+_CN_NUM_SEASON_RE = re.compile(r'第([一二三四五六七八九十]+)季')
+_CN_NUM_EPISODE_RE = re.compile(r'第([一二三四五六七八九十]+)集')
+
+# ── 尾部续作标记正则（"2"/"3"/"II"/"III" 等紧跟在标题末尾）──
+_SEQUEL_SUFFIX_RE = re.compile(
+    r'\s*(?:'
+    r'[2-9]|[IⅡⅢⅣⅤⅥⅦⅧⅨⅩ]{1,4}'  # 阿拉伯数字 2-9 或罗马数字
+    r')\s*$'
+)
+
+# ── 特殊标记后缀（剧场版/OVA/SP 等）──
+_SPECIAL_SUFFIX_RE = re.compile(
+    r'\s*(?:剧场版|劇場版|OVA|OAD|SP|特别篇|番外篇|总集篇|完结篇)\s*$',
+    re.I
+)
+
 
 def _trad_to_simp(s: str) -> str:
     """轻量繁简转换（高频字映射）"""
@@ -258,13 +279,33 @@ def extract_variants(text: str) -> List[str]:
     if parts["en"]:
         _add(parts["en"])
 
-    # 季集号标准化
+    # 季集号标准化（阿拉伯数字）
     m = _CN_SEASON_RE.search(text)
     if m:
         base = _CN_SEASON_RE.sub("", text).strip()
         if base:
             _add(base)
             _add(f"{base} S{int(m.group(1)):02d}")
+
+    # 季集号标准化（中文数字：第五季 → 去掉 / 转 S05）
+    m2 = _CN_NUM_SEASON_RE.search(text)
+    if m2:
+        base = _CN_NUM_SEASON_RE.sub("", text).strip()
+        if base:
+            _add(base)
+            num = _CN_NUM_MAP.get(m2.group(1))
+            if num:
+                _add(f"{base} S{num:02d}")
+
+    # 去掉剧场版/OVA/SP 等特殊标记后缀
+    no_special = _SPECIAL_SUFFIX_RE.sub("", text).strip()
+    if no_special and no_special != text:
+        _add(no_special)
+
+    # 去掉续作数字后缀（"黑客帝国3" → "黑客帝国"，"速度与激情9" → "速度与激情"）
+    no_sequel = _SEQUEL_SUFFIX_RE.sub("", text).strip()
+    if no_sequel and no_sequel != text and len(no_sequel) >= 2:
+        _add(no_sequel)
 
     return variants
 
@@ -289,14 +330,28 @@ def clean_keyword(text: str, blacklist: Optional[List[str]] = None) -> str:
     # 去年份后缀
     s = _YEAR_RE.sub("", s).strip()
 
-    # 中文季号标准化
+    # 中文季号标准化（阿拉伯数字）
     m = _CN_SEASON_RE.search(s)
     if m:
         s = _CN_SEASON_RE.sub(f"S{int(m.group(1)):02d}", s)
 
+    # 中文季号标准化（中文数字）
+    m2 = _CN_NUM_SEASON_RE.search(s)
+    if m2:
+        num = _CN_NUM_MAP.get(m2.group(1))
+        if num:
+            s = _CN_NUM_SEASON_RE.sub(f"S{num:02d}", s)
+
     m = _CN_EPISODE_RE.search(s)
     if m:
         s = _CN_EPISODE_RE.sub(f"E{int(m.group(1)):02d}", s)
+
+    # 中文集号标准化（中文数字）
+    m2 = _CN_NUM_EPISODE_RE.search(s)
+    if m2:
+        num = _CN_NUM_MAP.get(m2.group(1))
+        if num:
+            s = _CN_NUM_EPISODE_RE.sub(f"E{num:02d}", s)
 
     # 去特殊字符（保留字母、数字、CJK、空格）
     s = re.sub(r'[^\w\u4e00-\u9fff\u3400-\u4dbf\s]', '', s)

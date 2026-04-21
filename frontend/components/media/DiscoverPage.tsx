@@ -217,7 +217,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     : curTabData.items;
 
   // ── 订阅状态 ──
-  const { isSubscribed: _isSubscribed, subscribe: doSubscribe, subscriptions, refresh: refreshSubs } = useSubscriptions();
+  const { isSubscribed: _isSubscribed, subscribe: doSubscribe, unsubscribe: doUnsubscribe, subscriptions, refresh: refreshSubs } = useSubscriptions();
   const [subscribing, setSubscribing] = useState(false);
   const [justSubscribed, setJustSubscribed] = useState<Set<string>>(new Set());
 
@@ -233,6 +233,20 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     setSubConfigDetail(d);
     setSubConfigOpen(true);
   }, []);
+
+  // 取消订阅：根据 title+year 找到订阅 ID 后删除
+  const handleUnsubscribe = useCallback(async (item: DoubanHotItem) => {
+    const sub = subscriptions.find(s =>
+      s.title === item.title && s.year === (item.year || "") && s.state !== "completed"
+    );
+    if (!sub) return;
+    await doUnsubscribe(sub.id);
+    setJustSubscribed(prev => {
+      const next = new Set(prev);
+      next.delete(`${item.title}|${item.year || ""}`);
+      return next;
+    });
+  }, [subscriptions, doUnsubscribe]);
 
   const handleSubscribeConfirm = useCallback(async (config: SubscribeConfig) => {
     if (!subConfigItem) return;
@@ -456,6 +470,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
                       onRefreshWithSource={handleRefreshWithSource}
                       onNavigateToLocal={onNavigateToLocal}
                       onSubscribe={() => handleSubscribe(searchItems[expandedIndex], detail)}
+                      onUnsubscribe={() => handleUnsubscribe(searchItems[expandedIndex])}
                       isSubscribed={isSubscribed(undefined, searchItems[expandedIndex]?.title, searchItems[expandedIndex]?.year)} />
                   </div>
                 )}
@@ -475,6 +490,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
             onLoadMore={loadMore} onRetryTab={handleRetryTab}
             onNavigateToLocal={onNavigateToLocal}
             onSubscribe={handleSubscribe}
+            onUnsubscribe={handleUnsubscribe}
             checkSubscribed={(item) => justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)} />
         ))}
 
@@ -483,6 +499,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
           <ExplorePage onSelectMedia={(item) => openSearchModal(item, detail)} activeTab={exploreTab} setActiveTab={setExploreTab}
             colCount={colCount} onNavigateToLocal={onNavigateToLocal}
             onSubscribe={handleSubscribe}
+            onUnsubscribe={handleUnsubscribe}
             checkSubscribed={(item) => justSubscribed.has(`${item.title}|${item.year || ""}`) || _isSubscribed(undefined, item.title, item.year)}
             refreshTrigger={exploreRefreshTrigger} onRefreshingChange={setExploreRefreshing} />
         )}
