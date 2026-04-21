@@ -72,7 +72,7 @@ export default function Home() {
   }, [currentFolder]);
 
   const handlePlay = (path: string) => api.play(path).catch(() => alert("启动播放器失败"));
-  const handleOpenSearch = (query: string, ctx?: { shadowName?: string; cleanName?: string; mediaType?: string; cnName?: string; enName?: string; folderType?: string; seasonNumber?: number; episodeTag?: string; savePath?: string }) => {
+  const handleOpenSearch = (query: string, ctx?: { shadowName?: string; cleanName?: string; mediaType?: string; cnName?: string; enName?: string; originalName?: string; folderType?: string; seasonNumber?: number; episodeTag?: string; savePath?: string }) => {
     setSearchQuery(query);
     setSearchContext(ctx || {});
     setShowSearch(true);

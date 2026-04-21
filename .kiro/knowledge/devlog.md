@@ -145,3 +145,16 @@
 - 回退链设计：每个源独立回退，在 future 内部同步完成，不阻塞其他源
 - sub-agent 审查发现 8 个问题（P0-P2），已补充决策到文档
 **决策**: 先跑通再总结 skill（业务编排层经验需实践验证）；网盘搜索词中文优先但不绝对（纯英文片用英文名）；回退链在 _search_direct 内部循环完成共享 20s 超时；单源端点返回普通 JSON 不走 SSE；jpName 预留参数位但获取交给 L1 业务接入
+
+## 2026-04-21 多语言搜索词实现（Phase 1-3 完成）
+**变更**:
+- 新建 `search_keyword_mapper.py`：源→语言优先级映射 + 回退链词表 + 季号拼接（cn/en/original/query 四字段）
+- 新建 `search_helpers.py`：从 routes/search.py 拆出 enrich_result/compute_junk_flags/extract_bt_title_for_match/merge_bt_extra_sources
+- 新建 `SourceTabs.tsx`：源 Tab 切换组件（BT/网盘共用）
+- SSE 端点改造：接入 mapper + 回退链（0 结果换词最多 3 轮）+ source_done 新增 search_keywords/hit_keyword
+- 新增 `/api/search/source` 单源搜索端点（JSON 响应，支持 fallback_keywords）
+- 前端 SearchModal 接入源 Tab：每个 Tab 独立 keyword/results 状态，切换自动填入最佳搜索词
+- FolderDetail/VideoDetail/page.tsx 补齐 originalName 传递链路
+- jp_name/jpName 统一改为 original_name/originalName（与 clean_name_system 对齐）
+- 83 个后端测试全绿（25 mapper + 58 综合），前端构建通过
+**决策**: original 字段放所有非中非英的原始语言名（日/韩/法等），不单独设 jp 字段；回退链在 future 内部同步完成共享超时；季号格式跟源走不跟词的语言走

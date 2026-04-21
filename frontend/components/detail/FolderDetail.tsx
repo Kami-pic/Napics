@@ -303,6 +303,7 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
         // 直接用结构化的清洗名字段
         const cnName = node.clean_name_cn || node.clean_name || node.name;
         const enName = node.clean_name_en || "";
+        const originalName = (node as any).clean_name_original || "";
         const ft = node.folder_type || "";
         // 季号：从 node.name 中提取
         const sMatch = node.name.match(/(?:Season|S)\s*(\d+)/i) || node.name.match(/第(\d+)季/);
@@ -311,7 +312,7 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
         const defaultQuery = ft === "season" && sNum
           ? `${cnName} Season ${sNum}`
           : (cnName && enName && cnName !== enName ? `${cnName} ${enName}` : cnName);
-        const ctx = { cnName, enName, folderType: ft, seasonNumber: sNum, savePath: node.path };
+        const ctx = { cnName, enName, originalName, folderType: ft, seasonNumber: sNum, savePath: node.path };
         return isAggregate ? (
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>

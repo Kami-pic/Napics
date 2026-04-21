@@ -62,13 +62,19 @@ export const api = {
   },
 
   // SSE 流式搜索（逐源返回进度）
-  searchStream: (keyword: string, options?: { media_type?: string; cn_name?: string; en_name?: string }) => {
+  searchStream: (keyword: string, options?: { media_type?: string; cn_name?: string; en_name?: string; original_name?: string; season_number?: number }) => {
     const p = new URLSearchParams({ query: keyword });
     if (options?.media_type) p.set("media_type", options.media_type);
     if (options?.cn_name) p.set("cn_name", options.cn_name);
     if (options?.en_name) p.set("en_name", options.en_name);
+    if (options?.original_name) p.set("original_name", options.original_name);
+    if (options?.season_number) p.set("season_number", String(options.season_number));
     return `${BASE_URL}/api/search/stream?${p.toString()}`;
   },
+
+  // 单源搜索（指定源 + 搜索词 + 可选回退词）
+  searchSource: (source: string, keyword: string, fallbackKeywords?: string) =>
+    request<any>(`${BASE_URL}/api/search/source?source=${encodeURIComponent(source)}&keyword=${encodeURIComponent(keyword)}${fallbackKeywords ? `&fallback_keywords=${encodeURIComponent(fallbackKeywords)}` : ""}`),
 
   download: (url: string, savePath: string, downloadType: "qb" | "alist" = "qb") => request<any>(`${BASE_URL}/download`, {
     method: "POST",

@@ -31,192 +31,10 @@ from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 from quality_parser import compute_quality_score
+from search_helpers import enrich_result as _enrich_result, extract_bt_title_for_match as _extract_bt_title_for_match, compute_junk_flags as _compute_junk_flags, merge_bt_extra_sources as _merge_bt_extra_sources
 
 router = APIRouter()
 
-
-def _enrich_result(r, search_query: str = "") -> dict:
-    """给搜索结果附加 quality_score（100 分制）、match_score（0-100）、is_junk 标记"""
-    try:
-        if hasattr(r, "dict"):
-            d = r.dict()
-        elif hasattr(r, "model_dump"):
-            d = r.model_dump()
-        else:
-            d = dict(r)
-        # quality 字段可能是 Pydantic model，转为 dict
-        if d.get("quality") and hasattr(d["quality"], "dict"):
-            d["quality"] = d["quality"].dict()
-        elif d.get("quality") and hasattr(d["quality"], "model_dump"):
-            d["quality"] = d["quality"].model_dump()
-        if r.quality:
-            d["quality_score"] = compute_quality_score(r.quality)
-        else:
-            d["quality_score"] = 0
-        # match_score：用 L2 match_chain 计算搜索词和标题的匹配度
-        if search_query:
-            try:
-                from match_scoring import match_chain
-                from text_processing import split_by_language as _split
-                # 从搜索词提取中英文变体作为候选
-                parts = _split(search_query)
-                candidates = [n for n in [search_query, parts["cn"], parts["en"]] if n]
-                # 从 BT 标题提取干净的作品名作为目标
-                bt_clean = _extract_bt_title_for_match(d.get("title", ""))
-                bt_parts = _split(bt_clean)
-                targets = [n for n in [bt_clean, bt_parts["cn"], bt_parts["en"]] if n]
-                d["match_score"] = match_chain(candidates, targets, [])
-            except Exception:
-                d["match_score"] = 0
-        else:
-            d["match_score"] = 0
-        # is_junk + junk_reasons：L3 软过滤标记（多条件，UI 开关控制显示/隐藏）
-        d.update(_compute_junk_flags(d))
-        return d
-    except Exception:
-        return {"title": getattr(r, "title", ""), "download_url": getattr(r, "download_url", ""),
-                "indexer": getattr(r, "indexer", ""), "seeders": getattr(r, "seeders", 0),
-                "size_gb": getattr(r, "size_gb", 0), "quality_score": 0, "match_score": 0,
-                "is_junk": False, "junk_reasons": []}
-
-
-# ── BT 标题清洗（专为搜索匹配设计，比 parse_filename 更激进）──
-# 技术标签正则：分辨率、编码、来源、音频、发布组等
-_BT_TECH_TAGS_RE = re.compile(
-    r'(?i)\b('
-    r'2160p|1080p|720p|480p|4K|UHD|FHD|HD|SD|'
-    r'BluRay|Blu-?Ray|WEB-?DL|WEBRip|WEB|HDTV|DVDRip|BDRip|BRRip|Remux|PDTV|'
-    r'x264|x265|H\.?264|H\.?265|HEVC|AVC|MPEG|VP9|AV1|10bit|HDR10\+?|HDR|DV|DoVi|'
-    r'AAC|DTS|DTS-HD|DTS-X|FLAC|Atmos|TrueHD|AC3|EAC3|DD5\.?1|DD\+?|MA\.?5\.?1|7\.?1|5\.?1|2\.?0|'
-    r'PROPER|REPACK|INTERNAL|SUBBED|DUBBED|MULTI|DUAL|'
-    r'TS|CAM|HDTC|TC|TELECINE|HDTS|TELESYNC|HDCAM|'
-    r'CMCT|CHD|Wiki|FLTth|HDChina|MTeam|TTG|FRDS|RARBG|YTS|YIFY|SPARKS|'
-    r'SWTYBLZ|CAKES|NTb|FLUX|NOGRP|GROUP|'
-    r'中英双字|中英字幕|中文字幕|双语字幕|简繁字幕|简体|繁体|中字|英字|字幕组'
-    r')\b'
-)
-# 发布组后缀（-GroupName 格式）
-_RELEASE_GROUP_RE = re.compile(r'-[A-Za-z0-9]{2,15}$')
-
-
-def _extract_bt_title_for_match(title: str) -> str:
-    """从 BT 标题中提取作品名，去掉所有技术标签。
-
-    策略：
-    1. 去掉方括号/圆括号内容（字幕组名、分辨率等）
-    2. 在第一个技术标签处截断（技术标签之后都是噪声）
-    3. 去掉发布组后缀（-GROUP）
-    4. 去掉年份（匹配时不需要）
-    5. 点号/下划线替换为空格
-    """
-    if not title:
-        return ""
-
-    s = title
-
-    # 1. 去掉方括号/圆括号内容
-    s = re.sub(r'[\[\(【（][^\]\)】）]*[\]\)】）]', ' ', s)
-
-    # 2. 点号/下划线替换为空格（BT 标题常用 . 分隔）
-    s = re.sub(r'[._]', ' ', s)
-
-    # 3. 在第一个技术标签处截断
-    m = _BT_TECH_TAGS_RE.search(s)
-    if m:
-        s = s[:m.start()]
-
-    # 4. 去掉发布组后缀
-    s = _RELEASE_GROUP_RE.sub('', s)
-
-    # 5. 去掉年份
-    s = re.sub(r'\b(19|20)\d{2}\b', '', s)
-
-    # 6. 清理残留
-    s = re.sub(r'\s+', ' ', s).strip()
-    s = s.strip(' -·|')
-
-    return s if s else title
-
-
-# 枪版/低质量关键词（词边界匹配）
-_JUNK_QUALITY_PATTERNS = ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS", "TELESYNC", "HDCAM"]
-# 匹配度阈值：低于此分数视为不相关
-_MATCH_SCORE_THRESHOLD = 30
-
-
-def _compute_junk_flags(d: dict) -> dict:
-    """计算 is_junk 和 junk_reasons，供智能过滤使用"""
-    reasons = []
-    title = d.get("title", "")
-    match_score = d.get("match_score", 0)
-    seeders = d.get("seeders", 0)
-    size_gb = d.get("size_gb", 0)
-
-    # 1. 枪版/低质量源
-    for p in _JUNK_QUALITY_PATTERNS:
-        if re.search(r'\b' + p + r'\b', title, re.I):
-            reasons.append(f"low_quality:{p}")
-            break
-
-    # 2. 匹配度过低（有 match_score 且低于阈值）
-    if match_score > 0 and match_score < _MATCH_SCORE_THRESHOLD:
-        reasons.append(f"low_match:{match_score}")
-
-    # 3. 死种（seeders=0 但不是磁力链接源或无 tracker 信息的源）
-    # 磁力链接源特征：seeders=0 且 size_gb=0（无 tracker 信息）
-    # 字幕组站（acgrip/bangumi_moe）不提供做种数，不视为死种
-    is_magnet_only = seeders == 0 and size_gb == 0
-    indexer = d.get("indexer", "")
-    no_seeder_sources = {"acgrip", "bangumi_moe"}
-    if seeders == 0 and not is_magnet_only and indexer not in no_seeder_sources:
-        reasons.append("dead_seed")
-
-    return {"is_junk": len(reasons) > 0, "junk_reasons": reasons}
-
-
-def _merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
-    """合并直搜源（Bitsearch/磁力熊/XL720/Nyaa）的结果到已有列表。
-
-    按 infohash 去重，直搜源结果追加到末尾。
-    """
-    merged = list(existing_results)
-
-    bt_overrides = config_m.config.bt_search_sources or {}
-    scrapers = [
-        ("bitsearch", _get_bitsearch_scraper),
-        ("cilixiong", _get_cilixiong_scraper),
-        ("xl720", _get_xl720_scraper),
-        ("nyaa", _get_nyaa_scraper),
-        ("mikan", _get_mikan_scraper),
-        ("yts", _get_yts_scraper),
-        ("limetorrents", _get_limetorrents_scraper),
-        ("acgrip", _get_acgrip_scraper),
-        ("bangumi_moe", _get_bangumi_moe_scraper),
-    ]
-    for name, getter in scrapers:
-        if not bt_overrides.get(name, True):
-            continue
-        try:
-            scraper = getter()
-            results = scraper.search_as_search_results(keyword, max_results=20)
-            added = 0
-            # 同源内 infohash 去重
-            source_hashes = set()
-            for r in results:
-                h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-                if h:
-                    hash_upper = h.group(1).upper()
-                    if hash_upper in source_hashes:
-                        continue
-                    source_hashes.add(hash_upper)
-                merged.append(r)
-                added += 1
-            if added:
-                print(f"[Search] {name} 补充 {added} 条结果")
-        except Exception as e:
-            print(f"[Search] {name} 失败: {e}")
-
-    return merged
 
 @router.get("/api/search")
 def search_resources(
@@ -292,69 +110,81 @@ def search_resources_stream(
     clean_name: str = "",
     cn_name: str = "",
     en_name: str = "",
+    original_name: str = "",
+    season_number: int = 0,
 ):
-    """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词。"""
+    """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词 + 回退链。"""
     def _generate():
         import concurrent.futures
-        from text_processing import split_by_language
+        from text_processing import split_by_language, normalize as _normalize
+        from search_keyword_mapper import MultiLangKeywords, get_search_keywords_for_source
 
-        # 构造多语言搜索词
-        # 英文词：en_name > shadow_name 去中文 > query 中英文部分
-        # 中文词：cn_name > query 中中文部分
-        from text_processing import normalize as _normalize
+        # 构造多语言搜索词集合
         parts = split_by_language(query)
-        kw_cn = cn_name.strip() or parts.get("cn", "") or query
-        kw_en = en_name.strip() or shadow_name.strip() or parts.get("en", "") or query
-        # 日文/原名：en_name 可能是日文（Bangumi 源），直接用
-        kw_original = en_name.strip() or query
-        # 清洗：去掉标点、多余空格
-        kw_cn = _normalize(kw_cn) if kw_cn else query
-        kw_en = kw_en.strip() if kw_en else query
+        kw_cn = cn_name.strip() or parts.get("cn", "") or ""
+        kw_en = en_name.strip() or shadow_name.strip() or parts.get("en", "") or ""
+        kw_original = original_name.strip() or ""
+        # 清洗中文名
+        if kw_cn:
+            kw_cn = _normalize(kw_cn)
+
+        keywords = MultiLangKeywords(
+            cn=kw_cn, en=kw_en, original=kw_original,
+            query=query, season_number=season_number,
+        )
+
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
 
         def _search_prowlarr():
-            """Prowlarr 优先用英文搜索（BT 站英文为主）"""
+            """Prowlarr 搜索 + 回退链"""
             try:
-                # 优先英文，fallback 到原始 query
-                search_kw = kw_en if kw_en and kw_en != kw_cn else query
-                print(f"[SSE/Prowlarr] 搜索词: '{search_kw}' (kw_en='{kw_en}', kw_cn='{kw_cn}', query='{query}')")
-                import time as _t
-                t0 = _t.time()
-                raw = clients["search"].search(search_kw)
-                elapsed = _t.time() - t0
-                print(f"[SSE/Prowlarr] 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
-                seen = set()
-                deduped = []
-                for r in raw:
-                    if r.download_url and r.download_url not in seen:
-                        seen.add(r.download_url)
-                        deduped.append(r)
-                return "prowlarr", deduped, None
+                kw_list = get_search_keywords_for_source("prowlarr", keywords)
+                searched = []
+                hit_kw = ""
+                all_results = []
+                for kw in kw_list:
+                    searched.append(kw)
+                    print(f"[SSE/Prowlarr] 搜索词: '{kw}'")
+                    import time as _t
+                    t0 = _t.time()
+                    raw = clients["search"].search(kw)
+                    elapsed = _t.time() - t0
+                    print(f"[SSE/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
+                    if raw:
+                        if not hit_kw:
+                            hit_kw = kw
+                        seen = set()
+                        for r in raw:
+                            if r.download_url and r.download_url not in seen:
+                                seen.add(r.download_url)
+                                all_results.append(r)
+                        break  # 有结果就停止回退
+                return "prowlarr", all_results, None, searched, hit_kw
             except Exception as e:
                 print(f"[SSE/Prowlarr] 异常: {e}")
-                return "prowlarr", [], str(e)
+                return "prowlarr", [], str(e), [], ""
 
         def _search_direct(name, getter):
-            """直搜源按语言选择搜索词"""
+            """直搜源搜索 + 回退链"""
             try:
                 s = getter()
-                # 中文源用中文，英文/日文源用对应语言
-                if name in ("cilixiong", "xl720"):
-                    search_kw = kw_cn
-                elif name in ("nyaa", "mikan"):
-                    search_kw = kw_original  # 日文原名或英文
-                elif name in ("yts", "limetorrents", "bitsearch"):
-                    search_kw = kw_en if kw_en and kw_en != kw_cn else query
-                elif name in ("acgrip", "bangumi_moe"):
-                    search_kw = kw_cn  # 中文字幕组站，中文优先
-                else:
-                    search_kw = kw_en if kw_en and kw_en != kw_cn else query
-                results = s.search_as_search_results(search_kw, max_results=20)
-                return name, results, None
+                kw_list = get_search_keywords_for_source(name, keywords)
+                searched = []
+                hit_kw = ""
+                all_results = []
+                for kw in kw_list:
+                    searched.append(kw)
+                    results = s.search_as_search_results(kw, max_results=20)
+                    if results:
+                        if not hit_kw:
+                            hit_kw = kw
+                        all_results.extend(results)
+                        break  # 有结果就停止回退
+                return name, all_results, None, searched, hit_kw
             except Exception as e:
-                return name, [], str(e)
+                return name, [], str(e), [], ""
 
         scrapers = [
             ("bitsearch", _get_bitsearch_scraper),
@@ -393,10 +223,10 @@ def search_resources_stream(
             try:
                 for future in concurrent.futures.as_completed(future_map, timeout=65):
                     try:
-                        name, results, err = future.result(timeout=65)
+                        name, results, err, searched, hit_kw = future.result(timeout=65)
                     except Exception as e:
                         name = future_map[future]
-                        results, err = [], str(e)
+                        results, err, searched, hit_kw = [], str(e), [], ""
                     completed_sources.add(name)
                     # 同源内去重
                     source_deduped = []
@@ -411,17 +241,115 @@ def search_resources_stream(
                         source_deduped.append(r)
                     status = "done" if not err else "failed"
                     enriched = [_enrich_result(r, query) for r in source_deduped]
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'results': enriched}, default=str)}\n\n"
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'search_keywords': searched, 'hit_keyword': hit_kw, 'results': enriched}, default=str)}\n\n"
             except concurrent.futures.TimeoutError:
                 pass
             # 超时未完成的源推送 failed 状态
             for future, name in future_map.items():
                 if name not in completed_sources:
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': '搜索超时', 'results': []})}\n\n"
+                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': '搜索超时', 'search_keywords': [], 'hit_keyword': '', 'results': []})}\n\n"
 
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
+
+
+@router.get("/api/search/source")
+def search_single_source(
+    source: str,
+    keyword: str,
+    fallback_keywords: str = "",
+):
+    """单源搜索端点：搜指定源，支持回退链。返回普通 JSON。
+
+    参数：
+    - source: 源名称（prowlarr/bitsearch/cilixiong/xl720/nyaa/mikan/yts/limetorrents/acgrip/bangumi_moe）
+    - keyword: 主搜索词
+    - fallback_keywords: 逗号分隔的回退词列表（可选，用户手动改词后不传）
+    """
+    # 构造搜索词列表
+    kw_list = [keyword.strip()]
+    if fallback_keywords:
+        for fb in fallback_keywords.split(","):
+            fb = fb.strip()
+            if fb and fb.lower() not in {k.lower() for k in kw_list}:
+                kw_list.append(fb)
+
+    # 获取源的搜索函数
+    source_getters = {
+        "prowlarr": None,  # 特殊处理
+        "bitsearch": _get_bitsearch_scraper,
+        "cilixiong": _get_cilixiong_scraper,
+        "xl720": _get_xl720_scraper,
+        "nyaa": _get_nyaa_scraper,
+        "mikan": _get_mikan_scraper,
+        "yts": _get_yts_scraper,
+        "limetorrents": _get_limetorrents_scraper,
+        "acgrip": _get_acgrip_scraper,
+        "bangumi_moe": _get_bangumi_moe_scraper,
+    }
+
+    if source not in source_getters:
+        return {"error": f"未知源: {source}", "results": [], "search_keywords": [], "hit_keyword": ""}
+
+    searched = []
+    hit_kw = ""
+    all_results = []
+
+    try:
+        if source == "prowlarr":
+            clients = get_clients()
+            for kw in kw_list:
+                searched.append(kw)
+                raw = clients["search"].search(kw)
+                if raw:
+                    if not hit_kw:
+                        hit_kw = kw
+                    seen = set()
+                    for r in raw:
+                        if r.download_url and r.download_url not in seen:
+                            seen.add(r.download_url)
+                            all_results.append(r)
+                    break
+        else:
+            getter = source_getters[source]
+            s = getter()
+            for kw in kw_list:
+                searched.append(kw)
+                results = s.search_as_search_results(kw, max_results=20)
+                if results:
+                    if not hit_kw:
+                        hit_kw = kw
+                    all_results.extend(results)
+                    break
+    except Exception as e:
+        return {
+            "error": str(e), "results": [],
+            "search_keywords": searched, "hit_keyword": hit_kw,
+        }
+
+    # 去重 + enrich
+    deduped = []
+    hashes = set()
+    for r in all_results:
+        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
+        if h:
+            hu = h.group(1).upper()
+            if hu in hashes:
+                continue
+            hashes.add(hu)
+        deduped.append(r)
+
+    enriched = [_enrich_result(r, keyword) for r in deduped]
+
+    return {
+        "source": source,
+        "results": enriched,
+        "count": len(enriched),
+        "search_keywords": searched,
+        "hit_keyword": hit_kw,
+    }
+
 
 @router.get("/search/pan")
 def search_pan(keyword: str, media_type: str = ""):

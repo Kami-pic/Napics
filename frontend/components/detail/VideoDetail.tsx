@@ -98,6 +98,7 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
         // 直接用结构化的清洗名字段
         const cnName = v.clean_name_cn || v.clean_name || v.folder_name || v.file_name;
         const enName = v.clean_name_en || "";
+        const originalName = (v as any).clean_name_original || "";
         // 从文件名提取季集号
         const seMatch = v.file_name.match(/S(\d+)E(\d+)/i);
         const sNum = seMatch ? parseInt(seMatch[1]) : undefined;
@@ -105,7 +106,7 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
         const epTag = sNum !== undefined && eNum !== undefined ? `S${String(sNum).padStart(2,"0")}E${String(eNum).padStart(2,"0")}` : undefined;
         // 默认搜索词：集文件用 中文名+SxxExx
         const defaultQuery = epTag ? `${cnName} ${epTag}` : (cnName && enName && cnName !== enName ? `${cnName} ${enName}` : cnName);
-        const ctx = { cnName, enName, folderType: "", seasonNumber: sNum, episodeTag: epTag, savePath: v.file_path.replace(/[\\/][^\\/]+$/, '') };
+        const ctx = { cnName, enName, originalName, folderType: "", seasonNumber: sNum, episodeTag: epTag, savePath: v.file_path.replace(/[\\/][^\\/]+$/, '') };
         return (
           <div className="grid grid-cols-3 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-slate-300">搜索升级</button>

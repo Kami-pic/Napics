@@ -149,11 +149,11 @@ export default function SearchModal({
       if (sNum > 0) kw += ` 第${sNum}季`;
       map[s] = kw;
     }
-    // 动画源（Nyaa 优先日文/英文）
-    map["nyaa"] = jpName || en || cn || query;
+    // 动画源（Nyaa 优先原始语言名/英文）
+    map["nyaa"] = originalName || en || cn || query;
     if (sNum > 0) map["nyaa"] += ` S${String(sNum).padStart(2, "0")}`;
     return map;
-  }, [cnName, enName, jpName, query, seasonNumber]);
+  }, [cnName, enName, originalName, query, seasonNumber]);
 
   // 源搜索词回显信息（从 SSE source_done 事件收集）
   const [sourceKeywordInfo, setSourceKeywordInfo] = useState<Record<string, { searched: string[]; hit: string }>>({});
@@ -241,7 +241,7 @@ export default function SearchModal({
       // 用户手动输入的搜索词不传 cn_name/en_name，让后端用 query 自行分词
       // 点击标签或自动搜索时才传 cn_name/en_name 辅助后端选词
       const isUserEdited = userEditedRef.current;
-      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName, season_number: seasonNumber });
+      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName, original_name: originalName, season_number: seasonNumber });
       const es = new EventSource(sseUrl);
       let sseResults: EnhancedSearchResult[] = [];
       let sseDone = false;
@@ -324,7 +324,7 @@ export default function SearchModal({
     }
     setSearching(false);
     setSearchingStep("");
-  }, [cnName, enName, seasonNumber]);
+  }, [cnName, enName, originalName, seasonNumber]);
 
   // ── 网盘搜索 ──
   const doPanSearch = useCallback(async (q: string) => {
