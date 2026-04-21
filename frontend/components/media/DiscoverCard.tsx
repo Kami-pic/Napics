@@ -72,19 +72,17 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
         {showRank && (
-          <div className={`absolute top-2.5 left-0 flex items-center ${
-            index < 3 ? "text-yellow-400" : "text-white/50"
-          }`}>
-            <span className={`text-[28px] font-black leading-none pl-2 pr-1 drop-shadow-lg ${
-              index < 3 ? "" : "opacity-60"
-            }`} style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", WebkitTextStroke: index < 3 ? "0.5px rgba(0,0,0,0.3)" : "none" }}>
+          <div className="absolute top-2 left-1.5">
+            <span className={`text-[32px] font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${
+              index < 3 ? "text-yellow-400" : "text-white/70"
+            }`} style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", WebkitTextStroke: "1px rgba(0,0,0,0.5)", minWidth: "28px", display: "inline-block", textAlign: "center" }}>
               {index + 1}
             </span>
           </div>
         )}
         {/* 右上角评分 */}
-        <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-0.5">
-          <span className={`bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
+        <div className="absolute top-2 right-2.5">
+          <span className={`bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[15px] font-extrabold leading-none ${hasRating ? ratingColor : "text-slate-500"}`}>
             {hasRating ? item.rating : "—"}
           </span>
         </div>
