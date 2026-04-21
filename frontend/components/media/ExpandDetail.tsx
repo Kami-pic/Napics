@@ -269,8 +269,8 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigat
         <span className={`text-xs ${tmdbRating > 0 ? getRatingColor("tmdb") : "text-slate-600"} ${tmdbRating > 0 ? "bg-blue-400/10" : "bg-white/[0.04]"} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
           <StarIcon /> TMDB {tmdbRating > 0 ? tmdbRating : "—"}
         </span>
-        {/* Bangumi 评分（动画 tab 始终显示） */}
-        {showBangumiRating && (
+        {/* Bangumi 评分（有 Bangumi 评分数据或动画 tab 时始终显示） */}
+        {(showBangumiRating || bangumiRating > 0) && (
           <span className={`text-xs ${bangumiRating > 0 ? getRatingColor("bangumi") : "text-slate-600"} ${bangumiRating > 0 ? "bg-pink-400/10" : "bg-white/[0.04]"} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
             <StarIcon /> Bangumi {bangumiRating > 0 ? bangumiRating : "—"}
           </span>
