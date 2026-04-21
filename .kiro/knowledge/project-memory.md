@@ -55,15 +55,20 @@
 - 搜索词映射器：`search_keyword_mapper.py`，为每个搜索源选择最佳语言搜索词 + 回退链
 - 三语言字段：cn（中文）/ en（英文）/ original（日/韩/法等原始语言名），来自 clean_name_system
 - 源→语言优先级：Prowlarr/Bitsearch/YTS 用 en，磁力熊/XL720 用 cn，Nyaa 用 original，蜜柑/ACG.RIP/萌番组 用 cn
-- 回退链：每个源 0 结果时自动换词（最多 3 轮），在 SSE future 内部同步完成
+- 回退链：每个源 0 结果时自动换词（最多 3 轮），在 SSE future 内部同步完成，首个有结果的词即为最终结果
 - 季号拼接：中文源"第N季"，英文源"S0N"，格式跟源走不跟词的语言走
 - SSE source_done 事件返回 search_keywords（搜过的词列表）+ hit_keyword（命中的词）
 - 单源搜索端点：`/api/search/source`，JSON 响应，支持 fallback_keywords
 - 前端源 Tab 切换：SourceTabs 组件，每个 Tab 独立 keyword/results 状态
+- SSE 竞态保护：activeEsRef 跟踪当前 EventSource，新搜索关闭旧连接
 - 英文名获取：TMDB 用 `_get_english_title(language=en-US)` 主动获取；豆瓣从 subtitle 中用 detect_language 提取；Bangumi 无英文名
 - 关键红线：original_title 不能直接当英文名（中国电影是中文、日本动画是日文），必须做语言判断
+- 旧数据兼容：前端无 clean_name_cn/en 时从 clean_name 字符串正则拆分中英文
+- 技能文档：`skills/multilang-search-dispatch.md`、`skills/multilang-name-enrichment.md`
+- **待实施**：发现页 TMDB 数据补全（C+E 方案 + 超时降级），设计文档 `docs/discover-enrich-design.md`
 - 保存路径：优先 searchContext.savePath > currentFolder > NAS 根路径
 - discoverUtils.ts 的 normalizeItem 是所有推荐/探索/搜索数据的统一入口，新增字段必须在此传递
+- **已知问题**：normalizeItem 未传递 clean_name_cn/en/original 字段（后端注入的被前端丢弃）
 
 ### 下载管理
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
@@ -131,6 +136,10 @@
 - 搜索匹配过滤调研 → `docs/search-match-filter-research.md`
 - 搜索匹配技能建设 TODO → `docs/skill-build-todo.md`
 - 通用技能 L1-L4 → `skills/L1-text-processing.md` ~ `skills/L4-result-sorting.md`
+- 多语言搜索词分发 → `skills/multilang-search-dispatch.md`
+- 多源英文名补全 → `skills/multilang-name-enrichment.md`
+- 多语言搜索词 TODO → `docs/multilang-search-todo.md`
+- 发现页 TMDB 补全设计 → `docs/discover-enrich-design.md`（待实施）
 
 ## 测试沙盒
 
