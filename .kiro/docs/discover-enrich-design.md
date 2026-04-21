@@ -204,7 +204,7 @@
 | D 混合 B+C | ⬜ 方向对但可简化 | B 层已在工作，只需实现 C 层就自动获得 D 的效果 |
 | E 同步并发补全 | ✅ 推荐与 C 组合 | 首次加载就有英文名，1-2 秒可接受 |
 
-### 推荐方案：C + E 组合
+### 推荐方案：C + E 组合（带超时降级）
 
 **核心思路：**
 1. 新建 `tmdb_enrich_cache.json` 持久化缓存（方案 C）
@@ -212,9 +212,27 @@
 3. 补全结果写入缓存，下次直接命中（零等待）
 4. 详情页按需补全保持不变（方案 B，已有机制）
 
+**超时降级机制（关键）：**
+
+TMDB API 走代理，国内网络波动可能导致请求超时。必须加硬性超时中断：
+
+```
+_inject_clean_names 中的同步并发补全：
+  → ThreadPoolExecutor 并发请求 TMDB（max_workers=5）
+  → as_completed(timeout=2.0)：最多等 2 秒
+  → 2 秒内返回的结果 → 写入缓存 + 注入到当前响应
+  → 2 秒内未返回的条目 → 跳过，用 cn/original 回退
+  → 超时的条目 → 转交 _async_enrich_tmdb_ids 后台继续补全
+```
+
+**效果：**
+- 网络好时 → 方案 E 体验（首次加载即完美，1-2 秒内全部补全）
+- 网络差时 → 自动降级为方案 C（首屏快速响应，后台渐进补全）
+- 永远不会出现前端转圈等待超过 2 秒
+
 **为什么不用方案 D 原版：**
 - 方案 D 的"后台异步补全 + 第二次请求才有数据"体验不如"首次同步补全 + 缓存"
-- 同步并发 10-20 个条目只需 1-2 秒（TMDB 限频 40次/10秒，完全够用）
+- 有了超时降级，同步并发的风险被控制住了
 - 缓存命中后零等待，和方案 A 的效果一样
 
 ### 关键发现：前端 normalizeItem 丢弃了 clean_name_en
@@ -292,15 +310,20 @@ export function normalizeItem(item: any): DoubanHotItem {
 
 ---
 
-## 九、实施改动清单（C+E 方案）
+## 九、实施改动清单（C+E 方案，带超时降级）
 
-### 后端（2 个文件，~90 行）
+### 后端（2 个文件，~100 行）
 
 1. **`backend/routes/discover.py`**（主要改动）
-   - 新增 `_load_enrich_cache()` / `_save_enrich_cache()` 函数
-   - 修改 `_inject_clean_names()`：查缓存 → 未命中的收集 → `ThreadPoolExecutor` 并发请求 TMDB → 结果写入缓存
+   - 新增 `_load_enrich_cache()` / `_save_enrich_cache()` + `threading.Lock` 保护
+   - 修改 `_inject_clean_names()`：
+     - 查缓存 → 命中的直接注入 en_title/tmdb_rating
+     - 未命中的收集 → `ThreadPoolExecutor(max_workers=5)` 并发请求 TMDB
+     - `as_completed(timeout=2.0)` 硬性超时
+     - 2 秒内返回的写入缓存 + 注入
+     - 超时的条目转交 `_async_enrich_tmdb_ids` 后台继续
    - 修改 `_async_enrich_tmdb_ids()`：补全结果写入持久化缓存
-   - 预计新增 ~60 行，修改 ~20 行
+   - 预计新增 ~70 行，修改 ~20 行
 
 2. **`backend/routes/media_info.py`**（小改动）
    - 在 `get_media_info` 返回前，如果有英文名，顺手写入 enrich_cache
@@ -314,4 +337,4 @@ export function normalizeItem(item: any): DoubanHotItem {
 4. **`frontend/components/media/discoverUtils.ts`**
    - `normalizeItem` 传递 `clean_name_cn` / `clean_name_en` / `clean_name_original`
 
-### 总改动量：~105 行，复杂度低
+### 总改动量：~115 行，复杂度低
