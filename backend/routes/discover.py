@@ -167,9 +167,12 @@ def _inject_clean_names(items: list) -> list:
                 elif lang in ("jp", "ko") and not original:
                     original = p
 
-        # 用缓存补全英文名
-        if not en and cached and cached.get("en_title"):
-            en = cached["en_title"]
+        # 用缓存补全英文名 + TMDB 评分
+        if cached:
+            if not en and cached.get("en_title"):
+                en = cached["en_title"]
+            if cached.get("tmdb_rating") and not item.get("tmdb_rating"):
+                item["tmdb_rating"] = cached["tmdb_rating"]
 
         result = clean_from_scrape(
             title=title,
@@ -237,17 +240,21 @@ def _sync_enrich_english_names(items: list, tmdb, timeout: float = 2.0) -> list:
         try:
             for future in concurrent.futures.as_completed(future_map, timeout=timeout):
                 item, result = future.result()
-                if result and result.get("en_title"):
-                    item["clean_name_en"] = result["en_title"]
-                    # 写入缓存
-                    cache_key = _enrich_cache_key(item)
-                    enrich_cache_put(
-                        cache_key,
-                        tmdb_id=result.get("tid", 0),
-                        en_title=result["en_title"],
-                        original_title=result.get("orig", ""),
-                        tmdb_rating=result.get("tmdb_rating", 0),
-                    )
+                if result:
+                    if result.get("en_title"):
+                        item["clean_name_en"] = result["en_title"]
+                    if result.get("tmdb_rating") and not item.get("tmdb_rating"):
+                        item["tmdb_rating"] = result["tmdb_rating"]
+                    # 有英文名或评分时写入缓存
+                    if result.get("en_title") or result.get("tmdb_rating"):
+                        cache_key = _enrich_cache_key(item)
+                        enrich_cache_put(
+                            cache_key,
+                            tmdb_id=result.get("tid", 0),
+                            en_title=result.get("en_title", ""),
+                            original_title=result.get("orig", ""),
+                            tmdb_rating=result.get("tmdb_rating", 0),
+                        )
         except concurrent.futures.TimeoutError:
             # 收集超时未完成的条目
             for f, it in future_map.items():

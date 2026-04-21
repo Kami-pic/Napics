@@ -214,6 +214,8 @@ export interface DoubanHotItem {
   clean_name_cn?: string;
   clean_name_en?: string;
   clean_name_original?: string;
+  // TMDB 评分（enrich_cache 注入）
+  tmdb_rating?: number;
 }
 
 export interface AddMediaInfo {

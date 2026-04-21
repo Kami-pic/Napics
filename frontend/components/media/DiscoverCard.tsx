@@ -79,9 +79,16 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
           </span>
         )}
         {/* 右上角评分 */}
-        <span className={`absolute top-3 right-3 bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
-          {hasRating ? item.rating : "—"}
-        </span>
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-0.5">
+          <span className={`bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
+            {hasRating ? item.rating : "—"}
+          </span>
+          {ratingSource !== "tmdb" && item.tmdb_rating && item.tmdb_rating > 0 && (
+            <span className="bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-bold text-blue-400">
+              T {item.tmdb_rating}
+            </span>
+          )}
+        </div>
         <div className="absolute bottom-0 left-0 right-0 p-3">
           {(genres.length > 0 || showMediaType) && (
             <div className="flex gap-1 mb-1.5">

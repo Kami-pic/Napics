@@ -34,6 +34,7 @@ export function normalizeItem(item: any): DoubanHotItem {
     clean_name_cn: item.clean_name_cn || undefined,
     clean_name_en: item.clean_name_en || undefined,
     clean_name_original: item.clean_name_original || undefined,
+    tmdb_rating: item.tmdb_rating || undefined,
   };
 }
 
