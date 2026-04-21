@@ -5,22 +5,30 @@
 
 ---
 
-## 2026-04-20 清洗名系统重构 + TV 文件夹 clean_name 修复
+## 2026-04-21 清洗名系统重构 + 全链路接入 + 性能优化
 **变更**:
-- 修复 TV/season 文件夹 clean_name 显示"未设置"的 bug：ShadowNameSection 组件在文件夹模式下缺少 folderCleanName prop
-- 新建 `clean_name_system.py`：统一清洗名入口，替代散落在 analyzer.py/shared.py 中的多套清洗逻辑
-- 三层清洗架构：strip_noise（去噪 200+ 正则）→ split_names（中/英/日/韩语言分离）→ compose_display（组装展示名）
+- 修复 TV/season 文件夹 clean_name 显示"未设置"的 bug（ShadowNameSection 缺少 folderCleanName prop）
+- 新建 `clean_name_system.py`：统一清洗名入口，三层架构（strip_noise→split_names→compose_display）
 - 结构化输出 `CleanNameResult`：cn/en/original/display/suffix/year/source/confidence
-- 搜索词构造：clean_for_season_search / clean_for_episode_search，直接对接多语言搜索 TODO
-- 持久化向后兼容：保留 clean_name 字段，新增 clean_name_cn/en/original 结构化字段
-- 49 个单元测试 + 20 个真实用例测试全绿
+- 全链路接入：get_library_tree（finalize+post_process）、_update_clean_names_after_scrape、发现页（douban_hot/recommend/explore）
+- 前端 FolderDetail/VideoDetail 搜索词直接用 clean_name_cn/en，不再从字符串拆分
+- 字段命名统一：jpName → originalName（支持日/韩/法等所有小语种）
+- NFO 补全：树构建时从 NFO 读取 en/original，加 exists 预检优化（1854ms→1146ms）
+- en 覆盖率 90%，original 108 个（日漫基本全覆盖）
+- 49 个单元测试 + 20 个真实用例 + 3 项集成测试全绿
 - 新增 skill 文档 `.kiro/skills/clean-name-system.md`
 
 **踩坑**:
-- `SP` 在 `Spirited Away` 中误匹配为特别篇 → 用词边界 `(?<![a-zA-Z])` 保护
-- `AAC5.1` 格式未被 `\bAAC\b` 匹配 → 新增 `AAC\d?\.\d` 正则
-- 广告站名后紧跟 URL（如 `电影天堂www.dytt.com.盗梦空间`）→ 先把 `.` 转空格再去广告
-- FIX字幕侠/深影字幕组/AGE动漫等字幕组名未覆盖 → 扩充字幕组列表
+- SP 在 Spirited Away 中误匹配为特别篇 → 用词边界保护
+- 广告站名粘连 URL → 先把 `.` 转空格再去广告
+- NFO 补全对所有文件夹读取导致 SMB IO 过重 → 加 exists 预检跳过无 NFO 的文件夹
+- 繁体单字（如"劇"）触发 original 误判 → 已知限制，记录在 skill 文档中
+
+**架构决策**:
+- clean_name 不是字符串而是结构（cn/en/original），下游搜索词按源语言映射表直接选字段
+- original 统一放所有非中非英的原始语言名（日/韩/法等），不单独设 jp 字段
+- 文件夹 clean_name 不持久化，每次树构建动态计算（依赖子节点数据，动态保证一致性）
+- post_process 尊重已有的高优先级 clean_name（manual/nfo/tmdb 不被覆盖）
 
 ---
 

@@ -1,7 +1,8 @@
 # [TODO] 多语言搜索词 + 源 Tab 切换设计
 
 > 目标：每个搜索源使用最适合的语言搜索词，UI 从"筛选开关"改为"源 Tab 切换"，每个 Tab 有独立搜索词和筛选器。
-> 前提：媒体至少有 cnName + enName 两个清洗名可用（由 L1 业务接入保证，本 TODO 不负责名称获取）。
+> 前提：媒体至少有 cnName + enName 两个清洗名可用（由 clean_name_system.py 保证，已完成）。
+> 清洗名字段：cn / en / original，前端通过 clean_name_cn / clean_name_en / clean_name_original 获取。
 > 范围：只做"搜索词填入 + 回退链"，不涉及筛选器定制和 UI 细节（后续 TODO）。
 
 ---
@@ -171,27 +172,30 @@ const [sourceTabs, setSourceTabs] = useState<Record<string, SourceTabState>>({})
 
 ### Phase 1：后端多语言搜索词分发 + 回退链
 
-- [ ] SSE 端点接收 `jp_name` 参数
-- [ ] 重构 `_search_direct()`：接收完整的多语言词表 `{cn, en, jp, original}`，按源映射选词
-- [ ] 实现回退逻辑：搜 0 结果时自动换词再搜（最多 2 次回退）
-- [ ] `source_done` 事件新增 `search_keywords` 和 `hit_keyword` 字段
-- [ ] 单源搜索端点 `GET /api/search/source?source=xxx&keyword=xxx`（支持回退）
-- [ ] 季搜索词构造：中文源自动拼"第N季"，英文源自动拼"S0N"
+- [x] SSE 端点接收 `jp_name`、`season_number` 参数
+- [x] 新建 `search_keyword_mapper.py`：源→语言优先级映射 + 回退链词表生成 + 季号拼接
+- [x] 重构 `_search_prowlarr()` 和 `_search_direct()`：用 mapper 选词 + 回退链（0 结果换词，最多 3 轮）
+- [x] `source_done` 事件新增 `search_keywords` 和 `hit_keyword` 字段
+- [x] 单源搜索端点 `GET /api/search/source?source=xxx&keyword=xxx&fallback_keywords=xxx`（JSON 响应）
+- [x] 前端 api.ts 扩展 `searchStream` 参数 + 新增 `searchSource` 方法
+- [x] 25 个单元测试全绿（mapper 覆盖各源词选择、去重、回退、季号拼接）
 
 ### Phase 2：前端源 Tab 切换 + 搜索词填入
 
-- [ ] BT Tab 从"筛选开关"改为"源 Tab 切换"（全部 + 6 个单源）
-- [ ] 每个 Tab 维护独立的 keyword 状态
-- [ ] 切换 Tab 时自动填入该源的最佳搜索词
-- [ ] "全部"模式搜索时，后端按映射表分发（现有 SSE 流增强）
-- [ ] 单源模式搜索时，调用单源端点
-- [ ] 网盘 Tab 同理改造（全部 + 各网盘源）
+- [x] 新建 `SourceTabs.tsx`：源 Tab 切换组件（BT/网盘共用，显示搜索词回显）
+- [x] BT 模式增加源 Tab 行（全部 + 已启用的各源）
+- [x] 每个 Tab 维护独立的 keyword/results/searchedKeywords/hitKeyword/searching 状态
+- [x] 切换 Tab 时自动填入该源的最佳搜索词（前端侧映射）
+- [x] "全部"模式搜索走现有 SSE 流（增强：收集 search_keywords/hit_keyword）
+- [x] 单源模式搜索调用 `api.searchSource` 端点
+- [x] 前端构建通过，getDiagnostics 零报错
 
 ### Phase 3：回退链 UI 回显
 
-- [ ] 搜索完成后显示搜过的词标签（灰色 = 搜过但无结果，蓝色 = 命中）
-- [ ] 回退结果追加展示，不区分来自哪个词
-- [ ] "全部"模式下，每个源的回退状态独立显示在源状态标签中
+- [x] SSE source_done 事件的 search_keywords/hit_keyword 已在前端收集到 sourceKeywordInfo
+- [x] SourceTabs 组件在每个源 Tab 旁显示命中词小标签
+- [x] 单源模式结果统计行显示搜过的词标签（灰色=无结果，蓝色=命中）
+- [ ] "全部"模式下，在源状态标签中也显示各源的命中词（待后续优化）
 
 ---
 
