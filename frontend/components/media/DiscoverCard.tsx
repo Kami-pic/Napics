@@ -73,9 +73,9 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
         {showRank && (
           <div className="absolute top-2 left-1.5">
-            <span className={`text-[32px] font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${
+            <span className={`text-[32px] font-black leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${
               index < 3 ? "text-yellow-400" : "text-white/70"
-            }`} style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", WebkitTextStroke: "1px rgba(0,0,0,0.5)", minWidth: "28px", display: "inline-block", textAlign: "center" }}>
+            }`} style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", WebkitTextStroke: "0.5px rgba(0,0,0,0.3)", minWidth: "28px", display: "inline-block", textAlign: "center" }}>
               {index + 1}
             </span>
           </div>

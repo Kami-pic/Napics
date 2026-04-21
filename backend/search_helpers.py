@@ -46,7 +46,15 @@ def extract_bt_title_for_match(title: str) -> str:
 
 
 def compute_junk_flags(d: dict) -> dict:
-    """计算 is_junk 和 junk_reasons，供智能过滤使用"""
+    """计算 is_junk 和 junk_reasons，供智能过滤使用
+
+    四条规则 + 一条业务层占比检查：
+    1. 枪版检测（TS/CAM 等）
+    2. 匹配度过低（match_score > 0 且 < 阈值）
+    3. 完全不匹配（match_score=0 + 有多语言候选）
+    4. 死种检测（seeders=0 且非磁力源）
+    5. 标题占比过低（match_score 40-70 但搜索词只是长标题的一小部分）
+    """
     reasons = []
     title = d.get("title", "")
     match_score = d.get("match_score", 0)
@@ -54,21 +62,62 @@ def compute_junk_flags(d: dict) -> dict:
     size_gb = d.get("size_gb", 0)
     has_multilang = d.get("_has_multilang_candidates", False)
 
+    # 规则 1: 枪版
     for p in _JUNK_QUALITY_PATTERNS:
         if re.search(r'\b' + p + r'\b', title, re.I):
             reasons.append(f"low_quality:{p}")
             break
 
+    # 规则 2: 匹配度过低
     if match_score > 0 and match_score < _MATCH_SCORE_THRESHOLD:
         reasons.append(f"low_match:{match_score}")
 
-    # match_score=0 且有多语言候选 → 完全不匹配（跨语言也试过了）
+    # 规则 3: 完全不匹配（跨语言）
     if match_score == 0 and has_multilang:
         reasons.append("unmatched")
 
+    # 规则 4: 死种
     is_magnet_only = seeders == 0 and size_gb == 0
     if seeders == 0 and not is_magnet_only:
         reasons.append("dead_seed")
+
+    # 规则 5: 标题占比过低（业务层，基于 L2 评分 + BT 标题特征）
+    # 当 match_score 在 40-70（非精确匹配）时，检查搜索词在清洗标题中的占比
+    # 如果搜索词只占标题很小一部分，说明是"关键词被覆盖"而非"作品名匹配"
+    if 40 <= match_score <= 70 and not any("low_match" in r for r in reasons):
+        bt_clean = d.get("_bt_clean", "")
+        search_names = d.get("_search_names", [])
+        if bt_clean and search_names:
+            from text_processing import normalize as _norm, split_by_language as _split, tokenize as _tok
+            # 分别对中文和英文部分做占比检查，取最高
+            bt_parts = _split(bt_clean)
+            best_ratio = 0.0
+            for name in search_names:
+                name_parts = _split(name)
+                # 中文部分占比
+                cn_name = _norm(name_parts["cn"]) if name_parts["cn"] else ""
+                cn_bt = _norm(bt_parts["cn"]) if bt_parts["cn"] else ""
+                if cn_name and cn_bt:
+                    if cn_name in cn_bt or cn_bt in cn_name:
+                        shorter = min(len(cn_name), len(cn_bt))
+                        best_ratio = max(best_ratio, shorter / max(len(cn_bt), 1))
+                # 英文部分占比
+                en_name = _norm(name_parts["en"]) if name_parts["en"] else ""
+                en_bt = _norm(bt_parts["en"]) if bt_parts["en"] else ""
+                if en_name and en_bt:
+                    if en_name in en_bt or en_bt in en_name:
+                        shorter = min(len(en_name), len(en_bt))
+                        best_ratio = max(best_ratio, shorter / max(len(en_bt), 1))
+                # 如果不是子串关系，用 token 交集占比
+                if best_ratio < 0.3:
+                    c_toks = set(_tok(name))
+                    t_toks = set(_tok(bt_clean))
+                    if t_toks:
+                        overlap = len(c_toks & t_toks)
+                        best_ratio = max(best_ratio, overlap / len(t_toks))
+            # 占比低于 30% → 搜索词只是长标题的一小部分
+            if best_ratio < 0.3:
+                reasons.append(f"low_title_ratio:{best_ratio:.2f}")
 
     return {"is_junk": len(reasons) > 0, "junk_reasons": reasons}
 
@@ -121,6 +170,9 @@ def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
                 d["match_score"] = match_chain(candidates, targets, [])
                 # 标记是否有多语言候选（用于 junk_flags 判断 match_score=0 的含义）
                 d["_has_multilang_candidates"] = len(candidates) >= 3
+                # 传递清洗标题和搜索名称给 junk_flags 做占比检查
+                d["_bt_clean"] = bt_clean
+                d["_search_names"] = candidates
             except Exception:
                 d["match_score"] = 0
                 d["_has_multilang_candidates"] = False
