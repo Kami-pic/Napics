@@ -1,4 +1,4 @@
-# [当前] 搜索·匹配·过滤·排序 — 通用能力调研与技能规划
+# [一次性] 搜索·匹配·过滤·排序 — 通用能力调研与技能规划
 
 > 调研日期：2026-04-17
 > 数据来源：nas-video-upgrader、MoviePilot、xhs-mj-workflow、GitHub 开源库、Kiro Skills 规范

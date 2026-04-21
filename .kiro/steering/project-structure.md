@@ -30,7 +30,9 @@ inclusion: always
 │   └── scroll-damping-interaction.md # 滚动阻尼交互设计
 │
 ├── docs/              # 设计文档与 TODO 清单
-│   └── *-todo.md             # 进行中的任务清单（临时性，完成后归档到 devlog）
+│   ├── *-todo.md             # 进行中的任务清单（临时性，完成后归档到 devlog）
+│   ├── _archived/            # [废弃] 文档归档（已完成/已取代，保留供追溯）
+│   └── _one-off/             # [一次性] 文档归档（报告/调研/会话总结）
 │
 └── specs/             # Kiro Spec 历史存档（当前用 TODO 驱动，保留供追溯）
 ```
