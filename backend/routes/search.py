@@ -126,12 +126,23 @@ def search_resources_stream(
         bt_overrides = conf.bt_search_sources or {}
 
         def _search_prowlarr():
-            """Prowlarr 搜索 + 回退链"""
+            """Prowlarr 搜索 + 回退链 + 基础相关性过滤"""
             try:
                 kw_list = get_search_keywords_for_source("prowlarr", keywords)
                 searched = []
                 hit_kw = ""
                 all_results = []
+                # 构造相关性检查用的关键词集合（中英文分离后的所有部分）
+                relevance_terms = set()
+                for t in [keywords.cn, keywords.en, keywords.original, keywords.query]:
+                    t = t.strip().lower()
+                    if t and len(t) >= 2:
+                        relevance_terms.add(t)
+                        # 也加入各个单词（英文标题拆词）
+                        for w in t.split():
+                            if len(w) >= 3:
+                                relevance_terms.add(w)
+
                 for kw in kw_list:
                     searched.append(kw)
                     print(f"[SSE/Prowlarr] 搜索词: '{kw}'")
@@ -144,10 +155,19 @@ def search_resources_stream(
                         if not hit_kw:
                             hit_kw = kw
                         seen = set()
+                        filtered_out = 0
                         for r in raw:
                             if r.download_url and r.download_url not in seen:
                                 seen.add(r.download_url)
+                                # 基础相关性过滤：标题必须包含至少一个搜索关键词
+                                if relevance_terms:
+                                    title_lower = (r.title or "").lower()
+                                    if not any(term in title_lower for term in relevance_terms):
+                                        filtered_out += 1
+                                        continue
                                 all_results.append(r)
+                        if filtered_out:
+                            print(f"[SSE/Prowlarr] 过滤掉 {filtered_out} 条不相关结果")
                         break  # 有结果就停止回退
                 return "prowlarr", all_results, None, searched, hit_kw
             except Exception as e:

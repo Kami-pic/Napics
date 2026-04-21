@@ -72,14 +72,18 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
         {showRank && (
-          <span className={`absolute top-3 left-1.5 min-w-[24px] h-[22px] flex items-center justify-center text-[11px] font-black px-1.5 rounded-md ${
-            index < 3 ? "bg-yellow-500/90 text-black" : "bg-black/70 text-white/80"
+          <div className={`absolute top-2.5 left-0 flex items-center ${
+            index < 3 ? "text-yellow-400" : "text-white/50"
           }`}>
-            {index + 1}
-          </span>
+            <span className={`text-[28px] font-black leading-none pl-2 pr-1 drop-shadow-lg ${
+              index < 3 ? "" : "opacity-60"
+            }`} style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", WebkitTextStroke: index < 3 ? "0.5px rgba(0,0,0,0.3)" : "none" }}>
+              {index + 1}
+            </span>
+          </div>
         )}
         {/* 右上角评分 */}
-        <div className="absolute top-3 right-3 flex flex-col items-end gap-0.5">
+        <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-0.5">
           <span className={`bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
             {hasRating ? item.rating : "—"}
           </span>

@@ -307,6 +307,11 @@ def extract_variants(text: str) -> List[str]:
     if no_sequel and no_sequel != text and len(no_sequel) >= 2:
         _add(no_sequel)
 
+    # 去掉英文季号后缀（"Frieren Season 2" → "Frieren"，"Attack on Titan S04" → "Attack on Titan"）
+    no_en_season = re.sub(r'\s*(?:Season\s*\d+|S\d{2,})\s*$', '', text, flags=re.IGNORECASE).strip()
+    if no_en_season and no_en_season != text and len(no_en_season) >= 2:
+        _add(no_en_season)
+
     return variants
 
 
