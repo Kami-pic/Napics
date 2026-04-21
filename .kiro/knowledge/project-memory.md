@@ -19,14 +19,20 @@
 
 ### 名称可信度机制
 - **清洗名系统**（`clean_name_system.py`）：统一入口，所有清洗逻辑集中在此
-  - `CleanNameResult` 结构化输出：cn（中文）/ en（英文）/ original（日文/韩文）/ display（展示名）/ suffix（季集号）
+  - `CleanNameResult` 结构化输出：cn（中文）/ en（英文）/ original（日/韩/法等原始语言）/ display（展示名）/ suffix（季集号）
   - 三层清洗：strip_noise（去噪）→ split_names（语言分离）→ compose_display（组装展示名）
   - 三个业务入口：`clean_from_filename`（文件名解析）/ `clean_from_scrape`（刮削结果）/ `clean_for_folder`（文件夹）
   - 搜索词构造：`clean_for_season_search` / `clean_for_episode_search`（对接多语言搜索）
+- **字段命名**：cn / en / original 三字段。original 放所有非中非英的原始语言名，不单独设 jp 字段
+- **全链路接入**：
+  - 树构建（get_library_tree）：finalize 从文件名+shadow_name+NFO 生成，post_process 继承父级并尊重高优先级
+  - 刮削后（_update_clean_names_after_scrape）：从刮削结果写入结构化字段
+  - 发现页（douban_hot/recommend/explore）：统一注入 clean_name_cn/en/original
+  - 前端搜索词：FolderDetail/VideoDetail/DiscoverPage 直接用结构化字段传给 SearchModal
 - 持久化字段：`clean_name`（display，向后兼容）+ `clean_name_cn` / `clean_name_en` / `clean_name_original`（结构化）
 - 统一优先级表 `NAME_SOURCE_PRIORITY`：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
 - `safe_update_clean_name()`：多字段版本的优先级保护写入
-- 旧的 `_clean_filename_for_folder` / `clean_episode_name` / `clean_season_name`（analyzer.py）待逐步替换为新系统
+- 前端 SearchModal props：cnName / enName / originalName（原 jpName 已改名）
 - 技能文档：`.kiro/skills/clean-name-system.md`
 - 设计文档：`docs/name-trust-design.md`
 
