@@ -31,13 +31,16 @@ export function normalizeItem(item: any): DoubanHotItem {
     episodes_info: item.episodes_info || "",
     local_status: item.local_status || undefined,
     local_folder: item.local_folder || undefined,
+    clean_name_cn: item.clean_name_cn || undefined,
+    clean_name_en: item.clean_name_en || undefined,
+    clean_name_original: item.clean_name_original || undefined,
   };
 }
 
 // ── 详情缓存 ──
 export interface MediaDetail {
   found: boolean;
-  tmdb_id?: number; title?: string; original_title?: string; year?: string;
+  tmdb_id?: number; title?: string; original_title?: string; english_title?: string; year?: string;
   poster_url?: string; backdrop_url?: string; overview?: string; rating?: number;
   genres?: string[]; director?: string; cast?: string[]; runtime?: number;
   imdb_id?: string; total_seasons?: number; episode_count?: number; status?: string;

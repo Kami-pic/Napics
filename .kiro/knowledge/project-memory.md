@@ -63,12 +63,17 @@
 - SSE 竞态保护：activeEsRef 跟踪当前 EventSource，新搜索关闭旧连接
 - 英文名获取：TMDB 用 `_get_english_title(language=en-US)` 主动获取；豆瓣从 subtitle 中用 detect_language 提取；Bangumi 无英文名
 - 关键红线：original_title 不能直接当英文名（中国电影是中文、日本动画是日文），必须做语言判断
+- `_try_tmdb_detail` 返回字典必须包含 `english_title`（来自 ScrapeResult），不能只取 `original_title`
+- 详情 API 统一字段名 `english_title`（不是 `en_title`），前端 `MediaDetail` 接口已正式定义
 - 旧数据兼容：前端无 clean_name_cn/en 时从 clean_name 字符串正则拆分中英文
 - 技能文档：`skills/multilang-search-dispatch.md`、`skills/multilang-name-enrichment.md`
-- **待实施**：发现页 TMDB 数据补全（C+E 方案 + 超时降级），设计文档 `docs/discover-enrich-design.md`
+- **已实施**：发现页 TMDB 数据补全（C+E 方案：持久化缓存 + 同步并发补全 + 2 秒超时降级），设计文档 `docs/discover-enrich-design.md`
 - 保存路径：优先 searchContext.savePath > currentFolder > NAS 根路径
+- tmdb_enrich_cache：`scrape_cache/tmdb_enrich_cache.json`，持久化 TMDB 英文名+评分，30 天过期，5000 条 LRU 上限
+- enrich_cache 写入时机：同步并发补全后 + _async_enrich_tmdb_ids 后 + 详情页 get_media_info 返回前
+- enrich_cache 读取时机：_inject_clean_names 中查缓存，命中直接用英文名
+- 业务 skill：`skills/discover-enrich-cache.md`
 - discoverUtils.ts 的 normalizeItem 是所有推荐/探索/搜索数据的统一入口，新增字段必须在此传递
-- **已知问题**：normalizeItem 未传递 clean_name_cn/en/original 字段（后端注入的被前端丢弃）
 
 ### 下载管理
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
@@ -138,8 +143,9 @@
 - 通用技能 L1-L4 → `skills/L1-text-processing.md` ~ `skills/L4-result-sorting.md`
 - 多语言搜索词分发 → `skills/multilang-search-dispatch.md`
 - 多源英文名补全 → `skills/multilang-name-enrichment.md`
+- 发现页英文名缓存 → `skills/discover-enrich-cache.md`
 - 多语言搜索词 TODO → `docs/multilang-search-todo.md`
-- 发现页 TMDB 补全设计 → `docs/discover-enrich-design.md`（待实施）
+- 发现页 TMDB 补全设计 → `docs/discover-enrich-design.md`（已实施）
 
 ## 测试沙盒
 

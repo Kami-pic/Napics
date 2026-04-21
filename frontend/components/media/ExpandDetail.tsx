@@ -68,12 +68,18 @@ export default function ExpandDetail({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold text-white">{d?.title || item.title}</h3>
-            {(d?.original_title && d.original_title !== d.title) && (
-              <p className="text-xs text-slate-500 mt-0.5">{d.original_title}</p>
-            )}
-            {((d as any)?.en_title && (d as any).en_title !== d?.original_title && (d as any).en_title !== d?.title) && (
-              <p className="text-xs text-slate-400 mt-0.5">{(d as any).en_title}</p>
-            )}
+            {/* 原始语言名（日文/韩文等） */}
+            <p className="text-xs text-slate-500 mt-0.5">
+              {(d?.original_title && d.original_title !== (d?.title || item.title))
+                ? d.original_title
+                : item.clean_name_original || <span className="text-slate-700">原始名 —</span>}
+            </p>
+            {/* 英文名 */}
+            <p className="text-xs text-slate-400 mt-0.5">
+              {d?.english_title
+                ? d.english_title
+                : item.clean_name_en || <span className="text-slate-700">英文名 —</span>}
+            </p>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {/* 数据源下拉 + 刷新按钮 */}

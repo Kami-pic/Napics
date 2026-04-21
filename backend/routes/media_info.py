@@ -248,6 +248,38 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
     """
     print(f"[MediaInfo] 请求: title={title}, year={year}, type={type}, source={source}, id={id}")
 
+    def _writeback_enrich_cache(detail: dict):
+        """如果详情有英文名，回写到 enrich_cache"""
+        if not detail or not detail.get("found"):
+            return
+        # 优先用 english_title（真正的英文名），其次判断 original_title 是否为英文
+        en = detail.get("english_title", "")
+        if not en:
+            orig = detail.get("original_title", "")
+            if orig:
+                from text_processing import detect_language
+                if detect_language(orig) == "en":
+                    en = orig
+        tmdb_id = detail.get("tmdb_id", 0)
+        tmdb_rating = 0
+        ratings = detail.get("ratings") or {}
+        tmdb_rating = ratings.get("tmdb", 0) or detail.get("rating", 0)
+        if not en and not tmdb_id:
+            return
+        try:
+            from routes.discover import enrich_cache_put
+            cache_key = ""
+            if id and source == "douban":
+                cache_key = f"douban_{id}"
+            elif tmdb_id:
+                cache_key = f"tmdb_{tmdb_id}"
+            else:
+                cache_key = f"title_{title}_{year}"
+            if cache_key:
+                enrich_cache_put(cache_key, tmdb_id=tmdb_id, en_title=en, tmdb_rating=tmdb_rating)
+        except Exception as e:
+            print(f"[MediaInfo] enrich_cache 回写失败: {e}")
+
     # ── Bangumi 优先路径 ──
     if source == "bangumi":
         bgm_id = int(id) if id and id.isdigit() else 0
@@ -256,17 +288,20 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         if bgm_detail:
             print(f"[MediaInfo] Bangumi 命中: rating={bgm_detail.get('rating')}, poster={bgm_detail.get('poster_url', '')[:60]}")
             _enrich_ratings(bgm_detail, title, year, type, subtitle)
+            _writeback_enrich_cache(bgm_detail)
             return bgm_detail
         print("[MediaInfo] Bangumi 未命中，fallback 豆瓣")
         db_detail = _try_douban_detail(title, year, type)
         if db_detail:
             print(f"[MediaInfo] 豆瓣 fallback 命中: source=douban")
             _enrich_ratings(db_detail, title, year, type, subtitle)
+            _writeback_enrich_cache(db_detail)
             return db_detail
         print("[MediaInfo] 豆瓣也未命中，fallback TMDB")
         result = _try_tmdb_detail(title, year, type, subtitle)
         if result and result.get("found"):
             _enrich_ratings(result, title, year, type, subtitle)
+        _writeback_enrich_cache(result)
         return result
 
     # ── 豆瓣优先路径 ──
@@ -276,11 +311,13 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         if db_detail:
             print(f"[MediaInfo] 豆瓣命中: poster={db_detail.get('poster_url', '')[:80]}, source={db_detail.get('source')}")
             _enrich_ratings(db_detail, title, year, type, subtitle)
+            _writeback_enrich_cache(db_detail)
             return db_detail
         print("[MediaInfo] 豆瓣未命中，fallback TMDB")
         result = _try_tmdb_detail(title, year, type, subtitle)
         if result and result.get("found"):
             _enrich_ratings(result, title, year, type, subtitle)
+        _writeback_enrich_cache(result)
         return result
 
     # ── TMDB 优先路径（默认）──
@@ -288,10 +325,12 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
     tmdb_detail = _try_tmdb_detail(title, year, type, subtitle)
     if tmdb_detail and tmdb_detail.get("found"):
         _enrich_ratings(tmdb_detail, title, year, type, subtitle)
+        _writeback_enrich_cache(tmdb_detail)
         return tmdb_detail
     db_detail = _try_douban_detail(title, year, type)
     if db_detail:
         _enrich_ratings(db_detail, title, year, type, subtitle)
+        _writeback_enrich_cache(db_detail)
         return db_detail
     return {"found": False}
 
@@ -349,14 +388,16 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
                     if result.get("rating"): ratings["tmdb"] = result["rating"]
                     if result.get("tmdb_id"): external_ids["tmdb_id"] = result["tmdb_id"]
                     if result.get("imdb_id"): external_ids["imdb_id"] = result["imdb_id"]
-                    # 补全英文名：如果当前 original_title 是非英文（日/韩/中），用 TMDB 的英文名
-                    tmdb_orig = result.get("original_title", "")
-                    if tmdb_orig and tmdb_orig != detail.get("title", ""):
-                        cur_orig = detail.get("original_title", "")
-                        # 如果当前没有 original_title，或当前是非拉丁字符（日/韩/中），用 TMDB 的
-                        import re as _re
-                        if not cur_orig or _re.search(r'[\u3000-\u9fff\uac00-\ud7af]', cur_orig):
-                            detail["en_title"] = tmdb_orig  # 新增英文名字段
+                    # 补全英文名：优先用 english_title，其次判断 original_title 是否为英文
+                    en = result.get("english_title", "")
+                    if not en:
+                        tmdb_orig = result.get("original_title", "")
+                        if tmdb_orig and tmdb_orig != detail.get("title", ""):
+                            import re as _re
+                            if not _re.search(r'[\u3000-\u9fff\uac00-\ud7af]', tmdb_orig):
+                                en = tmdb_orig
+                    if en and en != detail.get("title", ""):
+                        detail["english_title"] = en
                 elif key == "bangumi" and result and result.get("rating"):
                     ratings["bangumi"] = result["rating"]
             except Exception:
@@ -629,6 +670,7 @@ def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> di
             "tmdb_id": detail.tmdb_id,
             "title": detail.title,
             "original_title": detail.original_title,
+            "english_title": detail.english_title,
             "year": detail.year,
             "poster_url": detail.poster_url,
             "backdrop_url": detail.backdrop_url,

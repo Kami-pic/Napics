@@ -147,30 +147,43 @@ media_library.json 中旧数据没有 `clean_name_cn` / `clean_name_en` / `clean
   const enMatch = raw.match(/[a-zA-Z][a-zA-Z0-9\s'.:-]*/g);
   ```
 
-## 六、待解决的架构问题
+## 六、已解决：发现页英文名补全（C+E 方案，2026-04-21 实施）
 
-### 发现页"先返回再补全"
+### 问题
+`_async_enrich_tmdb_ids` 是异步后台线程，第一次请求时英文名还没补全，且结果只在内存中，重启丢失。
 
-当前 `_async_enrich_tmdb_ids` 是异步后台线程，第一次请求时英文名还没补全。
+### 解决方案：C+E 组合（持久化缓存 + 同步并发补全 + 超时降级）
 
-可能的解决方案：
-1. **同步补全**：首次加载时同步请求 TMDB，但会拖慢 2-5 秒
-2. **前端二次请求**：首次返回后，前端检测到 en 为空时触发补全请求
-3. **预缓存**：后台定时任务预先补全热门数据的英文名
-4. **接受延迟**：第一次加载缺英文名，刷新后有 ← 当前行为（2026-04-21）
+1. 新建 `tmdb_enrich_cache.json` 持久化缓存（启动加载到内存，线程安全，LRU 淘汰 5000 条上限，30 天过期）
+2. `_inject_clean_names` 先查缓存 → 命中直接用 → 未命中收集到 need_enrich
+3. `_sync_enrich_english_names` 对 need_enrich 同步并发请求 TMDB（max_workers=5，2 秒硬性超时）
+4. 2 秒内返回的写入缓存 + 注入当前响应；超时的转交 `_async_enrich_tmdb_ids` 后台继续
+5. `_async_enrich_tmdb_ids` 补全后也写入缓存
+6. 详情页 `get_media_info` 返回前回写缓存（`_writeback_enrich_cache`）
+
+### 效果
+- 网络好：首次加载即有英文名（1-2 秒内同步补全）
+- 网络差：自动降级为渐进式（后台补全，下次请求命中缓存）
+- 缓存命中：零等待
+
+### 前端配套
+- `DoubanHotItem` 类型加了 `clean_name_cn/en/original`
+- `normalizeItem` 传递这三个字段（不再丢弃后端注入的数据）
+- SearchModal 的 `enName` 回退链加入 `searchModalItem.clean_name_en`
 
 ### 豆瓣 API v2 vs 旧版接口
 
 - API v2 热门接口：有 original_title，无 subtitle
 - 旧版网页接口：有 sub_title（含英文名），但不稳定
-- 建议：优先用 API v2 + TMDB 交叉补全，不依赖豆瓣 subtitle
+- 当前策略：优先用 API v2 + TMDB 交叉补全，不依赖豆瓣 subtitle
 
 ## 七、实现文件
 
 | 文件 | 职责 |
 |------|------|
 | `backend/clean_name_system.py` | clean_from_scrape 的 english_title 参数处理 |
-| `backend/routes/discover.py` | _inject_clean_names 的语言判断 + _async_enrich_tmdb_ids 的异步英文名补全 |
+| `backend/routes/discover.py` | _inject_clean_names（缓存查询+同步并发补全）+ enrich_cache 读写 + _async_enrich_tmdb_ids（后台补全+缓存写入） |
+| `backend/routes/media_info.py` | get_media_info 返回前回写 enrich_cache；_try_tmdb_detail 返回 english_title；_enrich_ratings 交叉补全 english_title |
 | `backend/tmdb_client.py` | _get_english_title 方法 |
 | `backend/text_processing.py` | detect_language 函数 |
 | `frontend/components/detail/FolderDetail.tsx` | 旧数据兼容的前端拆分逻辑 |

@@ -210,6 +210,10 @@ export interface DoubanHotItem {
   // 本地媒体库感知
   local_status?: "none" | "owned_low" | "owned_high";
   local_folder?: string;
+  // 结构化清洗名（后端 _inject_clean_names 注入）
+  clean_name_cn?: string;
+  clean_name_en?: string;
+  clean_name_original?: string;
 }
 
 export interface AddMediaInfo {

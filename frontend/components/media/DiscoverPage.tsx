@@ -505,7 +505,8 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
           onClose={() => { setSearchModalOpen(false); setSearchModalItem(null); setSearchModalDetail(null); }}
           defaultSavePath={defaultSavePath}
           cnName={searchModalItem.title}
-          enName={searchModalDetail?.original_title || (searchModalItem as any)._tmdb_original_title || searchModalItem.subtitle || ""}
+          enName={searchModalDetail?.english_title || searchModalItem.clean_name_en || (searchModalItem as any)._tmdb_original_title || searchModalDetail?.original_title || searchModalItem.subtitle || ""}
+          originalName={searchModalDetail?.original_title || ""}
           mediaType={searchModalItem.media_type || activeTabConfig.mediaType || "movie"}
         />
       )}

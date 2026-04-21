@@ -5,6 +5,35 @@
 
 ---
 
+## 2026-04-21 发现页 TMDB 英文名补全（C+E 方案）
+**变更**:
+- 新建 `tmdb_enrich_cache.json` 持久化缓存（启动加载、LRU 5000 条、30 天过期、threading.Lock 保护）
+- `_inject_clean_names` 改为先查缓存 → 未命中同步并发请求 TMDB（max_workers=5，2 秒超时）→ 超时转交后台
+- `_async_enrich_tmdb_ids` 补全结果写入 enrich_cache
+- `get_media_info` 返回前回写 enrich_cache（详情页数据自动积累）
+- 前端 `DoubanHotItem` 加 `clean_name_cn/en/original`，`normalizeItem` 传递这三个字段
+- SearchModal 的 `enName` 回退链加入 `searchModalItem.clean_name_en`
+- 修复 `_try_tmdb_detail` 丢弃 `english_title` 的关键 bug（ScrapeResult 有但返回字典没取）
+- 修复 `_enrich_ratings` 用 `original_title` 当英文名的错误（日文名被误用），统一字段名为 `english_title`
+- 修复 `_writeback_enrich_cache` 用 `original_title` 回写的错误，改为优先取 `english_title`
+- 前端 `MediaDetail` 接口正式加 `english_title` 字段，去掉 `(d as any).en_title` hack
+- 详情页三语名始终展示（有值显示、无值显示占位符"原始名 —"/"英文名 —"）
+- 6 项集成测试全绿（持久化、缓存命中、同步补全、超时降级、回写、LRU 淘汰）
+
+**踩坑**:
+- `_try_tmdb_detail` 构造返回字典时只取了 `original_title`，丢弃了 `english_title`，导致整条链路断裂
+- `_enrich_ratings` 中 `result.get("original_title")` 对日本动画拿到的是日文名，不是英文名
+- 前端 `en_title` 字段从未正式定义在 `MediaDetail` 接口中，一直用 `(d as any)` 绕过
+- `_writeback_enrich_cache` 用 `detail.get("original_title")` 当英文名，日文名被 `detect_language` 过滤后 enrich_cache 里也没有英文名
+
+**架构决策**:
+- 选 C+E 而非定时预补全（方案 A）：个人 NAS 工具不需要定时任务复杂度
+- 2 秒硬性超时：TMDB 走代理，国内网络波动时自动降级为渐进式补全
+- 缓存 key 复合设计：douban_id > tmdb_id > title_year，支持多数据源
+- 统一字段名 `english_title`（后端 ScrapeResult + API 返回 + 前端 MediaDetail），不再用 `en_title`
+
+---
+
 ## 2026-04-21 清洗名系统重构 + 全链路接入 + 性能优化
 **变更**:
 - 修复 TV/season 文件夹 clean_name 显示"未设置"的 bug（ShadowNameSection 缺少 folderCleanName prop）
