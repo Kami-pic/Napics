@@ -261,25 +261,20 @@ function DetailContent({ item, d, onSearch, showBangumiRating = false, onNavigat
     <>
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         <span className="text-xs text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded">{d.year || item.year || "—"}</span>
-        {/* 豆瓣评分 */}
-        {doubanRating > 0 && (
-          <span className={`text-xs ${getRatingColor("douban")} bg-green-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
-            <StarIcon /> 豆瓣 {doubanRating}
+        {/* 豆瓣评分（始终显示） */}
+        <span className={`text-xs ${doubanRating > 0 ? getRatingColor("douban") : "text-slate-600"} ${doubanRating > 0 ? "bg-green-400/10" : "bg-white/[0.04]"} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+          <StarIcon /> 豆瓣 {doubanRating > 0 ? doubanRating : "—"}
+        </span>
+        {/* TMDB 评分（始终显示） */}
+        <span className={`text-xs ${tmdbRating > 0 ? getRatingColor("tmdb") : "text-slate-600"} ${tmdbRating > 0 ? "bg-blue-400/10" : "bg-white/[0.04]"} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+          <StarIcon /> TMDB {tmdbRating > 0 ? tmdbRating : "—"}
+        </span>
+        {/* Bangumi 评分（动画 tab 始终显示） */}
+        {showBangumiRating && (
+          <span className={`text-xs ${bangumiRating > 0 ? getRatingColor("bangumi") : "text-slate-600"} ${bangumiRating > 0 ? "bg-pink-400/10" : "bg-white/[0.04]"} px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
+            <StarIcon /> Bangumi {bangumiRating > 0 ? bangumiRating : "—"}
           </span>
         )}
-        {/* TMDB 评分 */}
-        {tmdbRating > 0 && (
-          <span className={`text-xs ${getRatingColor("tmdb")} bg-blue-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
-            <StarIcon /> TMDB {tmdbRating}
-          </span>
-        )}
-        {/* Bangumi 评分（仅热门动画 + Bangumi 趋势 tab 显示） */}
-        {showBangumiRating && bangumiRating > 0 && (
-          <span className={`text-xs ${getRatingColor("bangumi")} bg-pink-400/10 px-2 py-0.5 rounded font-bold flex items-center gap-0.5`}>
-            <StarIcon /> Bangumi {bangumiRating}
-          </span>
-        )}
-        {!hasAnyRating && !item.rating && <span className="text-xs text-slate-500 bg-white/[0.06] px-2 py-0.5 rounded">暂无评分</span>}
         {d.runtime ? <span className="text-xs text-slate-500">{d.runtime} 分钟</span> : null}
         {d.total_seasons ? <span className="text-xs text-slate-500">{d.total_seasons} 季</span> : null}
         {d.episode_count ? <span className="text-xs text-slate-500">{d.episode_count} 集</span> : null}

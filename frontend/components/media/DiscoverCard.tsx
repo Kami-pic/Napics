@@ -83,9 +83,9 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
           <span className={`bg-black/80 px-2 py-0.5 rounded-lg text-sm font-extrabold ${hasRating ? ratingColor : "text-slate-500"}`}>
             {hasRating ? item.rating : "—"}
           </span>
-          {ratingSource !== "tmdb" && item.tmdb_rating && item.tmdb_rating > 0 && (
-            <span className="bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-bold text-blue-400">
-              T {item.tmdb_rating}
+          {ratingSource !== "tmdb" && (
+            <span className={`bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-bold ${item.tmdb_rating && item.tmdb_rating > 0 ? "text-blue-400" : "text-slate-600"}`}>
+              T {item.tmdb_rating && item.tmdb_rating > 0 ? item.tmdb_rating : "—"}
             </span>
           )}
         </div>
