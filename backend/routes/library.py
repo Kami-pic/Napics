@@ -408,6 +408,9 @@ def get_library_tree():
 
         return ""
 
+    # NFO 读取缓存（避免 SMB 网络路径重复读取）
+    _nfo_cache = {}
+
     def finalize(node, parent_category_tag=""):
         count = len(node["videos"])
         has_cover = count > 0
@@ -491,26 +494,35 @@ def get_library_tree():
             node["clean_name_original"] = _folder_result.original
 
             # 补全：如果 en 或 original 为空，尝试从 NFO 读取
+            # 先快速检查 NFO 文件是否存在，避免对无 NFO 的文件夹做无用 IO
             if not node["clean_name_en"] or not node["clean_name_original"]:
-                try:
-                    _nfo = scraper.read_nfo(node["path"])
-                    if _nfo:
-                        _nfo_result = clean_from_scrape(
-                            title=_nfo.get("title", ""),
-                            original_title=_nfo.get("original_title", ""),
-                            english_title=_nfo.get("english_title", ""),
-                            year=_nfo.get("year", ""),
-                            source="nfo",
-                        )
-                        if not node["clean_name_en"] and _nfo_result.en:
-                            node["clean_name_en"] = _nfo_result.en
-                        if not node["clean_name_original"] and _nfo_result.original:
-                            node["clean_name_original"] = _nfo_result.original
-                        if not node["clean_name_cn"] and _nfo_result.cn:
-                            node["clean_name_cn"] = _nfo_result.cn
-                            node["clean_name"] = _nfo_result.display or node["clean_name"]
-                except Exception:
-                    pass
+                _nfo_exists = any(
+                    os.path.exists(os.path.join(node["path"], n))
+                    for n in ("movie.nfo", "tvshow.nfo")
+                )
+                if _nfo_exists:
+                    try:
+                        _nfo_cache_key = node["path"]
+                        if _nfo_cache_key not in _nfo_cache:
+                            _nfo_cache[_nfo_cache_key] = scraper.read_nfo(node["path"])
+                        _nfo = _nfo_cache[_nfo_cache_key]
+                        if _nfo:
+                            _nfo_result = clean_from_scrape(
+                                title=_nfo.get("title", ""),
+                                original_title=_nfo.get("original_title", ""),
+                                english_title=_nfo.get("english_title", ""),
+                                year=_nfo.get("year", ""),
+                                source="nfo",
+                            )
+                            if not node["clean_name_en"] and _nfo_result.en:
+                                node["clean_name_en"] = _nfo_result.en
+                            if not node["clean_name_original"] and _nfo_result.original:
+                                node["clean_name_original"] = _nfo_result.original
+                            if not node["clean_name_cn"] and _nfo_result.cn:
+                                node["clean_name_cn"] = _nfo_result.cn
+                                node["clean_name"] = _nfo_result.display or node["clean_name"]
+                    except Exception:
+                        pass
         else:
             node["clean_name"] = node.get("name", "")
             node["clean_name_cn"] = ""

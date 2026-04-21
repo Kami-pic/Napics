@@ -44,7 +44,7 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchContext, setSearchContext] = useState<{
     shadowName?: string; cleanName?: string; mediaType?: string;
-    cnName?: string; enName?: string; folderType?: string;
+    cnName?: string; enName?: string; originalName?: string; folderType?: string;
     seasonNumber?: number; episodeTag?: string; savePath?: string;
   }>({});
   const [showAddMedia, setShowAddMedia] = useState(false);
@@ -285,7 +285,7 @@ export default function Home() {
         qbConfigured={qbConfigured} alistConfigured={alistConfigured}
         shadowName={searchContext.shadowName} cleanName={searchContext.cleanName}
         mediaType={searchContext.mediaType}
-        cnName={searchContext.cnName} enName={searchContext.enName}
+        cnName={searchContext.cnName} enName={searchContext.enName} originalName={searchContext.originalName}
         folderType={searchContext.folderType} seasonNumber={searchContext.seasonNumber}
         episodeTag={searchContext.episodeTag} />
 

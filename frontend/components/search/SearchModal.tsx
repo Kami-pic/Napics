@@ -8,6 +8,7 @@ import EpisodeTable from "./EpisodeTable";
 import PanFilterBar, { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
 import PanResultsView from "./PanResultsView";
 import SearchSettingsPanel from "./SearchSettingsPanel";
+import SourceTabs from "./SourceTabs";
 
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 type SearchTab = "bt" | "pan";
@@ -34,6 +35,7 @@ interface SearchModalProps {
   mediaType?: string;
   cnName?: string;       // 中文名
   enName?: string;       // 英文名
+  originalName?: string; // 原始语言名（日文/韩文/法语等）
   folderType?: string;   // "tv" | "season" | "movie" 等
   seasonNumber?: number;  // 季号
   episodeTag?: string;    // 如 "S01E01"
@@ -43,7 +45,7 @@ export default function SearchModal({
   open, query, onClose, defaultSavePath,
   currentResolution, qbConfigured = true, alistConfigured = false,
   shadowName, cleanName, mediaType,
-  cnName, enName, folderType, seasonNumber, episodeTag,
+  cnName, enName, originalName, folderType, seasonNumber, episodeTag,
 }: SearchModalProps) {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<EnhancedSearchResult[]>([]);
@@ -117,6 +119,45 @@ export default function SearchModal({
   const [panFilters, setPanFilters] = useState<PanFilterState>(DEFAULT_PAN_FILTERS);
   const [showSettings, setShowSettings] = useState(false);
 
+  // ── 源 Tab 切换状态 ──
+  const [btActiveSource, setBtActiveSource] = useState("all");
+  // 每个单源 Tab 的独立状态
+  interface SourceTabState {
+    keyword: string;
+    results: EnhancedSearchResult[];
+    searchedKeywords: string[];
+    hitKeyword: string;
+    searching: boolean;
+  }
+  const [sourceTabStates, setSourceTabStates] = useState<Record<string, SourceTabState>>({});
+
+  // 源→默认搜索词映射（前端侧，用于切换 Tab 时填入搜索框）
+  const sourceDefaultKeywords = useMemo(() => {
+    const cn = (cnName || "").trim();
+    const en = (enName || "").trim();
+    const sNum = seasonNumber || 0;
+    const map: Record<string, string> = {};
+    // 英文源
+    for (const s of ["prowlarr", "bitsearch", "yts", "limetorrents"]) {
+      let kw = en || cn || query;
+      if (sNum > 0) kw += ` S${String(sNum).padStart(2, "0")}`;
+      map[s] = kw;
+    }
+    // 中文源
+    for (const s of ["cilixiong", "xl720", "acgrip", "bangumi_moe", "mikan"]) {
+      let kw = cn || en || query;
+      if (sNum > 0) kw += ` 第${sNum}季`;
+      map[s] = kw;
+    }
+    // 动画源（Nyaa 优先日文/英文）
+    map["nyaa"] = jpName || en || cn || query;
+    if (sNum > 0) map["nyaa"] += ` S${String(sNum).padStart(2, "0")}`;
+    return map;
+  }, [cnName, enName, jpName, query, seasonNumber]);
+
+  // 源搜索词回显信息（从 SSE source_done 事件收集）
+  const [sourceKeywordInfo, setSourceKeywordInfo] = useState<Record<string, { searched: string[]; hit: string }>>({});
+
   // ── 固定源列表（打开时加载一次）──
   const [btSources, setBtSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
   const [panSources, setPanSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
@@ -164,6 +205,7 @@ export default function SearchModal({
       setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
       panCache.current.clear();
       setActiveTab("bt");
+      setBtActiveSource("all"); setSourceTabStates({}); setSourceKeywordInfo({});
     }
   }, [open, query]);
 
@@ -199,7 +241,7 @@ export default function SearchModal({
       // 用户手动输入的搜索词不传 cn_name/en_name，让后端用 query 自行分词
       // 点击标签或自动搜索时才传 cn_name/en_name 辅助后端选词
       const isUserEdited = userEditedRef.current;
-      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName });
+      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName, season_number: seasonNumber });
       const es = new EventSource(sseUrl);
       let sseResults: EnhancedSearchResult[] = [];
       let sseDone = false;
@@ -223,6 +265,13 @@ export default function SearchModal({
                 ...prev,
                 [data.source]: { status: (data.status === "done" ? "done" : "failed") as SourceStatus["status"], count: data.count ?? 0 },
               }));
+              // 收集搜索词回显信息
+              if (data.search_keywords || data.hit_keyword) {
+                setSourceKeywordInfo(prev => ({
+                  ...prev,
+                  [data.source]: { searched: data.search_keywords || [], hit: data.hit_keyword || "" },
+                }));
+              }
               if (data.results && data.results.length > 0) {
                 const newItems: EnhancedSearchResult[] = data.results.map((r: any) => ({
                   ...r,
@@ -275,7 +324,7 @@ export default function SearchModal({
     }
     setSearching(false);
     setSearchingStep("");
-  }, [cnName, enName]);
+  }, [cnName, enName, seasonNumber]);
 
   // ── 网盘搜索 ──
   const doPanSearch = useCallback(async (q: string) => {
@@ -302,9 +351,95 @@ export default function SearchModal({
     setPanSearching(false);
   }, [mediaType]);
 
+  // ── 单源搜索（BT Tab 切换到具体源时使用）──
+  const doSourceSearch = useCallback(async (source: string, kw: string) => {
+    if (!kw.trim() || !source) return;
+    // 更新该源 Tab 状态为搜索中
+    setSourceTabStates(prev => ({
+      ...prev,
+      [source]: { keyword: kw, results: [], searchedKeywords: [], hitKeyword: "", searching: true },
+    }));
+    try {
+      // 构造回退词（如果用户没手动改过词）
+      const defaultKw = sourceDefaultKeywords[source] || "";
+      const isUserEdited = kw !== defaultKw;
+      const fallbacks = isUserEdited ? "" : (() => {
+        // 从 cn/en 构造回退词列表
+        const cn = (cnName || "").trim();
+        const en = (enName || "").trim();
+        const candidates = [cn, en, query].filter(Boolean);
+        // 去掉和主搜索词相同的
+        return candidates.filter(c => c.toLowerCase() !== kw.toLowerCase()).join(",");
+      })();
+
+      const d = await api.searchSource(source, kw, fallbacks || undefined);
+      const items: EnhancedSearchResult[] = (d.results || []).map((r: any) => ({
+        ...r,
+        _source: source,
+        quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+        quality_rank: r.quality_rank ?? 0,
+      }));
+      setSourceTabStates(prev => ({
+        ...prev,
+        [source]: {
+          keyword: kw,
+          results: items,
+          searchedKeywords: d.search_keywords || [kw],
+          hitKeyword: d.hit_keyword || "",
+          searching: false,
+        },
+      }));
+      // 更新搜索词回显
+      if (d.search_keywords || d.hit_keyword) {
+        setSourceKeywordInfo(prev => ({
+          ...prev,
+          [source]: { searched: d.search_keywords || [], hit: d.hit_keyword || "" },
+        }));
+      }
+    } catch {
+      setSourceTabStates(prev => ({
+        ...prev,
+        [source]: { keyword: kw, results: [], searchedKeywords: [kw], hitKeyword: "", searching: false },
+      }));
+    }
+  }, [cnName, enName, query, sourceDefaultKeywords]);
+
+  // 切换源 Tab 时的处理
+  // 保存"全部"模式下的搜索词，切回时恢复
+  const allKeywordRef = useRef(query);
+
+  const handleBtSourceSelect = useCallback((source: string) => {
+    if (btActiveSource === "all") {
+      // 离开"全部"Tab 前保存当前搜索词
+      allKeywordRef.current = keyword;
+    }
+    setBtActiveSource(source);
+    if (source === "all") {
+      // 切回全部，恢复全局 keyword
+      setKeyword(allKeywordRef.current);
+      return;
+    }
+    // 切到单源：如果该源没有缓存状态，填入默认搜索词并自动搜索
+    const existing = sourceTabStates[source];
+    if (!existing || existing.results.length === 0) {
+      const defaultKw = sourceDefaultKeywords[source] || keyword || query;
+      setKeyword(defaultKw);
+      doSourceSearch(source, defaultKw);
+    } else {
+      // 有缓存，恢复该源的搜索词
+      setKeyword(existing.keyword);
+    }
+  }, [sourceTabStates, sourceDefaultKeywords, keyword, query, doSourceSearch]);
+
   // 前端过滤：FilterBar 筛选 + 智能过滤（L2 匹配 + L3 软过滤）
+  // 当前展示的结果：全部模式用 results，单源模式用该源的 results
+  const activeResults = useMemo(() => {
+    if (btActiveSource === "all") return results;
+    return sourceTabStates[btActiveSource]?.results || [];
+  }, [btActiveSource, results, sourceTabStates]);
+
   const displayResults = useMemo(() => {
-    let list = results;
+    let list = activeResults;
     // 智能过滤开启时：排除后端标记的垃圾版本（枪版+低匹配度+死种）
     if (smartFilter) {
       list = list.filter(r => !(r as any).is_junk);
@@ -329,7 +464,7 @@ export default function SearchModal({
       return b.size_gb - a.size_gb;
     });
     return list;
-  }, [results, smartFilter]);
+  }, [activeResults, smartFilter]);
   const filtered = applyFilters(displayResults, filters, disabledSources);
   const isHigher = (res: EnhancedSearchResult) => {
     // 优先用 quality_score 比较（100 分制），回退到分辨率比较
@@ -465,7 +600,7 @@ export default function SearchModal({
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <input value={keyword} onChange={(e) => { setKeyword(e.target.value); userEditedRef.current = true; }}
-                onKeyDown={(e) => { if (e.key === "Enter") { activeTab === "bt" ? doSearch(keyword) : doPanSearch(keyword); } }}
+                onKeyDown={(e) => { if (e.key === "Enter") { activeTab === "bt" ? (btActiveSource === "all" ? doSearch(keyword) : doSourceSearch(btActiveSource, keyword)) : doPanSearch(keyword); } }}
                 placeholder="输入搜索关键词..."
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 pr-10 text-sm text-white outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
               {/* 过滤器图标（搜索框内右侧，仅 BT 模式）*/}
@@ -477,7 +612,7 @@ export default function SearchModal({
                 </button>
               )}
             </div>
-            <button onClick={() => { activeTab === "bt" ? doSearch(keyword) : doPanSearch(keyword); }} disabled={searching || panSearching}
+            <button onClick={() => { activeTab === "bt" ? (btActiveSource === "all" ? doSearch(keyword) : doSourceSearch(btActiveSource, keyword)) : doPanSearch(keyword); }} disabled={searching || panSearching || (btActiveSource !== "all" && sourceTabStates[btActiveSource]?.searching)}
               className={`px-5 py-2 rounded-lg text-[12px] font-bold transition-colors whitespace-nowrap disabled:opacity-50 ${
                 activeTab === "bt" ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-emerald-600 hover:bg-emerald-500 text-white"
               }`}>
@@ -512,6 +647,15 @@ export default function SearchModal({
             </div>
           </div>
           {activeTab === "bt" && (
+            <SourceTabs
+              type="bt"
+              activeSource={btActiveSource}
+              onSelect={handleBtSourceSelect}
+              enabledSources={btSources.filter(s => s.enabled).map(s => s.name)}
+              sourceKeywords={sourceKeywordInfo}
+            />
+          )}
+          {activeTab === "bt" && btActiveSource === "all" && (
             <div className="flex items-center gap-2 flex-wrap">
               <FilterBar 
                 filters={filters} 
@@ -539,7 +683,7 @@ export default function SearchModal({
           {activeTab === "bt" ? (
             /* ── BT/磁力 Tab ── */
             <>
-          {searching ? (
+          {(btActiveSource === "all" ? searching : sourceTabStates[btActiveSource]?.searching) ? (
             <div className="flex flex-col items-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3" />
               <p className="text-[13px] text-slate-500 mb-3">{searchingStep || "搜罗全网资源..."}</p>
@@ -568,16 +712,26 @@ export default function SearchModal({
               {filtered.length > 0 && (
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] text-slate-500">
-                    共 {results.length} 条{smartFilter ? `，过滤后 ${displayResults.length} 条` : ""}{filtered.length !== displayResults.length ? `，筛选后 ${filtered.length} 条` : ""}
+                    共 {activeResults.length} 条{smartFilter ? `，过滤后 ${displayResults.length} 条` : ""}{filtered.length !== displayResults.length ? `，筛选后 ${filtered.length} 条` : ""}
+                    {/* 单源模式下显示搜索词回显 */}
+                    {btActiveSource !== "all" && sourceKeywordInfo[btActiveSource]?.searched?.length > 0 && (
+                      <span className="ml-2">
+                        {sourceKeywordInfo[btActiveSource].searched.map((kw, i) => (
+                          <span key={i} className={`inline-block text-[10px] px-1.5 py-0 rounded mr-1 ${
+                            kw === sourceKeywordInfo[btActiveSource].hit ? "bg-blue-500/15 text-blue-400" : "bg-white/[0.04] text-slate-600"
+                          }`}>{kw}</span>
+                        ))}
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
               {/* 结果呈现 */}
               {filtered.map((res, i) => renderResult(res, i))}
-              {filtered.length === 0 && results.length > 0 && (
+              {filtered.length === 0 && activeResults.length > 0 && (
                 <p className="text-center py-10 text-xs text-slate-600">无匹配筛选条件的结果</p>
               )}
-              {results.length === 0 && !searching && !error && (
+              {activeResults.length === 0 && !searching && !(sourceTabStates[btActiveSource]?.searching) && !error && (
                 <p className="text-center py-10 text-xs text-slate-600">未搜到资源</p>
               )}
             </div>
