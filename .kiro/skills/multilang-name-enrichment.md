@@ -44,10 +44,11 @@ description: >
 
 | 优先级 | 来源 | 方法 | 可靠性 |
 |--------|------|------|--------|
-| 1 | TMDB `_get_english_title` | 用 `language=en-US` 请求 TMDB API | 最高（官方英文名） |
-| 2 | TMDB `original_title`（当 detect_language == "en"） | 直接用 | 高（原始语言就是英文） |
-| 3 | 豆瓣 `subtitle` 解析 | 用 `/` 分隔后 detect_language 提取英文部分 | 中（格式不统一） |
-| 4 | NFO `englishtitle` 标签 | 直接读取 | 中（依赖 NFO 质量） |
+| 1 | TMDB `_get_english_title` | 用 `language=en-US` 请求 TMDB API（有文件缓存） | 最高（官方英文名） |
+| 1.5 | TMDB 搜索结果 `original_title` | 异步补全时 `detect_language == "en"` 直接用 | 高（`_async_enrich_tmdb_ids` 中获取） |
+| 2 | TMDB `original_title`（当 `_is_latin` 判断为拉丁字母） | 直接用 | 高（原始语言就是英文） |
+| 3 | 豆瓣 `subtitle` 解析 | 用 `/` 分隔后 detect_language 提取英文部分 | 中（API v2 热门接口无此字段） |
+| 4 | NFO `originaltitle` 标签 | 读取后需 detect_language 判断是否为英文 | 中（依赖 NFO 质量） |
 | 5 | 文件名正则提取 | 匹配连续拉丁字母部分 | 低（可能是缩写/发布组名） |
 
 ### TMDB `_get_english_title` 的实现
@@ -128,6 +129,8 @@ TMDB 客户端在 `get_movie_detail` / `get_tv_detail` 中已经调用 `_get_eng
 - **繁体中文**：先转简体再归入 cn
 - **纯汉字的日文名**（如"鬼滅"去掉假名后）：可能被误判为中文，先检测假名
 - **法语/德语等拉丁字母语言**：归入 en（不做细分）
+- **mixed 类型**：中英混合的 original_title 归入 clean_name_original（当前行为，可能需要 split_by_language 进一步拆分）
+- **`_is_latin` vs `detect_language`**：TMDB 客户端的 `_get_english_title` 使用 `_is_latin()`（拉丁字母占比 > 50%）做快速判断；发现页 `_inject_clean_names` 用 L1 的 `detect_language()` 做更精细的语言分类。两处逻辑不同，修改时注意区分
 
 ## 五、旧数据兼容
 
@@ -154,7 +157,7 @@ media_library.json 中旧数据没有 `clean_name_cn` / `clean_name_en` / `clean
 1. **同步补全**：首次加载时同步请求 TMDB，但会拖慢 2-5 秒
 2. **前端二次请求**：首次返回后，前端检测到 en 为空时触发补全请求
 3. **预缓存**：后台定时任务预先补全热门数据的英文名
-4. **接受延迟**：第一次加载缺英文名，刷新后有（当前行为）
+4. **接受延迟**：第一次加载缺英文名，刷新后有 ← 当前行为（2026-04-21）
 
 ### 豆瓣 API v2 vs 旧版接口
 
@@ -167,7 +170,7 @@ media_library.json 中旧数据没有 `clean_name_cn` / `clean_name_en` / `clean
 | 文件 | 职责 |
 |------|------|
 | `backend/clean_name_system.py` | clean_from_scrape 的 english_title 参数处理 |
-| `backend/routes/discover.py` | _inject_clean_names 的语言判断 + _async_enrich_tmdb_ids 的英文名补全 |
+| `backend/routes/discover.py` | _inject_clean_names 的语言判断 + _async_enrich_tmdb_ids 的异步英文名补全 |
 | `backend/tmdb_client.py` | _get_english_title 方法 |
 | `backend/text_processing.py` | detect_language 函数 |
 | `frontend/components/detail/FolderDetail.tsx` | 旧数据兼容的前端拆分逻辑 |

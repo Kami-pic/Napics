@@ -38,7 +38,7 @@ description: >
 | Prowlarr | en → cn → query | 英文站为主 |
 | Bitsearch | en → cn | 英文站 |
 | YTS | en → cn | 英文电影站 |
-| LimeTorrents | en → cn | 英文站 |
+| LimeTorrents | en → cn | 英文站（⚠️ 当前默认禁用，CF 保护严格） |
 | 磁力熊 | cn → en | 中文片源站 |
 | XL720 | cn → en | 中文片源站 |
 | Nyaa | original → en → cn | 动画站，日文原名命中率最高 |
@@ -49,6 +49,8 @@ description: >
 ### 网盘源
 
 所有网盘源统一：cn → en（中文优先，纯英文片回退到英文名）
+
+> 注意：网盘搜索走 `/search/pan` 端点，直接使用用户输入的 keyword，不经过 mapper 分发。`SOURCE_LANG_PRIORITY` 中的网盘源配置目前仅作为预留（供前端源 Tab 切换时填入默认搜索词），实际搜索时未被后端调用。
 
 ### 新增源时的判断标准
 
@@ -65,7 +67,7 @@ description: >
 ### 执行方式
 - 在同一个执行单元（future/线程）内部同步完成
 - 不阻塞其他源的并行搜索
-- 共享该源的总超时（如 20s）
+- 共享该源的总超时（当前 65s，`as_completed(timeout=65)`）
 
 ### 去重规则
 - 回退词和默认词相同时跳过（忽略大小写）
@@ -73,8 +75,7 @@ description: >
 - 回退链中的词按映射表顺序排列，不重复
 
 ### 结果处理
-- 回退搜索的结果**追加**到该源的结果列表（不替换）
-- 有结果就停止回退（不继续搜后续词）
+- 首个返回结果的搜索词即为最终结果，不继续搜后续回退词
 - SSE 事件返回 `search_keywords`（搜过的词列表）和 `hit_keyword`（命中的词）
 
 ## 四、季号拼接
@@ -125,8 +126,9 @@ description: >
 
 ## 七、踩坑经验
 
-1. **original_title 不是英文名**：TMDB/豆瓣的 original_title 对中国电影是中文、日本动画是日文，必须用 detect_language 判断
+1. **original_title 不是英文名**：TMDB 客户端用 `_is_latin()` 判断 original_title 是否为拉丁字母语言；发现页 `_inject_clean_names` 用 L1 的 `detect_language()` 做更精细的语言分类。两处判断逻辑不同，修改时注意区分
 2. **SSE 竞态**：用户快速切换搜索时，旧 EventSource 的结果会混入新搜索，必须用 ref 跟踪并关闭旧连接
 3. **旧数据兼容**：media_library.json 中旧数据没有 clean_name_cn/en/original 字段，前端需要从 clean_name 字符串中正则拆分
 4. **Bangumi 没有英文名**：需要从 TMDB 交叉补全
 5. **季号格式跟源走**：Prowlarr 回退到中文词时，季号仍用 S03（英文站标题格式）
+6. **ACG.RIP/Bangumi Moe 无做种数**：seeders 字段恒为 0，智能过滤中已豁免死种检测
