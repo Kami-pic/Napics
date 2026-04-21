@@ -47,7 +47,10 @@
 - 前端三层分离：results(全量) → displayResults(智能过滤+排序) → filtered(筛选器+源下拉)
 - 前端排序三档分层：有做种/无做种数信息源(tier 0) > 死种(tier 1) > 磁力链接(tier 2)，同层内 quality_score > match_score > seeders > size
 - 无做种数信息源集合 NO_SEEDER_INFO：cilixiong/xl720/acgrip/bangumi_moe，新增直搜源时在此注册
-- 智能过滤（🛡️按钮）：后端 compute_junk_flags 标记 is_junk（枪版+低匹配+死种），前端过滤
+- 智能过滤（🛡️按钮）：后端 compute_junk_flags 五规则标记 is_junk（枪版+低匹配+死种+跨语言不匹配+标题占比过低），前端过滤
+- 智能过滤依赖链：L1（标题清洗+中英分离+tokenize）→ L2（match_chain 评分）→ 业务层（compute_junk_flags 五规则判定）→ L3 模式（软标记+前端开关）
+- enrich_result 接受 match_names 参数（cn_name/en_name/original_name），解决跨语言匹配；SSE 搜索时从 keywords 构造传入
+- 业务 skill：`skills/smart-filter.md`（五规则详细说明+源特征差异+占比计算逻辑）
 - SourceTabs + FilterBar 合并：源 Tab 切换 + 筛选器在同一区域，"全部"tab 用直搜源下拉，单源 tab 用专属筛选器
 - 网盘侧同样有 SourceTabs + 筛选器，绿色变体
 - BT 结果卡片索引器标签：Prowlarr 两段式（橙色p+灰色名），直搜源保留各自品牌色
@@ -149,6 +152,7 @@
 - 搜索匹配过滤调研 → `docs/search-match-filter-research.md`
 - 搜索匹配技能建设 TODO → `docs/skill-build-todo.md`
 - 通用技能 L1-L4 → `skills/L1-text-processing.md` ~ `skills/L4-result-sorting.md`
+- 智能过滤业务技能 → `skills/smart-filter.md`
 - 多语言搜索词分发 → `skills/multilang-search-dispatch.md`
 - 多源英文名补全 → `skills/multilang-name-enrichment.md`
 - 发现页英文名缓存 → `skills/discover-enrich-cache.md`

@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-04-21 智能过滤完整实现：五规则判定 + 跨语言匹配 + 标题占比检查
+**变更**:
+- 智能过滤从空转升级为五规则判定体系（search_helpers.py 的 compute_junk_flags）：
+  1. 枪版检测（TS/CAM/HDTC 等词边界匹配）
+  2. 匹配度过低（match_score > 0 且 < 30）
+  3. 死种检测（seeders=0 且非磁力链接源）
+  4. 完全不匹配（match_score=0 + 有多语言候选，解决 Prowlarr 索引器多时返回 Zootopia 等不相关结果）
+  5. 标题占比过低（match_score 40-70 但搜索词只是长标题的一小部分，如合集/混剪/长描述）
+- enrich_result 新增 match_names 参数，SSE 搜索时传入 cn_name/en_name/original_name 解决跨语言匹配
+- 新增 extract_bt_title_for_match：专为搜索匹配设计的 BT 标题清洗（在第一个技术标签处截断）
+- match_chain 增强：新增 contains 子串匹配步骤（70分）+ 修正 token_set 比例方向
+- 标题占比检查中英文分开算，避免中文搜索词被英文标题部分稀释
+- 业务 skill 文档 `.kiro/skills/smart-filter.md`（五规则+源特征差异+占比计算+测试矩阵）
+- 102 个测试全绿（基础45 + 扩展39 + 跨语言10 + 占比8）
+**决策**: 用 _has_multilang_candidates 区分"有多语言候选但不匹配"和"无候选无法计算"；占比检查中英文分开算取最高值；规则 5 只在 match_score 40-70 区间触发（精确匹配不检查，低分已被规则 2 处理）
+**已知问题**: MPEG-TS 误标记枪版；单词搜索 vs 长标题 score=0；中文 2 字公共前缀触发 token_set（已被规则 5 兜底）
+
 ## 2026-04-21 搜索资源弹窗 UI 重构 + 排序/过滤修复
 
 **变更**:
