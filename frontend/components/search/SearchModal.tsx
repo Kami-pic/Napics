@@ -129,6 +129,7 @@ export default function SearchModal({
 
   // ── 源 Tab 切换状态 ──
   const [btActiveSource, setBtActiveSource] = useState("all");
+  const [panActiveSource, setPanActiveSource] = useState("all");
   // 每个单源 Tab 的独立状态
   const [sourceTabStates, setSourceTabStates] = useState<Record<string, SourceTabState>>({});
 
@@ -158,6 +159,15 @@ export default function SearchModal({
 
   // 源搜索词回显信息（从 SSE source_done 事件收集）
   const [sourceKeywordInfo, setSourceKeywordInfo] = useState<Record<string, { searched: string[]; hit: string }>>({});
+
+  // 网盘源状态转为 Record 供 SourceTabs 使用
+  const panSourceStatusMap = useMemo(() => {
+    const m: Record<string, SourceStatus> = {};
+    for (const s of panSourceStatuses) {
+      m[s.name] = { status: s.status === "success" ? "done" : s.status === "failed" ? "failed" : "idle", count: s.count ?? 0 };
+    }
+    return m;
+  }, [panSourceStatuses]);
 
   // ── 固定源列表（打开时加载一次）──
   const [btSources, setBtSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
@@ -207,7 +217,7 @@ export default function SearchModal({
       setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
       panCache.current.clear();
       setActiveTab("bt");
-      setBtActiveSource("all"); setSourceTabStates({}); setSourceKeywordInfo({});
+      setBtActiveSource("all"); setPanActiveSource("all"); setSourceTabStates({}); setSourceKeywordInfo({});
     }
   }, [open, query]);
 
@@ -236,7 +246,11 @@ export default function SearchModal({
     }
 
     setSearching(true); setResults([]); setError(""); setToast(null);
-    setHitKeyword(""); setSourceStatuses({});
+    setHitKeyword(""); setSourceStatuses({}); setSourceKeywordInfo({});
+    // 手动搜索时清除单源 tab 缓存（结果会被全量搜索覆盖）
+    if (userEditedRef.current) {
+      setSourceTabStates({});
+    }
 
     try {
       setKeyword(q);
@@ -442,6 +456,25 @@ export default function SearchModal({
     }
   }, [sourceTabStates, sourceDefaultKeywords, keyword, query, doSourceSearch]);
 
+  // 网盘源 Tab 切换处理
+  const panAllKeywordRef = useRef(query);
+  const handlePanSourceSelect = useCallback((source: string) => {
+    if (panActiveSource === "all") {
+      panAllKeywordRef.current = keyword;
+    }
+    setPanActiveSource(source);
+    if (source === "all") {
+      setKeyword(panAllKeywordRef.current);
+      return;
+    }
+    // 单源网盘：填入默认搜索词（中文优先）
+    const cn = (cnName || "").trim();
+    const en = (enName || "").trim();
+    const defaultKw = cn || en || keyword || query;
+    setKeyword(defaultKw);
+    // TODO: 单源网盘搜索端点（当前网盘搜索是聚合的，暂时用全量搜索结果按源筛选）
+  }, [panActiveSource, keyword, query, cnName, enName]);
+
   // 前端过滤：FilterBar 筛选 + 智能过滤（L2 匹配 + L3 软过滤）
   // 当前展示的结果：全部模式用 results，单源模式用该源的 results
   const activeResults = useMemo(() => {
@@ -455,21 +488,31 @@ export default function SearchModal({
     if (smartFilter) {
       list = list.filter(r => !(r as any).is_junk);
     }
-    // 排序：match_score > quality_score > seeders > size_gb
-    // 磁力链接源（seeders=0 且 size=0）排在正常资源后面
+    // 排序：有做种 > 无做种 > 磁力链接，同层内按 quality_score > match_score > seeders > size
+    // 已知无做种数信息的源（seeders=0 但不是死种）——新增直搜源时在此注册
+    const NO_SEEDER_INFO = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe"]);
     list = [...list].sort((a, b) => {
-      // 磁力链接排后
-      const aMagnet = a.seeders === 0 && a.size_gb === 0 ? 1 : 0;
-      const bMagnet = b.seeders === 0 && b.size_gb === 0 ? 1 : 0;
-      if (aMagnet !== bMagnet) return aMagnet - bMagnet;
+      // 三档分层：有做种/无做种数信息源(0) > 真正死种(1) > 磁力链接(2)
+      const tier = (r: EnhancedSearchResult) => {
+        if (r.seeders === 0 && r.size_gb === 0) return 2; // 磁力链接源
+        if (r.seeders === 0) {
+          // 无做种数信息的源不降权
+          const src = (r as any)._source || "";
+          if (NO_SEEDER_INFO.has(src)) return 0;
+          return 1; // 真正的死种
+        }
+        return 0; // 有做种
+      };
+      const ta = tier(a), tb = tier(b);
+      if (ta !== tb) return ta - tb;
+      // quality_score 优先（质量分更直观）
+      const sa = (a as any).quality_score ?? 0;
+      const sb = (b as any).quality_score ?? 0;
+      if (sb !== sa) return sb - sa;
       // match_score（后端 L2 计算）
       const aMatch = (a as any).match_score ?? 0;
       const bMatch = (b as any).match_score ?? 0;
       if (bMatch !== aMatch) return bMatch - aMatch;
-      // quality_score
-      const sa = (a as any).quality_score ?? 0;
-      const sb = (b as any).quality_score ?? 0;
-      if (sb !== sa) return sb - sa;
       // seeders
       if (b.seeders !== a.seeders) return b.seeders - a.seeders;
       return b.size_gb - a.size_gb;
@@ -521,18 +564,49 @@ export default function SearchModal({
           </div>
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <input value={keyword} onChange={(e) => { setKeyword(e.target.value); userEditedRef.current = true; }}
-                onKeyDown={(e) => { if (e.key === "Enter") { activeTab === "bt" ? (btActiveSource === "all" ? doSearch(keyword) : doSourceSearch(btActiveSource, keyword)) : doPanSearch(keyword); } }}
-                placeholder="输入搜索关键词..."
-                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 pr-10 text-sm text-white outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
-              {/* 过滤器图标（搜索框内右侧，仅 BT 模式）*/}
-              {activeTab === "bt" && (
-                <button onClick={() => setSmartFilter(!smartFilter)}
-                  title={smartFilter ? "智能过滤已开启：隐藏不相关/枪版/死种" : "智能过滤已关闭：显示全部结果"}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${smartFilter ? "text-green-400 hover:bg-green-600/20" : "text-slate-600 hover:text-slate-400"}`}>
-                  {smartFilter ? "🛡️" : "🔓"}
-                </button>
-              )}
+              {/* 搜索词回显标签（input 内部，回退链用箭头连接） */}
+              <div className="flex items-center w-full bg-white/[0.04] border border-white/[0.06] rounded-lg overflow-hidden focus-within:border-blue-500/50">
+                {activeTab === "bt" && Object.keys(sourceKeywordInfo).length > 0 && !searching && (
+                  <div className="flex items-center gap-0.5 pl-2 flex-shrink-0">
+                    <span className="text-[9px] text-slate-600 whitespace-nowrap mr-0.5">回退匹配:</span>
+                    {(() => {
+                      const allKws: string[] = [];
+                      const hitKws = new Set<string>();
+                      const seen = new Set<string>();
+                      for (const info of Object.values(sourceKeywordInfo)) {
+                        for (const kw of info.searched) {
+                          if (!seen.has(kw)) { seen.add(kw); allKws.push(kw); }
+                        }
+                        if (info.hit) hitKws.add(info.hit);
+                      }
+                      // 排序：未命中的在前（回退过程），命中的在最后（最终停留）
+                      const notHit = allKws.filter(kw => !hitKws.has(kw));
+                      const hit = allKws.filter(kw => hitKws.has(kw));
+                      const ordered = [...notHit, ...hit];
+                      return ordered.map((kw, i) => (
+                        <span key={i} className="flex items-center gap-0.5 flex-shrink-0">
+                          {i > 0 && <span className="text-[9px] text-slate-700">→</span>}
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${
+                            hitKws.has(kw) ? "bg-blue-500/15 text-blue-400" : "bg-white/[0.06] text-slate-600"
+                          }`}>{kw}</span>
+                        </span>
+                      ));
+                    })()}
+                  </div>
+                )}
+                <input value={keyword} onChange={(e) => { setKeyword(e.target.value); userEditedRef.current = true; }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { activeTab === "bt" ? (btActiveSource === "all" ? doSearch(keyword) : doSourceSearch(btActiveSource, keyword)) : doPanSearch(keyword); } }}
+                  placeholder="输入搜索关键词..."
+                  className="flex-1 bg-transparent px-3 py-2 pr-10 text-sm text-white outline-none placeholder:text-slate-600 min-w-[120px]" />
+                {/* 过滤器图标（搜索框内右侧，仅 BT 模式）*/}
+                {activeTab === "bt" && (
+                  <button onClick={() => setSmartFilter(!smartFilter)}
+                    title={smartFilter ? "智能过滤已开启：隐藏不相关/枪版/死种" : "智能过滤已关闭：显示全部结果"}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${smartFilter ? "text-green-400 hover:bg-green-600/20" : "text-slate-600 hover:text-slate-400"}`}>
+                    {smartFilter ? "🛡️" : "🔓"}
+                  </button>
+                )}
+              </div>
             </div>
             <button onClick={() => { activeTab === "bt" ? (btActiveSource === "all" ? doSearch(keyword) : doSourceSearch(btActiveSource, keyword)) : doPanSearch(keyword); }} disabled={searching || panSearching || (btActiveSource !== "all" && sourceTabStates[btActiveSource]?.searching)}
               className={`px-5 py-2 rounded-lg text-[12px] font-bold transition-colors whitespace-nowrap disabled:opacity-50 ${
@@ -568,32 +642,46 @@ export default function SearchModal({
                 title={savePath || defaultSavePath} />
             </div>
           </div>
+          {/* 分割线：将 SourceTabs + 筛选器 和上面的搜索区域分开 */}
+          <div className="border-t border-white/[0.04] pt-3 -mx-5 px-5 flex flex-col items-start gap-2">
           {activeTab === "bt" && (
             <SourceTabs
               type="bt"
               activeSource={btActiveSource}
               onSelect={handleBtSourceSelect}
               enabledSources={btSources.filter(s => s.enabled).map(s => s.name)}
-              sourceKeywords={sourceKeywordInfo}
+              sourceStatuses={sourceStatuses}
+              totalCount={results.length}
+              allSearching={searching}
             />
           )}
-          {activeTab === "bt" && btActiveSource === "all" && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <FilterBar 
-                filters={filters} 
-                onChange={setFilters} 
-                onClear={() => setFilters(DEFAULT_FILTERS)} 
-                btSources={btSources}
-                sourceStatuses={sourceStatuses}
-                disabledSources={disabledSources}
-                onToggleSource={toggleSource}
-                availableIndexers={availableIndexers}
-              />
-            </div>
+          {activeTab === "bt" && (
+            <FilterBar
+              activeSource={btActiveSource}
+              filters={filters}
+              onChange={setFilters}
+              onClear={() => setFilters(DEFAULT_FILTERS)}
+              btSources={btSources}
+              disabledSources={disabledSources}
+              onToggleSource={toggleSource}
+              availableIndexers={availableIndexers}
+            />
           )}
           {activeTab === "pan" && (
-            <PanFilterBar filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} panSources={panSources} disabledSources={disabledSources} onToggleSource={toggleSource} />
+            <SourceTabs
+              type="pan"
+              activeSource={panActiveSource}
+              onSelect={handlePanSourceSelect}
+              enabledSources={panSources.filter(s => s.enabled).map(s => s.name)}
+              sourceStatuses={panSourceStatusMap}
+              totalCount={panTotal}
+              allSearching={panSearching}
+            />
           )}
+          {activeTab === "pan" && (
+            <PanFilterBar activeSource={panActiveSource} filters={panFilters} onChange={setPanFilters} groups={panGroups} sourceStatuses={panSourceStatuses} panSources={panSources} disabledSources={disabledSources} onToggleSource={toggleSource} />
+          )}
+          </div>
         </div>
 
         {toast && (
@@ -608,9 +696,13 @@ export default function SearchModal({
           {(btActiveSource === "all" ? searching : sourceTabStates[btActiveSource]?.searching) ? (
             <div className="flex flex-col items-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3" />
-              <p className="text-[13px] text-slate-500 mb-3">{searchingStep || "搜罗全网资源..."}</p>
-              {/* 各源实时状态 */}
-              {Object.keys(sourceStatuses).length > 0 && (
+              <p className="text-[13px] text-slate-500 mb-3">
+                {btActiveSource === "all"
+                  ? (searchingStep || "搜罗全网资源...")
+                  : `搜索 ${btActiveSource}...`}
+              </p>
+              {/* 各源实时状态（仅全部模式显示）*/}
+              {btActiveSource === "all" && Object.keys(sourceStatuses).length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {Object.entries(sourceStatuses).map(([name, s]) => (
                     <span key={name} className={`text-[10px] px-2 py-0.5 rounded ${

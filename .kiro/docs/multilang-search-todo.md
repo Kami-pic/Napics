@@ -193,9 +193,22 @@ const [sourceTabs, setSourceTabs] = useState<Record<string, SourceTabState>>({})
 ### Phase 3：回退链 UI 回显
 
 - [x] SSE source_done 事件的 search_keywords/hit_keyword 已在前端收集到 sourceKeywordInfo
-- [x] SourceTabs 组件在每个源 Tab 旁显示命中词小标签
-- [x] 单源模式结果统计行显示搜过的词标签（灰色=无结果，蓝色=命中）
-- [ ] "全部"模式下，在源状态标签中也显示各源的命中词（待后续优化）
+- [x] SourceTabs 显示 loading/结果条数状态（绿色✓+条数 / 蓝色脉冲 / 红色✗）
+- [x] 搜索词回显改到 input 框内（灰色标签+箭头连接回退链，命中词蓝色排最后）
+- [x] 单源模式结果统计行显示搜过的词标签
+
+### Phase 4：搜索弹窗 UI 重构（SourceTabs + FilterBar 合并）
+
+- [x] SourceTabs + FilterBar 源开关栏合并：源开关改为"直搜源"MultiSelect 下拉
+- [x] 每个单源 Tab 有专属筛选器（Prowlarr 有索引器，磁力熊/xl720 无做种数）
+- [x] 网盘侧同步改造：加 SourceTabs + 源下拉筛选器 + 绿色变体
+- [x] 排序修复：三档分层 + NO_SEEDER_INFO 集合 + quality_score 优先
+- [x] 智能过滤修复：移除 acgrip/bangumi_moe 死种豁免
+- [x] 后端 SSE 源启用判断修复（limetorrents 默认 disabled）
+- [x] 索引器标签区分：Prowlarr 两段式（橙色p+灰色名），直搜源保留品牌色
+- [x] 筛选器 UI 统一高度 + 分割线区域
+- [x] 手动改词二次搜索覆盖所有源 + 清除缓存
+- [x] 测试修复：84 测试全绿
 
 ---
 

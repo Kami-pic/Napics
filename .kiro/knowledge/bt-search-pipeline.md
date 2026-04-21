@@ -38,6 +38,14 @@ enhanced_search() ← searcher.py
 |---|---|---|
 | Prowlarr 客户端 | searcher.py | 调用 Prowlarr API, 解析种子结果 |
 | Bitsearch 爬虫 | bt_scraper_bitsearch.py | JSON API 搜索, 欧美片源补充, curl_cffi+代理 |
+| 磁力熊 爬虫 | bt_scraper_cilixiong.py | 中文磁力链接源, 直连 |
+| XL720 爬虫 | bt_scraper_xl720.py | 中文磁力链接源, 直连, 响应慢 |
+| Nyaa 爬虫 | bt_scraper_nyaa.py | 日文/英文动画站, HTML 解析, curl_cffi+代理 |
+| 蜜柑 爬虫 | bt_scraper_mikan.py | 中文字幕组 RSS, curl_cffi+代理 |
+| YTS 爬虫 | bt_scraper_yts.py | 电影专站 JSON API, 小体积 YIFY 编码, 代理, 主域名 yts.am |
+| LimeTorrents 爬虫 | bt_scraper_limetorrents.py | 综合站 HTML 爬虫, 代理, 站点 CF 保护严格默认禁用 |
+| ACG.RIP 爬虫 | bt_scraper_acgrip.py | 动画字幕组站 HTML 爬虫, 直连, 无做种数信息 |
+| Bangumi Moe 爬虫 | bt_scraper_bangumi_moe.py | 动画字幕组站 JSON API (v2), 直连, 无做种数信息 |
 | 别名解析 | alias_resolver.py | 豆瓣/Bangumi 获取多语言别名 |
 | 二次匹配 | secondary_matcher.py | 标题相似度过滤, 防止误匹配 |
 | 全局过滤 | global_filter.py | 关键词黑白名单 |

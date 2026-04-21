@@ -1,7 +1,10 @@
 // BT 搜索结果单条卡片
 "use client";
 import type { EnhancedSearchResult } from "@/types";
-import { INDEXER_TAG_STYLE } from "./FilterBar";
+import { INDEXER_TAG_STYLE, INDEXER_DOT_COLOR } from "./FilterBar";
+
+// 已知直搜源名称
+const DIRECT_SOURCE_NAMES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe"]);
 
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 
@@ -60,7 +63,23 @@ export default function BtResultCard({ res, index, currentResolution, qbConfigur
                 {q.audio_codec}
               </span>
             )}
-            <span className={`text-[10px] px-2 py-0.5 rounded ${INDEXER_TAG_STYLE[res.indexer] || "bg-white/[0.04] text-slate-500"}`}>{res.indexer}</span>
+            {/* 索引器标签：直搜源用各自颜色，Prowlarr 索引器加 "p:" 前缀 + 统一灰色 */}
+            {(() => {
+              const source = (res as any)._source || "";
+              const indexer = res.indexer || "";
+              const isDirectSource = DIRECT_SOURCE_NAMES.has(source);
+              if (isDirectSource) {
+                // 直搜源：用各自品牌色
+                return <span className={`text-[10px] px-2 py-0.5 rounded ${INDEXER_TAG_STYLE[source] || "bg-white/[0.04] text-slate-500"}`}>{indexer}</span>;
+              }
+              // Prowlarr 索引器：两段式标签（橙色 p + 灰色索引器名）
+              return (
+                <span className="text-[10px] rounded overflow-hidden inline-flex">
+                  <span className="bg-orange-500/20 text-orange-400 px-1 py-0.5 font-bold">p</span>
+                  <span className="bg-white/[0.04] text-slate-500 px-1.5 py-0.5">{indexer}</span>
+                </span>
+              );
+            })()}
             {q?.has_chinese_sub && <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">中字</span>}
             {seasonPack && <span className="text-[10px] px-2 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-medium">整季</span>}
             {q?.release_group && <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.04] text-slate-500">{q.release_group}</span>}

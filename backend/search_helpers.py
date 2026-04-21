@@ -62,9 +62,10 @@ def compute_junk_flags(d: dict) -> dict:
         reasons.append(f"low_match:{match_score}")
 
     is_magnet_only = seeders == 0 and size_gb == 0
-    indexer = d.get("indexer", "")
-    no_seeder_sources = {"acgrip", "bangumi_moe"}
-    if seeders == 0 and not is_magnet_only and indexer not in no_seeder_sources:
+    # 磁力链接源（seeders=0 且 size=0）豁免死种标记
+    # 注意：acgrip/bangumi_moe 虽然可能没有做种数信息，但仍标记为 dead_seed
+    # 让智能过滤能过滤掉它们，排序层已单独处理这些源的降权
+    if seeders == 0 and not is_magnet_only:
         reasons.append("dead_seed")
 
     return {"is_junk": len(reasons) > 0, "junk_reasons": reasons}

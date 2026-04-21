@@ -369,7 +369,10 @@ def _normalize_item(item: Dict) -> Dict:
 
     # card_subtitle 格式："年份 / 国家 / 类型 / 导演 / 演员"
     # 当 genres/countries/year 为空时（合集接口），从 card_subtitle 解析
+    # 导演和演员也从 card_subtitle 提取（搜索接口不返回 directors/actors）
     card_sub = item.get("card_subtitle") or ""
+    card_director = ""
+    card_actors = ""
     if card_sub:
         parts = [p.strip() for p in card_sub.split("/")]
         # 已知类型关键词（豆瓣常用）
@@ -379,6 +382,7 @@ def _normalize_item(item: Dict) -> Dict:
             "歌舞", "家庭", "儿童", "纪录片", "短片", "古装", "武侠", "西部",
             "灾难", "情色", "同性", "运动", "真人秀", "脱口秀", "黑色电影",
         }
+        remaining = []  # 未被识别的段（导演/演员）
         for p in parts:
             tokens = p.split()
             # 年份段：纯数字 4 位
@@ -390,8 +394,17 @@ def _normalize_item(item: Dict) -> Dict:
                 # 国家段：不是年份、不是类型、不是人名（人名通常含 · 或较长）
                 if all(len(t) <= 6 for t in tokens) and not any("·" in t for t in tokens) and not all(t.isdigit() for t in tokens):
                     countries = tokens
+                else:
+                    remaining.append(p)
+            else:
+                remaining.append(p)
+        # 剩余段：第一个是导演，第二个是演员
+        if remaining:
+            card_director = remaining[0].strip()
+        if len(remaining) > 1:
+            card_actors = remaining[1].strip()
 
-    # 导演
+    # 导演（优先 API 字段，fallback card_subtitle）
     directors = item.get("directors") or []
     director_names = []
     for d in directors:
@@ -399,8 +412,10 @@ def _normalize_item(item: Dict) -> Dict:
             director_names.append(d.get("name") or "")
         elif isinstance(d, str):
             director_names.append(d)
+    if not director_names and card_director:
+        director_names = [n.strip() for n in card_director.split() if n.strip()]
 
-    # 演员
+    # 演员（优先 API 字段，fallback card_subtitle）
     actors = item.get("actors") or []
     actor_names = []
     for a in actors[:6]:
@@ -408,6 +423,8 @@ def _normalize_item(item: Dict) -> Dict:
             actor_names.append(a.get("name") or "")
         elif isinstance(a, str):
             actor_names.append(a)
+    if not actor_names and card_actors:
+        actor_names = [n.strip() for n in card_actors.split() if n.strip()]
 
     return {
         "douban_id": str(item.get("id") or ""),

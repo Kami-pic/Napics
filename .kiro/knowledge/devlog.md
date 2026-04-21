@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-04-21 搜索资源弹窗 UI 重构 + 排序/过滤修复
+
+**变更**:
+- SourceTabs + FilterBar 合并：源 Tab 切换保留，源开关栏改为"直搜源"MultiSelect 下拉（放筛选器最前面）
+- 每个单源 Tab 有专属筛选器：Prowlarr 有索引器下拉，磁力熊/xl720 无做种数筛选，acgrip/bangumi_moe 无做种数筛选
+- 网盘侧同步改造：加 SourceTabs + 源下拉筛选器，网盘筛选器用绿色（emerald）变体
+- SourceTabs 显示 loading/结果条数状态（绿色 ✓+条数 / 蓝色脉冲 / 红色 ✗），去掉搜索词回显
+- 搜索词回显改到 input 框内：灰色标签 + 箭头连接回退链，"回退匹配:" 前缀，命中词蓝色排最后
+- 排序修复：三档分层（有做种/无做种数信息源 > 死种 > 磁力链接），quality_score 优先于 match_score
+- 新增 NO_SEEDER_INFO 集合（cilixiong/xl720/acgrip/bangumi_moe），新增直搜源时在此注册防止排序降权
+- 智能过滤修复：后端 compute_junk_flags 移除 acgrip/bangumi_moe 的死种豁免，开启过滤后 0 做种结果被过滤
+- 后端 SSE 搜索源启用判断改用 _BT_SOURCE_DEFAULTS 默认值，修复 limetorrents 被错误启用的 bug
+- 单源 Tab 搜索 loading 只显示该源名称，不显示全量搜索的各源状态
+- BT 结果卡片索引器标签区分：Prowlarr 索引器用两段式（橙色 p + 灰色索引器名），直搜源保留各自品牌色
+- 筛选器 UI 统一：MultiSelect/NumberInput/大小输入框高度对齐（py-1.5 text-[11px]），SourceTabs 同高
+- SourceTabs + 筛选器区域加分割线与上方搜索区域分开
+- 手动改词二次搜索清除单源 Tab 缓存 + sourceKeywordInfo，统一用搜索框的词搜所有源
+- 新搜索开始时清除 sourceKeywordInfo，防止上次搜索词残留
+- 测试修复：test_smart_filter.py / test_smart_filter_extra.py 导入路径从 routes.search 改为 search_helpers，84 测试全绿
+- MultiSelect 组件支持 variant（blue/emerald），网盘筛选器用绿色
+
+**踩坑**:
+- 后端 SSE 搜索用 `bt_overrides.get(name, True)` 默认启用所有源，limetorrents（默认 disabled）被错误搜索
+- 前端排序只区分"磁力链接"和"其他"，acgrip/bangumi_moe 的 seeders=0 但 size>0 的结果被当作死种排到后面
+- sourceKeywordInfo 在新搜索开始时没有清除，导致上次搜索的词残留在回显中
+- 搜索词回显收集所有源的搜索词去重，不同源回退链顺序不同导致显示顺序混乱，改为未命中排前+命中排后
+
+**架构决策**:
+- FilterBar 统一导出：根据 activeSource 自动选择 AllFilterBar 或 SourceFilterBar，调用方只传 activeSource
+- 直搜源下拉交互：选中=显示（默认全选），取消=关闭，比原来的源开关栏更紧凑
+- 新增直搜源的防护机制：NO_SEEDER_INFO 集合 + _BT_SOURCE_DEFAULTS 默认值，两处注册即可
+
+---
+
 ## 2026-04-21 发现页 TMDB 英文名补全（C+E 方案）
 **变更**:
 - 新建 `tmdb_enrich_cache.json` 持久化缓存（启动加载、LRU 5000 条、30 天过期、threading.Lock 保护）

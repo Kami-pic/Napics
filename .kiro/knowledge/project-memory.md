@@ -44,7 +44,13 @@
 - 无做种数信息源（ACG.RIP/Bangumi Moe）seeders=0 但 size>0，不标记为死种
 - 直搜源统一输出 SearchResult 格式，routes/search.py 的 SSE 端点合并
 - 网盘：6 个源（pansearch/pansou/gogopanso/github/rrdynb/ddys），pan_search_service.py 聚合
-- 前端三层分离：results(全量) → displayResults(智能过滤+排序) → filtered(筛选器+源开关)
+- 前端三层分离：results(全量) → displayResults(智能过滤+排序) → filtered(筛选器+源下拉)
+- 前端排序三档分层：有做种/无做种数信息源(tier 0) > 死种(tier 1) > 磁力链接(tier 2)，同层内 quality_score > match_score > seeders > size
+- 无做种数信息源集合 NO_SEEDER_INFO：cilixiong/xl720/acgrip/bangumi_moe，新增直搜源时在此注册
+- 智能过滤（🛡️按钮）：后端 compute_junk_flags 标记 is_junk（枪版+低匹配+死种），前端过滤
+- SourceTabs + FilterBar 合并：源 Tab 切换 + 筛选器在同一区域，"全部"tab 用直搜源下拉，单源 tab 用专属筛选器
+- 网盘侧同样有 SourceTabs + 筛选器，绿色变体
+- BT 结果卡片索引器标签：Prowlarr 两段式（橙色p+灰色名），直搜源保留各自品牌色
 - 搜索设置在 SearchModal ⚙️ 二级菜单（搜索源/过滤规则/索引器/排序权重），不在总设置页
 - 需代理的源（Bitsearch/Nyaa/蜜柑/YTS/LimeTorrents）从 config.http_proxy 读取，和 TMDB 共用
 - 直连源（磁力熊/XL720/ACG.RIP/Bangumi Moe/rrdynb）不走代理

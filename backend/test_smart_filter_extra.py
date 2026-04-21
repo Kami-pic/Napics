@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 import pytest
-from routes.search import _extract_bt_title_for_match, _compute_junk_flags, _MATCH_SCORE_THRESHOLD
+from search_helpers import extract_bt_title_for_match as _extract_bt_title_for_match, compute_junk_flags as _compute_junk_flags, _MATCH_SCORE_THRESHOLD
 from match_scoring import match_chain
 from text_processing import split_by_language
 

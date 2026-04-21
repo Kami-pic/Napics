@@ -13,7 +13,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 import pytest
-from routes.search import _compute_junk_flags, _MATCH_SCORE_THRESHOLD
+from search_helpers import compute_junk_flags as _compute_junk_flags, _MATCH_SCORE_THRESHOLD
 
 
 # ════════════════════════════════════════
@@ -182,7 +182,7 @@ class TestMatchChainIntegration:
         """模拟 _enrich_result 中的 match_score 计算"""
         from match_scoring import match_chain
         from text_processing import split_by_language
-        from routes.search import _extract_bt_title_for_match
+        from search_helpers import extract_bt_title_for_match as _extract_bt_title_for_match
 
         parts = split_by_language(search_query)
         candidates = [n for n in [search_query, parts["cn"], parts["en"]] if n]

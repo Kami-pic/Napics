@@ -1,37 +1,22 @@
 """
 路由模块：search
 """
-import os
 import json
 import re
-import time
-import asyncio
-import shutil
-import requests
-import subprocess
-import sys
-import threading
-from typing import List, Optional, Dict
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse, FileResponse, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from shared import (
-    config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
-    _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
+    config_m, indexer_m,
+    _get_pan_search_service,
     _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper,
     _get_mikan_scraper, _get_yts_scraper, _get_limetorrents_scraper, _get_acgrip_scraper,
     _get_bangumi_moe_scraper,
-    _tmdb_client, get_clients,
-    _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
+    get_clients,
 )
-import scanner, searcher, downloader, tmdb_client, config_manager
-import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
-from organize_history import history_m
+import searcher, douban_client, bangumi_client
 from global_filter import GlobalFilter
-from download_manager import DownloadManager, DownloadTask
-from quality_parser import compute_quality_score
-from search_helpers import enrich_result as _enrich_result, extract_bt_title_for_match as _extract_bt_title_for_match, compute_junk_flags as _compute_junk_flags, merge_bt_extra_sources as _merge_bt_extra_sources
+from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
 
 router = APIRouter()
 
@@ -200,10 +185,11 @@ def search_resources_stream(
 
         # 推送所有源的 searching 状态
         all_sources = []
-        if bt_overrides.get("prowlarr", True):
+        if bt_overrides.get("prowlarr", _BT_SOURCE_DEFAULTS["prowlarr"]["enabled"]):
             all_sources.append("prowlarr")
         for name, _ in scrapers:
-            if bt_overrides.get(name, True):
+            default_enabled = _BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
+            if bt_overrides.get(name, default_enabled):
                 all_sources.append(name)
         for name in all_sources:
             yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
@@ -211,11 +197,12 @@ def search_resources_stream(
         # 全部并行提交，用 as_completed 逐个 yield
         with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
             future_map = {}
-            if bt_overrides.get("prowlarr", True):
+            if bt_overrides.get("prowlarr", _BT_SOURCE_DEFAULTS["prowlarr"]["enabled"]):
                 f = pool.submit(_search_prowlarr)
                 future_map[f] = "prowlarr"
             for name, getter in scrapers:
-                if bt_overrides.get(name, True):
+                default_enabled = _BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
+                if bt_overrides.get(name, default_enabled):
                     f = pool.submit(_search_direct, name, getter)
                     future_map[f] = name
 
