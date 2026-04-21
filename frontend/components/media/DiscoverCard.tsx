@@ -73,7 +73,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
         {showRank && (
           <div className="absolute top-[6px] left-1">
-            <span className={`inline-flex items-center justify-center min-w-[28px] text-[24px] font-extrabold leading-none tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${
+            <span className={`inline-flex items-center justify-center min-w-[28px] text-[24px] font-bold leading-none tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${
               index < 3 ? "text-yellow-400" : "text-white/70"
             }`} style={{ fontFamily: "'Impact', 'Arial Black', 'Helvetica Neue', sans-serif", WebkitTextStroke: "0.8px rgba(0,0,0,0.15)" }}>
               {index + 1}
@@ -82,7 +82,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
         )}
         {/* 右上角评分 */}
         <div className="absolute top-2 right-2.5">
-          <span className={`bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[15px] font-extrabold leading-none ${hasRating ? ratingColor : "text-slate-500"}`}>
+          <span className={`bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[15px] font-bold leading-none ${hasRating ? ratingColor : "text-slate-500"}`}>
             {hasRating ? item.rating : "—"}
           </span>
         </div>
