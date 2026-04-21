@@ -77,9 +77,11 @@
 - 保存路径：优先 searchContext.savePath > currentFolder > NAS 根路径
 - tmdb_enrich_cache：`scrape_cache/tmdb_enrich_cache.json`，持久化 TMDB 英文名+评分，30 天过期，5000 条 LRU 上限
 - enrich_cache 写入时机：同步并发补全后 + _async_enrich_tmdb_ids 后 + 详情页 get_media_info 返回前
+- enrich_cache 同时注入英文名和 TMDB 评分（`tmdb_rating` 字段），卡片列表可直接展示双评分
 - enrich_cache 读取时机：_inject_clean_names 中查缓存，命中直接用英文名
 - 业务 skill：`skills/discover-enrich-cache.md`
 - discoverUtils.ts 的 normalizeItem 是所有推荐/探索/搜索数据的统一入口，新增字段必须在此传递
+- 前端详情缓存 key 按数据源（douban/tmdb/bangumi）共享，不按 tab 区分。同一部作品在综合推荐和热门电影 tab 共享缓存
 
 ### 下载管理
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
