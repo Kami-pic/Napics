@@ -51,10 +51,17 @@
 - XL720 响应极慢（超时 12s + 1 次重试），搜索质量差需中文子串过滤
 - 搜索词传递：用户手动输入时不传 cn_name/en_name（让后端用 query 分词），点击标签时才传辅助参数
 
-### 搜索词构造
-- cnName：从 clean_name 提取中文字符，cnParts 用 Set 去重
-- enName：shadow_name 去年份再去中文字符 > clean_name 中英文部分
-- 搜索框默认词：cnName + enName（cn/en 实质相同时只用 cn）
+### 搜索词构造（多语言搜索词系统）
+- 搜索词映射器：`search_keyword_mapper.py`，为每个搜索源选择最佳语言搜索词 + 回退链
+- 三语言字段：cn（中文）/ en（英文）/ original（日/韩/法等原始语言名），来自 clean_name_system
+- 源→语言优先级：Prowlarr/Bitsearch/YTS 用 en，磁力熊/XL720 用 cn，Nyaa 用 original，蜜柑/ACG.RIP/萌番组 用 cn
+- 回退链：每个源 0 结果时自动换词（最多 3 轮），在 SSE future 内部同步完成
+- 季号拼接：中文源"第N季"，英文源"S0N"，格式跟源走不跟词的语言走
+- SSE source_done 事件返回 search_keywords（搜过的词列表）+ hit_keyword（命中的词）
+- 单源搜索端点：`/api/search/source`，JSON 响应，支持 fallback_keywords
+- 前端源 Tab 切换：SourceTabs 组件，每个 Tab 独立 keyword/results 状态
+- 英文名获取：TMDB 用 `_get_english_title(language=en-US)` 主动获取；豆瓣从 subtitle 中用 detect_language 提取；Bangumi 无英文名
+- 关键红线：original_title 不能直接当英文名（中国电影是中文、日本动画是日文），必须做语言判断
 - 保存路径：优先 searchContext.savePath > currentFolder > NAS 根路径
 - discoverUtils.ts 的 normalizeItem 是所有推荐/探索/搜索数据的统一入口，新增字段必须在此传递
 

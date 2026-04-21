@@ -158,3 +158,11 @@
 - jp_name/jpName 统一改为 original_name/originalName（与 clean_name_system 对齐）
 - 83 个后端测试全绿（25 mapper + 58 综合），前端构建通过
 **决策**: original 字段放所有非中非英的原始语言名（日/韩/法等），不单独设 jp 字段；回退链在 future 内部同步完成共享超时；季号格式跟源走不跟词的语言走
+
+## 2026-04-21 英文名缺失修复 + 全场景接入验证
+**变更**:
+- discover.py `_inject_clean_names` 增强：用 `detect_language` 判断 original_title 语言，正确分配到 en/original；从 subtitle 中提取英文名（豆瓣格式 "Inception / 盗梦空间"）
+- library.py scan 切换到 `clean_from_filename`，生成结构化 cn/en/original 三字段（替代旧的 `_clean_filename_for_folder`）
+- 128 个测试全绿（25 mapper + 58 综合 + 45 英文名修复），覆盖 discover 注入/文件名解析/搜索词映射/语言检测/端到端链路
+**决策**: original_title 不能直接当英文名用（中国电影是中文、日本动画是日文），必须做语言判断后分配；subtitle 中的英文名用 detect_language 提取而非正则猜测
+**踩坑**: 豆瓣 original_title 对中国电影返回中文（和 title 相同），TMDB original_title 对中国电影也返回中文；Bangumi 完全没有英文名字段
