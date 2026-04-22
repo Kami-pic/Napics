@@ -23,14 +23,15 @@ match_items(items, subscription):
 ## Quality Cutoff（_filter_episodes）
 
 - subscription.target_quality 非空时启用
+- **仅在洗版模式（best_version=True）下生效**，正常追更模式不受 cutoff 影响
 - 遍历 downloaded_episodes，解析每集的 quality_tag
 - 质量 rank >= target_quality 的 rank → 加入 cutoff_episodes 集合
-- 匹配时跳过 cutoff_episodes 中的集号（即使有更好版本也不再搜索）
+- 洗版匹配时跳过 cutoff_episodes 中的集号
 
 ## 集数匹配规则
 
 - 电影：`"0" not in downloaded` 时通过
 - 剧集正常模式：`ep_key not in downloaded` 时通过（只下缺失集）
 - 剧集洗版模式：不受已下载限制，但 Quality Cutoff 仍生效
-- 整季包：有 S01 但无 E01 → `_looks_like_season_pack` → 通过
+- 整季包：`_looks_like_season_pack` → 有 S01 但无 E01，或包含 COMPLETE/全集/BATCH/合集
 - 指纹去重：同 info_hash 不重复推送

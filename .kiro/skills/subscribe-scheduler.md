@@ -5,14 +5,14 @@
 ## 双通道架构
 
 ```
-main.py startup → _get_scheduler().start()
+main.py startup → routes/subscribe._get_scheduler()（内部自动 start）
   → _loop() 每 5 分钟：
     ├── _tick()：RSS 通道
+    │   ├── _retry_failed_downloads(active_subs) — 先检测失败任务
     │   ├── 遍历活跃订阅
     │   ├── should_search_now() 判断是否该搜（支持自定义间隔）
     │   ├── 日历触发：今天有新集播出时强制搜索
-    │   ├── 逐源 fetch → match_items → handle_results
-    │   └── _retry_failed_downloads() 检测失败任务换候选
+    │   └── 逐源 fetch → match_items → handle_results
     │
     └── _tick_search()：直搜通道（每 4 小时）
         ├── 只搜无 RSS 的源（磁力熊/XL720/Bitsearch）
@@ -35,7 +35,7 @@ main.py startup → _get_scheduler().start()
 ## 新增 RSS 源步骤
 
 1. 新建 `rss_source_xxx.py`，继承 `RSSSourceBase`，实现 `fetch()`
-2. `search_keyword_mapper.py` 加 SOURCE_LANG_PRIORITY + 季号集合
+2. `search_keyword_mapper.py` 加 SOURCE_LANG_PRIORITY + CN_SEASON_SOURCES 或 EN_SEASON_SOURCES
 3. `routes/subscribe.py` 的 `_get_source_manager()` 中注册
 4. 参考 `rss_source_eztv.py`
 
