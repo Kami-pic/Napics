@@ -41,6 +41,20 @@
 - prompt 集中在 ai_prompts.py 一个文件，方便调优和版本对比
 - chat_json 两层保护：_extract_json（格式兼容）+ _validate_schema（结构校验）
 
+## 2026-04-22 订阅系统 Phase 4a/4b（RSS 源扩展 + 反馈闭环）
+**变更**:
+- Phase 4a：新增 4 个 RSS 源（动漫花园/ACG.RIP/Bangumi Moe/YTS），全部注册到 RSSSourceManager，共 8 个 RSS 源
+- Phase 4b：通知系统（notification_service.py）— 搜索日志 + 下载/洗版/发现资源/自动暂停通知，预留 Bark/Server酱/Webhook 外部推送
+- Phase 4b：搜索结果缓存（SearchResultCache，同源+同关键词 30 分钟 TTL，500 条 LRU）
+- Phase 4b：全局速率限制（RateLimiter，每源每分钟最多 4 次请求）
+- subscriber.py 新增 SearchLogEntry/NotificationEntry 模型 + search_logs/notifications 字段
+- routes/subscribe.py 新增 4 个 API 端点（/logs, /notifications, /notifications/read, /notifications/unread）
+- download_manager.py 下载完成时写入通知（区分追更/洗版）
+- rss_engine.py RSS 和直搜通道搜索后自动写入搜索日志
+- 前端 useSubscriptions.ts + api.ts 同步更新类型和 API 方法
+- 28 个测试全绿（RSS 源解析 14 + 通知服务 4 + 缓存 4 + 速率限制 2 + 模型兼容 4）
+**架构决策**: 通知持久化到 subscriptions.json 的 notifications 字段（每订阅最多 100 条），不单独建通知文件；搜索日志同理（每订阅最多 50 条）；外部推送预留接口但不实现，等实际需求再接入
+
 ## 2026-04-22 订阅系统重设计 Phase 0-3b + 修复轮（完整交付）
 **变更**:
 - Phase 0：SubscriptionManager 全局单例
