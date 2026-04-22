@@ -135,11 +135,23 @@ class SubscriptionManager:
                                 logger.info(f"[Subscriber] TMDB 年份不匹配: '{search_name}' 期望{year} 实际{candidate_date[:4]}")
                 except Exception as e:
                     logger.error(f"[Subscriber] TMDB 补全失败 '{search_name}': {e}")
+        new_purpose = data.get("purpose", "follow")
+        conflict_warning = ""
         for sub in self.subscriptions:
+            if sub.state == "completed":
+                continue
+            same_work = False
             if tmdb_id and sub.tmdb_id == tmdb_id and sub.season == season:
-                return {"status": "error", "message": f"已订阅: {sub.title}"}
-            if sub.title == title and sub.year == year and sub.season == season:
-                return {"status": "error", "message": f"已订阅: {sub.title}"}
+                same_work = True
+            elif sub.title == title and sub.year == year and sub.season == season:
+                same_work = True
+            if same_work:
+                existing_purpose = getattr(sub, "purpose", "follow")
+                if existing_purpose == new_purpose:
+                    return {"status": "error", "message": f"已订阅: {sub.title}（{existing_purpose}）"}
+                else:
+                    # 不同 purpose（追更+洗版）允许共存，给 warning
+                    conflict_warning = f"该作品已有{'追更' if existing_purpose == 'follow' else '洗版'}订阅，将同时开启{'洗版' if new_purpose == 'upgrade' else '追更'}"
 
         # 检查媒体库是否已有
         local_warning = ""
@@ -238,6 +250,8 @@ class SubscriptionManager:
         result = {"status": "ok", "subscription": sub.model_dump()}
         if local_warning:
             result["warning"] = local_warning
+        if conflict_warning:
+            result["warning"] = (result.get("warning", "") + " " + conflict_warning).strip()
         return result
 
     def get(self, sub_id: str) -> Optional[Subscription]:

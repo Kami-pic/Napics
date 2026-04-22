@@ -21,10 +21,12 @@ _QUALITY_MIN_RANK = {
 def match_items(items: List[RSSItem], subscription) -> List[RSSItem]:
     """对 RSS 条目列表执行匹配过滤，返回符合订阅要求的条目。
 
-    过滤链：质量 → 包含/排除关键词 → 集数匹配（含 Quality Cutoff）→ 指纹去重
-    best_version 模式下跳过"已下载"限制，只做质量比较。
+    过滤链：标题匹配 → 质量 → 包含/排除关键词 → 集数匹配（含 Quality Cutoff）→ 指纹去重
     """
     result = items
+
+    # 0. 标题匹配（跨语言，用 L1+L2）
+    result = _filter_title_match(result, subscription)
 
     # 1. 质量过滤
     result = _filter_quality(result, subscription.quality)
@@ -36,6 +38,47 @@ def match_items(items: List[RSSItem], subscription) -> List[RSSItem]:
     result = _filter_episodes(result, subscription)
 
     return result
+
+
+def _filter_title_match(items: List[RSSItem], subscription) -> List[RSSItem]:
+    """标题匹配过滤：用 L1 normalize + L2 match_chain 做跨语言匹配。
+
+    从订阅的 aliases 构造候选名称列表，和 RSS 条目标题做匹配。
+    match_score < 20 的条目过滤掉（明显不相关）。
+    """
+    if not items:
+        return items
+
+    # 构造候选名称
+    aliases = getattr(subscription, "aliases", {}) or {}
+    candidates = []
+    if subscription.title:
+        candidates.append(subscription.title)
+    for key in ("cn", "en", "original"):
+        for name in (aliases.get(key) or []):
+            if name and name not in candidates:
+                candidates.append(name)
+    if subscription.search_keyword and subscription.search_keyword not in candidates:
+        candidates.append(subscription.search_keyword)
+
+    if not candidates:
+        return items
+
+    try:
+        from match_scoring import match_chain
+        from search_helpers import extract_bt_title_for_match
+
+        filtered = []
+        for item in items:
+            bt_clean = extract_bt_title_for_match(item.title)
+            targets = [bt_clean] if bt_clean else [item.title]
+            score = match_chain(candidates, targets, [])
+            if score >= 20:
+                filtered.append(item)
+        return filtered
+    except Exception:
+        # L1/L2 导入失败时不过滤，保持原有行为
+        return items
 
 
 def _filter_quality(items: List[RSSItem], min_quality: str) -> List[RSSItem]:

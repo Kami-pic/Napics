@@ -145,26 +145,36 @@ def get_calendar():
                 logger.error(f"[Calendar] TMDB {sub.title} 获取失败: {e}")
 
         # TMDB 没有放送日期时 fallback 到 Bangumi（日漫常见）
-        if not found_episodes and sub.total_episode > 0:
+        if not found_episodes:
             try:
-                downloaded = set(sub.downloaded_episodes.keys())
-                # 简单 fallback：用订阅创建时间 + 每周一集推算播出日期
-                from datetime import datetime, timedelta
-                base_date = datetime.strptime(sub.created_at, "%Y-%m-%d %H:%M:%S") if sub.created_at else datetime.now()
-                for ep_num in range(1, sub.total_episode + 1):
-                    air_date = (base_date + timedelta(weeks=ep_num - 1)).strftime("%Y-%m-%d")
-                    calendar.append({
-                        "subscription_id": sub.id,
-                        "title": sub.title,
-                        "season": sub.season or 1,
-                        "episode": ep_num,
-                        "episode_title": "",
-                        "air_date": air_date,
-                        "downloaded": str(ep_num) in downloaded,
-                        "poster": sub.poster,
-                    })
+                import bangumi_client as _bgm
+                # 尝试用标题搜索 Bangumi 获取 bgm_id
+                bgm_episodes = []
+                bgm_results = _bgm.search(sub.title, media_type="动画")
+                if bgm_results:
+                    bgm_id = bgm_results[0].get("bgm_id", 0)
+                    if bgm_id:
+                        bgm_episodes = _bgm.get_episodes(bgm_id)
+                if bgm_episodes:
+                    downloaded = set(sub.downloaded_episodes.keys())
+                    for ep in bgm_episodes:
+                        ep_num = ep.get("episode", 0)
+                        air_date = ep.get("air_date", "")
+                        if not ep_num:
+                            continue
+                        calendar.append({
+                            "subscription_id": sub.id,
+                            "title": sub.title,
+                            "season": sub.season or 1,
+                            "episode": ep_num,
+                            "episode_title": ep.get("name_cn", "") or ep.get("name", ""),
+                            "air_date": air_date,
+                            "downloaded": str(ep_num) in downloaded,
+                            "poster": sub.poster,
+                        })
+                        found_episodes = True
             except Exception as e:
-                logger.error(f"[Calendar] 推算 {sub.title} 播出日期失败: {e}")
+                logger.error(f"[Calendar] Bangumi fallback {sub.title} 失败: {e}")
 
     calendar.sort(key=lambda x: x.get("air_date", ""))
     return calendar

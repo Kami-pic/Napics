@@ -207,3 +207,36 @@ def get_detail(bgm_id: int) -> Optional[Dict]:
     except Exception as e:
         logger.error(f"[Bangumi] detail error: {e}")
         return None
+
+
+def get_episodes(bgm_id: int) -> List[Dict]:
+    """获取 Bangumi 条目的每集信息（含播出日期）。
+
+    返回: [{"episode": 1, "air_date": "2025-04-05", "name": "第1话 xxx", "name_cn": "xxx"}, ...]
+    """
+    url = f"{BASE}/v0/episodes"
+    try:
+        resp = requests.get(
+            url, headers=HEADERS, timeout=10,
+            params={"subject_id": bgm_id, "type": 0, "limit": 100},
+            proxies=_get_proxies() or None,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data", []) if isinstance(data, dict) else data
+        episodes = []
+        for ep in items:
+            air_date = ep.get("airdate", "") or ""
+            ep_num = ep.get("ep", 0) or ep.get("sort", 0)
+            if not ep_num:
+                continue
+            episodes.append({
+                "episode": int(ep_num),
+                "air_date": air_date,
+                "name": ep.get("name", ""),
+                "name_cn": ep.get("name_cn", ""),
+            })
+        return episodes
+    except Exception as e:
+        logger.error(f"[Bangumi] episodes error bgm_id={bgm_id}: {e}")
+        return []
