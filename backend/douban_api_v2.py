@@ -3,6 +3,7 @@
 """
 import base64
 import hashlib
+import logging
 import hmac
 import json
 import os
@@ -13,7 +14,7 @@ from datetime import datetime
 from typing import Optional, Dict, List, Any
 from urllib import parse
 
-
+logger = logging.getLogger(__name__)
 # ── 签名参数（豆瓣 App 内置，公开已知） ──
 _API_SECRET_KEY = "bf7dddc7c9cfe6f7"
 _API_KEY = "0dad551ec0f84ed02907ff5c42e8ec70"
@@ -111,7 +112,7 @@ def _set_cache(cache_key: str, data: Any):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
     except Exception as e:
-        print(f"[DoubanV2] 缓存写入失败: {e}")
+        logger.error(f"[DoubanV2] 缓存写入失败: {e}")
 
 
 def _make_cache_key(endpoint: str, **kwargs) -> str:
@@ -154,7 +155,7 @@ def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
             timeout=8,
         )
         if resp.status_code != 200:
-            print(f"[DoubanV2] {endpoint} 请求失败: HTTP {resp.status_code}")
+            logger.error(f"[DoubanV2] {endpoint} 请求失败: HTTP {resp.status_code}")
             return None
         data = resp.json()
         # 缓存成功结果
@@ -162,7 +163,7 @@ def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
             _set_cache(cache_key, data)
         return data
     except Exception as e:
-        print(f"[DoubanV2] {endpoint} 请求异常: {e}")
+        logger.info(f"[DoubanV2] {endpoint} 请求异常: {e}")
         return None
 
 
@@ -314,14 +315,14 @@ def _request_detail(media_type: str, subject_id: str) -> Optional[Dict]:
             timeout=8,
         )
         if resp.status_code != 200:
-            print(f"[DoubanV2] {media_type}_detail/{subject_id} 请求失败: HTTP {resp.status_code}")
+            logger.error(f"[DoubanV2] {media_type}_detail/{subject_id} 请求失败: HTTP {resp.status_code}")
             return None
         data = resp.json()
         if data:
             _set_cache(cache_key, data)
         return _normalize_detail(data) if data else None
     except Exception as e:
-        print(f"[DoubanV2] {media_type}_detail/{subject_id} 请求异常: {e}")
+        logger.info(f"[DoubanV2] {media_type}_detail/{subject_id} 请求异常: {e}")
         return None
 
 
@@ -458,6 +459,7 @@ def _normalize_detail(data: Dict) -> Optional[Dict]:
     if durations:
         # "120分钟" → 120
         import re
+
         m = re.search(r"(\d+)", str(durations[0]))
         if m:
             base["runtime"] = int(m.group(1))

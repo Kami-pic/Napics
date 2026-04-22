@@ -13,7 +13,6 @@ from scraper_base import ScraperBase
 from quality_parser import parse_quality, get_quality_level
 
 logger = logging.getLogger(__name__)
-
 # YTS 常用 tracker 列表，用于构造磁力链接
 _YTS_TRACKERS = [
     "udp://open.demonii.com:1337/announce",

@@ -4,9 +4,10 @@
 从 routes/search.py 拆出，供路由层调用。
 """
 import re
+import logging
 from quality_parser import compute_quality_score
 
-
+logger = logging.getLogger(__name__)
 # ── BT 标题清洗（专为搜索匹配设计，比 parse_filename 更激进）──
 _BT_TECH_TAGS_RE = re.compile(
     r'(?i)\b('
@@ -190,6 +191,7 @@ def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
 def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
     """合并直搜源结果到已有列表，按 infohash 去重。"""
     from shared import (
+
         config_m as _cfg,
         _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper,
         _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper,
@@ -227,8 +229,8 @@ def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
                 merged.append(r)
                 added += 1
             if added:
-                print(f"[Search] {name} 补充 {added} 条结果")
+                logger.info(f"[Search] {name} 补充 {added} 条结果")
         except Exception as e:
-            print(f"[Search] {name} 失败: {e}")
+            logger.error(f"[Search] {name} 失败: {e}")
 
     return merged

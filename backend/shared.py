@@ -5,6 +5,7 @@
 import os
 import sys
 import json
+import logging
 import re
 import requests
 import shutil
@@ -12,6 +13,13 @@ import subprocess
 import threading
 import time
 from typing import List, Optional, Dict
+
+# ── 统一 logging 配置 ──
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%H:%M:%S",
+)
 
 # 强制重配置 Windows 端的 stdout 编码，防止 GBK 崩溃
 if sys.platform == "win32":
@@ -48,6 +56,7 @@ from pan_search_service import PanSearchService
 from pan_models import PanSearchResponse, TransferRequest, TransferResult
 from local_media_matcher import LocalMediaMatcher
 
+logger = logging.getLogger(__name__)
 # ── 全局单例 ──
 
 config_m = config_manager.ConfigManager()
@@ -63,7 +72,7 @@ try:
     _init_lib = config_m.load_library()
     media_matcher.build_index(_init_lib)
 except Exception as _e:
-    print(f"[Shared] 媒体库索引构建失败: {_e}")
+    logger.error(f"[Shared] 媒体库索引构建失败: {_e}")
 
 # 注册回调：save_library 后自动刷新索引
 config_m._on_library_save_callbacks.append(lambda lib: media_matcher.build_index(lib))

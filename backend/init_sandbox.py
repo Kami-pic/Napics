@@ -1,6 +1,8 @@
 import os
+import logging
 import shutil
 
+logger = logging.getLogger(__name__)
 SANDBOX_DIR = os.path.join(os.path.dirname(__file__), "test_sandbox")
 
 def create_file(path, content="", size=0):
@@ -80,7 +82,7 @@ def reset_sandbox():
     create_file(os.path.join(elfen_dir, "Elfen Lied 01 (1080p).mkv"), "")
     create_file(os.path.join(elfen_dir, "Elfen Lied SP.mkv"), "") # 特典文件
     
-    print(f"✅ '地狱级难度的沙盘' 已重置: {SANDBOX_DIR}")
+    logger.info(f"✅ '地狱级难度的沙盘' 已重置: {SANDBOX_DIR}")
 
 if __name__ == "__main__":
     reset_sandbox()

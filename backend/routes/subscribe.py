@@ -1,5 +1,7 @@
 """订阅路由：CRUD + 手动搜索 + RSS 源管理。"""
 
+import os
+import logging
 from fastapi import APIRouter
 from typing import Optional
 
@@ -8,6 +10,8 @@ from subscriber import SubscriptionManager
 from alias_resolver import AliasResolver
 from rss_engine import RSSSourceManager, SubscriptionScheduler
 from rss_source_prowlarr import ProwlarrRSSSource
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -20,7 +24,6 @@ _scheduler: Optional[SubscriptionScheduler] = None
 def _get_sub_manager() -> SubscriptionManager:
     global _sub_manager
     if _sub_manager is None:
-        import os
         base = os.path.dirname(os.path.abspath(__file__))
         _sub_manager = SubscriptionManager(base_path=os.path.dirname(base))
     return _sub_manager
@@ -44,7 +47,7 @@ def _get_source_manager() -> RSSSourceManager:
             mikan_source = MikanRSSSource(proxy=proxy)
             _source_manager.register(mikan_source)
         except Exception as e:
-            print(f"[Subscribe] 蜜柑 RSS 源注册失败: {e}")
+            logger.error(f"[Subscribe] 蜜柑 RSS 源注册失败: {e}")
         # 注册 Nyaa RSS 源
         try:
             from rss_source_nyaa import NyaaRSSSource
@@ -52,7 +55,7 @@ def _get_source_manager() -> RSSSourceManager:
             nyaa_source = NyaaRSSSource(proxy=proxy)
             _source_manager.register(nyaa_source)
         except Exception as e:
-            print(f"[Subscribe] Nyaa RSS 源注册失败: {e}")
+            logger.error(f"[Subscribe] Nyaa RSS 源注册失败: {e}")
     return _source_manager
 
 
@@ -60,6 +63,7 @@ def _get_scheduler() -> SubscriptionScheduler:
     global _scheduler
     if _scheduler is None:
         from shared import _get_download_manager, config_m
+
         _scheduler = SubscriptionScheduler(
             sub_manager=_get_sub_manager(),
             source_manager=_get_source_manager(),
@@ -136,7 +140,7 @@ def get_calendar():
                     "poster": sub.poster,
                 })
         except Exception as e:
-            print(f"[Calendar] {sub.title} 获取失败: {e}")
+            logger.error(f"[Calendar] {sub.title} 获取失败: {e}")
 
     calendar.sort(key=lambda x: x.get("air_date", ""))
     return calendar

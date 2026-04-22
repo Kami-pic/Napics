@@ -1,4 +1,5 @@
 import os
+import logging
 import json
 import sys
 
@@ -8,10 +9,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from config_manager import ConfigManager
 from scraper import read_video_nfo, get_local_poster_path
 
+logger = logging.getLogger(__name__)
 def force_repair():
     cm = ConfigManager()
     library = cm.load_library()
-    print(f"Starting repair for {len(library)} items...")
+    logger.info(f"Starting repair for {len(library)} items...")
     
     repaired_count = 0
     poster_count = 0
@@ -43,9 +45,9 @@ def force_repair():
             poster_count += 1
             
         if i % 100 == 0:
-            print(f"Processed {i}/{len(library)} items...")
+            logger.info(f"Processed {i}/{len(library)} items...")
 
-    print(f"Repair complete. Metadata updated: {repaired_count}, Posters found: {poster_count}")
+    logger.info(f"Repair complete. Metadata updated: {repaired_count}, Posters found: {poster_count}")
     cm.save_library(library)
 
 if __name__ == "__main__":

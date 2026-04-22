@@ -9,6 +9,7 @@
 """
 
 import os
+import logging
 import json
 import uuid
 import threading
@@ -16,7 +17,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
-
+logger = logging.getLogger(__name__)
 SUBSCRIPTIONS_FILE = "subscriptions.json"
 
 
@@ -116,11 +117,11 @@ class SubscriptionManager:
                         if not year or not candidate_date or candidate_date.startswith(year):
                             tmdb_id = candidate_id
                             data["tmdb_id"] = tmdb_id
-                            print(f"[Subscriber] TMDB 自动补全: {title} → tmdb_id={tmdb_id}")
+                            logger.info(f"[Subscriber] TMDB 自动补全: {title} → tmdb_id={tmdb_id}")
                         else:
-                            print(f"[Subscriber] TMDB 年份不匹配: {title} 期望{year} 实际{candidate_date[:4]}")
+                            logger.info(f"[Subscriber] TMDB 年份不匹配: {title} 期望{year} 实际{candidate_date[:4]}")
             except Exception as e:
-                print(f"[Subscriber] TMDB 补全失败: {e}")
+                logger.error(f"[Subscriber] TMDB 补全失败: {e}")
         for sub in self.subscriptions:
             if tmdb_id and sub.tmdb_id == tmdb_id and sub.season == season:
                 return {"status": "error", "message": f"已订阅: {sub.title}"}
@@ -140,7 +141,7 @@ class SubscriptionManager:
                 if status.startswith("owned"):
                     local_warning = f"媒体库已有该资源（{folder}），仍然创建订阅"
             except Exception as e:
-                print(f"[Subscriber] 媒体库检查失败: {e}")
+                logger.error(f"[Subscriber] 媒体库检查失败: {e}")
 
         # 预拉取别名
         aliases = {"cn": [], "en": [], "jp": []}
@@ -153,7 +154,7 @@ class SubscriptionManager:
                     "jp": alias_set.jp_names or [],
                 }
             except Exception as e:
-                print(f"[Subscriber] 别名拉取失败: {e}")
+                logger.error(f"[Subscriber] 别名拉取失败: {e}")
 
         # 获取剧集总集数
         total_episode = data.get("total_episode", 0)
@@ -190,9 +191,9 @@ class SubscriptionManager:
                         sub.downloaded_episodes[str(ep_num)] = EpisodeInfo(
                             source="local", timestamp=now, title=f"本地已有 E{ep_num:02d}",
                         )
-                    print(f"[Subscriber] 媒体库联动: {title} 已有 {len(local_episodes)} 集")
+                    logger.info(f"[Subscriber] 媒体库联动: {title} 已有 {len(local_episodes)} 集")
             except Exception as e:
-                print(f"[Subscriber] 媒体库联动失败: {e}")
+                logger.error(f"[Subscriber] 媒体库联动失败: {e}")
 
         with self._lock:
             self.subscriptions.append(sub)
@@ -261,7 +262,7 @@ class SubscriptionManager:
                 if result and result.data:
                     return result.data.get("number_of_episodes", 0)
         except Exception as e:
-            print(f"[Subscriber] TMDB 获取集数失败: {e}")
+            logger.error(f"[Subscriber] TMDB 获取集数失败: {e}")
         return 0
 
     def _scan_local_episodes(self, title: str, year: str, season: Optional[int],
@@ -292,13 +293,14 @@ class SubscriptionManager:
                     episodes.add(ep)
             return sorted(episodes)
         except Exception as e:
-            print(f"[Subscriber] 扫描本地集数失败: {e}")
+            logger.error(f"[Subscriber] 扫描本地集数失败: {e}")
             return []
 
     @staticmethod
     def _extract_episode_from_filename(filename: str) -> Optional[int]:
         """从文件名提取集号"""
         import re
+
         patterns = [
             re.compile(r"S\d{1,2}E(\d{1,4})", re.IGNORECASE),
             re.compile(r"[\[\s]E(\d{1,4})[\]\s\.\-]", re.IGNORECASE),
@@ -363,7 +365,7 @@ class SubscriptionManager:
 
             self._save()
 
-        print(f"[Subscriber] 下载完成回调: {sub.title} E{ep_key}, state={sub.state}")
+        logger.info(f"[Subscriber] 下载完成回调: {sub.title} E{ep_key}, state={sub.state}")
 
     # ── 持久化 ──
 
@@ -384,9 +386,9 @@ class SubscriptionManager:
                         str(ep): {"timestamp": ""} for ep in dl_eps
                     }
                 self.subscriptions.append(Subscription(**item))
-            print(f"[Subscriber] 加载 {len(self.subscriptions)} 条订阅")
+            logger.info(f"[Subscriber] 加载 {len(self.subscriptions)} 条订阅")
         except Exception as e:
-            print(f"[Subscriber] 加载失败: {e}")
+            logger.error(f"[Subscriber] 加载失败: {e}")
             self.subscriptions = []
 
     def _save(self):
@@ -398,4 +400,4 @@ class SubscriptionManager:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             os.replace(tmp, self._file_path)
         except Exception as e:
-            print(f"[Subscriber] 保存失败: {e}")
+            logger.error(f"[Subscriber] 保存失败: {e}")

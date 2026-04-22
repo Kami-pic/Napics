@@ -3,6 +3,7 @@
 从 routes/organize.py 拆分而来
 """
 import os
+import logging
 import re
 import shutil
 import asyncio
@@ -17,6 +18,7 @@ from shared import (
 )
 import scraper, organizer
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -302,6 +304,7 @@ def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "", new_f
 async def organize_dry_run(req: RelocateRequest):
     """阶段一：整理替换探测（原地识别模式）"""
     import traceback
+
     try:
         dm = _get_download_manager()
         task = dm.get_task(req.task_id)
@@ -334,23 +337,23 @@ async def organize_dry_run(req: RelocateRequest):
                 if qb:
                     file_info_list = qb.get_torrent_files(task.downloader_hash)
             except Exception as qe:
-                print(f"[DryRun] qB 获取文件列表失败: {qe}")
+                logger.error(f"[DryRun] qB 获取文件列表失败: {qe}")
         
         # 提取纯路径名作为白名单（如果为空则传 None，触发 relocator 的全量探测逻辑）
         new_files = [f["name"] for f in file_info_list] if file_info_list else None
         
         try:
-            print(f"\n[DryRun] task={task.media_name}, save_path={task.save_path}, whitelist={len(new_files) if new_files else 'None'}")
+            logger.info(f"\n[DryRun] task={task.media_name}, save_path={task.save_path}, whitelist={len(new_files) if new_files else 'None'}")
         except UnicodeEncodeError:
-            print("\n[DryRun] task=<UnicodeName>, whitelist=", len(new_files) if new_files else 'None')
+            logger.info("\n[DryRun] task=<UnicodeName>, whitelist=", len(new_files) if new_files else 'None')
 
         rel = _get_file_relocator()
         res = await rel.relocate(task, new_files_whitelist=new_files)
 
         try:
-            print(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
+            logger.error(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
         except UnicodeEncodeError:
-            print(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}")
+            logger.info(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}")
 
         if res.status == "awaiting_confirm":
             # 🛡️ 兜底逻辑：如果 qB 没给文件列表，从推演计划中提取已识别的视频
@@ -389,7 +392,7 @@ async def organize_dry_run(req: RelocateRequest):
     except Exception as e:
         tb = traceback.format_exc()
         try:
-            print(tb)
+            logger.info(tb)
         except UnicodeEncodeError:
             # 安全打印以防 gbk 错误
             pass

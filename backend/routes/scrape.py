@@ -2,6 +2,7 @@
 路由模块：scrape — 影子名、索引器优先级、刮削（TMDB 选择/执行/读取/删除）
 """
 import os
+import logging
 from typing import List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -12,6 +13,7 @@ from shared import (
 )
 import tmdb_client, scraper, organizer
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/media/shadow-name")
@@ -73,7 +75,7 @@ def get_indexer_priorities():
             except Exception:
                 pass
     except Exception as e:
-        print(f"[Indexers] Failed to fetch from Prowlarr: {e}")
+        logger.error(f"[Indexers] Failed to fetch from Prowlarr: {e}")
     
     # 合并 Prowlarr 数据和本地配置
     local_map = {idx.name: idx for idx in indexer_m.indexers}
@@ -165,6 +167,7 @@ class IndexerPrioritySaveRequest(BaseModel):
 def save_indexer_priorities(req: IndexerPrioritySaveRequest):
     """保存索引器优先级配置"""
     from indexer_priority_manager import IndexerConfig
+
     configs = [
         IndexerConfig(
             indexer_id=item.indexer_id,
@@ -214,7 +217,7 @@ def scrape_by_name(name: str, path: str = "", enhanced: bool = False):
             }
         except Exception as e:
             # 增强刮削失败时降级到普通刮削
-            print(f"[Scrape] Enhanced scrape failed, fallback: {e}")
+            logger.error(f"[Scrape] Enhanced scrape failed, fallback: {e}")
     
     # 普通刮削
     result = client.scrape_by_filename(name)
@@ -439,7 +442,7 @@ def delete_scrape(path: str, recursive: bool = False):
     recursive=True：同时删除视频同名的刮削文件
     """
     deleted = []
-    print(f"[DeleteScrape] path={path} isdir={os.path.isdir(path)} recursive={recursive}")
+    logger.info(f"[DeleteScrape] path={path} isdir={os.path.isdir(path)} recursive={recursive}")
     if os.path.isdir(path):
         # 文件夹级别刮削：删除标准文件
         for name in ["movie.nfo", "tvshow.nfo", "season.nfo", "poster.jpg", "poster.png",

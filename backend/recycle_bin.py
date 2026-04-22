@@ -7,6 +7,7 @@
 """
 
 import os
+import logging
 import json
 import shutil
 import uuid
@@ -14,7 +15,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from pydantic import BaseModel
 
-
+logger = logging.getLogger(__name__)
 RECYCLE_META_FILE = "recycle_bin.json"
 
 
@@ -90,7 +91,7 @@ class RecycleBin:
             self._save()
             return entry
         except Exception as e:
-            print(f"[RecycleBin] 移入回收站失败: {file_path} → {e}")
+            logger.error(f"[RecycleBin] 移入回收站失败: {file_path} → {e}")
             return None
 
     def restore(self, entry_id: str) -> bool:
@@ -123,7 +124,7 @@ class RecycleBin:
             self._save()
             return True
         except Exception as e:
-            print(f"[RecycleBin] 恢复失败: {entry.recycle_path} → {e}")
+            logger.error(f"[RecycleBin] 恢复失败: {entry.recycle_path} → {e}")
             return False
 
     def cleanup_expired(self) -> int:
@@ -142,7 +143,7 @@ class RecycleBin:
                             os.remove(entry.recycle_path)
                             cleaned += 1
                         except Exception as e:
-                            print(f"[RecycleBin] 删除过期文件失败: {entry.recycle_path} → {e}")
+                            logger.error(f"[RecycleBin] 删除过期文件失败: {entry.recycle_path} → {e}")
                             remaining.append(entry)  # 删除失败的保留
                             continue
                     cleaned += 1  # 文件已不存在也算清理
@@ -184,4 +185,4 @@ class RecycleBin:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"[RecycleBin] 保存元数据失败: {e}")
+            logger.error(f"[RecycleBin] 保存元数据失败: {e}")

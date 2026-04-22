@@ -2,6 +2,7 @@
 路由模块：library
 """
 import os
+import logging
 import json
 import re
 import time
@@ -28,6 +29,7 @@ from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/scan")
@@ -64,7 +66,7 @@ async def scan_path(path: str):
                     else:
                         yield "data: " + json.dumps({"type": "progress", "raw_file_name": os.path.basename(f)}) + "\n\n"
                 except Exception as e:
-                    print(f"[scan] 文件处理失败: {f} — {e}")
+                    logger.error(f"[scan] 文件处理失败: {f} — {e}")
                     fallback = scanner._fallback_info(f)
                     if fallback:
                         rel_dir = os.path.relpath(os.path.dirname(f), path)
@@ -95,7 +97,7 @@ async def scan_path(path: str):
             yield "data: " + json.dumps({"type": "done", "total": len(results)}) + "\n\n"
 
         except Exception as e:
-            print(f"[scan] 扫描异常: {e}")
+            logger.info(f"[scan] 扫描异常: {e}")
             import traceback
             traceback.print_exc()
             if results:
@@ -200,7 +202,7 @@ def quick_sync():
                                 break
                         new_videos.append(info.dict())
                 except Exception as e:
-                    print(f"[sync] 文件处理失败: {fp} — {e}")
+                    logger.error(f"[sync] 文件处理失败: {fp} — {e}")
 
             current_lib.extend(new_videos)
             config_m.save_library(current_lib)
@@ -234,7 +236,7 @@ def quick_sync():
             yield "data: " + json.dumps({"type": "done", "added": len(new_videos), "removed": len(removed), "total": len(current_lib), "shadow_filled": shadow_filled}) + "\n\n"
 
         except Exception as e:
-            print(f"[sync] 快速同步异常: {e}")
+            logger.info(f"[sync] 快速同步异常: {e}")
             import traceback
             traceback.print_exc()
             yield "data: " + json.dumps({"type": "error", "message": str(e)}) + "\n\n"
@@ -540,6 +542,7 @@ def get_library_tree():
         from clean_name_system import clean_for_folder, clean_from_filename
         from organizer import _extract_season_number
         import re as _re_pp
+
 
         cat = node.get("category_tag", "") or inherited_tag
         node["parent_category_tag"] = cat

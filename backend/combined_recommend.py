@@ -4,6 +4,7 @@
 复用 text_utils.normalize_text / fuzzy_score 做标题匹配去重。
 """
 import re
+import logging
 import time
 import concurrent.futures
 from typing import List, Dict, Optional, Tuple
@@ -13,7 +14,7 @@ from text_utils import fuzzy_score
 import douban_api_v2
 import bangumi_client
 
-
+logger = logging.getLogger(__name__)
 # ── 去重阈值 ──
 _FUZZY_THRESHOLD = 0.85  # 模糊匹配阈值
 _YEAR_TOLERANCE = 1      # 年份允许 ±1 误差
@@ -245,7 +246,7 @@ def _fallback_fill(current: List[Dict], target: int) -> List[Dict]:
                 if len(fill_items) >= need:
                     break
     except Exception as e:
-        print(f"[CombinedRecommend] top250 补位失败: {e}")
+        logger.error(f"[CombinedRecommend] top250 补位失败: {e}")
 
     # 仍不足则从 weekly 补位
     if len(fill_items) < need:
@@ -265,7 +266,7 @@ def _fallback_fill(current: List[Dict], target: int) -> List[Dict]:
                     if len(fill_items) >= need:
                         break
         except Exception as e:
-            print(f"[CombinedRecommend] weekly 补位失败: {e}")
+            logger.error(f"[CombinedRecommend] weekly 补位失败: {e}")
 
     return current + fill_items[:need]
 
@@ -297,6 +298,7 @@ def get_combined_recommend() -> List[Dict]:
     """
     from shared import get_clients
 
+
     all_items: List[Tuple[Dict, str]] = []
 
     def _fetch_douban():
@@ -308,21 +310,21 @@ def get_combined_recommend() -> List[Dict]:
                 m["media_type"] = m.get("media_type") or "movie"
             results.extend(movies or [])
         except Exception as e:
-            print(f"[CombinedRecommend] 豆瓣电影失败: {e}")
+            logger.error(f"[CombinedRecommend] 豆瓣电影失败: {e}")
         try:
             tvs = douban_api_v2.tv_hot(0, 20)
             for t in (tvs or []):
                 t["media_type"] = t.get("media_type") or "tv"
             results.extend(tvs or [])
         except Exception as e:
-            print(f"[CombinedRecommend] 豆瓣剧集失败: {e}")
+            logger.error(f"[CombinedRecommend] 豆瓣剧集失败: {e}")
         try:
             animes = douban_api_v2.tv_animation(0, 10)
             for a in (animes or []):
                 a["media_type"] = a.get("media_type") or "tv"
             results.extend(animes or [])
         except Exception as e:
-            print(f"[CombinedRecommend] 豆瓣动画失败: {e}")
+            logger.error(f"[CombinedRecommend] 豆瓣动画失败: {e}")
         return [(_normalize_douban(r), "douban") for r in results]
 
     def _fetch_tmdb():
@@ -335,7 +337,7 @@ def get_combined_recommend() -> List[Dict]:
                 items.extend(page_items or [])
             return [(_normalize_tmdb(r), "tmdb") for r in items]
         except Exception as e:
-            print(f"[CombinedRecommend] TMDB 失败: {e}")
+            logger.error(f"[CombinedRecommend] TMDB 失败: {e}")
             return []
 
     def _fetch_bangumi():
@@ -344,7 +346,7 @@ def get_combined_recommend() -> List[Dict]:
             items = bangumi_client.get_hot_anime(0, 20)
             return [(_normalize_bangumi(r), "bangumi") for r in (items or [])]
         except Exception as e:
-            print(f"[CombinedRecommend] Bangumi 失败: {e}")
+            logger.error(f"[CombinedRecommend] Bangumi 失败: {e}")
             return []
 
     # 并发拉取，timeout=5s
@@ -360,7 +362,7 @@ def get_combined_recommend() -> List[Dict]:
                 all_items.extend(result)
             except Exception as e:
                 src = futures[future]
-                print(f"[CombinedRecommend] {src} 超时或异常: {e}")
+                logger.warning(f"[CombinedRecommend] {src} 超时或异常: {e}")
 
     if not all_items:
         return []

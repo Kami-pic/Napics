@@ -1,5 +1,6 @@
 import requests
 import re
+import logging
 import os
 import json
 import unicodedata
@@ -7,6 +8,7 @@ from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 from pydantic import BaseModel
 from text_processing import normalize as normalize_text
 
+logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from enhanced_scorer import EnhancedScorer, MatchResult
     from search_query_builder import SearchQueryBuilder
@@ -544,7 +546,7 @@ class TMDBClient:
                 self._save_cache(cp, {"results": items})
                 all_items.extend(items)
             except Exception as e:
-                print(f"[TMDB] discover/{media_type} page={current_page} 失败: {e}")
+                logger.error(f"[TMDB] discover/{media_type} page={current_page} 失败: {e}")
                 break
 
         return all_items[:count]
@@ -577,7 +579,7 @@ class TMDBClient:
             self._save_cache(cp, {"results": items})
             return items
         except Exception as e:
-            print(f"[TMDB] trending 失败: {e}")
+            logger.error(f"[TMDB] trending 失败: {e}")
             return []
 
     # ── 详情 ──
@@ -625,7 +627,7 @@ class TMDBClient:
             self._save_cache(cp, r.dict())
             return r
         except Exception as e:
-            print(f"TMDB movie detail error: {e}")
+            logger.error(f"TMDB movie detail error: {e}")
             return ScrapeResult()
 
     def get_tv_detail(self, tmdb_id: int) -> ScrapeResult:
@@ -670,7 +672,7 @@ class TMDBClient:
             self._save_cache(cp, r.dict())
             return r
         except Exception as e:
-            print(f"TMDB tv detail error: {e}")
+            logger.error(f"TMDB tv detail error: {e}")
             return ScrapeResult()
 
     def get_season_detail(self, tv_id: int, season_num: int) -> ScrapeResult:
@@ -688,7 +690,7 @@ class TMDBClient:
             self._save_cache(cp, r.dict())
             return r
         except Exception as e:
-            print(f"TMDB season detail error: {e}")
+            logger.error(f"TMDB season detail error: {e}")
             return ScrapeResult()
 
     def get_episode_detail(self, tv_id: int, season_num: int, ep_num: int) -> ScrapeResult:
@@ -708,7 +710,7 @@ class TMDBClient:
             self._save_cache(cp, r.dict())
             return r
         except Exception as e:
-            print(f"TMDB episode detail error: {e}")
+            logger.error(f"TMDB episode detail error: {e}")
             return ScrapeResult()
 
     # ── 智能刮削：解析文件名 + 评分匹配 ──
@@ -796,6 +798,7 @@ class TMDBClient:
                  刮削成功且置信度 high/medium 时自动回填影子名
         """
         from enhanced_scorer import MatchResult
+
 
         # Step 0: 优先使用影子名
         parsed = parse_filename(filename)

@@ -16,7 +16,6 @@ import requests
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
-
 # 夸克 API 基础 URL
 QUARK_API = "https://drive-pc.quark.cn/1/clouddrive"
 QUARK_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"

@@ -7,12 +7,13 @@
 """
 
 import re
+import logging
 from typing import List, Optional
 
 from rss_source_base import RSSSourceBase, RSSItem, extract_episode, extract_season
 from quality_parser import parse_quality, get_quality_level
 
-
+logger = logging.getLogger(__name__)
 class ProwlarrRSSSource(RSSSourceBase):
     """Prowlarr 搜索源"""
 
@@ -29,7 +30,7 @@ class ProwlarrRSSSource(RSSSourceBase):
     def fetch(self, subscription) -> List[RSSItem]:
         """根据订阅信息搜索 Prowlarr，返回标准化结果"""
         if not self._client:
-            print("[ProwlarrRSS] 客户端未初始化")
+            logger.info("[ProwlarrRSS] 客户端未初始化")
             return []
 
         keywords = self._build_search_group(subscription)
@@ -43,7 +44,7 @@ class ProwlarrRSSSource(RSSSourceBase):
             try:
                 results = self._client.search(kw)
             except Exception as e:
-                print(f"[ProwlarrRSS] 搜索失败 '{kw}': {e}")
+                logger.error(f"[ProwlarrRSS] 搜索失败 '{kw}': {e}")
                 continue
 
             for r in results:

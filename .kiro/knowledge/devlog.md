@@ -5,6 +5,15 @@
 
 ---
 
+## 2026-04-22 技术债务清理（3/4 项）
+**变更**:
+- `pan_models.py` Pydantic V2 迁移：4 个 `@validator` → `@field_validator` + `@model_validator(mode="before")`，V2 中有默认值的字段不能用 `field_validator(mode="before")` 自动触发，改用 `model_validator` 统一处理 clean_title/resolution/is_complete 的自动填充
+- `routes/discover.py` 拆分（809→458 行）：enrich_cache 管理 + 清洗名注入 + 本地状态注入 + TMDB 补全逻辑下沉到 `discover_enrich.py`（333 行，业务层），路由文件只保留端点
+- 后端 `print()` → `logging` 模块：38 个核心文件批量替换，`shared.py` 统一 `logging.basicConfig`，每个文件顶层 `logger = logging.getLogger(__name__)`，日志级别按内容自动分类（error/warning/info）
+- 同步更新 `code-style.md`（日志规范）、`structure.md`（新增 discover_enrich.py）
+**踩坑**: 批量替换脚本把 `logger = logging.getLogger(__name__)` 插到了多行 import 中间或 try 块内部（因为脚本找"最后一个 import 行"时没区分顶层和缩进块），需要二次修复脚本 + 4 个文件手动修正
+**未处理**: `routes/search.py` 拆分（标注为订阅重设计 Phase 1b 一并解决）
+
 ## 2026-04-21 智能过滤完整实现：五规则判定 + 跨语言匹配 + 标题占比检查
 **变更**:
 - 智能过滤从空转升级为五规则判定体系（search_helpers.py 的 compute_junk_flags）：

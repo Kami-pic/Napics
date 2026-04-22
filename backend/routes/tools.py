@@ -2,6 +2,7 @@
 路由模块：tools
 """
 import os
+import logging
 import json
 import re
 import time
@@ -28,6 +29,7 @@ from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 
+logger = logging.getLogger(__name__)
 # 批量管理请求模型（移动/复制/删除）
 class BatchRequest(BaseModel):
     action: str  # "delete" | "move" | "copy" | "remove"
@@ -106,7 +108,7 @@ def batch_manage(req: BatchRequest):
                         shutil.move(parent_dir, new_dir)
                         dir_map[parent_dir] = new_dir
                         success.append(p)
-                        print(f"[batch_manage] 封装文件夹移动: {parent_dir} → {new_dir}")
+                        logger.info(f"[batch_manage] 封装文件夹移动: {parent_dir} → {new_dir}")
                     else:
                         # 散装文件：移动视频 + 同名关联文件
                         old_base = os.path.splitext(p)[0]

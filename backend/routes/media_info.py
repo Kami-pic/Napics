@@ -3,6 +3,7 @@
 从 routes/scrape.py 拆分而来
 """
 import os
+import logging
 import json
 import requests
 from typing import List, Optional
@@ -17,6 +18,7 @@ from shared import (
 import tmdb_client, douban_client, bangumi_client, scraper, organizer
 import douban_api_v2
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -246,7 +248,7 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
     - douban: 豆瓣 v2（优先用 id）→ TMDB
     - bangumi: Bangumi（优先用 id）→ 豆瓣 v2 → TMDB
     """
-    print(f"[MediaInfo] 请求: title={title}, year={year}, type={type}, source={source}, id={id}")
+    logger.info(f"[MediaInfo] 请求: title={title}, year={year}, type={type}, source={source}, id={id}")
 
     def _writeback_enrich_cache(detail: dict):
         """如果详情有英文名，回写到 enrich_cache"""
@@ -278,26 +280,26 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
             if cache_key:
                 enrich_cache_put(cache_key, tmdb_id=tmdb_id, en_title=en, tmdb_rating=tmdb_rating)
         except Exception as e:
-            print(f"[MediaInfo] enrich_cache 回写失败: {e}")
+            logger.error(f"[MediaInfo] enrich_cache 回写失败: {e}")
 
     # ── Bangumi 优先路径 ──
     if source == "bangumi":
         bgm_id = int(id) if id and id.isdigit() else 0
-        print(f"[MediaInfo] Bangumi 路径: bgm_id={bgm_id}")
+        logger.info(f"[MediaInfo] Bangumi 路径: bgm_id={bgm_id}")
         bgm_detail = _try_bangumi_detail(title, subtitle, bgm_id=bgm_id)
         if bgm_detail:
-            print(f"[MediaInfo] Bangumi 命中: rating={bgm_detail.get('rating')}, poster={bgm_detail.get('poster_url', '')[:60]}")
+            logger.info(f"[MediaInfo] Bangumi 命中: rating={bgm_detail.get('rating')}, poster={bgm_detail.get('poster_url', '')[:60]}")
             _enrich_ratings(bgm_detail, title, year, type, subtitle)
             _writeback_enrich_cache(bgm_detail)
             return bgm_detail
-        print("[MediaInfo] Bangumi 未命中，fallback 豆瓣")
+        logger.info("[MediaInfo] Bangumi 未命中，fallback 豆瓣")
         db_detail = _try_douban_detail(title, year, type)
         if db_detail:
-            print(f"[MediaInfo] 豆瓣 fallback 命中: source=douban")
+            logger.info(f"[MediaInfo] 豆瓣 fallback 命中: source=douban")
             _enrich_ratings(db_detail, title, year, type, subtitle)
             _writeback_enrich_cache(db_detail)
             return db_detail
-        print("[MediaInfo] 豆瓣也未命中，fallback TMDB")
+        logger.info("[MediaInfo] 豆瓣也未命中，fallback TMDB")
         result = _try_tmdb_detail(title, year, type, subtitle)
         if result and result.get("found"):
             _enrich_ratings(result, title, year, type, subtitle)
@@ -306,14 +308,14 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
 
     # ── 豆瓣优先路径 ──
     if source == "douban":
-        print(f"[MediaInfo] 豆瓣路径: douban_id={id}")
+        logger.info(f"[MediaInfo] 豆瓣路径: douban_id={id}")
         db_detail = _try_douban_detail(title, year, type, douban_id=id if id else "")
         if db_detail:
-            print(f"[MediaInfo] 豆瓣命中: poster={db_detail.get('poster_url', '')[:80]}, source={db_detail.get('source')}")
+            logger.info(f"[MediaInfo] 豆瓣命中: poster={db_detail.get('poster_url', '')[:80]}, source={db_detail.get('source')}")
             _enrich_ratings(db_detail, title, year, type, subtitle)
             _writeback_enrich_cache(db_detail)
             return db_detail
-        print("[MediaInfo] 豆瓣未命中，fallback TMDB")
+        logger.info("[MediaInfo] 豆瓣未命中，fallback TMDB")
         result = _try_tmdb_detail(title, year, type, subtitle)
         if result and result.get("found"):
             _enrich_ratings(result, title, year, type, subtitle)
@@ -321,7 +323,7 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         return result
 
     # ── TMDB 优先路径（默认）──
-    print("[MediaInfo] TMDB 默认路径")
+    logger.info("[MediaInfo] TMDB 默认路径")
     tmdb_detail = _try_tmdb_detail(title, year, type, subtitle)
     if tmdb_detail and tmdb_detail.get("found"):
         _enrich_ratings(tmdb_detail, title, year, type, subtitle)
@@ -414,30 +416,30 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
 
         # 有 ID 直接拉详情
         if douban_id:
-            print(f"[MediaInfo._try_douban] 用 ID 直接拉: douban_id={douban_id}, media_type={media_type}")
+            logger.info(f"[MediaInfo._try_douban] 用 ID 直接拉: douban_id={douban_id}, media_type={media_type}")
             # 先用指定 media_type 拉，失败则尝试另一种（电影/剧集可能分类不准）
             detail = douban_api_v2.get_detail(douban_id, media_type=media_type)
             if not detail or not detail.get("title"):
                 alt_type = "tv" if media_type == "movie" else "movie"
-                print(f"[MediaInfo._try_douban] {media_type} 404，尝试 {alt_type}")
+                logger.info(f"[MediaInfo._try_douban] {media_type} 404，尝试 {alt_type}")
                 detail = douban_api_v2.get_detail(douban_id, media_type=alt_type)
             if detail and detail.get("title"):
-                print(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}")
+                logger.info(f"[MediaInfo._try_douban] ID 拉取成功: title={detail.get('title')}")
                 return _format_douban_detail(detail)
             # ID 拉取彻底失败（可能是合集/豆列），不 fallback 搜索（避免匹配错误）
-            print(f"[MediaInfo._try_douban] ID {douban_id} 拉取失败（可能是非影视条目），跳过")
+            logger.error(f"[MediaInfo._try_douban] ID {douban_id} 拉取失败（可能是非影视条目），跳过")
             return None
 
         # 无 ID 时搜索匹配
-        print(f"[MediaInfo._try_douban] 搜索: title={title}")
+        logger.info(f"[MediaInfo._try_douban] 搜索: title={title}")
         results = douban_api_v2.search(title, count=5)
         if not results:
-            print(f"[MediaInfo._try_douban] 搜索无结果")
+            logger.info(f"[MediaInfo._try_douban] 搜索无结果")
             return None
         # 模糊匹配：找最佳候选（标题相似度 + 年份匹配）
         best = _pick_best_douban_result(results, title, year)
         if not best:
-            print(f"[MediaInfo._try_douban] 无匹配候选")
+            logger.info(f"[MediaInfo._try_douban] 无匹配候选")
             return None
         did = best.get("douban_id")
         if not did:
@@ -447,7 +449,7 @@ def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") ->
             return None
         return _format_douban_detail(detail)
     except Exception as e:
-        print(f"[MediaInfo] 豆瓣详情失败: {e}")
+        logger.error(f"[MediaInfo] 豆瓣详情失败: {e}")
         return None
 
 
@@ -533,26 +535,27 @@ def _try_bangumi_detail(title: str, subtitle: str = "", bgm_id: int = 0) -> dict
     try:
         # 有 ID 直接拉详情，跳过搜索
         if bgm_id > 0:
-            print(f"[MediaInfo._try_bangumi] 用 ID 直接拉: bgm_id={bgm_id}")
+            logger.info(f"[MediaInfo._try_bangumi] 用 ID 直接拉: bgm_id={bgm_id}")
             detail = bangumi_client.get_detail(bgm_id)
             if detail and detail.get("title"):
                 # 标题校验：ID 拉到的标题和请求 title 至少有 2 个字重叠
                 detail_title = detail.get("title", "")
                 detail_orig = detail.get("original_title", "")
                 import re as _re
+
                 title_chars = set(_re.findall(r'[\u4e00-\u9fff]', title))
                 detail_chars = set(_re.findall(r'[\u4e00-\u9fff]', detail_title))
                 overlap = len(title_chars & detail_chars)
                 title_in_orig = title.lower() in (detail_orig or "").lower() or (subtitle and subtitle.lower() in (detail_orig or "").lower())
                 if overlap >= 2 or title_in_orig or not title_chars:
                     formatted = _format_bangumi_detail(detail)
-                    print(f"[MediaInfo._try_bangumi] ID 拉取成功: title={detail_title}, rating={detail.get('rating')}")
+                    logger.info(f"[MediaInfo._try_bangumi] ID 拉取成功: title={detail_title}, rating={detail.get('rating')}")
                     return formatted
                 else:
-                    print(f"[MediaInfo._try_bangumi] ID 标题不匹配: 请求={title}, 返回={detail_title}，改走搜索")
+                    logger.info(f"[MediaInfo._try_bangumi] ID 标题不匹配: 请求={title}, 返回={detail_title}，改走搜索")
 
         # 搜索匹配
-        print(f"[MediaInfo._try_bangumi] 搜索: title={title}")
+        logger.info(f"[MediaInfo._try_bangumi] 搜索: title={title}")
         results = bangumi_client.search(title)
         if not results:
             return None
@@ -572,7 +575,7 @@ def _try_bangumi_detail(title: str, subtitle: str = "", bgm_id: int = 0) -> dict
             return None
         return _format_bangumi_detail(detail)
     except Exception as e:
-        print(f"[MediaInfo] Bangumi 详情失败: {e}")
+        logger.error(f"[MediaInfo] Bangumi 详情失败: {e}")
         return None
 
 
@@ -688,5 +691,5 @@ def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> di
             "source": "tmdb",
         }
     except Exception as e:
-        print(f"[MediaInfo] TMDB 详情失败: {e}")
+        logger.error(f"[MediaInfo] TMDB 详情失败: {e}")
         return {"found": False}

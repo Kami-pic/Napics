@@ -6,7 +6,6 @@ from typing import List, Dict, Optional
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
-
 # pan_type → Alist 驱动关键词（用于反向匹配）
 _PAN_TYPE_KEYWORDS = {
     "quark": ["quark", "夸克"],
@@ -209,7 +208,7 @@ class AlistManager:
                 ))
             return accounts
         except Exception as e:
-            print(f"Alist error: {e}")
+            logger.error(f"Alist error: {e}")
             return []
 
     def transfer_link(self, download_url: str, remote_path: str) -> bool:
@@ -232,12 +231,12 @@ class AlistManager:
                 response = requests.post(url, json=payload, headers=self.headers, timeout=15)
                 data = response.json()
                 if data.get("code") == 200:
-                    print(f"[Alist] offline download via {tool} -> {save_path}")
+                    logger.info(f"[Alist] offline download via {tool} -> {save_path}")
                     return True
             except Exception as e:
-                print(f"[Alist] {tool} error: {e}")
+                logger.error(f"[Alist] {tool} error: {e}")
                 continue
-        print("[Alist] all tools failed")
+        logger.error("[Alist] all tools failed")
         return False
 
 class QBittorrentClient:
@@ -264,19 +263,19 @@ class QBittorrentClient:
         """推送到 qBittorrent 下载"""
         try:
             if not self._login():
-                print("[qB] login failed")
+                logger.error("[qB] login failed")
                 return False
             data = {"urls": torrent_url}
             if save_path:
                 data["savepath"] = save_path
             r = self.session.post(f"{self.url}/api/v2/torrents/add", data=data, timeout=10)
             if r.status_code != 200:
-                print(f"[qB] add_torrent failed: status={r.status_code}, body={r.text[:200]}")
+                logger.error(f"[qB] add_torrent failed: status={r.status_code}, body={r.text[:200]}")
                 return False
             # qB 返回 "Ok." 或 "Fails." — 两种都视为成功（qB 有时返回 Fails 但实际已添加）
             return True
         except Exception as e:
-            print(f"qBittorrent error: {e}")
+            logger.error(f"qBittorrent error: {e}")
             return False
 
     def get_torrent_files(self, hash: str) -> List[dict]:
@@ -302,11 +301,11 @@ class QBittorrentClient:
                         "size_bytes": f.get("size", 0),
                     })
             
-            print(f"[qB] get_torrent_files: hash={hash}, count={len(result)}")
+            logger.info(f"[qB] get_torrent_files: hash={hash}, count={len(result)}")
             if result:
-                print(f"[qB]   first 3: {[r['name'] for r in result[:3]]}")
+                logger.info(f"[qB]   first 3: {[r['name'] for r in result[:3]]}")
             return result
         except Exception as e:
-            print(f"[qB] get_torrent_files error: {e}")
+            logger.error(f"[qB] get_torrent_files error: {e}")
             return []
 

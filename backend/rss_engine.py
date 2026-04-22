@@ -8,6 +8,7 @@
 
 import random
 import threading
+import logging
 import time
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
@@ -16,7 +17,7 @@ from rss_source_base import RSSSourceBase, RSSItem
 from rss_matcher import match_items
 from subscriber import Subscription, SubscriptionManager
 
-
+logger = logging.getLogger(__name__)
 # ── 源管理器 ──
 
 class RSSSourceManager:
@@ -28,7 +29,7 @@ class RSSSourceManager:
     def register(self, source: RSSSourceBase):
         """注册一个 RSS 源"""
         self._sources[source.name] = source
-        print(f"[RSSEngine] 注册源: {source.name} ({source.display_name})")
+        logger.info(f"[RSSEngine] 注册源: {source.name} ({source.display_name})")
 
     def get_enabled_sources(self) -> List[RSSSourceBase]:
         """获取所有启用的源"""
@@ -125,14 +126,14 @@ class SubscriptionScheduler:
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="rss-scheduler")
         self._thread.start()
-        print(f"[RSSEngine] 调度器启动，检查间隔 {self.check_interval}s")
+        logger.info(f"[RSSEngine] 调度器启动，检查间隔 {self.check_interval}s")
 
     def stop(self):
         """停止调度器"""
         self._running = False
         if self._thread:
             self._thread.join(timeout=5)
-        print("[RSSEngine] 调度器已停止")
+        logger.info("[RSSEngine] 调度器已停止")
 
     def search_one(self, sub: Subscription) -> List[RSSItem]:
         """手动触发单个订阅搜索（不受频率衰减限制）"""
@@ -144,7 +145,7 @@ class SubscriptionScheduler:
             try:
                 self._tick()
             except Exception as e:
-                print(f"[RSSEngine] 调度异常: {e}")
+                logger.info(f"[RSSEngine] 调度异常: {e}")
             time.sleep(self.check_interval)
 
     def _tick(self):
@@ -183,7 +184,7 @@ class SubscriptionScheduler:
         if hasattr(sub, "sources") and sub.sources:
             sources = [s for s in sources if s.name in sub.sources]
             if not sources:
-                print(f"[RSSEngine] {sub.title}: 指定的源都未启用")
+                logger.info(f"[RSSEngine] {sub.title}: 指定的源都未启用")
                 return []
 
         all_items: List[RSSItem] = []
@@ -192,7 +193,7 @@ class SubscriptionScheduler:
                 items = source.fetch(sub)
                 all_items.extend(items)
             except Exception as e:
-                print(f"[RSSEngine] 源 {source.name} 搜索失败: {e}")
+                logger.error(f"[RSSEngine] 源 {source.name} 搜索失败: {e}")
 
         # 更新搜索时间和计数
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -215,13 +216,13 @@ class SubscriptionScheduler:
                     if (datetime.now() - created).days > 30 and sub.search_count > 20:
                         update_data["state"] = "paused"
                         update_data["note"] = "长期未找到资源，已自动暂停"
-                        print(f"[RSSEngine] {sub.title} 自动暂停（30天无果）")
+                        logger.info(f"[RSSEngine] {sub.title} 自动暂停（30天无果）")
                 except (ValueError, TypeError):
                     pass
 
         self.sub_manager.update(sub.id, update_data)
 
-        print(f"[RSSEngine] {sub.title}: 搜索完成，原始 {len(all_items)} 条，匹配 {len(matched)} 条")
+        logger.info(f"[RSSEngine] {sub.title}: 搜索完成，原始 {len(all_items)} 条，匹配 {len(matched)} 条")
         return matched
 
     def _handle_results(self, sub: Subscription, matched: List[RSSItem]):
@@ -240,7 +241,7 @@ class SubscriptionScheduler:
                 self.sub_manager.update(sub.id, {
                     "found_resources": existing + new_resources,
                 })
-                print(f"[RSSEngine] {sub.title}: 通知模式，新增 {len(new_resources)} 条待选资源")
+                logger.info(f"[RSSEngine] {sub.title}: 通知模式，新增 {len(new_resources)} 条待选资源")
 
         elif sub.mode == "auto" and self.download_manager:
             if sub.best_version:
@@ -293,7 +294,7 @@ class SubscriptionScheduler:
                     best_item = item
             if best_item:
                 to_download.append(best_item)
-                print(f"[RSSEngine] 洗版: {sub.title} 发现更高质量 ({best_score} > {current_score})")
+                logger.info(f"[RSSEngine] 洗版: {sub.title} 发现更高质量 ({best_score} > {current_score})")
         else:
             # 剧集洗版：按集独立比较
             by_episode: Dict[int, List[RSSItem]] = {}
@@ -336,9 +337,9 @@ class SubscriptionScheduler:
                 subscription_episode=item.episode,
             )
             self.download_manager.submit(task)
-            print(f"[RSSEngine] 自动下载: {task.media_name}")
+            logger.info(f"[RSSEngine] 自动下载: {task.media_name}")
         except Exception as e:
-            print(f"[RSSEngine] 下载提交失败: {e}")
+            logger.error(f"[RSSEngine] 下载提交失败: {e}")
 
     def _check_calendar_trigger(self, sub: Subscription) -> bool:
         """检查剧集订阅是否有今天播出的新集（日历触发）"""
@@ -346,6 +347,7 @@ class SubscriptionScheduler:
             return False
         try:
             from shared import _tmdb_client
+
             tmdb = _tmdb_client()
             if not tmdb:
                 return False
@@ -358,7 +360,7 @@ class SubscriptionScheduler:
                 air_date = ep.get("air_date", "")
                 ep_num = ep.get("episode_number", 0)
                 if air_date == today and str(ep_num) not in downloaded:
-                    print(f"[RSSEngine] 日历触发: {sub.title} E{ep_num} 今天播出")
+                    logger.info(f"[RSSEngine] 日历触发: {sub.title} E{ep_num} 今天播出")
                     return True
         except Exception:
             pass

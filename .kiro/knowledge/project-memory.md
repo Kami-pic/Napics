@@ -135,6 +135,9 @@
 - LimeTorrents 所有域名 CF 保护严格，默认禁用（enabled=False）
 - Bangumi Moe API 端点是 /api/v2/torrent/search（不是 /api/torrent/search），size 字段是字符串格式如 "118.6 GB"
 - 搜索匹配通用模块：text_processing.py（L1）→ match_scoring.py（L2）→ data_filtering.py（L3）→ result_sorting.py（L4），业务代码调用这些模块而非自己实现匹配逻辑
+- 后端日志统一用 `logging` 模块（不用 print），每个文件顶层 `logger = logging.getLogger(__name__)`，shared.py 统一 basicConfig
+- pan_models.py 使用 Pydantic V2 语法（`@field_validator` + `@model_validator`），不用已废弃的 `@validator`
+- 发现推荐的 enrich 逻辑在 `discover_enrich.py`（业务层），`routes/discover.py` 只放路由端点
 
 ## 领域索引
 

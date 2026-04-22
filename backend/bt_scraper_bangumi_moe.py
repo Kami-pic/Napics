@@ -13,7 +13,6 @@ from scraper_base import ScraperBase
 from quality_parser import parse_quality, get_quality_level
 
 logger = logging.getLogger(__name__)
-
 _MAGNET_HASH_RE = re.compile(r"btih:([a-fA-F0-9]{40})", re.IGNORECASE)
 
 # Bangumi Moe tracker

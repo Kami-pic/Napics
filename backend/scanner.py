@@ -1,9 +1,11 @@
 import os
+import logging
 import subprocess
 import json
 from typing import List, Dict, Optional
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 class VideoInfo(BaseModel):
     file_path: str
     file_name: str
@@ -50,11 +52,11 @@ def get_video_metadata(file_path: str) -> Optional[VideoInfo]:
         )
         
         if result.returncode != 0:
-            print(f"FFprobe error for {file_path}: {result.stderr}")
+            logger.error(f"FFprobe error for {file_path}: {result.stderr}")
             return _fallback_info(file_path)
             
         if not result.stdout.strip():
-            print(f"FFprobe returned empty output for {file_path}")
+            logger.info(f"FFprobe returned empty output for {file_path}")
             return _fallback_info(file_path)
             return None
             
@@ -126,7 +128,7 @@ def get_video_metadata(file_path: str) -> Optional[VideoInfo]:
             is_low_res=(height < 720 and bitrate < 2000)  # 综合判定
         )
     except Exception as e:
-        print(f"Error scanning {file_path}: {e}")
+        logger.error(f"Error scanning {file_path}: {e}")
         # ffprobe 失败/超时时生成基础记录（文件名 + 大小）
         return _fallback_info(file_path)
 
@@ -186,7 +188,7 @@ if __name__ == "__main__":
     # 测试代码
     test_dir = r"C:\Users\shenq\Videos" # 示例路径
     if os.path.exists(test_dir):
-        print(f"Scanning {test_dir}...")
+        logger.info(f"Scanning {test_dir}...")
         videos = scan_directory(test_dir)
         for v in videos:
-            print(f"{'[LOW-RES]' if v.is_low_res else '[HD]'} {v.file_name} ({v.resolution})")
+            logger.info(f"{'[LOW-RES]' if v.is_low_res else '[HD]'} {v.file_name} ({v.resolution})")

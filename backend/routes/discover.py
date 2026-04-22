@@ -2,350 +2,30 @@
 路由模块：discover
 """
 import os
+import logging
 import json
 import re
 import time
-import asyncio
 import shutil
 import requests
-import subprocess
-import sys
-import threading
-from typing import List, Optional, Dict
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse, FileResponse, Response
-from pydantic import BaseModel
+import concurrent.futures
+import hashlib
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 from shared import (
-    config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
-    _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
-    _tmdb_client, get_clients, media_matcher,
-    _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
+    config_m, get_clients, media_matcher,
 )
-import scanner, searcher, downloader, tmdb_client, config_manager
-import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
+import douban_client, bangumi_client, scraper
 import douban_api_v2
-from organize_history import history_m
-from global_filter import GlobalFilter
-from download_manager import DownloadManager, DownloadTask
+from routes.media_info import AddMediaRequest
+from discover_enrich import (
+    inject_local_status, inject_clean_names, async_enrich_tmdb_ids, in_rating_range,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# ── tmdb_enrich_cache：持久化 TMDB 英文名+评分缓存 ──
-_enrich_cache: Dict[str, dict] = {}
-_enrich_cache_lock = threading.Lock()
-_ENRICH_CACHE_PATH = os.path.join("scrape_cache", "tmdb_enrich_cache.json")
-_ENRICH_CACHE_MAX = 5000
-_ENRICH_CACHE_TTL = 30 * 86400  # 30 天
-
-
-def _load_enrich_cache():
-    """启动时加载持久化缓存到内存"""
-    global _enrich_cache
-    if os.path.exists(_ENRICH_CACHE_PATH):
-        try:
-            with open(_ENRICH_CACHE_PATH, "r", encoding="utf-8") as f:
-                _enrich_cache = json.load(f)
-            print(f"[Discover] enrich_cache 加载: {len(_enrich_cache)} 条")
-        except Exception as e:
-            print(f"[Discover] enrich_cache 加载失败: {e}")
-            _enrich_cache = {}
-
-
-def _save_enrich_cache():
-    """异步写入缓存文件（调用方需持有 _enrich_cache_lock）"""
-    def _do_save():
-        try:
-            os.makedirs("scrape_cache", exist_ok=True)
-            with open(_ENRICH_CACHE_PATH, "w", encoding="utf-8") as f:
-                json.dump(_enrich_cache, f, ensure_ascii=False)
-        except Exception as e:
-            print(f"[Discover] enrich_cache 写入失败: {e}")
-    threading.Thread(target=_do_save, daemon=True).start()
-
-
-def _enrich_cache_key(item: dict) -> str:
-    """生成缓存 key：douban_id > tmdb_id > title_year"""
-    did = item.get("douban_id")
-    if did:
-        return f"douban_{did}"
-    tid = item.get("tmdb_id")
-    if tid:
-        return f"tmdb_{tid}"
-    return f"title_{item.get('title', '')}_{item.get('year', '')}"
-
-
-def enrich_cache_put(key: str, tmdb_id: int = 0, en_title: str = "",
-                     original_title: str = "", tmdb_rating: float = 0):
-    """写入一条 enrich_cache 记录（线程安全）"""
-    from datetime import datetime
-    with _enrich_cache_lock:
-        _enrich_cache[key] = {
-            "tmdb_id": tmdb_id,
-            "en_title": en_title,
-            "original_title": original_title,
-            "tmdb_rating": tmdb_rating,
-            "updated_at": datetime.now().isoformat(),
-        }
-        # LRU 淘汰
-        if len(_enrich_cache) > _ENRICH_CACHE_MAX:
-            oldest = sorted(_enrich_cache, key=lambda k: _enrich_cache[k].get("updated_at", ""))
-            for k in oldest[:len(_enrich_cache) - _ENRICH_CACHE_MAX]:
-                _enrich_cache.pop(k, None)
-        _save_enrich_cache()
-
-
-# 启动时加载
-_load_enrich_cache()
-
-
-def _inject_local_status(items: list) -> list:
-    """给推荐/探索结果注入 local_status 字段"""
-    if items:
-        media_matcher.match_batch(items)
-    return items
-
-
-def _inject_clean_names(items: list) -> list:
-    """给推荐/探索结果注入结构化清洗名字段（cn/en/original）。
-    C+E 方案：先查 enrich_cache，未命中的同步并发请求 TMDB（2 秒超时），超时的转交后台。
-    """
-    import re
-    import concurrent.futures
-    from clean_name_system import clean_from_scrape
-    from text_processing import detect_language
-
-    need_enrich = []  # 缺英文名且缓存未命中的条目
-
-    for item in items:
-        title = item.get("title", "")
-        if not title:
-            continue
-        # 已有结构化字段则跳过
-        if item.get("clean_name_cn"):
-            continue
-
-        # 查 enrich_cache
-        cache_key = _enrich_cache_key(item)
-        cached = _enrich_cache.get(cache_key)
-        if cached:
-            # 检查过期
-            updated = cached.get("updated_at", "")
-            if updated:
-                try:
-                    from datetime import datetime
-                    age = (datetime.now() - datetime.fromisoformat(updated)).total_seconds()
-                    if age > _ENRICH_CACHE_TTL:
-                        cached = None
-                except Exception:
-                    pass
-
-        raw_original = item.get("original_title") or item.get("_tmdb_original_title") or ""
-        subtitle = item.get("subtitle", "")
-
-        # 判断 original_title 的语言，正确分配到 en 或 original
-        en = ""
-        original = ""
-        if raw_original and raw_original != title:
-            lang = detect_language(raw_original)
-            if lang == "en":
-                en = raw_original
-            elif lang in ("jp", "ko", "mixed"):
-                original = raw_original
-
-        # 从 subtitle 中提取英文名
-        if not en and subtitle:
-            parts = re.split(r'\s*/\s*', subtitle)
-            for p in parts:
-                p = p.strip()
-                if not p or p == title:
-                    continue
-                lang = detect_language(p)
-                if lang == "en":
-                    en = p
-                    break
-                elif lang in ("jp", "ko") and not original:
-                    original = p
-
-        # 用缓存补全英文名 + TMDB 评分
-        if cached:
-            if not en and cached.get("en_title"):
-                en = cached["en_title"]
-            if cached.get("tmdb_rating") and not item.get("tmdb_rating"):
-                item["tmdb_rating"] = cached["tmdb_rating"]
-
-        result = clean_from_scrape(
-            title=title,
-            original_title=original,
-            english_title=en,
-            year=item.get("year", ""),
-            source="tmdb",
-        )
-        item["clean_name_cn"] = result.cn
-        item["clean_name_en"] = result.en
-        item["clean_name_original"] = result.original
-
-        # 仍然缺英文名 → 收集待补全
-        if not item.get("clean_name_en"):
-            need_enrich.append(item)
-
-    # 同步并发补全缺英文名的条目（最多等 2 秒）
-    if need_enrich:
-        tmdb = _tmdb_client()
-        if tmdb:
-            timed_out_items = _sync_enrich_english_names(need_enrich, tmdb, timeout=2.0)
-            # 超时的条目转交后台继续
-            if timed_out_items:
-                _async_enrich_tmdb_ids(timed_out_items)
-
-    return items
-
-
-def _sync_enrich_english_names(items: list, tmdb, timeout: float = 2.0) -> list:
-    """同步并发请求 TMDB 补全英文名，返回超时未完成的条目列表"""
-    import concurrent.futures
-    from text_processing import detect_language
-
-    def _fetch_en(item):
-        title = item.get("title", "")
-        media_type = item.get("media_type", "movie")
-        try:
-            results = tmdb.search_tv(title) if media_type == "tv" else tmdb.search_movie(title)
-            if not results:
-                return item, None
-            best = results[0]
-            tid = best.get("id")
-            orig = best.get("original_title") or best.get("original_name") or ""
-            en_title = ""
-            # 先看 original_title 是否为英文
-            if orig and orig != title:
-                lang = detect_language(orig)
-                if lang == "en":
-                    en_title = orig
-            # 不是英文则用 en-US 请求
-            if not en_title and tid:
-                en_title = tmdb._get_english_title(
-                    "tv" if media_type == "tv" else "movie", tid, orig or ""
-                )
-                if en_title == title:
-                    en_title = ""
-            tmdb_rating = best.get("vote_average", 0)
-            return item, {"tid": tid, "en_title": en_title, "orig": orig, "tmdb_rating": tmdb_rating}
-        except Exception:
-            return item, None
-
-    timed_out = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        future_map = {executor.submit(_fetch_en, it): it for it in items}
-        try:
-            for future in concurrent.futures.as_completed(future_map, timeout=timeout):
-                item, result = future.result()
-                if result:
-                    if result.get("en_title"):
-                        item["clean_name_en"] = result["en_title"]
-                    if result.get("tmdb_rating") and not item.get("tmdb_rating"):
-                        item["tmdb_rating"] = result["tmdb_rating"]
-                    # 有英文名或评分时写入缓存
-                    if result.get("en_title") or result.get("tmdb_rating"):
-                        cache_key = _enrich_cache_key(item)
-                        enrich_cache_put(
-                            cache_key,
-                            tmdb_id=result.get("tid", 0),
-                            en_title=result.get("en_title", ""),
-                            original_title=result.get("orig", ""),
-                            tmdb_rating=result.get("tmdb_rating", 0),
-                        )
-        except concurrent.futures.TimeoutError:
-            # 收集超时未完成的条目
-            for f, it in future_map.items():
-                if not f.done():
-                    timed_out.append(it)
-            print(f"[Discover] 同步补全超时，{len(timed_out)} 条转交后台")
-    return timed_out
-
-
-def _async_enrich_tmdb_ids(items: list):
-    """后台线程：为豆瓣榜单数据补全 tmdb_id + 英文名，结果写入 enrich_cache 持久化。"""
-    def _do_enrich():
-        try:
-            tmdb = _tmdb_client()
-            if not tmdb:
-                return
-            enriched = 0
-            for item in items:
-                if item.get("tmdb_id"):
-                    continue
-                douban_id = item.get("douban_id")
-                if not douban_id:
-                    continue
-                # 检查 matcher 缓存
-                cached_tid = media_matcher._id_cache.get(str(douban_id))
-                if cached_tid:
-                    item["tmdb_id"] = cached_tid
-                    enriched += 1
-                    continue
-                # TMDB 搜索补全
-                title = item.get("original_title") or item.get("title") or ""
-                if not title:
-                    continue
-                year = item.get("year", "")
-                media_type = item.get("media_type", "movie")
-                try:
-                    if media_type == "tv":
-                        results = tmdb.search_tv(title)
-                    else:
-                        results = tmdb.search_movie(title)
-                    if results:
-                        best = results[0]
-                        tid = best.get("id")
-                        if tid:
-                            item["tmdb_id"] = tid
-                            media_matcher.add_id_mapping(str(douban_id), tid)
-                            enriched += 1
-                        orig = best.get("original_title") or best.get("original_name") or ""
-                        en_title = ""
-                        if orig and orig != title:
-                            from text_processing import detect_language as _dl
-                            lang = _dl(orig)
-                            if lang == "en":
-                                item["_tmdb_original_title"] = orig
-                                en_title = orig
-                                if not item.get("clean_name_en"):
-                                    item["clean_name_en"] = orig
-                            elif lang in ("jp", "ko"):
-                                if not item.get("clean_name_original"):
-                                    item["clean_name_original"] = orig
-                        # 如果还没有英文名，尝试用 en-US 请求
-                        if not en_title and not item.get("clean_name_en") and tid:
-                            try:
-                                en_title = tmdb._get_english_title(
-                                    "tv" if media_type == "tv" else "movie", tid, orig or ""
-                                )
-                                if en_title and en_title != title:
-                                    item["clean_name_en"] = en_title
-                                else:
-                                    en_title = ""
-                            except Exception:
-                                pass
-                        # 写入 enrich_cache
-                        if en_title or tid:
-                            cache_key = _enrich_cache_key(item)
-                            enrich_cache_put(
-                                cache_key,
-                                tmdb_id=tid or 0,
-                                en_title=en_title or "",
-                                original_title=orig or "",
-                                tmdb_rating=best.get("vote_average", 0),
-                            )
-                    time.sleep(0.5)  # 避免 TMDB 限频
-                except Exception:
-                    pass
-            if enriched > 0:
-                media_matcher._save_id_cache()
-                print(f"[Discover] 榜单 tmdb_id 补全: {enriched} 条")
-        except Exception as e:
-            print(f"[Discover] tmdb_id 补全失败: {e}")
-    threading.Thread(target=_do_enrich, daemon=True).start()
 
 
 @router.get("/movie/poster")
@@ -354,20 +34,19 @@ def get_movie_poster(name: str):
     cache_dir = os.path.join(os.getcwd(), "posters")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
-        
+
     safe_name = "".join(x for x in name if x.isalnum() or x in " -_").strip()
     cache_path = os.path.join(cache_dir, f"{safe_name}.jpg")
-    
+
     if os.path.exists(cache_path):
         return FileResponse(cache_path)
-        
+
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=404, detail="TMDB API Key not configured")
 
     try:
         # 先清洗文件名：去掉扩展名、质量标签、字幕组等杂质
-        import re
         clean = name
         clean = re.sub(r'\.[a-zA-Z0-9]{2,4}$', '', clean)  # 去扩展名
         clean = re.sub(r'(?i)(BD|HD|4K|1080[pi]?|720[pi]?|2160[pi]?|REMUX|BluRay|WEB-?DL|DVDRip|BDRip|x264|x265|HEVC|AAC|DTS|FLAC|10bit)', '', clean)
@@ -380,7 +59,7 @@ def get_movie_poster(name: str):
         params = {"api_key": api_key, "query": clean, "language": "zh-CN"}
         resp = requests.get(search_url, params=params, timeout=5)
         results = resp.json().get("results", [])
-        
+
         if not results:
             search_url = f"https://api.themoviedb.org/3/search/tv"
             resp = requests.get(search_url, params=params, timeout=5)
@@ -392,36 +71,34 @@ def get_movie_poster(name: str):
         poster_path = results[0].get("poster_path")
         if not poster_path:
             raise HTTPException(status_code=404, detail="No poster path")
-            
+
         img_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
         img_resp = requests.get(img_url, stream=True, timeout=10)
         with open(cache_path, "wb") as f:
             shutil.copyfileobj(img_resp.raw, f)
-            
+
         return FileResponse(cache_path)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+
 @router.get("/douban/hot")
 def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
     """获取热榜列表。动画 tab 用 Bangumi，其他用豆瓣+TMDB（文件缓存+并发）"""
-    import concurrent.futures
-    import hashlib, time as _time
-
     # 动画 tab 走 Bangumi
     if tag == "动画":
         items = bangumi_client.get_hot_anime(page_start, 12)
         return {"type": type, "items": items}
 
-    # 文件缓存：1 小时内直接返回
+    # 文件缓存：7 天内直接返回
     cache_key = hashlib.md5(f"hot_{type}_{tag}_{page_start}".encode()).hexdigest()[:12]
     cache_path = os.path.join("scrape_cache", f"hot_{cache_key}.json")
     if os.path.exists(cache_path):
         try:
             mtime = os.path.getmtime(cache_path)
-            if _time.time() - mtime < 604800:  # 7 天
+            if time.time() - mtime < 604800:  # 7 天
                 with open(cache_path, "r", encoding="utf-8") as f:
                     return json.load(f)
         except:
@@ -477,7 +154,7 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
             except:
                 pass
 
-    # 最多 4 个并发线程，超时 8 秒
+    # 最多 4 个并发线程，超时 4 秒
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(enrich_item, item) for item in items]
         concurrent.futures.wait(futures, timeout=4)
@@ -486,13 +163,12 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
     for item in items:
         cover = item.get("cover_url", "")
         proxy = item.get("cover_url_proxy", "")
-        # 如果 cover_url 还是豆瓣原始 URL（TMDB 超时没替换），用代理 URL
         if cover and "doubanio.com" in cover and proxy:
             item["cover_url"] = proxy
         item.pop("cover_url_proxy", None)
 
     # 注入结构化清洗名
-    _inject_clean_names(items)
+    inject_clean_names(items)
 
     # 保存缓存
     result = {"type": type, "items": items}
@@ -505,6 +181,7 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
 
     return result
 
+
 @router.get("/douban/search")
 def douban_search(query: str):
     """搜索豆瓣影片（优先 API v2）"""
@@ -516,7 +193,7 @@ def douban_search(query: str):
             if poster and "doubanio.com" in poster:
                 r["poster_url_original"] = poster
                 r["poster_url"] = f"/proxy/image?url={requests.utils.quote(poster)}"
-        _inject_local_status(results)
+        inject_local_status(results)
         return {"query": query, "candidates": results}
     # Fallback
     results = douban_client.search(query)
@@ -524,8 +201,9 @@ def douban_search(query: str):
         if r.get("poster_url") and "doubanio.com" in r["poster_url"]:
             r["poster_url_original"] = r["poster_url"]
             r["poster_url"] = f"/proxy/image?url={requests.utils.quote(r['poster_url'])}"
-    _inject_local_status(results)
+    inject_local_status(results)
     return {"query": query, "candidates": results}
+
 
 @router.post("/add-media")
 def add_media(req: AddMediaRequest):
@@ -536,12 +214,10 @@ def add_media(req: AddMediaRequest):
     folder_name = req.title.strip() or "Unknown"
     if req.year:
         folder_name = f"{folder_name} ({req.year})"
-    # 清理文件名中不合法的字符
     folder_name = "".join(c for c in folder_name if c not in r'\/:*?"<>|').strip()
     folder_path = os.path.join(req.save_path, folder_name)
     os.makedirs(folder_path, exist_ok=True)
 
-    # 构造 ScrapeResult 用于写入 NFO
     result = ScrapeResult(
         tmdb_id=int(req.douban_id) if req.douban_id.isdigit() else 0,
         media_type="movie",
@@ -556,21 +232,19 @@ def add_media(req: AddMediaRequest):
         poster_url=req.poster_url,
     )
 
-    # 写入 NFO
     nfo_written = False
     try:
         scraper.write_movie_nfo(folder_path, result)
         nfo_written = True
     except Exception as e:
-        print(f"[AddMedia] NFO write error: {e}")
+        logger.error(f"[AddMedia] NFO write error: {e}")
 
-    # 下载封面（豆瓣图片需带 Referer 头，scraper.download_poster 已处理）
     poster_downloaded = False
     if req.poster_url:
         try:
             poster_downloaded = scraper.download_poster(folder_path, req.poster_url)
         except Exception as e:
-            print(f"[AddMedia] poster download error: {e}")
+            logger.error(f"[AddMedia] poster download error: {e}")
 
     return {
         "status": "ok",
@@ -578,13 +252,6 @@ def add_media(req: AddMediaRequest):
         "nfo_written": nfo_written,
         "poster_downloaded": poster_downloaded,
     }
-
-
-# ══════════════════════════════════════════════════════════════
-# 二期功能 API
-# ══════════════════════════════════════════════════════════════
-
-# ── 种子排序权重配置 ──
 
 
 # ══════════════════════════════════════════════════════════════
@@ -607,7 +274,7 @@ def _tmdb_trending_paged(start: int, count: int) -> list:
 
 # 推荐源映射
 _RECOMMEND_SOURCES = {
-    "combined": None,  # 综合推荐走独立逻辑
+    "combined": None,
     "douban_showing": lambda start, count: douban_api_v2.movie_showing(start, count),
     "douban_movie_hot": lambda start, count: douban_api_v2.movie_hot(start, count),
     "douban_tv_hot": lambda start, count: douban_api_v2.tv_hot(start, count),
@@ -624,7 +291,6 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
     """统一推荐接口，豆瓣 API v2 失败时 fallback 到旧版网页接口"""
     # 综合推荐走独立逻辑（带文件缓存 1 小时）
     if source == "combined":
-        import hashlib
         cache_key = hashlib.md5(b"combined_recommend").hexdigest()[:12]
         cache_path = os.path.join("scrape_cache", f"combined_{cache_key}.json")
         if os.path.exists(cache_path):
@@ -634,8 +300,8 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                     with open(cache_path, "r", encoding="utf-8") as f:
                         cached = json.load(f)
                     sliced = cached[start:start + count]
-                    _inject_local_status(sliced)
-                    _inject_clean_names(sliced)
+                    inject_local_status(sliced)
+                    inject_clean_names(sliced)
                     return {"source": "combined", "items": sliced, "count": len(cached)}
             except Exception:
                 pass
@@ -648,7 +314,7 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                 json.dump(items, f, ensure_ascii=False)
         except Exception:
             pass
-        return {"source": "combined", "items": _inject_clean_names(_inject_local_status(items[start:start + count])), "count": len(items)}
+        return {"source": "combined", "items": inject_clean_names(inject_local_status(items[start:start + count])), "count": len(items)}
 
     fetcher = _RECOMMEND_SOURCES.get(source)
     if not fetcher:
@@ -658,10 +324,10 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
         if items:
             # 豆瓣源：后台异步补全 tmdb_id
             if source.startswith("douban"):
-                _async_enrich_tmdb_ids(items)
-            return {"source": source, "items": _inject_clean_names(_inject_local_status(items)), "count": len(items)}
+                async_enrich_tmdb_ids(items)
+            return {"source": source, "items": inject_clean_names(inject_local_status(items)), "count": len(items)}
     except Exception as e:
-        print(f"[Discover] recommend/{source} API v2 失败: {e}")
+        logger.error(f"[Discover] recommend/{source} API v2 失败: {e}")
 
     # Fallback：豆瓣旧版网页接口（仅豆瓣源）
     _FALLBACK_MAP = {
@@ -674,11 +340,11 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
     fb = _FALLBACK_MAP.get(source)
     if fb:
         try:
-            print(f"[Discover] {source} fallback 到旧版网页接口")
+            logger.info(f"[Discover] {source} fallback 到旧版网页接口")
             items = douban_client.get_hot_list(fb[0], start, fb[1])
-            return {"source": source, "items": _inject_clean_names(_inject_local_status(items or [])), "count": len(items or []), "fallback": True}
+            return {"source": source, "items": inject_clean_names(inject_local_status(items or [])), "count": len(items or []), "fallback": True}
         except Exception as e2:
-            print(f"[Discover] {source} fallback 也失败: {e2}")
+            logger.error(f"[Discover] {source} fallback 也失败: {e2}")
     return {"source": source, "items": [], "count": 0}
 
 
@@ -696,7 +362,6 @@ def discover_explore(
     try:
         if provider == "douban":
             has_rating_filter = vote_average > 0 or vote_max < 10
-            # 多请求 20% 以应对过滤损耗（垃圾条目+评分过滤）
             fetch_count = int(count * 1.3) if not has_rating_filter else int(count * 1.5)
             if sort == "TOP250" and type == "movie":
                 items = douban_api_v2.movie_top250(start=page * count, count=fetch_count)
@@ -706,7 +371,7 @@ def discover_explore(
                 items = douban_api_v2.movie_explore(tags=tags, sort=sort, start=page * count, count=fetch_count)
             # 评分范围过滤（双滑块）
             if has_rating_filter:
-                items = [i for i in (items or []) if _in_rating_range(i.get("rating", 0), vote_average, vote_max)]
+                items = [i for i in (items or []) if in_rating_range(i.get("rating", 0), vote_average, vote_max)]
             # 通用候补：过滤后不足 count 条时，用其他排序补位
             if items is not None and len(items) < count and sort != "TOP250":
                 existing_ids = {i.get("douban_id") for i in items if i.get("douban_id")}
@@ -714,7 +379,7 @@ def discover_explore(
                 fill_fn = douban_api_v2.tv_explore if type == "tv" else douban_api_v2.movie_explore
                 fill = fill_fn(tags=tags, sort=fill_sort, start=0, count=count)
                 for fi in (fill or []):
-                    if has_rating_filter and not _in_rating_range(fi.get("rating", 0), vote_average, vote_max):
+                    if has_rating_filter and not in_rating_range(fi.get("rating", 0), vote_average, vote_max):
                         continue
                     if fi.get("douban_id") and fi.get("douban_id") not in existing_ids:
                         items.append(fi)
@@ -725,7 +390,6 @@ def discover_explore(
         elif provider == "tmdb":
             tmdb = get_clients()["tmdb"]
             import math
-            # 有评分上限过滤时多请求 30%
             tmdb_count = int(count * 1.3) if vote_max < 10 else count
             pages_per_req = max(1, math.ceil(tmdb_count / 20))
             tmdb_start_page = page * max(1, math.ceil(count / 20)) + 1
@@ -739,7 +403,6 @@ def discover_explore(
                 page=tmdb_start_page,
                 count=tmdb_count,
             )
-            # TMDB 评分上限过滤
             if vote_max < 10 and items:
                 items = [i for i in items if (i.get("rating", 0) or 0) <= vote_max]
             items = (items or [])[:count]
@@ -754,19 +417,12 @@ def discover_explore(
             )
         else:
             raise HTTPException(status_code=400, detail=f"未知 provider: {provider}")
-        return {"provider": provider, "type": type, "items": _inject_clean_names(_inject_local_status(items or [])), "count": len(items or [])}
+        return {"provider": provider, "type": type, "items": inject_clean_names(inject_local_status(items or [])), "count": len(items or [])}
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[Discover] explore 失败: {e}")
+        logger.error(f"[Discover] explore 失败: {e}")
         return {"provider": provider, "type": type, "items": [], "count": 0, "error": str(e)}
-
-
-def _in_rating_range(rating: float, min_r: float, max_r: float) -> bool:
-    """评分范围判断：评分为 0（未评分）的条目始终保留"""
-    if not rating or rating <= 0:
-        return True
-    return min_r <= rating <= max_r
 
 
 @router.get("/discover/sources")
@@ -786,19 +442,17 @@ def discover_sources():
 def discover_refresh(source: str):
     """清除指定推荐源的后端文件缓存，下次请求会重新拉取"""
     import glob
+
     cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scrape_cache")
     if not os.path.exists(cache_dir):
         return {"status": "ok", "cleared": 0}
-    # 清除 douban_api_v2 的缓存文件（前缀 dbv2_）
     cleared = 0
     for f in glob.glob(os.path.join(cache_dir, "dbv2_*.json")):
         try:
-            # 简单策略：清除所有 dbv2 缓存（因为 cache_key 是 hash，无法精确匹配 source）
             os.remove(f)
             cleared += 1
         except:
             pass
-    # 也清除旧版热榜缓存
     for f in glob.glob(os.path.join(cache_dir, "hot_*.json")):
         try:
             os.remove(f)

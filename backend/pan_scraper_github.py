@@ -23,7 +23,6 @@ from scraper_base import ScraperBase
 from pan_models import PanResult, PanType, VALID_PAN_DOMAINS
 
 logger = logging.getLogger(__name__)
-
 # 仓库配置
 REPO_CONFIGS = [
     {

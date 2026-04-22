@@ -3,13 +3,14 @@ NFO 读写模块：兼容 Kodi/Jellyfin/Emby 的 NFO 格式
 从 scraper.py 拆分而来，负责所有 NFO 文件的读取和写入。
 """
 import os
+import logging
 import re
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from typing import Optional, Dict
 from tmdb_client import ScrapeResult
 
-
+logger = logging.getLogger(__name__)
 # ── NFO 读取 ──
 
 def read_nfo(folder_path: str, no_fallback: bool = False) -> Optional[Dict]:
@@ -92,7 +93,7 @@ def read_nfo(folder_path: str, no_fallback: bool = False) -> Optional[Dict]:
         
         return data
     except Exception as e:
-        print(f"NFO parse error: {e}")
+        logger.error(f"NFO parse error: {e}")
         return None
 
 

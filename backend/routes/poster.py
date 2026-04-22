@@ -3,6 +3,7 @@
 从 routes/scrape.py 拆分而来
 """
 import os
+import logging
 import re
 import requests
 from typing import Optional
@@ -11,6 +12,7 @@ from fastapi.responses import StreamingResponse, FileResponse, Response
 
 from shared import config_m
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -43,6 +45,7 @@ def get_local_poster(path: str, cover: bool = False):
     from fastapi import HTTPException
     import os
     import re
+
 
     def _poster_response(file_path: str):
         with open(file_path, "rb") as f:
@@ -256,5 +259,5 @@ def delete_poster(path: str):
     cache_path = os.path.join(os.getcwd(), "posters", f"{safe_name}.jpg")
     _try_delete(cache_path)
     
-    print(f"[DeletePoster] path={path} deleted={len(deleted)} errors={errors}")
+    logger.error(f"[DeletePoster] path={path} deleted={len(deleted)} errors={errors}")
     return {"status": "ok", "deleted": deleted, "errors": errors}

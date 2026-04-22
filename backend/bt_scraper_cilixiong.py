@@ -15,7 +15,6 @@ from scraper_base import ScraperBase
 from quality_parser import parse_quality, get_quality_level
 
 logger = logging.getLogger(__name__)
-
 _MAGNET_RE = re.compile(r"magnet:\?xt=urn:btih:([a-fA-F0-9]{40})[^\s\"'<>]*")
 
 

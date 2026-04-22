@@ -1,8 +1,10 @@
 """豆瓣刮削客户端 — 搜索 + 详情"""
 import requests
 import re
+import logging
 from typing import List, Dict, Optional
 
+logger = logging.getLogger(__name__)
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Referer": "https://movie.douban.com/",
@@ -34,7 +36,7 @@ def search(query: str) -> List[Dict]:
             })
         return results
     except Exception as e:
-        print(f"[Douban] search error: {e}")
+        logger.error(f"[Douban] search error: {e}")
         return []
 
 
@@ -79,7 +81,7 @@ def get_hot_list(media_type: str = "movie", page_start: int = 0, tag: str = "热
             })
         return results
     except Exception as e:
-        print(f"[Douban] hot list error: {e}")
+        logger.error(f"[Douban] hot list error: {e}")
         return []
 
 
@@ -140,5 +142,5 @@ def get_detail(douban_id: str) -> Optional[Dict]:
             "runtime": int(runtime) if runtime else 0,
         }
     except Exception as e:
-        print(f"[Douban] detail error: {e}")
+        logger.error(f"[Douban] detail error: {e}")
         return None

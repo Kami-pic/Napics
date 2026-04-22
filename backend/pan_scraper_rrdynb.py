@@ -16,7 +16,6 @@ from scraper_base import ScraperBase
 from pan_models import PanResult, PanType, VALID_PAN_DOMAINS
 
 logger = logging.getLogger(__name__)
-
 # 网盘域名 → PanType 映射
 _DOMAIN_TO_PAN_TYPE = {
     "pan.quark.cn": PanType.QUARK,

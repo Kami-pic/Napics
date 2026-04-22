@@ -19,7 +19,6 @@ from scraper_base import ScraperBase
 from pan_models import PanResult, PanType, VALID_PAN_DOMAINS
 
 logger = logging.getLogger(__name__)
-
 # disk_type 中文 → PanType 映射
 _DISK_TYPE_MAP = {
     "夸克网盘": PanType.QUARK,

@@ -11,8 +11,6 @@ from typing import List
 from pan_models import PanResult, is_cam_quality
 
 logger = logging.getLogger(__name__)
-
-
 class ContentFilter:
     """敏感词过滤器 — 后端过滤不合适的搜索结果。"""
 

@@ -2,6 +2,7 @@
 路由模块：search
 """
 import json
+import logging
 import re
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -18,6 +19,7 @@ import searcher, douban_client, bangumi_client
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -71,7 +73,7 @@ def search_resources(
             "enhanced": True,
         }
     except Exception as e:
-        print(f"[Search] Enhanced search failed, fallback: {e}")
+        logger.error(f"[Search] Enhanced search failed, fallback: {e}")
 
     bt_results = clients["search"].search(query)
     bt_results = _merge_bt_extra_sources(query, bt_results)
@@ -145,12 +147,12 @@ def search_resources_stream(
 
                 for kw in kw_list:
                     searched.append(kw)
-                    print(f"[SSE/Prowlarr] 搜索词: '{kw}'")
+                    logger.info(f"[SSE/Prowlarr] 搜索词: '{kw}'")
                     import time as _t
                     t0 = _t.time()
                     raw = clients["search"].search(kw)
                     elapsed = _t.time() - t0
-                    print(f"[SSE/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
+                    logger.info(f"[SSE/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
                     if raw:
                         if not hit_kw:
                             hit_kw = kw
@@ -167,11 +169,11 @@ def search_resources_stream(
                                         continue
                                 all_results.append(r)
                         if filtered_out:
-                            print(f"[SSE/Prowlarr] 过滤掉 {filtered_out} 条不相关结果")
+                            logger.info(f"[SSE/Prowlarr] 过滤掉 {filtered_out} 条不相关结果")
                         break  # 有结果就停止回退
                 return "prowlarr", all_results, None, searched, hit_kw
             except Exception as e:
-                print(f"[SSE/Prowlarr] 异常: {e}")
+                logger.info(f"[SSE/Prowlarr] 异常: {e}")
                 return "prowlarr", [], str(e), [], ""
 
         def _search_direct(name, getter):
@@ -436,7 +438,7 @@ def search_single_keyword(
     try:
         raw_results = clients["search"].search(keyword)
     except Exception as e:
-        print(f"[Search/Single] Prowlarr error: {e}")
+        logger.error(f"[Search/Single] Prowlarr error: {e}")
         return {"keyword": keyword, "bt_count": 0, "bt_results": [], "total_raw": 0, "total_filtered": 0}
 
     total_raw = len(raw_results)
@@ -502,7 +504,7 @@ def search_single_keyword(
                     except:
                         pass
         except Exception as e:
-            print(f"[Search/Single] 直搜源合并失败: {e}")
+            logger.error(f"[Search/Single] 直搜源合并失败: {e}")
 
         return {
             "keyword": keyword,
@@ -522,6 +524,7 @@ def search_single_keyword(
     try:
         from alias_resolver import AliasResolver, AliasSet
         from secondary_matcher import SecondaryMatcher
+
 
         # 二次匹配（仅标题匹配，不含年份）
         if media_type:
@@ -555,7 +558,7 @@ def search_single_keyword(
             "total_filtered": len(deduped),
         }
     except Exception as e:
-        print(f"[Search/Single] error: {e}")
+        logger.error(f"[Search/Single] error: {e}")
         # fallback 到裸搜
         raw = clients["search"].search(keyword)
         return {"keyword": keyword, "bt_count": len(raw), "bt_results": [r.dict() for r in raw], "total_raw": len(raw), "total_filtered": len(raw)}

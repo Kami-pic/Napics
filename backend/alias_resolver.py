@@ -3,6 +3,7 @@
 数据源：豆瓣搜索建议、Bangumi 搜索、NFO 文件
 """
 import re
+import logging
 import unicodedata
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -11,7 +12,7 @@ import douban_client
 import bangumi_client
 import scraper
 
-
+logger = logging.getLogger(__name__)
 @dataclass
 class AliasSet:
     """影片别名集合"""
@@ -118,14 +119,14 @@ class AliasResolver:
             douban_aliases = self._from_douban(title)
             _merge_alias_set(result, douban_aliases)
         except Exception as e:
-            print(f"[AliasResolver] douban failed, skipping: {e}")
+            logger.error(f"[AliasResolver] douban failed, skipping: {e}")
 
         # 从 Bangumi 获取别名
         try:
             bangumi_aliases = self._from_bangumi(title)
             _merge_alias_set(result, bangumi_aliases)
         except Exception as e:
-            print(f"[AliasResolver] bangumi failed, skipping: {e}")
+            logger.error(f"[AliasResolver] bangumi failed, skipping: {e}")
 
         self._cache[cache_key] = result
         return result
@@ -244,7 +245,7 @@ class AliasResolver:
         try:
             nfo_data = scraper.read_nfo(folder_path)
         except Exception as e:
-            print(f"[AliasResolver] NFO read failed: {e}")
+            logger.error(f"[AliasResolver] NFO read failed: {e}")
             return aliases
 
         if not nfo_data:

@@ -1,4 +1,5 @@
 import requests
+import logging
 from typing import List, Dict, Optional
 from pydantic import BaseModel
 from quality_parser import QualityTag, parse_quality, get_quality_level
@@ -9,6 +10,8 @@ from text_processing import normalize
 from match_scoring import match_chain
 from secondary_matcher import SecondaryMatcher
 from global_filter import GlobalFilter
+
+logger = logging.getLogger(__name__)
 
 class SearchResult(BaseModel):
     title: str
@@ -95,7 +98,7 @@ class ProwlarrClient:
             results.sort(key=lambda r: r.seeders, reverse=True)
             return results
         except Exception as e:
-            print(f"Prowlarr search error: {e}")
+            logger.error(f"Prowlarr search error: {e}")
             return []
 
 def enhanced_search(

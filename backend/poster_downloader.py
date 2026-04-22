@@ -2,9 +2,10 @@
 海报下载模块：从 scraper.py 拆分而来
 """
 import os
+import logging
 import requests
 
-
+logger = logging.getLogger(__name__)
 def download_poster(folder_path: str, poster_url: str, filename: str = "poster.jpg", proxy: str = "") -> bool:
     """下载海报到文件夹（强制覆盖）"""
     if not poster_url:
@@ -19,8 +20,8 @@ def download_poster(folder_path: str, poster_url: str, filename: str = "poster.j
         with open(target, "wb") as f:
             for chunk in resp.iter_content(8192):
                 f.write(chunk)
-        print(f"[Poster] OK: {filename} <- {poster_url[:60]}")
+        logger.info(f"[Poster] OK: {filename} <- {poster_url[:60]}")
         return True
     except Exception as e:
-        print(f"[Poster] FAIL: {filename} <- {poster_url[:60]} error={e}")
+        logger.error(f"[Poster] FAIL: {filename} <- {poster_url[:60]} error={e}")
         return False

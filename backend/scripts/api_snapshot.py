@@ -1,8 +1,10 @@
 import requests
 import json
+import logging
 import os
 import sys
 
+logger = logging.getLogger(__name__)
 # 假设后端运行在 8000 端口
 BASE_URL = "http://127.0.0.1:8000"
 SNAPSHOT_DIR = "refactor_snapshots"
@@ -21,16 +23,16 @@ def capture_snapshots():
     for ep in ENDPOINTS:
         try:
             url = f"{BASE_URL}{ep}"
-            print(f"Capturing {url}...")
+            logger.info(f"Capturing {url}...")
             resp = requests.get(url, timeout=10)
             if resp.status_code == 200:
                 name = ep.strip("/").replace("/", "_") or "root"
                 with open(os.path.join(SNAPSHOT_DIR, f"{name}.json"), "w", encoding="utf-8") as f:
                     json.dump(resp.json(), f, indent=2, ensure_ascii=False)
             else:
-                print(f"Failed {url}: {resp.status_code}")
+                logger.error(f"Failed {url}: {resp.status_code}")
         except Exception as e:
-            print(f"Error {url}: {e}")
+            logger.error(f"Error {url}: {e}")
 
 def compare_snapshots():
     # 重构后运行，对比当前 API 响应与 snapshot
@@ -49,12 +51,12 @@ def compare_snapshots():
             new_data = requests.get(url, timeout=10).json()
             
             if old_data != new_data:
-                print(f"DIFF DETECTED in {ep}!")
+                logger.info(f"DIFF DETECTED in {ep}!")
                 diffs += 1
             else:
-                print(f"PASS: {ep}")
+                logger.info(f"PASS: {ep}")
         except Exception as e:
-            print(f"Error comparing {ep}: {e}")
+            logger.error(f"Error comparing {ep}: {e}")
             diffs += 1
     
     return diffs

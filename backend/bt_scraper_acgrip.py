@@ -17,7 +17,6 @@ from scraper_base import ScraperBase
 from quality_parser import parse_quality, get_quality_level
 
 logger = logging.getLogger(__name__)
-
 # 大小单位转换
 _SIZE_UNITS = {"TB": 1024, "GB": 1, "MB": 1 / 1024, "KB": 1 / (1024 * 1024)}
 

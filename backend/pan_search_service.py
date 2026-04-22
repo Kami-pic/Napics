@@ -26,7 +26,6 @@ from pan_scraper_gogopanso import GogoPansoScraper
 from pan_scraper_github import GitHubPanScraper
 
 logger = logging.getLogger(__name__)
-
 # 默认网盘优先级
 DEFAULT_PAN_PRIORITY = ["quark", "aliyun", "pan115", "pikpak", "baidu"]
 

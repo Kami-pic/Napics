@@ -15,7 +15,6 @@ from scraper_base import ScraperBase
 from pan_models import PanResult, PanType
 
 logger = logging.getLogger(__name__)
-
 # gogopanso downtype → PanType
 _DOWNTYPE_MAP = {
     "quark": PanType.QUARK,

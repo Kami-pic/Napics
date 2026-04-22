@@ -3,6 +3,7 @@
 负责季目录整理、结构归位、散落视频封装、归档清理。
 """
 import os
+import logging
 import re
 import shutil
 from typing import List, Dict, Optional
@@ -10,6 +11,7 @@ from typing import List, Dict, Optional
 from tmdb_client import parse_filename
 import scraper
 
+logger = logging.getLogger(__name__)
 # 注意：不在顶层 import organizer，避免循环依赖
 # organizer 的分类函数在各函数内部延迟导入
 
@@ -128,7 +130,7 @@ def reorganize_seasons(folder_path: str, tmdb_client=None, dry_run: bool = True,
                     if os.path.exists(op["old"]) and not os.path.exists(op["new"]):
                         os.rename(op["old"], op["new"])
             except Exception as e:
-                print(f"Reorganize error: {e}")
+                logger.error(f"Reorganize error: {e}")
     
     return {"status": "ok", "ops": ops, "count": len(ops)}
 
@@ -230,7 +232,7 @@ def reorganize_seasons_by_nfo(folder_path: str, dry_run: bool = True) -> Dict:
                     if os.path.exists(op["old"]) and not os.path.exists(op["new"]):
                         os.rename(op["old"], op["new"])
             except Exception as e:
-                print(f"Reorganize by NFO error: {e}")
+                logger.error(f"Reorganize by NFO error: {e}")
 
     return {"status": "ok", "ops": ops, "count": len(ops)}
 
@@ -452,7 +454,7 @@ def organize_folder(folder_path: str, tmdb_client=None, dry_run: bool = True,
                     if os.path.isdir(op["path"]) and not os.listdir(op["path"]):
                         os.rmdir(op["path"])
             except Exception as e:
-                print(f"Organize error: {e}")
+                logger.error(f"Organize error: {e}")
 
     # ── 孤立刮削文件归位 ──
     # 主结构操作完成后，扫描父文件夹中残留的 NFO/poster/fanart/clearlogo
@@ -546,7 +548,7 @@ def organize_folder(folder_path: str, tmdb_client=None, dry_run: bool = True,
                         try:
                             shutil.move(old_f, new_f)
                         except Exception as e:
-                            print(f"Orphan move error: {e}")
+                            logger.error(f"Orphan move error: {e}")
 
     # 自动创建快照
     if not dry_run and ops:
@@ -621,7 +623,7 @@ def merge_scattered_seasons(scattered_issue: Dict, dry_run: bool = True) -> Dict
                     shutil.move(op["old"], op["new"])
                     snapshot_ops.append({"old_path": op["old"], "new_path": op["new"], "is_dir": True})
                 except Exception as e:
-                    print(f"Merge seasons error: {e}")
+                    logger.error(f"Merge seasons error: {e}")
         
         # 创建快照
         if snapshot_ops:
@@ -761,6 +763,7 @@ def smart_archive_recursive(path: str) -> int:
 def execute_archive_plan(archive_plan: list):
     """执行旧刮削清理 plan"""
     import zipfile
+
     for item in archive_plan:
         dir_path = item.get("dir", "")
         files = item.get("files", [])

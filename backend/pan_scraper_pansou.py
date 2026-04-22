@@ -17,7 +17,6 @@ from scraper_base import ScraperBase
 from pan_models import PanResult, PanType, VALID_PAN_DOMAINS
 
 logger = logging.getLogger(__name__)
-
 # PanSou 返回的网盘类型标识 → PanType 映射
 _PANSOU_TYPE_MAP = {
     "quark": PanType.QUARK,

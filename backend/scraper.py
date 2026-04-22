@@ -3,6 +3,7 @@
 NFO 读写已拆分到 nfo_handler.py，海报下载已拆分到 poster_downloader.py
 """
 import os
+import logging
 import json
 import re
 import requests
@@ -20,6 +21,7 @@ from nfo_handler import (
 from nfo_handler import write_movie_nfo_for_video as _write_movie_nfo_for_video
 from poster_downloader import download_poster
 
+logger = logging.getLogger(__name__)
 # ── 完整刮削流程 ──
 
 
@@ -298,7 +300,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                 cp = tmdb_client_instance._cache_path("tv", tv_detail.tmdb_id)
                 tmdb_client_instance._save_cache(cp, tv_detail.dict())
         except Exception as e:
-            print(f"[V3] Failed to fetch seasons_info: {e}")
+            logger.error(f"[V3] Failed to fetch seasons_info: {e}")
 
     tmdb_id = tmdb_match_info["tmdb_id"]
     showtitle = tv_detail.title if tv_detail else ""
@@ -350,7 +352,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                 if len(parts) > 1 and parts[0].lower() == folder_last.lower():
                     # 去除重复根目录：如果种子里的第一级目录名和保存目录名一样
                     abs_p = os.path.join(folder_path, *parts[1:])
-                    print(f"[DEBUG_WHITELIST] Overlap Stripped in scraper: '{parts[0]}', Final: {abs_p}")
+                    logger.info(f"[DEBUG_WHITELIST] Overlap Stripped in scraper: '{parts[0]}', Final: {abs_p}")
                 else:
                     abs_p = os.path.join(folder_path, p_norm)
             
@@ -570,7 +572,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                             download_poster(season_dir, sd.poster_url,
                                             f"season{sn:02d}-poster.jpg", proxy)
                 except Exception as e:
-                    print(f"[Scrape] Season {sn} detail failed: {e}")
+                    logger.error(f"[Scrape] Season {sn} detail failed: {e}")
 
     # 构建 summary
     will_process = len([i for i in plan if not i.get("skip_reason")])
@@ -670,7 +672,7 @@ def _scrape_tv(folder_path, folder_name, subdirs, video_files,
                         poster_name = f"season{season_num:02d}-poster.jpg"
                         download_poster(sub_path, sd.poster_url, poster_name, proxy)
             except Exception as e:
-                print(f"[Scrape] Season {season_num} failed: {e}")
+                logger.error(f"[Scrape] Season {season_num} failed: {e}")
     
     if video_files and tv_tmdb_id:
         # 规范化白名单路径方便对比
@@ -789,6 +791,7 @@ def scrape_video(video_path: str, tmdb_client_instance, force: bool = False) -> 
             else:
                 from tmdb_client import calc_match_score
                 from text_processing import normalize as normalize_text
+
                 cn_score = calc_match_score(normalize_text(search_name), result.title, result.original_title, result.year, None)
                 en_score = calc_match_score(normalize_text(en_query), en_result.title, en_result.original_title, en_result.year, None)
                 if en_score > cn_score:

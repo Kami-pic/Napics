@@ -9,6 +9,7 @@
 """
 
 import os
+import logging
 import json
 import time
 import uuid
@@ -21,7 +22,7 @@ from pydantic import BaseModel
 
 from downloader import QBittorrentClient, AlistManager
 
-
+logger = logging.getLogger(__name__)
 TASK_FILE = "download_tasks.json"
 SANDBOX_ROOT = "downloads"
 
@@ -242,7 +243,7 @@ class DownloadManager:
                 shutil.move(src, dst)
                 moved += 1
             if moved > 0:
-                print(f"[DownloadManager] 已转移 {moved} 个文件到 {task.save_path}")
+                logger.info(f"[DownloadManager] 已转移 {moved} 个文件到 {task.save_path}")
                 task.status = "completed"
                 # 自动触发局部刷新（后台线程，不阻塞）
                 self._trigger_local_refresh(task.save_path)
@@ -253,7 +254,7 @@ class DownloadManager:
             except Exception:
                 pass
         except Exception as e:
-            print(f"[DownloadManager] 转移失败: {e}")
+            logger.error(f"[DownloadManager] 转移失败: {e}")
             task.error = f"转移失败: {e}"
 
     def _trigger_local_refresh(self, save_path: str):
@@ -276,9 +277,9 @@ class DownloadManager:
                 if added:
                     library.extend(added)
                     cm.save_library(library)
-                    print(f"[DownloadManager] 局部刷新：{save_path} 新增 {len(added)} 个文件")
+                    logger.info(f"[DownloadManager] 局部刷新：{save_path} 新增 {len(added)} 个文件")
             except Exception as e:
-                print(f"[DownloadManager] 局部刷新失败: {e}")
+                logger.error(f"[DownloadManager] 局部刷新失败: {e}")
         threading.Thread(target=_do_refresh, daemon=True).start()
 
     def _sync_qb_progress(self, task: DownloadTask):
@@ -577,7 +578,7 @@ class DownloadManager:
                 data = json.load(f)
             self.tasks = [DownloadTask(**item) for item in data]
         except Exception as e:
-            print(f"[DownloadManager] 加载任务队列失败: {e}")
+            logger.error(f"[DownloadManager] 加载任务队列失败: {e}")
             self.tasks = []
 
     def _notify_subscription_complete(self, task: DownloadTask):
@@ -601,7 +602,7 @@ class DownloadManager:
             if sub and sub.best_version and task.save_path:
                 self._auto_relocate(task)
         except Exception as e:
-            print(f"[DownloadManager] 订阅回调失败: {e}")
+            logger.error(f"[DownloadManager] 订阅回调失败: {e}")
 
     def _auto_relocate(self, task: DownloadTask):
         """洗版自动归位：在新线程中执行 file_relocator"""
@@ -611,6 +612,7 @@ class DownloadManager:
             try:
                 import asyncio
                 from shared import _get_file_relocator
+
                 relocator = _get_file_relocator()
                 loop = asyncio.new_event_loop()
                 result = loop.run_until_complete(relocator.relocate(task))
@@ -620,13 +622,13 @@ class DownloadManager:
                     loop2 = asyncio.new_event_loop()
                     loop2.run_until_complete(relocator.confirm_replace(task, result.action_plan))
                     loop2.close()
-                    print(f"[DownloadManager] 洗版归位完成: {task.media_name}")
+                    logger.info(f"[DownloadManager] 洗版归位完成: {task.media_name}")
                 elif result.status == "archived":
-                    print(f"[DownloadManager] 洗版归位（无冲突）: {task.media_name}")
+                    logger.info(f"[DownloadManager] 洗版归位（无冲突）: {task.media_name}")
                 else:
-                    print(f"[DownloadManager] 洗版归位状态: {result.status} {result.error}")
+                    logger.error(f"[DownloadManager] 洗版归位状态: {result.status} {result.error}")
             except Exception as e:
-                print(f"[DownloadManager] 洗版归位失败: {e}")
+                logger.error(f"[DownloadManager] 洗版归位失败: {e}")
 
         threading.Thread(target=_run, daemon=True, name=f"relocate-{task.id}").start()
 
@@ -639,4 +641,4 @@ class DownloadManager:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"[DownloadManager] 保存任务队列失败: {e}")
+            logger.error(f"[DownloadManager] 保存任务队列失败: {e}")

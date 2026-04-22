@@ -13,7 +13,6 @@ from rss_source_base import RSSSourceBase, RSSItem, extract_episode, extract_sea
 from quality_parser import parse_quality
 
 logger = logging.getLogger(__name__)
-
 _MAGNET_HASH_RE = re.compile(r"btih:([a-fA-F0-9]{40})", re.IGNORECASE)
 _SIZE_UNITS = {"TiB": 1024, "GiB": 1, "MiB": 1 / 1024, "KiB": 1 / (1024 * 1024)}
 

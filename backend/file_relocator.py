@@ -13,6 +13,7 @@ NFO 回收精准狙击规则：
 """
 
 import os
+import logging
 import re
 import glob
 import time
@@ -22,7 +23,7 @@ from pydantic import BaseModel
 from download_manager import DownloadTask
 from recycle_bin import RecycleBin
 
-
+logger = logging.getLogger(__name__)
 class CoexistPair(BaseModel):
     """新旧文件共存冲突对"""
     new_file: str          # Action Plan 中的目标文件路径
@@ -50,10 +51,10 @@ _VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", "
 def _safe_print(msg: str):
     """安全打印（避免 Windows GBK 编码崩溃）"""
     try:
-        print(msg)
+        logger.info(msg)
     except UnicodeEncodeError:
         try:
-            print(msg.encode("utf-8", errors="replace").decode("utf-8"))
+            logger.error(msg.encode("utf-8", errors="replace").decode("utf-8"))
         except Exception:
             pass
 
@@ -388,6 +389,7 @@ class FileRelocator:
                     
                     if has_video:
                         from organizer import _extract_season_number
+
                         s_num = _extract_season_number(d)
                         old_candidates.append({
                             "path": d_path,

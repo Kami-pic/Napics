@@ -1,17 +1,19 @@
 import os
+import logging
 import shutil
 import time
 
+logger = logging.getLogger(__name__)
 # 挂载点，可以指向真实的 NAS
 NAS_REAL_ROOT = r"\\DS218play\share\视频"
 SANDBOX_REAL_DIR = os.path.join(os.path.dirname(__file__), "sandbox_real")
 
 def create_mirror(src_root, dst_root):
     if not os.path.exists(src_root):
-        print(f"❌ 错误: 无法找到真实 NAS 路径 {src_root}。请确保网络驱动器已连接。")
+        logger.info(f"❌ 错误: 无法找到真实 NAS 路径 {src_root}。请确保网络驱动器已连接。")
         return
 
-    print(f"🚀 开始 1:1 零字节克隆，源路径: {src_root} ...")
+    logger.info(f"🚀 开始 1:1 零字节克隆，源路径: {src_root} ...")
     start_time = time.time()
     
     # 每次克隆前清空上次的第二沙盒
@@ -51,18 +53,18 @@ def create_mirror(src_root, dst_root):
             
             # 控制台每克隆几百个输出一下
             if file_count % 500 == 0 and file_count > 0:
-                print(f"   已扫描并生成: {file_count} 个空文件的骨架...")
+                logger.info(f"   已扫描并生成: {file_count} 个空文件的骨架...")
                 
     except PermissionError as pe:
-        print(f"⚠️ 权限受限跳过部分目录: {pe}")
+        logger.info(f"⚠️ 权限受限跳过部分目录: {pe}")
     except Exception as e:
-        print(f"❌ 克隆过程中发生异常: {e}")
+        logger.info(f"❌ 克隆过程中发生异常: {e}")
 
     cost = time.time() - start_time
-    print(f"✅ 【第二试验田 (Real Mirror Sandbox)】 克隆完毕！")
-    print(f"   总耗时: {cost:.2f} 秒")
-    print(f"   镜像包含: {folder_count} 个文件夹骨架, {file_count} 个空文件 (0 字节)")
-    print(f"   目标沙盒位置: {dst_root}")
+    logger.info(f"✅ 【第二试验田 (Real Mirror Sandbox)】 克隆完毕！")
+    logger.info(f"   总耗时: {cost:.2f} 秒")
+    logger.info(f"   镜像包含: {folder_count} 个文件夹骨架, {file_count} 个空文件 (0 字节)")
+    logger.info(f"   目标沙盒位置: {dst_root}")
 
 if __name__ == "__main__":
     create_mirror(NAS_REAL_ROOT, SANDBOX_REAL_DIR)

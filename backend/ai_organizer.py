@@ -1,8 +1,10 @@
 import os
+import logging
 import json
 import requests
 from typing import List, Dict
 
+logger = logging.getLogger(__name__)
 class AIOrganizer:
     def __init__(self, config):
         self.api_key = config.get("openai_api_key")
@@ -67,7 +69,7 @@ class AIOrganizer:
                 return []
                 
         except Exception as e:
-            print(f"AI Suggestion Error: {e}")
+            logger.error(f"AI Suggestion Error: {e}")
             return []
 
 def organize_by_ai(config, videos):
@@ -122,6 +124,7 @@ def ai_extract_episode(filename: str, config: dict) -> dict:
 
         # 尝试从 markdown 代码块中提取 JSON
         import re
+
         json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
         if json_match:
             content = json_match.group(1)
@@ -150,5 +153,5 @@ def ai_extract_episode(filename: str, config: dict) -> dict:
             "absolute_episode": _safe_int(result.get("absolute_episode")),
         }
     except Exception as e:
-        print(f"AI extract error: {e}")
+        logger.error(f"AI extract error: {e}")
         return None

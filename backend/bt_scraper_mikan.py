@@ -12,8 +12,6 @@ from scraper_base import ScraperBase
 from quality_parser import parse_quality, get_quality_level
 
 logger = logging.getLogger(__name__)
-
-
 class MikanScraper(ScraperBase):
     """蜜柑计划 BT 搜索爬虫 — 通过搜索 RSS 获取结果。"""
 

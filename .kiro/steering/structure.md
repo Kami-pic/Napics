@@ -21,10 +21,11 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   ├── search.py       # /api/search /search/* /alist/*
 │   │   ├── download.py     # /download* /batch-search /batch-download
 │   │   ├── config.py       # /config/* /no-scrape /cache/*
-│   │   ├── discover.py     # /douban/* /movie/poster /add-media
+│   │   ├── discover.py     # /douban/* /movie/poster /add-media /discover/*
 │   │   ├── system.py       # /recycle-bin/* /torrent-blacklist/* /api/system/*
 │   │   └── tools.py        # /batch_manage /ai/* /play
 │   ├── config_manager.py   # 配置管理（AppConfig）
+│   ├── discover_enrich.py  # 发现推荐业务层（enrich_cache + 清洗名注入 + 本地状态注入）
 │   ├── organizer.py        # 文件夹分类判定核心（~550 行）+ re-export renamer/structure_organizer
 │   ├── renamer.py          # 重命名 + 影子名生成（从 organizer.py 拆分）
 │   ├── structure_organizer.py # 季目录整理 + 结构归位 + 归档清理（从 organizer.py 拆分）
@@ -62,7 +63,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
               ↓
 路由层        routes/*（参数校验 + 调用业务层，不写业务逻辑）
               ↓
-业务逻辑层    organizer.py（分类判定）/ renamer.py（重命名+影子名）/ structure_organizer.py（结构整理+归档）/ analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py
+业务逻辑层    organizer.py（分类判定）/ renamer.py（重命名+影子名）/ structure_organizer.py（结构整理+归档）/ analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py / discover_enrich.py（发现推荐 enrich）
               ↓
 数据获取层    tmdb_client.py / douban_client.py / douban_api_v2.py / bangumi_client.py / searcher.py / scraper.py / nfo_handler.py / poster_downloader.py
               ↓

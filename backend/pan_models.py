@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 # ──────────────────────────────────────────────
@@ -162,7 +162,8 @@ class PanResult(BaseModel):
     file_count: int = 0                 # 文件数量，0 = 未知
     alive: bool = True                  # 链接存活预检结果
 
-    @validator("share_url")
+    @field_validator("share_url")
+    @classmethod
     def validate_share_url(cls, v):
         """域名白名单校验：只允许已知网盘域名。"""
         if not v or not v.startswith("http"):
@@ -172,30 +173,19 @@ class PanResult(BaseModel):
             raise ValueError(f"share_url 域名不在白名单: {domain}")
         return v
 
-    @validator("clean_title", always=True, pre=True)
-    def auto_clean_title(cls, v, values):
-        """自动清洗标题（如果未手动设置）。"""
-        if v:
-            return v
-        raw = values.get("title", "")
-        return clean_title(raw) if raw else ""
-
-    @validator("resolution", always=True, pre=True)
-    def auto_parse_resolution(cls, v, values):
-        """自动从标题解析分辨率（如果未手动设置）。"""
-        if v:
-            return v
-        raw = values.get("title", "")
-        return parse_resolution(raw) if raw else "unknown"
-
-    @validator("is_complete", always=True, pre=True)
-    def auto_check_completeness(cls, v, values):
-        """自动判断是否碎片集（如果未手动设置）。"""
-        # 只在默认值 True 时自动检测
-        raw = values.get("title", "")
-        if raw and is_fragment_episode(raw):
-            return False
-        return v
+    @model_validator(mode="before")
+    @classmethod
+    def auto_fill_defaults(cls, data):
+        """自动填充 clean_title / resolution / is_complete（未手动设置时从 title 推导）。"""
+        if isinstance(data, dict):
+            raw = data.get("title", "")
+            if not data.get("clean_title") and raw:
+                data["clean_title"] = clean_title(raw)
+            if not data.get("resolution") and raw:
+                data["resolution"] = parse_resolution(raw)
+            if raw and is_fragment_episode(raw):
+                data["is_complete"] = False
+        return data
 
 
 # ──────────────────────────────────────────────

@@ -14,8 +14,6 @@ from scraper_base import ScraperBase
 from quality_parser import parse_quality, get_quality_level
 
 logger = logging.getLogger(__name__)
-
-
 class BitsearchResult:
     """Bitsearch 搜索结果（内部中间格式）。"""
     __slots__ = ("title", "infohash", "size", "seeders", "leechers",

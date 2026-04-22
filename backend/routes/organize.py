@@ -2,6 +2,7 @@
 路由模块：organize — 重命名 / 刮削补充 / 结构整理 / 一键整理
 """
 import os
+import logging
 import json
 import time
 import shutil
@@ -17,6 +18,7 @@ from shared import (
 import tmdb_client, scraper, organizer, analyzer
 from organize_history import history_m
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/organize/rollback")
@@ -531,13 +533,13 @@ def merge_scattered_seasons_api(path: str = "", dry_run: bool = True):
 @router.post("/rename")
 def rename_item(old_path: str, new_name: str):
     """手动重命名文件或文件夹"""
-    print(f"[rename] old_path={old_path}")
-    print(f"[rename] new_name={new_name}")
-    print(f"[rename] exists={os.path.exists(old_path)}")
+    logger.info(f"[rename] old_path={old_path}")
+    logger.info(f"[rename] new_name={new_name}")
+    logger.info(f"[rename] exists={os.path.exists(old_path)}")
     if not os.path.exists(old_path):
         # 尝试修复路径分隔符
         alt_path = old_path.replace("/", "\\")
-        print(f"[rename] 尝试替换分隔符: {alt_path} exists={os.path.exists(alt_path)}")
+        logger.info(f"[rename] 尝试替换分隔符: {alt_path} exists={os.path.exists(alt_path)}")
         if os.path.exists(alt_path):
             old_path = alt_path
         else:
@@ -691,6 +693,7 @@ async def organize_full_stream(path: str, dry_run: bool = True, use_ai: bool = F
 
     async def event_stream():
         import traceback
+
         try:
             library = config_m.load_library()
             total_steps = 5

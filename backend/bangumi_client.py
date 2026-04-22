@@ -1,7 +1,9 @@
 """Bangumi 刮削客户端 — 搜索 + 详情"""
+import logging
 import requests
 from typing import List, Dict, Optional
 
+logger = logging.getLogger(__name__)
 HEADERS = {
     "User-Agent": "nas-media-manager/1.0",
     "Accept": "application/json",
@@ -19,6 +21,7 @@ def _get_proxies():
         return _PROXIES
     try:
         from config_manager import ConfigManager
+
         cm = ConfigManager()
         proxy = cm.get("http_proxy", "")
         if proxy:
@@ -59,7 +62,7 @@ def search(query: str, type_filter: int = 0) -> List[Dict]:
             })
         return results
     except Exception as e:
-        print(f"[Bangumi] search error: {e}")
+        logger.error(f"[Bangumi] search error: {e}")
         return []
 
 
@@ -111,7 +114,7 @@ def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
             })
         return results
     except Exception as e:
-        print(f"[Bangumi] hot anime error: {e}")
+        logger.error(f"[Bangumi] hot anime error: {e}")
         return []
 
 
@@ -155,7 +158,7 @@ def discover(type: int = 2, cat: int = None, sort: str = "rank",
             })
         return results
     except Exception as e:
-        print(f"[Bangumi] discover error: {e}")
+        logger.error(f"[Bangumi] discover error: {e}")
         return []
 
 
@@ -202,5 +205,5 @@ def get_detail(bgm_id: int) -> Optional[Dict]:
             "platform": item.get("platform", ""),
         }
     except Exception as e:
-        print(f"[Bangumi] detail error: {e}")
+        logger.error(f"[Bangumi] detail error: {e}")
         return None

@@ -18,7 +18,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js,css}"
 - 字符串：双引号优先
 - 注释和 docstring：用中文
 - 错误处理：外层 try-except 兜底，不让单个失败中断整体流程
-- 打印日志：`print(f"[模块名] 描述: {变量}")` 格式
+- 日志：使用 `logging` 模块，每个文件顶部 `logger = logging.getLogger(__name__)`，格式 `logger.info/warning/error(f"[模块名] 描述: {变量}")`
 - 文件读写：统一 `encoding="utf-8"`，JSON 写入加 `ensure_ascii=False`
 
 ## 前端

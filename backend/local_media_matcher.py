@@ -5,6 +5,7 @@
 第三层：异步补全（后台线程用 TMDB API 搜索补全未命中的豆瓣条目）
 """
 import os
+import logging
 import re
 import json
 import time
@@ -14,6 +15,7 @@ from typing import Dict, List, Optional, Tuple
 from text_processing import normalize
 from text_utils import fuzzy_score
 
+logger = logging.getLogger(__name__)
 # ── 常量 ──
 _FUZZY_THRESHOLD = 0.80  # 片名模糊匹配阈值
 _YEAR_TOLERANCE = 1      # 年份允许 ±1 误差
@@ -140,7 +142,7 @@ class LocalMediaMatcher:
         self._title_year_index = title_year_idx
         self._title_index = title_idx
         self._indexed = True
-        print(f"[LocalMediaMatcher] 索引构建完成: tmdb={len(tmdb_idx)} title_year={len(title_year_idx)} title={len(title_idx)} folders={len(folders)}")
+        logger.info(f"[LocalMediaMatcher] 索引构建完成: tmdb={len(tmdb_idx)} title_year={len(title_year_idx)} title={len(title_idx)} folders={len(folders)}")
 
     def match(self, item: dict) -> tuple:
         """匹配单个推荐/探索条目，返回 (local_status, local_folder):
@@ -282,9 +284,9 @@ class LocalMediaMatcher:
             try:
                 with open(_CACHE_FILE, "r", encoding="utf-8") as f:
                     self._id_cache = json.load(f)
-                print(f"[LocalMediaMatcher] ID 映射缓存加载: {len(self._id_cache)} 条")
+                logger.info(f"[LocalMediaMatcher] ID 映射缓存加载: {len(self._id_cache)} 条")
             except Exception as e:
-                print(f"[LocalMediaMatcher] ID 映射缓存加载失败: {e}")
+                logger.error(f"[LocalMediaMatcher] ID 映射缓存加载失败: {e}")
                 self._id_cache = {}
         else:
             self._id_cache = {}
@@ -295,7 +297,7 @@ class LocalMediaMatcher:
             with open(_CACHE_FILE, "w", encoding="utf-8") as f:
                 json.dump(self._id_cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"[LocalMediaMatcher] ID 映射缓存保存失败: {e}")
+            logger.error(f"[LocalMediaMatcher] ID 映射缓存保存失败: {e}")
 
     def add_id_mapping(self, douban_id: str, tmdb_id: int):
         """添加一条 douban_id → tmdb_id 映射"""
@@ -355,18 +357,19 @@ class LocalMediaMatcher:
                 time.sleep(_ASYNC_INTERVAL)
 
         except Exception as e:
-            print(f"[LocalMediaMatcher] 异步补全异常: {e}")
+            logger.info(f"[LocalMediaMatcher] 异步补全异常: {e}")
         finally:
             # 最终保存
             if save_counter > 0:
                 self._save_id_cache()
-                print(f"[LocalMediaMatcher] 异步补全完成，新增 {save_counter} 条映射")
+                logger.info(f"[LocalMediaMatcher] 异步补全完成，新增 {save_counter} 条映射")
             self._worker_running = False
 
     def _search_tmdb_id(self, title: str, year: str, original_title: str, media_type: str) -> Optional[int]:
         """用 TMDB API 搜索获取 tmdb_id"""
         try:
             from shared import get_clients
+
             tmdb = get_clients()["tmdb"]
 
             # 优先用 original_title 搜索（英文/原始名匹配率更高）
@@ -394,7 +397,7 @@ class LocalMediaMatcher:
                 if tid:
                     return int(tid)
         except Exception as e:
-            print(f"[LocalMediaMatcher] TMDB 搜索失败 ({title}): {e}")
+            logger.error(f"[LocalMediaMatcher] TMDB 搜索失败 ({title}): {e}")
         return None
 
 
