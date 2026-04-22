@@ -158,6 +158,7 @@
 - 清洗名系统 → `skills/clean-name-system.md`
 - 发现推荐 → `knowledge/discover-recommend.md`
 - 订阅系统 → `knowledge/subscribe-system.md`
+- 订阅系统技能 → `skills/subscribe-system.md`
 - 滚动交互 → `knowledge/scroll-damping-interaction.md`
 - API 清单 → `knowledge/api-reference.md`
 - 数据结构 → `knowledge/data-models.md`
@@ -171,6 +172,8 @@
 - 发现页英文名缓存 → `skills/discover-enrich-cache.md`
 - AI 集成设计 → `docs/ai-integration-design.md`
 - AI 集成测试报告 → `docs/ai-integration-test-report.md`
+- AI 客户端基础设施 → `skills/ai-client-infra.md`
+- AI 业务场景编排 → `skills/ai-business-scenes.md`
 - 多语言搜索词 TODO → `docs/multilang-search-todo.md`
 - 发现页 TMDB 补全设计 → `docs/discover-enrich-design.md`（已实施）
 

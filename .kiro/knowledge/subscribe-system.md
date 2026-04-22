@@ -1,44 +1,108 @@
 # 订阅系统
 
-## 核心架构
+## 核心架构：RSS + 直搜双通道
 
-- `subscriber.py`：订阅管理器，CRUD + JSON 持久化（subscriptions.json）+ 别名预拉取 + 媒体库查重
-- `routes/subscribe.py`：10 个路由（CRUD + check + search + sources 管理），懒加载单例
+```
+SubscriptionScheduler（调度器，后端启动时自动 start）
+├── RSS 通道（高频，每 5 分钟检查一轮）
+│   ├── RSSSourceManager 管理所有 RSS 源
+│   ├── 逐订阅遍历源拉取 feed → rss_matcher 匹配 → 下载
+│   └── 源：Prowlarr / 蜜柑 / Nyaa / EZTV（4 个已注册）
+│
+└── 直搜通道（低频，每 4 小时）
+    ├── 调用 search_service.search_all_sources()
+    ├── 只搜无 RSS 的源（磁力熊/XL720/Bitsearch）
+    └── 和 RSS 通道独立计时，互不阻塞
+```
 
 ## 数据模型
 
-- Subscription（含 EpisodeInfo 指纹对象），电影用 "0" 作 key
-- downloaded_episodes 用对象结构存储指纹（info_hash/title/quality_tag/source/channel/task_id/timestamp）
-- DownloadTask 新增 subscription_id + subscription_episode 字段（订阅→下载→回调纽带）
-- 状态机：active ↔ paused，电影下载完成 → completed，剧集全部集数下载完成 → completed
+### Subscription（subscriber.py）
+- 基础字段：id / title / year / type / tmdb_id / douban_id / imdb_id / poster / season / total_episode
+- 订阅配置：quality / target_quality / include / exclude / save_path / search_keyword / sources / mode / best_version
+- 新增字段：purpose（follow/upgrade）/ current_quality_score / local_file_path / search_interval_hours / last_results_summary / imdb_id
+- aliases：`{"cn": [], "en": [], "original": []}` — 创建时从发现页清洗名 + alias_resolver 填充
+- downloaded_episodes：`Dict[str, EpisodeInfo]` — 每集下载指纹（quality_tag/source/channel/task_id/timestamp）
+- 状态机：active ↔ paused → completed
 
-## RSS 订阅框架
+### 订阅创建数据流
+```
+发现页详情 → 点"订阅" → SubscribeConfigModal（选类型/质量/源）
+  → handleSubscribeConfirm 构造数据：
+    - type 从 item.media_type 取（卡片级别，不是 tab 级别）
+    - season 从标题自动提取（"第二季"→2, "S02"→2）
+    - 清洗名从 detail.clean_name_cn/en/original 获取
+    - tmdb_id / imdb_id / douban_id 从 detail 获取
+  → POST /subscribe → subscriber.add()：
+    - aliases 优先用前端清洗名，alias_resolver 补充
+    - tmdb_id 中文搜不到时用英文名重试
+    - 同作品不同 purpose 允许共存（追更+洗版）
+```
 
-- `rss_source_base.py`：RSS 源基类 + RSSItem 标准化结构 + 集号/季号提取工具
-- `rss_source_prowlarr.py`：Prowlarr 源（第一个可用源），Search Group 多词并查
-- `rss_matcher.py`：匹配引擎（质量过滤 + 关键词过滤 + 集数匹配 + 指纹去重 + 整季包识别）
-- `rss_engine.py`：RSSSourceManager（源注册/启用/禁用）+ SubscriptionScheduler（定时调度+频率衰减）
-- 频率衰减：前72h每4h → 3-14天每12h → 14-30天每24h → 30天无果自动暂停
-- 新增源只需实现 RSSSourceBase 并注册，不改框架代码
+## RSS 源
+
+| 源 | 文件 | 特点 |
+|---|---|---|
+| Prowlarr | rss_source_prowlarr.py | 搜索 API（非真正 RSS），英文名优先 |
+| 蜜柑 | rss_source_mikan.py | RSS 搜索，中文/日文优先，curl_cffi |
+| Nyaa | rss_source_nyaa.py | RSS 搜索，日文/英文优先，需代理 |
+| EZTV | rss_source_eztv.py | RSS 按 IMDB ID 精准订阅，追美剧首选，需代理 |
+
+- 新增源只需：继承 RSSSourceBase → 实现 fetch() → routes/subscribe.py 注册
+- search_keyword_mapper.py 的 SOURCE_LANG_PRIORITY 需同步更新
+
+## 搜索服务（search_service.py）
+
+从 routes/search.py 抽离的核心搜索逻辑：
+- `build_keywords()` — 构造多语言搜索词
+- `search_prowlarr()` / `search_direct()` — 独立搜索函数
+- `search_all_sources_iter()` — SSE 迭代器版本
+- `search_all_sources()` — 同步版本（订阅调度器用）
+- `BT_SOURCE_DEFAULTS` / `PAN_SOURCE_DEFAULTS` — 源配置数据
+
+## RSS 匹配器（rss_matcher.py）
+
+过滤链：标题匹配（L1+L2）→ 质量 → 关键词 → 集数匹配 + Quality Cutoff + 指纹去重
+- 标题匹配：用 match_chain 做跨语言匹配，score < 20 过滤
+- Quality Cutoff：已下载集质量达到 target_quality 时不再匹配
+- 整季包识别：有 S01 但无 E01 → 可能是整季包
+
+## 调度器增强
+
+- `should_search_now()`：支持自定义 search_interval_hours，覆盖默认衰减策略
+- `_build_results_summary()`：生成前端展示用的搜索摘要
+- `_retry_failed_downloads()`：检测失败任务，从 found_resources 换候选重试
+- `_tick_search()`：直搜通道独立循环
+- `rss_item_to_search_result()`：RSSItem → SearchResult 格式桥接
+- 调度器在 main.py startup 事件中自动启动
 
 ## 洗版机制
 
-- `rss_matcher` 支持 best_version 洗版模式
-- `rss_engine._select_best_version()` 按集比较质量分数
-- 质量评分基准见 project-memory.md 的"质量评分体系"
+- purpose="upgrade" 的订阅走洗版逻辑
+- `_select_best_version()` 按集比较质量分数
+- 下载完成 → `_auto_relocate()` 调用 file_relocator 归位替换
+- 归位失败不标记 completed，保留订阅继续搜索
+- local_file_path 校验 + media_matcher 自动重新定位
+- 电影洗版下载完成自动标记 completed
 
-## 媒体库联动
+## 日历
 
-- 新增剧集订阅时自动扫描已有集数，填充 downloaded_episodes（source="local"）
-- `_scan_local_episodes` + `_extract_episode_from_filename`
-- `GET /subscribe/calendar`：从 TMDB 拉剧集播出日期，返回时间线
+- `GET /subscribe/calendar`：TMDB 优先，Bangumi episodes API fallback
+- 过滤已完结（state=completed）和洗版订阅（purpose=upgrade）
+- 前端 SubscribeCalendar 按日期分组时间线展示
 
 ## 前端
 
-- useSubscriptions hook、ExpandDetail 订阅按钮（localSubscribed 即时反馈）
-- SubscribePanel 侧边抽屉 + SubscribeInline 内嵌列表（发现页订阅tab）
-- FoundResourcesList 资源列表（标题+质量+大小+做种数+下载按钮）
-- 推荐/探索/搜索三个场景统一支持订阅按钮+卡片角标
-- 卡片状态标签统一到右下角信息行（半透明样式，合并标签：✓已有·订阅 / ↑升级·订阅）
-- 一级tab点击+搜索框聚焦时自动置顶到发现页
-- api.ts 11 个订阅 API 函数（含源管理+日历）
+### 组件
+- SubscribeConfigModal：订阅类型选择（追更/洗版）+ 目标质量 + 源分组 + 高级设置折叠
+- SubscribeSourceSelect：RSS/直搜分组展示 + 内容类型推荐（★标记）
+- SubscribeInline：两级展示（折叠态+展开态集详情）+ purpose 标签 + 搜索摘要
+- SubscribeCalendar：时间线日历 + Bangumi fallback + 空状态提示
+
+### 类型
+- SubscriptionItem（useSubscriptions.ts）：含所有新增字段 + EpisodeInfo 接口
+- SubscribeConfig：purpose / target_quality / sources 等
+
+### 保存路径
+- `GET /subscribe/save-paths` 返回 config.category_tags 的反向映射
+- 前端根据 mediaType 自动填入对应分类路径
