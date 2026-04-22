@@ -70,6 +70,17 @@ def read_root():
     return {'message': 'NAS Video Upgrader API is running'}
 
 
+@app.on_event("startup")
+def startup_event():
+    """后端启动时初始化订阅调度器"""
+    try:
+        from routes.subscribe import _get_scheduler
+        _get_scheduler()  # 懒加载 + start()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"[Main] 订阅调度器启动失败: {e}")
+
+
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run('main:app', host='127.0.0.1', port=8000, reload=False)
