@@ -66,8 +66,9 @@ export default function SubscribeSourceSelect({ selectedSources, onChange, compa
   const rssSources = allSources.filter(s => RSS_SOURCES.has(s.name));
   const searchSources = allSources.filter(s => !RSS_SOURCES.has(s.name));
 
-  // 推荐提示
-  const rec = mediaType === "tv" ? RECOMMENDATIONS.us_tv : RECOMMENDATIONS.movie;
+  // 推荐提示（根据 mediaType 选择推荐方案）
+  const recKey = mediaType === "tv" ? "us_tv" : "movie";
+  const rec = RECOMMENDATIONS[recKey];
   const recommendedNames = new Set([...(rec?.rss || []), ...(rec?.search || [])]);
 
   return (
@@ -86,16 +87,17 @@ export default function SubscribeSourceSelect({ selectedSources, onChange, compa
           <div className="flex gap-1.5 flex-wrap">
             {rssSources.map(s => {
               const isActive = useGlobal ? s.enabled : selectedSources.includes(s.name);
-              const isRecommended = recommendedNames.has(s.name);
+              const isRecommended = !isActive && recommendedNames.has(s.name);
               return (
                 <button key={s.name} onClick={() => toggleSource(s.name)}
                   className={`px-2.5 py-1 rounded-md text-[11px] transition-colors ${
                     isActive
-                      ? "bg-blue-600/20 text-blue-300 border border-blue-500/30"
-                      : "bg-white/[0.04] text-slate-600 border border-transparent"
-                  } ${isRecommended && !isActive ? "ring-1 ring-amber-500/30" : ""}`}>
+                      ? "bg-blue-600/30 text-blue-200 border border-blue-500/40 font-medium"
+                      : "bg-white/[0.04] text-slate-600 border border-transparent hover:text-slate-400"
+                  } ${isRecommended ? "ring-1 ring-amber-500/30" : ""}`}>
+                  {isActive && <span className="mr-1">✓</span>}
                   {s.name}
-                  {isRecommended && !isActive && <span className="ml-0.5 text-amber-400">★</span>}
+                  {isRecommended && <span className="ml-0.5 text-amber-400">★</span>}
                 </button>
               );
             })}
@@ -110,16 +112,17 @@ export default function SubscribeSourceSelect({ selectedSources, onChange, compa
           <div className="flex gap-1.5 flex-wrap">
             {searchSources.map(s => {
               const isActive = useGlobal ? s.enabled : selectedSources.includes(s.name);
-              const isRecommended = recommendedNames.has(s.name);
+              const isRecommended = !isActive && recommendedNames.has(s.name);
               return (
                 <button key={s.name} onClick={() => toggleSource(s.name)}
                   className={`px-2.5 py-1 rounded-md text-[11px] transition-colors ${
                     isActive
-                      ? "bg-emerald-600/20 text-emerald-300 border border-emerald-500/30"
-                      : "bg-white/[0.04] text-slate-600 border border-transparent"
-                  } ${isRecommended && !isActive ? "ring-1 ring-amber-500/30" : ""}`}>
+                      ? "bg-emerald-600/30 text-emerald-200 border border-emerald-500/40 font-medium"
+                      : "bg-white/[0.04] text-slate-600 border border-transparent hover:text-slate-400"
+                  } ${isRecommended ? "ring-1 ring-amber-500/30" : ""}`}>
+                  {isActive && <span className="mr-1">✓</span>}
                   {s.name}
-                  {isRecommended && !isActive && <span className="ml-0.5 text-amber-400">★</span>}
+                  {isRecommended && <span className="ml-0.5 text-amber-400">★</span>}
                 </button>
               );
             })}

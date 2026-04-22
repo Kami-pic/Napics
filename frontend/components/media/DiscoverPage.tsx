@@ -508,8 +508,33 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
 
         {/* 订阅页 */}
         {primaryTab === "subscribe" && !isSearchMode && (
-          <SubscribeInline subscriptions={subscriptions} onRefresh={refreshSubs}
-            onOpenSearch={(item) => openSearchModal({ title: item.title, year: item.year || "", rating: 0, cover_url: item.poster || "", subtitle: "", episode: "", douban_id: item.douban_id || "", media_type: item.type === "tv" ? "tv" : "movie" } as DoubanHotItem, null)}
+          <SubscribeInline subscriptions={subscriptions} onRefresh={() => { refreshSubs(); setJustSubscribed(new Set()); }}
+            onOpenSearch={(item) => {
+              // 从订阅数据构造搜索弹窗参数，传递清洗名
+              const aliases = (item as any).aliases || {};
+              const cnName = (aliases.cn?.[0]) || item.title;
+              const enName = (aliases.en?.[0]) || "";
+              const originalName = (aliases.original?.[0]) || "";
+              openSearchModal({
+                title: item.title, year: item.year || "", rating: 0,
+                cover_url: item.poster || "", subtitle: enName,
+                episode: "", douban_id: item.douban_id || "",
+                media_type: item.type === "tv" ? "tv" : "movie",
+                clean_name_en: enName,
+                clean_name_original: originalName,
+              } as DoubanHotItem, null);
+            }}
+            onOpenConfig={(item) => {
+              // 打开配置弹窗编辑现有订阅（复用 SubscribeConfigModal）
+              setSubConfigItem({
+                title: item.title, year: item.year || "", rating: 0,
+                cover_url: item.poster || "", subtitle: "",
+                episode: "", douban_id: item.douban_id || "",
+                media_type: item.type === "tv" ? "tv" : "movie",
+              } as DoubanHotItem);
+              setSubConfigDetail(null);
+              setSubConfigOpen(true);
+            }}
             view={subscribeView} filter={subscribeFilter} />
         )}
       </div>
@@ -534,7 +559,8 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         onClose={() => { setSubConfigOpen(false); setSubConfigItem(null); setSubConfigDetail(null); }}
         onConfirm={handleSubscribeConfirm}
         title={subConfigItem?.title || ""}
-        mediaType={activeTabConfig.mediaType === "tv" ? "tv" : "movie"}
+        mediaType={subConfigItem?.media_type || activeTabConfig.mediaType === "tv" ? "tv" : "movie"}
+        defaultSavePath={defaultSavePath}
       />
     </div>
   );

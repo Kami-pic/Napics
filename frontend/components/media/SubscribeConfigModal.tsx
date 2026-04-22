@@ -75,7 +75,9 @@ export default function SubscribeConfigModal({
           <h3 className="text-[15px] font-bold text-white">订阅设置</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-lg">✕</button>
         </div>
-        <p className="text-[12px] text-slate-400 -mt-2">{title} · {mediaType === "tv" ? "剧集" : "电影"}</p>
+        <p className="text-[12px] text-slate-400 -mt-2">
+          {title} · <span className={mediaType === "tv" ? "text-blue-400" : "text-amber-400"}>{mediaType === "tv" ? "📺 剧集" : "🎬 电影"}</span>
+        </p>
 
         {/* 订阅类型 */}
         <div>
@@ -106,7 +108,8 @@ export default function SubscribeConfigModal({
         {/* 质量偏好 */}
         <div>
           <label className="text-[11px] text-slate-500 mb-1.5 block">
-            {isUpgrade ? "最低接受质量" : "质量偏好"}
+            {isUpgrade ? "最低接受质量" : "最低质量要求"}
+            <span className="text-slate-600 ml-1">（低于此质量的资源会被过滤）</span>
           </label>
           <div className="flex gap-2">
             {QUALITY_OPTIONS.map(q => (
@@ -205,7 +208,7 @@ export default function SubscribeConfigModal({
             <div>
               <label className="text-[11px] text-slate-500 mb-1 block">保存路径</label>
               <input value={config.save_path} onChange={e => set("save_path", e.target.value)}
-                placeholder="留空使用默认"
+                placeholder={defaultSavePath || "留空使用默认"}
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white font-mono outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
             </div>
           </div>
