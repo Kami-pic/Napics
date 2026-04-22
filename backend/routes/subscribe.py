@@ -55,6 +55,36 @@ def _get_source_manager() -> RSSSourceManager:
             _source_manager.register(eztv_source)
         except Exception as e:
             logger.error(f"[Subscribe] EZTV RSS 源注册失败: {e}")
+        # 注册动漫花园 RSS 源
+        try:
+            from rss_source_dmhy import DMHYRSSSource
+            proxy = getattr(conf, "http_proxy", "") or ""
+            dmhy_source = DMHYRSSSource(proxy=proxy)
+            _source_manager.register(dmhy_source)
+        except Exception as e:
+            logger.error(f"[Subscribe] 动漫花园 RSS 源注册失败: {e}")
+        # 注册 ACG.RIP RSS 源
+        try:
+            from rss_source_acgrip import ACGRipRSSSource
+            acgrip_source = ACGRipRSSSource()
+            _source_manager.register(acgrip_source)
+        except Exception as e:
+            logger.error(f"[Subscribe] ACG.RIP RSS 源注册失败: {e}")
+        # 注册 Bangumi Moe RSS 源
+        try:
+            from rss_source_bangumi_moe import BangumiMoeRSSSource
+            bgm_source = BangumiMoeRSSSource()
+            _source_manager.register(bgm_source)
+        except Exception as e:
+            logger.error(f"[Subscribe] Bangumi Moe RSS 源注册失败: {e}")
+        # 注册 YTS RSS 源
+        try:
+            from rss_source_yts import YTSRSSSource
+            proxy = getattr(conf, "http_proxy", "") or ""
+            yts_source = YTSRSSSource(proxy=proxy)
+            _source_manager.register(yts_source)
+        except Exception as e:
+            logger.error(f"[Subscribe] YTS RSS 源注册失败: {e}")
     return _source_manager
 
 
@@ -194,6 +224,14 @@ def get_save_paths():
     return {"paths": tag_to_paths, "default": default_path}
 
 
+@router.get("/subscribe/notifications/unread")
+def get_unread():
+    """获取所有订阅的未读通知总数"""
+    from notification_service import get_unread_count
+    mgr = _get_sub_manager()
+    return {"unread": get_unread_count(mgr)}
+
+
 # ── CRUD 路由（参数路由放最后，避免和固定路径冲突）──
 
 @router.post("/subscribe")
@@ -263,3 +301,32 @@ def trigger_search(sub_id: str):
         "matched": len(matched),
         "items": [item.model_dump() for item in matched[:20]],
     }
+
+
+@router.get("/subscribe/{sub_id}/logs")
+def get_search_logs(sub_id: str):
+    """获取订阅的搜索日志"""
+    mgr = _get_sub_manager()
+    sub = mgr.get(sub_id)
+    if not sub:
+        return {"status": "not_found"}
+    return [l.model_dump() for l in sub.search_logs]
+
+
+@router.get("/subscribe/{sub_id}/notifications")
+def get_notifications(sub_id: str):
+    """获取订阅的通知列表"""
+    mgr = _get_sub_manager()
+    sub = mgr.get(sub_id)
+    if not sub:
+        return {"status": "not_found"}
+    return [n.model_dump() for n in sub.notifications]
+
+
+@router.post("/subscribe/{sub_id}/notifications/read")
+def mark_read(sub_id: str):
+    """标记订阅的所有通知为已读"""
+    from notification_service import mark_notifications_read
+    mgr = _get_sub_manager()
+    mark_notifications_read(mgr, sub_id)
+    return {"status": "ok"}

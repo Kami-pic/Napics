@@ -34,6 +34,27 @@ class EpisodeInfo(BaseModel):
     timestamp: str = ""
 
 
+class SearchLogEntry(BaseModel):
+    """单次搜索日志条目"""
+    timestamp: str = ""       # 搜索时间
+    channel: str = ""         # "rss" / "search"（RSS 通道 / 直搜通道）
+    total: int = 0            # 原始结果数
+    matched: int = 0          # 匹配结果数
+    downloaded: int = 0       # 本次触发下载数
+    best_quality: str = ""    # 最高质量标签
+    sources_ok: List[str] = Field(default_factory=list)    # 成功的源
+    sources_fail: List[str] = Field(default_factory=list)  # 失败的源
+    summary: str = ""         # 摘要文本
+
+
+class NotificationEntry(BaseModel):
+    """订阅通知条目"""
+    timestamp: str = ""
+    type: str = ""            # "download_complete" / "upgrade_complete" / "found_resource" / "auto_paused"
+    message: str = ""
+    read: bool = False
+
+
 class Subscription(BaseModel):
     """订阅数据结构"""
     id: str = ""
@@ -71,6 +92,9 @@ class Subscription(BaseModel):
     search_interval_hours: float = 0  # 搜索间隔（0=用全局默认，追更4h，洗版24h）
     last_results_summary: str = ""    # 上次搜索结果摘要（前端展示用，含错误信息）
     imdb_id: str = ""                 # IMDB ID（EZTV 精准订阅用，创建时从 TMDB 转换并缓存）
+    # ── 新增字段（Phase 4b）──
+    search_logs: List[SearchLogEntry] = Field(default_factory=list)  # 搜索日志（最近 50 条）
+    notifications: List[NotificationEntry] = Field(default_factory=list)  # 通知列表（最近 100 条）
 
 
 # ── 核心管理器 ──
@@ -282,6 +306,7 @@ class SubscriptionManager:
             "purpose", "target_quality", "current_quality_score",
             "local_file_path", "search_interval_hours", "last_results_summary",
             "imdb_id", "sources",
+            "search_logs", "notifications",
         }
         with self._lock:
             for key, val in data.items():

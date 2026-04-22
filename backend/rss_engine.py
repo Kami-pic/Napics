@@ -10,14 +10,91 @@ import random
 import threading
 import logging
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 from rss_source_base import RSSSourceBase, RSSItem
 from rss_matcher import match_items
 from subscriber import Subscription, SubscriptionManager
 
 logger = logging.getLogger(__name__)
+
+
+# ── 搜索结果缓存 ──
+
+class SearchResultCache:
+    """搜索结果缓存：同一源+同一关键词在 TTL 内不重复请求。"""
+
+    def __init__(self, ttl_seconds: int = 1800):
+        self._cache: Dict[str, Tuple[float, List[RSSItem]]] = {}
+        self._ttl = ttl_seconds
+        self._lock = threading.Lock()
+
+    def get(self, source_name: str, keyword: str) -> Optional[List[RSSItem]]:
+        """获取缓存结果，过期返回 None。"""
+        key = f"{source_name}:{keyword}"
+        with self._lock:
+            entry = self._cache.get(key)
+            if entry and time.time() - entry[0] < self._ttl:
+                return entry[1]
+            if entry:
+                del self._cache[key]
+        return None
+
+    def set(self, source_name: str, keyword: str, items: List[RSSItem]):
+        """写入缓存（只缓存有结果的）。"""
+        if not items:
+            return
+        key = f"{source_name}:{keyword}"
+        with self._lock:
+            self._cache[key] = (time.time(), items)
+            # LRU 清理：超过 500 条时删最旧的
+            if len(self._cache) > 500:
+                oldest_key = min(self._cache, key=lambda k: self._cache[k][0])
+                del self._cache[oldest_key]
+
+    def clear(self):
+        with self._lock:
+            self._cache.clear()
+
+
+# ── 全局速率限制 ──
+
+class RateLimiter:
+    """全局速率限制器：每个源每分钟最多 N 次请求。"""
+
+    def __init__(self, max_per_minute: int = 4):
+        self._max = max_per_minute
+        self._timestamps: Dict[str, List[float]] = defaultdict(list)
+        self._lock = threading.Lock()
+
+    def acquire(self, source_name: str) -> bool:
+        """尝试获取请求许可。返回 True 表示可以请求，False 表示需要等待。"""
+        now = time.time()
+        with self._lock:
+            # 清理 1 分钟前的记录
+            self._timestamps[source_name] = [
+                t for t in self._timestamps[source_name] if now - t < 60
+            ]
+            if len(self._timestamps[source_name]) >= self._max:
+                return False
+            self._timestamps[source_name].append(now)
+            return True
+
+    def wait_and_acquire(self, source_name: str, timeout: float = 120) -> bool:
+        """等待直到获取许可或超时。"""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if self.acquire(source_name):
+                return True
+            time.sleep(2)
+        return False
+
+
+# 全局实例
+_search_cache = SearchResultCache(ttl_seconds=1800)  # 30 分钟
+_rate_limiter = RateLimiter(max_per_minute=4)  # 每源每分钟最多 4 次
 # ── 源管理器 ──
 
 class RSSSourceManager:
@@ -212,6 +289,11 @@ class SubscriptionScheduler:
         source_errors: Dict[str, str] = {}
         for source in sources:
             try:
+                # 速率限制
+                if not _rate_limiter.wait_and_acquire(source.name, timeout=60):
+                    source_errors[source.name] = "速率限制超时"
+                    logger.warning(f"[RSSEngine] 源 {source.name} 速率限制，跳过")
+                    continue
                 items = source.fetch(sub)
                 all_items.extend(items)
             except Exception as e:
@@ -249,6 +331,28 @@ class SubscriptionScheduler:
 
         self.sub_manager.update(sub.id, update_data)
 
+        # 写入搜索日志
+        try:
+            from notification_service import add_search_log, add_notification
+            sources_ok = [s.name for s in sources if s.name not in source_errors]
+            sources_fail = list(source_errors.keys())
+            best_q = ""
+            for item in matched:
+                if item.quality_tag and item.quality_tag != "Unknown":
+                    best_q = item.quality_tag
+                    break
+            add_search_log(
+                self.sub_manager, sub.id,
+                channel="rss", total=len(all_items), matched=len(matched),
+                best_quality=best_q, sources_ok=sources_ok, sources_fail=sources_fail,
+                summary=summary,
+            )
+            # 自动暂停时发通知
+            if update_data.get("state") == "paused":
+                add_notification(self.sub_manager, sub.id, "auto_paused", "长期未找到资源，已自动暂停")
+        except Exception as e:
+            logger.warning(f"[RSSEngine] 搜索日志写入失败: {e}")
+
         logger.info(f"[RSSEngine] {sub.title}: 搜索完成，原始 {len(all_items)} 条，匹配 {len(matched)} 条")
         return matched
 
@@ -269,6 +373,15 @@ class SubscriptionScheduler:
                     "found_resources": existing + new_resources,
                 })
                 logger.info(f"[RSSEngine] {sub.title}: 通知模式，新增 {len(new_resources)} 条待选资源")
+                # 发现资源通知
+                try:
+                    from notification_service import add_notification
+                    add_notification(
+                        self.sub_manager, sub.id, "found_resource",
+                        f"发现 {len(new_resources)} 条新资源，请手动选择下载",
+                    )
+                except Exception:
+                    pass
 
         elif sub.mode == "auto" and self.download_manager:
             if sub.best_version:
@@ -366,6 +479,16 @@ class SubscriptionScheduler:
             )
             self.download_manager.submit(task)
             logger.info(f"[RSSEngine] 自动下载: {task.media_name} (来源: {item.source_name})")
+            # 下载提交通知
+            try:
+                from notification_service import add_notification
+                quality_info = f" ({item.quality_tag})" if item.quality_tag and item.quality_tag != "Unknown" else ""
+                add_notification(
+                    self.sub_manager, sub.id, "download_complete",
+                    f"已自动下载{ep_label}{quality_info}，来源: {item.source_name}",
+                )
+            except Exception:
+                pass
         except Exception as e:
             logger.error(f"[RSSEngine] 下载提交失败: {e}")
 
@@ -544,6 +667,34 @@ class SubscriptionScheduler:
                     if matched:
                         logger.info(f"[RSSEngine/直搜] {sub.title}: 搜到 {len(results)} 条，匹配 {len(matched)} 条")
                         self._handle_results(sub, matched)
+
+                    # 直搜通道搜索日志
+                    try:
+                        from notification_service import add_search_log
+                        best_q = ""
+                        for item in matched:
+                            if item.quality_tag and item.quality_tag != "Unknown":
+                                best_q = item.quality_tag
+                                break
+                        add_search_log(
+                            self.sub_manager, sub.id,
+                            channel="search", total=len(results), matched=len(matched),
+                            best_quality=best_q, sources_ok=sources,
+                            summary=f"直搜 {len(results)} 条，匹配 {len(matched)} 条",
+                        )
+                    except Exception:
+                        pass
+                else:
+                    # 无结果也记录日志
+                    try:
+                        from notification_service import add_search_log
+                        add_search_log(
+                            self.sub_manager, sub.id,
+                            channel="search", total=0, matched=0,
+                            sources_ok=sources, summary="直搜未找到资源",
+                        )
+                    except Exception:
+                        pass
 
             except Exception as e:
                 logger.error(f"[RSSEngine/直搜] {sub.title} 搜索失败: {e}")

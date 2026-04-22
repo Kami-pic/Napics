@@ -602,8 +602,22 @@ class DownloadManager:
             if sub and sub.best_version and task.save_path:
                 self._auto_relocate(task, sub)
             # 洗版订阅（purpose=upgrade）：电影下载完成后自动标记 completed
-            if sub and getattr(sub, "purpose", "follow") == "upgrade" and sub.type != "tv":
+            is_upgrade = sub and getattr(sub, "purpose", "follow") == "upgrade" and sub.type != "tv"
+            if is_upgrade:
                 mgr.update(sub.id, {"state": "completed", "note": "洗版完成，已下载更高质量版本"})
+
+            # 发送通知
+            try:
+                from notification_service import add_notification
+                ep_label = f" E{task.subscription_episode:02d}" if task.subscription_episode else ""
+                if is_upgrade:
+                    add_notification(mgr, task.subscription_id, "upgrade_complete",
+                                     f"洗版完成{ep_label}，已下载更高质量版本")
+                else:
+                    add_notification(mgr, task.subscription_id, "download_complete",
+                                     f"下载完成: {task.media_name}")
+            except Exception:
+                pass
         except Exception as e:
             logger.error(f"[DownloadManager] 订阅回调失败: {e}")
 
