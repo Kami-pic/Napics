@@ -21,6 +21,15 @@ class SortWeightsConfig(BaseModel):
     chinese_sub: float = 0.10
     size_reasonable: float = 0.05
 
+class AIFeaturesConfig(BaseModel):
+    """AI 场景开关配置"""
+    extract_episode: bool = True       # 文件名智能解析
+    scrape_candidate: bool = True      # 刮削候选匹配
+    library_diagnosis: bool = True     # 媒体库健康诊断
+    search_recommend: bool = False     # 搜索结果推荐（二期）
+    natural_search: bool = False       # 自然语言搜索（二期）
+    subscribe_recommend: bool = False  # 订阅推荐（二期）
+
 class SearchFilterConfig(BaseModel):
     """搜索过滤规则配置"""
     must_include: List[str] = []                                          # 必须包含的关键词
@@ -41,6 +50,8 @@ class AppConfig(BaseModel):
     openai_api_key: Optional[str] = ""
     openai_base_url: Optional[str] = ""
     openai_model: Optional[str] = ""
+    ai_enabled: bool = False                      # AI 全局总开关
+    ai_features: AIFeaturesConfig = AIFeaturesConfig()  # AI 场景开关
     http_proxy: Optional[str] = ""
     indexer_priorities: List[IndexerPriorityConfig] = []
     search_confidence_threshold: str = "medium"  # "high" | "medium" | "low"

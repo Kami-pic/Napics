@@ -76,6 +76,16 @@
 - `GET /config/search-filter` — 获取搜索过滤规则
 - `POST /config/search-filter` — 保存搜索过滤规则
 
+## AI
+- `POST /ai/test` — 测试 AI 连接
+- `GET /ai/status` — AI 配置状态 + 场景开关 + 调用统计
+- `POST /ai/diagnosis` — 媒体库 AI 健康诊断
+- `GET /ai/suggest` — AI 整理建议（旧版，保留兼容）
+- `POST /ai/execute` — 执行 AI 整理建议
+- `GET /ai/history` — AI 操作历史
+- `POST /ai/history/clear` — 清空操作历史
+- `POST /ai/rollback` — 回滚 AI 操作
+
 ## 其他
 - `GET /analysis/report` — 健康报告
 - `POST /analysis/invalidate` — 清除分析缓存

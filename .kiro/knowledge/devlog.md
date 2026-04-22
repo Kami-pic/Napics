@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-04-22 AI 集成一期（基础设施 + 三场景 + 前端设置页）
+**变更**:
+- 新建 `ai_client.py`：统一 AI 客户端，封装 OpenAI 兼容 API 调用（chat/chat_json/_extract_json/_validate_schema），内置调用计量（场景级 calls/tokens/errors）
+- 新建 `ai_prompts.py`：三个一期场景的 prompt 模板 + schema 定义，集中管理便于调优
+- 重构 `ai_organizer.py`：去掉直接 HTTP 调用，改用 ai_client；新增 ai_extract_episode（单/批量）、ai_select_scrape_candidate、ai_library_diagnosis 四个业务函数
+- `config_manager.py` 扩展：新增 `ai_enabled`（全局总开关）+ `AIFeaturesConfig`（6 个场景独立开关），旧配置向后兼容
+- `routes/tools.py` 新增 3 个端点：`POST /ai/test`（测试连接）、`GET /ai/status`（配置状态+用量）、`POST /ai/diagnosis`（媒体库诊断）
+- 前端 `types/index.ts` 新增 AIFeaturesConfig/AIStatus/AIDiagnosisResult 类型
+- 前端 `lib/api.ts` 新增 testAIConnection/getAIStatus/aiDiagnosis 三个 API 函数
+- 前端 `SettingsModal.tsx` AI 区域升级：master switch 总开关 + 服务商预设（豆包/DeepSeek/自定义）+ API 配置 + 测试连接 + 6 个场景功能开关 + 运行用量统计
+- 43 个单元测试（23 ai_client + 20 ai_organizer）全绿
+- 3 轮真实 API 测试（基础+独立验证+极端场景）共 16 次调用，约 9767 tokens
+**踩坑**:
+- 豆包 lite 模型生成结构化 JSON 较慢，诊断场景首次 25s 超时 → 简化 prompt + temperature=0 + 超时调至 60s
+- 日文动画长文件名偶发 15s 超时 → 文件名解析超时从 15s 调至 20s
+- `_extract_json` 对"多个独立 JSON 对象"的输入返回 None（已知限制，实际 AI 响应不会出现）
+**架构决策**:
+- AI 是增强不是依赖：所有场景有非 AI fallback，关闭 AI 后系统功能完整
+- 不引入 openai SDK，用 requests 直接调 HTTP（项目一贯风格）
+- AIClient 无状态，每次从 config 构造（配置可能随时改）
+- prompt 集中在 ai_prompts.py 一个文件，方便调优和版本对比
+- chat_json 两层保护：_extract_json（格式兼容）+ _validate_schema（结构校验）
+
 ## 2026-04-22 订阅系统重设计 Phase 0-2b（后端核心链路）
 **变更**:
 - Phase 0：SubscriptionManager 改为 shared.py 全局单例，修复 download_manager 和 routes/subscribe.py 使用不同实例的数据竞争 bug

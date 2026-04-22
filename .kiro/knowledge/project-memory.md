@@ -108,6 +108,16 @@
 - 推荐/探索/搜索三个接口统一注入 local_status + local_folder
 - 中文匹配用前缀（startswith），避免"你的名字"误匹配"以你的名字呼唤我"
 
+### AI 集成（一期）
+- 统一客户端 `ai_client.py`：AIClient 无状态、每次从 config 构造、chat/chat_json/schema 校验/调用计量
+- Prompt 集中管理 `ai_prompts.py`：每个场景独立函数，返回 messages 列表
+- 业务编排 `ai_organizer.py`：ai_extract_episode（单/批量）、ai_select_scrape_candidate、ai_library_diagnosis
+- 全局总开关 `ai_enabled` + 场景级开关 `ai_features`，关闭时所有 AI 场景静默降级
+- 服务商：火山引擎豆包（base_url=ark.cn-beijing.volces.com/api/v3，model 填推理接入点 ID）/ DeepSeek / 任意 OpenAI 兼容
+- AI 参与的结果标记 `ai_parsed: true` / `ai_selected: true`，前端显示 🤖 标签
+- 性能基准（豆包 lite）：文件名解析 8-11s/400-580 tokens，候选匹配 5-13s/460-800 tokens，诊断 31-36s/2000-2100 tokens
+- 设计文档：`docs/ai-integration-design.md`，测试报告：`docs/ai-integration-test-report.md`
+
 ## 核心红线
 
 - shadow_name 可能含中文，enName 构造时必须去掉中文字符
@@ -159,6 +169,8 @@
 - 多语言搜索词分发 → `skills/multilang-search-dispatch.md`
 - 多源英文名补全 → `skills/multilang-name-enrichment.md`
 - 发现页英文名缓存 → `skills/discover-enrich-cache.md`
+- AI 集成设计 → `docs/ai-integration-design.md`
+- AI 集成测试报告 → `docs/ai-integration-test-report.md`
 - 多语言搜索词 TODO → `docs/multilang-search-todo.md`
 - 发现页 TMDB 补全设计 → `docs/discover-enrich-design.md`（已实施）
 

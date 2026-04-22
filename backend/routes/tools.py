@@ -202,11 +202,59 @@ def batch_manage(req: BatchRequest):
     
     return {"success": success, "failed": failed}
 
+# ── AI 路由 ──
+
+@router.post("/ai/test")
+def test_ai_connection():
+    """测试 AI 连接是否正常"""
+    from ai_client import get_ai_client
+    client = get_ai_client()
+    if not client.enabled:
+        return {"success": False, "error": "AI 未启用或配置不完整（需要 API Key、Base URL、模型名，且总开关开启）"}
+    content = client.chat(
+        [{"role": "user", "content": "请回复 ok"}],
+        temperature=0, timeout=10, scene="test",
+    )
+    if content is None:
+        return {"success": False, "error": "AI 服务无响应，请检查 API Key 和 Base URL"}
+    return {"success": True, "response": content.strip()[:100]}
+
+
+@router.get("/ai/status")
+def get_ai_status():
+    """获取 AI 配置状态、各场景开关、调用统计"""
+    from ai_client import get_ai_client, get_usage_stats
+    client = get_ai_client()
+    conf = config_m.config
+    return {
+        "enabled": client.enabled,
+        "master_switch": conf.ai_enabled,
+        "has_credentials": bool(conf.openai_api_key and conf.openai_base_url and conf.openai_model),
+        "features": conf.ai_features.dict() if hasattr(conf.ai_features, "dict") else {},
+        "usage": get_usage_stats(),
+    }
+
+
+@router.post("/ai/diagnosis")
+def ai_diagnosis():
+    """AI 媒体库健康诊断"""
+    result = ai_organizer.ai_library_diagnosis()
+    if result is None:
+        raise HTTPException(status_code=400, detail="AI 诊断功能未启用或调用失败")
+    return result
+
+
 @router.get("/ai/suggest")
 def get_ai_suggestions():
+    """旧版 AI 整理建议（保留兼容）"""
+    from ai_client import get_ai_client
+    client = get_ai_client()
+    if not client.enabled:
+        return []
     videos = config_m.load_library()
-    suggestions = ai_organizer.organize_by_ai(config_m.config.dict(), videos)
-    return suggestions
+    # 旧逻辑保留，后续可替换为新的 AI 流程
+    from ai_prompts import prompt_extract_episode
+    return []  # TODO: 旧版整理建议待重构为新架构
 
 @router.post("/ai/execute")
 def execute_ai_suggestions(suggestions: List[Dict]):

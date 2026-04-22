@@ -63,6 +63,8 @@ export interface AppConfig {
   openai_api_key?: string;
   openai_base_url?: string;
   openai_model?: string;
+  ai_enabled?: boolean;
+  ai_features?: AIFeaturesConfig;
   indexer_priorities?: IndexerPriority[];
   search_confidence_threshold?: "high" | "medium" | "low";
   category_tags?: Record<string, string>;
@@ -480,4 +482,39 @@ export interface PanSearchResponse {
   groups: Record<string, PanResult[]>;
   source_statuses: PanSourceStatus[];
   total: number;
+}
+
+
+// ===== AI 集成 类型定义 =====
+
+/** AI 场景开关配置 */
+export interface AIFeaturesConfig {
+  extract_episode: boolean;
+  scrape_candidate: boolean;
+  library_diagnosis: boolean;
+  search_recommend: boolean;
+  natural_search: boolean;
+  subscribe_recommend: boolean;
+}
+
+/** AI 状态响应 */
+export interface AIStatus {
+  enabled: boolean;
+  master_switch: boolean;
+  has_credentials: boolean;
+  features: AIFeaturesConfig;
+  usage: Record<string, { calls: number; tokens: number; errors: number }>;
+}
+
+/** AI 诊断结果 */
+export interface AIDiagnosisResult {
+  health_score: number;
+  priorities: {
+    category: string;
+    severity: "high" | "medium" | "low";
+    count: number;
+    suggestion: string;
+    action: string;
+  }[];
+  summary: string;
 }
