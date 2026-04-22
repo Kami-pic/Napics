@@ -264,6 +264,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         douban_id: item.douban_id || undefined,
         poster: item.cover_url || d?.poster_url || "",
         quality: config.quality,
+        target_quality: config.target_quality,
         include: config.include,
         exclude: config.exclude,
         mode: config.mode,
@@ -271,6 +272,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         save_path: config.save_path,
         search_keyword: config.search_keyword,
         sources: config.sources,
+        purpose: config.purpose,
       });
       if (result.status === "ok") {
         setJustSubscribed(prev => new Set(prev).add(`${item.title}|${item.year || d?.year || ""}`));

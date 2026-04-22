@@ -16,12 +16,33 @@ export interface SubscriptionItem {
   quality: string;
   poster: string;
   total_episode: number;
-  downloaded_episodes: Record<string, any>;
+  downloaded_episodes: Record<string, EpisodeInfo>;
   found_resources: any[];
   created_at: string;
   last_search?: string;
   search_count?: number;
   save_path?: string;
+  // Phase 1a 新增字段
+  purpose?: string;              // "follow" | "upgrade"
+  target_quality?: string;
+  current_quality_score?: number;
+  local_file_path?: string;
+  search_interval_hours?: number;
+  last_results_summary?: string;
+  imdb_id?: string;
+  sources?: string[];
+  best_version?: boolean;
+  search_keyword?: string;
+}
+
+export interface EpisodeInfo {
+  info_hash?: string;
+  title?: string;
+  quality_tag?: string;
+  source?: string;
+  channel?: string;
+  task_id?: string;
+  timestamp?: string;
 }
 
 export function useSubscriptions() {
