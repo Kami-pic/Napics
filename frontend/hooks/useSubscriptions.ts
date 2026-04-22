@@ -33,6 +33,9 @@ export interface SubscriptionItem {
   sources?: string[];
   best_version?: boolean;
   search_keyword?: string;
+  // Phase 4b 新增字段
+  search_logs?: SearchLogEntry[];
+  notifications?: NotificationEntry[];
 }
 
 export interface EpisodeInfo {
@@ -43,6 +46,25 @@ export interface EpisodeInfo {
   channel?: string;
   task_id?: string;
   timestamp?: string;
+}
+
+export interface SearchLogEntry {
+  timestamp: string;
+  channel: string;       // "rss" | "search"
+  total: number;
+  matched: number;
+  downloaded: number;
+  best_quality: string;
+  sources_ok: string[];
+  sources_fail: string[];
+  summary: string;
+}
+
+export interface NotificationEntry {
+  timestamp: string;
+  type: string;          // "download_complete" | "upgrade_complete" | "found_resource" | "auto_paused"
+  message: string;
+  read: boolean;
 }
 
 export function useSubscriptions() {

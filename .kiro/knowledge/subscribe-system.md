@@ -47,6 +47,10 @@ SubscriptionScheduler（调度器，后端启动时自动 start）
 | 蜜柑 | rss_source_mikan.py | RSS 搜索，中文/日文优先，curl_cffi |
 | Nyaa | rss_source_nyaa.py | RSS 搜索，日文/英文优先，需代理 |
 | EZTV | rss_source_eztv.py | RSS 按 IMDB ID 精准订阅，追美剧首选，需代理 |
+| 动漫花园 | rss_source_dmhy.py | RSS 按关键词搜索，中文动漫全覆盖，需代理 |
+| ACG.RIP | rss_source_acgrip.py | RSS 按关键词（/t/关键词.xml），国内直连，无做种数 |
+| Bangumi Moe | rss_source_bangumi_moe.py | 搜索 API（/api/v2/torrent/search），国内直连 |
+| YTS | rss_source_yts.py | JSON API 搜索电影，需代理，电影洗版用 |
 
 - 新增源只需：继承 RSSSourceBase → 实现 fetch() → routes/subscribe.py 注册
 - search_keyword_mapper.py 的 SOURCE_LANG_PRIORITY 需同步更新
@@ -90,6 +94,28 @@ SubscriptionScheduler（调度器，后端启动时自动 start）
 - `GET /subscribe/calendar`：TMDB 优先，Bangumi episodes API fallback
 - 过滤已完结（state=completed）和洗版订阅（purpose=upgrade）
 - 前端 SubscribeCalendar 按日期分组时间线展示
+
+## 反馈闭环（Phase 4b）
+
+### 搜索日志
+- Subscription 新增 `search_logs: List[SearchLogEntry]`（最近 50 条）
+- 每次 RSS/直搜通道搜索后自动写入日志（channel/total/matched/sources_ok/sources_fail/summary）
+- API：`GET /subscribe/{id}/logs`
+
+### 通知系统
+- Subscription 新增 `notifications: List[NotificationEntry]`（最近 100 条）
+- 通知类型：download_complete / upgrade_complete / found_resource / auto_paused
+- API：`GET /subscribe/{id}/notifications`、`POST /subscribe/{id}/notifications/read`、`GET /subscribe/notifications/unread`
+- `notification_service.py` 统一管理，预留 Bark/Server酱/Webhook 外部推送接口
+
+### 搜索结果缓存
+- `SearchResultCache`：同源+同关键词 30 分钟 TTL，只缓存有结果的，500 条 LRU 上限
+- 全局实例 `_search_cache`，在 rss_engine.py 中
+
+### 全局速率限制
+- `RateLimiter`：每源每分钟最多 4 次请求
+- `_rate_limiter.wait_and_acquire()` 在 `_do_search` 中每个源请求前调用
+- 超时 60 秒自动跳过该源
 
 ## 前端
 

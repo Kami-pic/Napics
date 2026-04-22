@@ -587,22 +587,22 @@ BT 标题的格式比本地文件名复杂（如 `[SubGroup] Title - 05 (1080p)`
 - [x] 日历视图空状态优化（友好提示文案）
 - [ ] 订阅冲突提示 — 延后
 
-### Phase 4a：扩展 RSS 源（核心链路稳定后再铺开）
-- [ ] rss_source_dmhy.py — 动漫花园 RSS 源
-- [ ] rss_source_nyaa.py — Nyaa RSS 源
-- [ ] rss_source_acgrip.py — ACG.RIP RSS 源
-- [ ] rss_source_bangumi_moe.py — Bangumi Moe RSS 源
-- [ ] rss_source_yts.py — YTS RSS 源
-- [ ] 每个源独立测试 + 注册到 RSSSourceManager
+### Phase 4a：扩展 RSS 源（核心链路稳定后再铺开）✅
+- [x] rss_source_dmhy.py — 动漫花园 RSS 源
+- [x] rss_source_nyaa.py — Nyaa RSS 源（Phase 1c 已完成，此处确认注册）
+- [x] rss_source_acgrip.py — ACG.RIP RSS 源
+- [x] rss_source_bangumi_moe.py — Bangumi Moe RSS 源
+- [x] rss_source_yts.py — YTS RSS 源
+- [x] 每个源独立测试 + 注册到 RSSSourceManager
 
-### Phase 4b：反馈闭环和其他补充
-- [ ] 订阅搜索日志（前端可查看每次搜索的结果）
-- [ ] 下载完成通知（toast 或订阅列表角标）
-- [ ] 洗版完成通知 + 自动标记 completed
-- [ ] 预留通知接口（后续可接 Bark/Server 酱等推送）
-- [ ] 搜索结果缓存（同一个源+同一个关键词 30 分钟内不重复请求）
-- [ ] 全局速率限制（避免 20 个订阅同时搜索把源站搞限频）
-- [ ] `routes/search.py` 剩余端点清理
+### Phase 4b：反馈闭环和其他补充 ✅
+- [x] 订阅搜索日志（前端可查看每次搜索的结果）
+- [x] 下载完成通知（写入订阅 notifications 字段）
+- [x] 洗版完成通知 + 自动标记 completed
+- [x] 预留通知接口（notification_service.py，Bark/Server酱/Webhook 预留）
+- [x] 搜索结果缓存（SearchResultCache，同源+同关键词 30 分钟内不重复请求）
+- [x] 全局速率限制（RateLimiter，每源每分钟最多 4 次请求）
+- [ ] `routes/search.py` 剩余端点清理 — 延后（所有端点仍在使用中）
 
 ---
 

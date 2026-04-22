@@ -440,6 +440,12 @@ export const api = {
     }),
   getSubscriptionCalendar: () => request<any[]>(`${BASE_URL}/subscribe/calendar`),
   getSubscriptionSavePaths: () => request<{ paths: Record<string, string[]>; default: string }>(`${BASE_URL}/subscribe/save-paths`),
+  // Phase 4b: 搜索日志 + 通知
+  getSubscriptionLogs: (id: string) => request<any[]>(`${BASE_URL}/subscribe/${id}/logs`),
+  getSubscriptionNotifications: (id: string) => request<any[]>(`${BASE_URL}/subscribe/${id}/notifications`),
+  markSubscriptionNotificationsRead: (id: string) =>
+    request<any>(`${BASE_URL}/subscribe/${id}/notifications/read`, { method: "POST" }),
+  getUnreadNotificationCount: () => request<{ unread: number }>(`${BASE_URL}/subscribe/notifications/unread`),
 
   // ── 搜索源管理 ──
   getSearchSources: () => request<any>(`${BASE_URL}/search/sources`),
