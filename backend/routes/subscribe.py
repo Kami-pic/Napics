@@ -170,6 +170,20 @@ def get_calendar():
     return calendar
 
 
+@router.get("/subscribe/save-paths")
+def get_save_paths():
+    """返回分类标签→路径映射，供前端根据 mediaType 自动填入保存路径。"""
+    conf = config_m.config
+    category_tags = conf.category_tags or {}
+    # 反转：标签→路径列表
+    tag_to_paths: dict = {}
+    for path, tag in category_tags.items():
+        tag_to_paths.setdefault(tag, []).append(path)
+    # 兜底：nas_paths 的第一个路径
+    default_path = conf.nas_paths[0] if conf.nas_paths else ""
+    return {"paths": tag_to_paths, "default": default_path}
+
+
 # ── CRUD 路由（参数路由放最后，避免和固定路径冲突）──
 
 @router.post("/subscribe")

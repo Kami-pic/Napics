@@ -439,6 +439,7 @@ export const api = {
       body: JSON.stringify({ enabled }),
     }),
   getSubscriptionCalendar: () => request<any[]>(`${BASE_URL}/subscribe/calendar`),
+  getSubscriptionSavePaths: () => request<{ paths: Record<string, string[]>; default: string }>(`${BASE_URL}/subscribe/save-paths`),
 
   // ── 搜索源管理 ──
   getSearchSources: () => request<any>(`${BASE_URL}/search/sources`),
@@ -448,4 +449,9 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled }),
     }),
+
+  // ── AI 集成 ──
+  testAIConnection: () => request<{ success: boolean; response?: string; error?: string }>(`${BASE_URL}/ai/test`, { method: "POST" }),
+  getAIStatus: () => request<any>(`${BASE_URL}/ai/status`),
+  aiDiagnosis: () => request<any>(`${BASE_URL}/ai/diagnosis`, { method: "POST" }),
 };

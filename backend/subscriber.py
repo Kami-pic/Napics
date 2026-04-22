@@ -200,6 +200,7 @@ class SubscriptionManager:
             type=data.get("type", "movie"),
             tmdb_id=tmdb_id,
             douban_id=data.get("douban_id"),
+            imdb_id=data.get("imdb_id", ""),
             poster=data.get("poster", ""),
             season=season,
             total_episode=total_episode,

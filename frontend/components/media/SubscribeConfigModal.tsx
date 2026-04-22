@@ -1,6 +1,7 @@
 // 订阅配置弹窗：点击订阅按钮后弹出，配置订阅类型、质量、搜索源等
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 import SubscribeSourceSelect from "./SubscribeSourceSelect";
 
 export interface SubscribeConfig {
@@ -59,6 +60,26 @@ export default function SubscribeConfigModal({
     purpose: "follow",
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // 加载分类保存路径
+  const [savePaths, setSavePaths] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    if (!open) return;
+    api.getSubscriptionSavePaths()
+      .then(data => {
+        setSavePaths(data.paths || {});
+        // 根据 mediaType 自动填入保存路径（如果用户没手动设置）
+        if (!config.save_path && !defaultSavePath) {
+          const tag = mediaType === "tv" ? "tv" : "movie";
+          const paths = data.paths?.[tag];
+          if (paths && paths.length > 0) {
+            setConfig(prev => ({ ...prev, save_path: paths[0] }));
+          }
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mediaType]);
 
   if (!open) return null;
 
@@ -208,7 +229,7 @@ export default function SubscribeConfigModal({
             <div>
               <label className="text-[11px] text-slate-500 mb-1 block">保存路径</label>
               <input value={config.save_path} onChange={e => set("save_path", e.target.value)}
-                placeholder={defaultSavePath || "留空使用默认"}
+                placeholder={defaultSavePath || savePaths[mediaType === "tv" ? "tv" : "movie"]?.[0] || "留空使用默认"}
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white font-mono outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
             </div>
           </div>

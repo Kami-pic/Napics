@@ -282,9 +282,12 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         year: item.year || d?.year || "",
         type: mediaType,
         season,
+        // 各平台 ID：从详情数据中尽可能获取
         tmdb_id: d?.tmdb_id || (d as any)?.external_ids?.tmdb_id || undefined,
+        imdb_id: (d as any)?.external_ids?.imdb_id || "",
         douban_id: item.douban_id || undefined,
         poster: item.cover_url || d?.poster_url || "",
+        // 订阅配置
         quality: config.quality,
         target_quality: config.target_quality,
         include: config.include,
@@ -295,7 +298,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         search_keyword: config.search_keyword,
         sources: config.sources,
         purpose: config.purpose,
-        // 传递清洗名，后端用于构造 aliases
+        // 清洗名（后端用于构造 aliases 和搜索词）
         clean_name_cn: cnName,
         clean_name_en: enName,
         clean_name_original: originalName,
