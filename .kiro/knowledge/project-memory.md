@@ -158,7 +158,9 @@
 - 清洗名系统 → `skills/clean-name-system.md`
 - 发现推荐 → `knowledge/discover-recommend.md`
 - 订阅系统 → `knowledge/subscribe-system.md`
-- 订阅系统技能 → `skills/subscribe-system.md`
+- 订阅数据流 → `skills/subscribe-data-flow.md`
+- 订阅调度器 → `skills/subscribe-scheduler.md`
+- RSS 匹配器 → `skills/subscribe-rss-matcher.md`
 - 滚动交互 → `knowledge/scroll-damping-interaction.md`
 - API 清单 → `knowledge/api-reference.md`
 - 数据结构 → `knowledge/data-models.md`
