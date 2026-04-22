@@ -569,13 +569,14 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
       {searchModalOpen && searchModalItem && (
         <SearchModal
           open={searchModalOpen}
-          query={searchModalItem.title}
+          query={searchModalItem.clean_name_cn || searchModalItem.title}
           onClose={() => { setSearchModalOpen(false); setSearchModalItem(null); setSearchModalDetail(null); }}
           defaultSavePath={defaultSavePath}
-          cnName={searchModalItem.title}
+          cnName={searchModalItem.clean_name_cn || searchModalItem.title}
           enName={searchModalDetail?.english_title || searchModalItem.clean_name_en || (searchModalItem as any)._tmdb_original_title || searchModalDetail?.original_title || searchModalItem.subtitle || ""}
-          originalName={searchModalDetail?.original_title || ""}
+          originalName={searchModalItem.clean_name_original || searchModalDetail?.original_title || ""}
           mediaType={searchModalItem.media_type || activeTabConfig.mediaType || "movie"}
+          seasonNumber={searchModalItem.episode ? parseInt(searchModalItem.episode) || 0 : 0}
         />
       )}
 
