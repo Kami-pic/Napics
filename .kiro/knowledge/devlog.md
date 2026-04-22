@@ -28,17 +28,17 @@
 - prompt 集中在 ai_prompts.py 一个文件，方便调优和版本对比
 - chat_json 两层保护：_extract_json（格式兼容）+ _validate_schema（结构校验）
 
-## 2026-04-22 订阅系统重设计 Phase 0-2b（后端核心链路）
+## 2026-04-22 订阅系统重设计 Phase 0-3b + 修复轮（完整交付）
 **变更**:
-- Phase 0：SubscriptionManager 改为 shared.py 全局单例，修复 download_manager 和 routes/subscribe.py 使用不同实例的数据竞争 bug
-- Phase 1a：Subscription 模型新增 7 个字段（purpose/target_quality/current_quality_score/local_file_path/search_interval_hours/last_results_summary/imdb_id），aliases 的 jp→original 迁移（_load 时自动映射），updatable 白名单扩展
-- Phase 1b：新建 search_service.py，从 routes/search.py 的 SSE 闭包中抽离搜索逻辑（search_prowlarr/search_direct/search_all_sources/search_all_sources_iter），SSE 端点改为薄壳调用，BT_SOURCE_DEFAULTS/PAN_SOURCE_DEFAULTS 移入 search_service
-- Phase 1c：新建 rss_source_eztv.py（EZTV RSS 源，支持 IMDB ID 精准订阅+关键词回退），search_keyword_mapper 补充 eztv/dmhy 映射，注册到 RSSSourceManager（共 4 个 RSS 源：Prowlarr/蜜柑/Nyaa/EZTV）
-- Phase 2a：rss_engine.py 增强（_build_results_summary 搜索摘要、rss_item_to_search_result 格式桥接、源错误收集）
-- Phase 2b：rss_matcher.py 新增 Quality Cutoff（已达目标质量的集不再匹配），should_search_now 支持自定义 search_interval_hours，_retry_failed_downloads 下载失败自动换候选
-- RSS 源文件（prowlarr/nyaa/mikan）aliases 读取兼容 original 和 jp 两种 key
-**延后**: 结果缓存层、search.py 行数拆分、Prowlarr 全站 RSS feed、rss_matcher L1/L2 增强、全局速率限制器
-**设计文档**: .kiro/docs/subscribe-redesign.md（含双通道架构、前端交互原型、实施步骤）
+- Phase 0：SubscriptionManager 全局单例
+- Phase 1a：数据模型扩展（7 个新字段 + jp→original 迁移）
+- Phase 1b：search_service.py 搜索逻辑抽离
+- Phase 1c：EZTV RSS 源 + search_keyword_mapper 扩展
+- Phase 2a-2d：RSS 调度器增强 + 直搜通道 + 追更完善（Quality Cutoff/自定义间隔/下载失败重试）+ 洗版模式
+- Phase 3a-3b：前端核心交互（订阅类型选择/源分组/两级展示/集详情/日历优化）
+- 修复轮：订阅创建时传递清洗名和所有平台 ID、type/season 自动提取、保存路径智能填入、调度器自动启动、Bangumi 日历 fallback、订阅冲突提示、RSS 匹配器跨语言增强
+**踩坑**: 调度器之前是懒加载（只在手动搜索时启动），导致定时搜索从未运行；订阅创建时 type 取的是 tab 级别而非卡片级别导致剧集被标记为电影；旧订阅 tmdb_id 全部为 None 因为中文标题搜 TMDB 匹配不到
+**设计文档**: .kiro/docs/subscribe-redesign.md
 
 ## 2026-04-22 技术债务清理（3/4 项）
 **变更**:
