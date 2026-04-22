@@ -559,17 +559,18 @@ BT 标题的格式比本地文件名复杂（如 `[SubGroup] Title - 05 (1080p)`
 - [x] 下载失败自动换候选重试（_retry_failed_downloads）
 - [ ] 全局速率限制器 — 延后
 
-### Phase 2c：直搜通道补充
-- [ ] SubscriptionScheduler 新增 _tick_search() 循环
-- [ ] 直搜通道调用 search_service.search_all_sources()
-- [ ] 只搜无 RSS 的源（磁力熊/XL720/Bitsearch）+ 网盘源 + 可选全源兜底
-- [ ] RSS 和直搜双循环各自独立计时，互不阻塞
+### Phase 2c：直搜通道补充 ✅
+- [x] SubscriptionScheduler 新增 _tick_search() 循环
+- [x] 直搜通道调用 search_service.search_all_sources()
+- [x] 只搜无 RSS 的源（磁力熊/XL720/Bitsearch）+ 可选全源兜底
+- [x] RSS 和直搜双循环各自独立计时，互不阻塞
 
-### Phase 2d：洗版模式（现有代码已有基础）
-- [ ] 洗版搜索走双通道
-- [ ] 质量对比 + 自动下载 + 归位替换
-- [ ] 归位失败不标记 completed
-- [ ] local_file_path 校验 + 自动重新定位
+### Phase 2d：洗版模式（现有代码已有基础）✅
+- [x] 洗版搜索走双通道（RSS + 直搜都支持 best_version）
+- [x] 质量对比 + 自动下载 + 归位替换
+- [x] 归位失败不标记 completed，保留订阅继续搜索
+- [x] local_file_path 校验 + 自动重新定位（media_matcher）
+- [x] 洗版订阅（purpose=upgrade）电影下载完成自动标记 completed
 
 ### Phase 3a：前端核心交互（先做折叠态，保证可用）
 - [ ] SubscribeConfigModal 增加 purpose 选择 + 目标质量 + 高级设置折叠

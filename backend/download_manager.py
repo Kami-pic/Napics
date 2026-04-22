@@ -592,33 +592,52 @@ class DownloadManager:
                 episode=task.subscription_episode,
                 info_hash=info_hash,
                 title=task.media_name,
-                quality_tag="",
-                source="prowlarr",
+                quality_tag="",  # TODO: 从下载文件名解析质量标签
+                source=task.category_hint or "unknown",
                 channel=task.channel,
                 task_id=task.id,
             )
             # 洗版模式：自动触发归位替换（旧资源进回收站）
             sub = mgr.get(task.subscription_id)
             if sub and sub.best_version and task.save_path:
-                self._auto_relocate(task)
+                self._auto_relocate(task, sub)
+            # 洗版订阅（purpose=upgrade）：电影下载完成后自动标记 completed
+            if sub and getattr(sub, "purpose", "follow") == "upgrade" and sub.type != "tv":
+                mgr.update(sub.id, {"state": "completed", "note": "洗版完成，已下载更高质量版本"})
         except Exception as e:
             logger.error(f"[DownloadManager] 订阅回调失败: {e}")
 
-    def _auto_relocate(self, task: DownloadTask):
-        """洗版自动归位：在新线程中执行 file_relocator"""
+    def _auto_relocate(self, task: DownloadTask, sub=None):
+        """洗版自动归位：在新线程中执行 file_relocator。归位失败时不标记 completed。"""
         import threading
 
         def _run():
             try:
                 import asyncio
-                from shared import _get_file_relocator
+                from shared import _get_file_relocator, _get_sub_manager
+
+                # 校验 local_file_path 是否存在
+                local_path = getattr(sub, "local_file_path", "") if sub else ""
+                if local_path and not os.path.exists(local_path):
+                    logger.warning(f"[DownloadManager] 洗版归位: local_file_path 不存在 {local_path}，尝试重新定位")
+                    try:
+                        from shared import media_matcher
+                        status, folder = media_matcher.match({
+                            "title": sub.title, "year": sub.year,
+                            "tmdb_id": sub.tmdb_id,
+                        })
+                        if folder:
+                            mgr = _get_sub_manager()
+                            mgr.update(sub.id, {"local_file_path": folder})
+                            logger.info(f"[DownloadManager] 洗版归位: 重新定位到 {folder}")
+                    except Exception as e:
+                        logger.error(f"[DownloadManager] 重新定位失败: {e}")
 
                 relocator = _get_file_relocator()
                 loop = asyncio.new_event_loop()
                 result = loop.run_until_complete(relocator.relocate(task))
                 loop.close()
                 if result.status == "awaiting_confirm":
-                    # 有冲突，自动确认替换（洗版模式不需要用户确认）
                     loop2 = asyncio.new_event_loop()
                     loop2.run_until_complete(relocator.confirm_replace(task, result.action_plan))
                     loop2.close()
@@ -626,9 +645,10 @@ class DownloadManager:
                 elif result.status == "archived":
                     logger.info(f"[DownloadManager] 洗版归位（无冲突）: {task.media_name}")
                 else:
-                    logger.error(f"[DownloadManager] 洗版归位状态: {result.status} {result.error}")
+                    # 归位失败：不标记 completed，保留订阅继续搜索
+                    logger.error(f"[DownloadManager] 洗版归位失败: {result.status} {result.error}")
             except Exception as e:
-                logger.error(f"[DownloadManager] 洗版归位失败: {e}")
+                logger.error(f"[DownloadManager] 洗版归位异常: {e}")
 
         threading.Thread(target=_run, daemon=True, name=f"relocate-{task.id}").start()
 

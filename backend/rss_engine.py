@@ -114,15 +114,18 @@ class SubscriptionScheduler:
         source_manager: RSSSourceManager,
         download_manager=None,
         base_interval_hours: float = 4.0,
-        check_interval_seconds: float = 300,  # 每 5 分钟检查一轮
+        check_interval_seconds: float = 300,  # 每 5 分钟检查一轮（RSS 通道）
+        search_interval_seconds: float = 14400,  # 直搜通道间隔（默认 4 小时）
     ):
         self.sub_manager = sub_manager
         self.source_manager = source_manager
         self.download_manager = download_manager
         self.base_interval = base_interval_hours
         self.check_interval = check_interval_seconds
+        self.search_interval = search_interval_seconds
         self._running = False
         self._thread: Optional[threading.Thread] = None
+        self._last_search_tick: float = 0  # 上次直搜通道执行时间戳
 
     def start(self):
         """启动调度器"""
@@ -145,12 +148,22 @@ class SubscriptionScheduler:
         return self._do_search(sub)
 
     def _loop(self):
-        """调度主循环"""
+        """调度主循环：RSS 通道每 check_interval 检查，直搜通道每 search_interval 检查"""
         while self._running:
             try:
-                self._tick()
+                self._tick()  # RSS 通道
             except Exception as e:
-                logger.info(f"[RSSEngine] 调度异常: {e}")
+                logger.error(f"[RSSEngine] RSS 调度异常: {e}")
+
+            # 直搜通道：独立计时
+            now = time.time()
+            if now - self._last_search_tick >= self.search_interval:
+                try:
+                    self._tick_search()
+                    self._last_search_tick = now
+                except Exception as e:
+                    logger.error(f"[RSSEngine] 直搜调度异常: {e}")
+
             time.sleep(self.check_interval)
 
     def _tick(self):
@@ -445,6 +458,95 @@ class SubscriptionScheduler:
                     break  # 每次只重试一个候选
                 except Exception as e:
                     logger.error(f"[RSSEngine] 重试提交失败: {e}")
+
+    def _tick_search(self):
+        """直搜通道：用 search_service 搜索无 RSS 的源，补充覆盖。
+
+        只搜无 RSS 的源（磁力熊/XL720/Bitsearch）+ 可选全源兜底。
+        频率比 RSS 通道低（默认 4 小时一次）。
+        """
+        active_subs = self.sub_manager.get_all(state="active")
+        if not active_subs:
+            return
+
+        # 无 RSS 的直搜源列表
+        search_only_sources = ["cilixiong", "xl720", "bitsearch"]
+
+        for sub in active_subs:
+            if not self._running:
+                break
+
+            # 直搜通道也受频率衰减控制（用更长的基准间隔）
+            if not should_search_now(sub, base_interval_hours=max(self.search_interval / 3600, 4.0)):
+                continue
+
+            # 随机延迟防限频
+            delay = random.randint(10, 60)
+            time.sleep(delay)
+            if not self._running:
+                break
+
+            try:
+                from search_service import build_keywords, search_all_sources
+                from shared import get_clients, config_m
+
+                # 构造搜索词
+                aliases = sub.aliases or {}
+                cn = (aliases.get("cn") or [""])[0] if aliases.get("cn") else sub.title
+                en = (aliases.get("en") or [""])[0] if aliases.get("en") else ""
+                original = (aliases.get("original") or aliases.get("jp") or [""])[0] if (aliases.get("original") or aliases.get("jp")) else ""
+
+                keywords = build_keywords(
+                    query=sub.search_keyword or sub.title,
+                    cn_name=cn, en_name=en, original_name=original,
+                    season_number=sub.season or 0,
+                )
+
+                # 订阅级别源过滤
+                sources = search_only_sources
+                if sub.sources:
+                    # 只搜用户指定的源中属于直搜的
+                    sources = [s for s in sub.sources if s in search_only_sources]
+                    if not sources:
+                        continue
+
+                clients = get_clients()
+                bt_overrides = config_m.config.bt_search_sources or {}
+
+                results = search_all_sources(
+                    keywords=keywords,
+                    query=sub.search_keyword or sub.title,
+                    sources=sources,
+                    bt_overrides=bt_overrides,
+                    search_client=clients.get("search"),
+                    timeout=30,
+                )
+
+                if results:
+                    # 转换为 RSSItem 格式以复用 match_items
+                    from rss_source_base import RSSItem as _RSSItem, extract_episode, extract_season
+                    rss_items = []
+                    for r in results:
+                        rss_items.append(_RSSItem(
+                            title=r.get("title", ""),
+                            download_url=r.get("download_url", ""),
+                            size_gb=r.get("size_gb", 0),
+                            seeders=r.get("seeders", 0),
+                            info_hash=r.get("info_hash", ""),
+                            quality_tag=r.get("quality_tag", ""),
+                            resolution=r.get("resolution", ""),
+                            episode=extract_episode(r.get("title", "")),
+                            season=extract_season(r.get("title", "")),
+                            source_name=r.get("source", r.get("indexer", "")),
+                        ))
+
+                    matched = match_items(rss_items, sub)
+                    if matched:
+                        logger.info(f"[RSSEngine/直搜] {sub.title}: 搜到 {len(results)} 条，匹配 {len(matched)} 条")
+                        self._handle_results(sub, matched)
+
+            except Exception as e:
+                logger.error(f"[RSSEngine/直搜] {sub.title} 搜索失败: {e}")
 
 
 # ── RSSItem → SearchResult 桥接 ──
