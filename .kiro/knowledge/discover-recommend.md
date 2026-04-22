@@ -41,6 +41,12 @@
 
 ## 详情匹配逻辑
 
+- **三源统一 ID 直拉**：豆瓣/TMDB/Bangumi 列表数据已携带各自 ID，详情页优先用 ID 直接拉取详情，跳过搜索匹配
+  - 豆瓣源：`douban_id` → `douban_api_v2.get_detail()`，失败时自动尝试 movie↔tv
+  - TMDB 源：`tmdb_id` → `_try_tmdb_detail_by_id()`，失败时自动尝试 movie↔tv（trending mixed 类型可能传错 type）
+  - Bangumi 源：`bgm_id`（存在 douban_id 字段中）→ `bangumi_client.get_detail()`
+- **ID 传递链路**：后端列表返回 `tmdb_id`/`douban_id` → 前端 `normalizeItem` 统一存入 `douban_id` 字段 → 点击卡片时作为 `id` 参数传给 `/media/info`
+- **TMDB 搜索匹配**（无 ID 时的 fallback）：使用 `tmdb_client.best_match` 多维度评分（标题相似度+年份+热度，30 分阈值），不再盲取搜索结果第一条
 - 豆瓣 ID 拉取失败时自动尝试 movie↔tv（探索列表的 media_type 可能不准）
 - 两种都失败说明是非影视条目，直接返回 found:false，不 fallback 搜索（避免匹配错误）
 - 已知案例：豆瓣探索混入合集/豆列（如 "WOWOW 連続ドラマW"），ID 404 后搜索匹配到错误影片

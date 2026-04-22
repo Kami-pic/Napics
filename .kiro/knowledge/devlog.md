@@ -5,6 +5,19 @@
 
 ---
 
+## 2026-04-22 发现页详情匹配修复（TMDB ID 直拉 + best_match 评分）
+**变更**:
+- `_try_tmdb_detail` 的 `_pick_best` 从"取第一个+年份匹配"替换为 `tmdb_client.best_match`（多维度评分+30 分阈值），解决搜索返回不相关结果时盲选的问题
+- 新增 `_try_tmdb_detail_by_id`：TMDB 路径有 id 时直接拉详情跳过搜索，支持 movie↔tv 自动回退（trending mixed 类型可能传错 type）
+- TMDB 路径增加 id 判断：`id` 非空且是数字时优先走 `_try_tmdb_detail_by_id`，失败才 fallback 到搜索
+- 三源统一：豆瓣/Bangumi 本来就有 ID 直拉逻辑，现在 TMDB 也补齐了
+**溯源**:
+- `_pick_best` 是项目初始代码（4/3 初始提交），经两次 refactor（4/9 main.py→scrape.py，4/11 scrape.py→media_info.py）原样搬运从未改过
+- 4/13 的"详情匹配算法优化"只升级了豆瓣侧的 `_pick_best_douban_result`，TMDB 侧被遗漏
+- `tmdb_client.py` 后来写了成熟的 `best_match` 函数但 `_try_tmdb_detail` 从未使用
+**已知案例**: 匹兹堡医护前线→年轻的皮特先生、无敌少侠(Invincible)→同名电影、黑豹纠察队→捉鬼小精灵(The Lost Boys)
+**测试**: 22 个单元测试覆盖评分拒绝/接受、movie↔tv 回退、_pick_best 新签名、边界情况
+
 ## 2026-04-22 AI 集成一期（基础设施 + 三场景 + 前端设置页）
 **变更**:
 - 新建 `ai_client.py`：统一 AI 客户端，封装 OpenAI 兼容 API 调用（chat/chat_json/_extract_json/_validate_schema），内置调用计量（场景级 calls/tokens/errors）

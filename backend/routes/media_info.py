@@ -323,7 +323,15 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         return result
 
     # ── TMDB 优先路径（默认）──
-    logger.info("[MediaInfo] TMDB 默认路径")
+    logger.info(f"[MediaInfo] TMDB 默认路径, id={id}")
+    # 有 tmdb_id 直接拉详情，跳过搜索
+    if id and id.isdigit():
+        tmdb_detail = _try_tmdb_detail_by_id(int(id), type)
+        if tmdb_detail and tmdb_detail.get("found"):
+            _enrich_ratings(tmdb_detail, title, year, type, subtitle)
+            _writeback_enrich_cache(tmdb_detail)
+            return tmdb_detail
+        logger.info(f"[MediaInfo] TMDB ID {id} 拉取失败，fallback 搜索")
     tmdb_detail = _try_tmdb_detail(title, year, type, subtitle)
     if tmdb_detail and tmdb_detail.get("found"):
         _enrich_ratings(tmdb_detail, title, year, type, subtitle)
@@ -619,11 +627,53 @@ class AddMediaRequest(BaseModel):
 
 
 
-def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> dict:
-    """尝试从 TMDB 获取详情（原有逻辑）"""
+def _try_tmdb_detail_by_id(tmdb_id: int, type: str) -> dict:
+    """用 tmdb_id 直接拉详情，跳过搜索。type 不准时自动尝试 movie↔tv"""
     try:
         clients = get_clients()
         tmdb = clients["tmdb"]
+        # 先用指定 type 拉
+        detail = tmdb.get_tv_detail(tmdb_id) if type == "tv" else tmdb.get_movie_detail(tmdb_id)
+        if not detail or not detail.tmdb_id:
+            # type 可能不准（如 trending mixed），尝试另一种
+            alt_type = "tv" if type == "movie" else "movie"
+            logger.info(f"[MediaInfo] TMDB ID {tmdb_id} {type} 失败，尝试 {alt_type}")
+            detail = tmdb.get_tv_detail(tmdb_id) if alt_type == "tv" else tmdb.get_movie_detail(tmdb_id)
+        if not detail or not detail.tmdb_id:
+            return {"found": False}
+        return {
+            "found": True,
+            "tmdb_id": detail.tmdb_id,
+            "title": detail.title,
+            "original_title": detail.original_title,
+            "english_title": detail.english_title,
+            "year": detail.year,
+            "poster_url": detail.poster_url,
+            "backdrop_url": detail.backdrop_url,
+            "overview": detail.overview,
+            "rating": detail.rating,
+            "genres": detail.genres,
+            "director": detail.director,
+            "cast": detail.cast[:6],
+            "runtime": detail.runtime,
+            "imdb_id": detail.imdb_id,
+            "total_seasons": detail.total_seasons,
+            "episode_count": detail.episode_count,
+            "status": detail.status,
+            "countries": detail.countries,
+            "source": "tmdb",
+        }
+    except Exception as e:
+        logger.error(f"[MediaInfo] TMDB ID 直接拉取失败: {e}")
+        return {"found": False}
+
+
+def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> dict:
+    """尝试从 TMDB 获取详情，使用 tmdb_client.best_match 多维度评分匹配"""
+    try:
+        clients = get_clients()
+        tmdb = clients["tmdb"]
+        type_key = "name" if type == "tv" else "title"
 
         def _search(query):
             return tmdb.search_tv(query) if type == "tv" else tmdb.search_movie(query)
@@ -635,34 +685,26 @@ def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> di
             except:
                 return []
 
-        def _pick_best(results, yr):
-            if not results:
-                return None
-            best = results[0]
-            if yr:
-                for r in results:
-                    r_year = (r.get("release_date") or r.get("first_air_date") or "")[:4]
-                    if r_year == yr:
-                        best = r
-                        break
-            return best
+        def _pick_best(query, results, yr):
+            """使用 tmdb_client.best_match 多维度评分（标题相似度+年份+热度，30 分阈值）"""
+            return tmdb_client.best_match(query, results, year=yr, type_key=type_key)
 
-        best = _pick_best(_search(title), year)
+        best = _pick_best(title, _search(title), year)
         if not best and subtitle and subtitle != title:
-            best = _pick_best(_search(subtitle), year)
+            best = _pick_best(subtitle, _search(subtitle), year)
         if not best:
             douban_results = douban_api_v2.search(title, count=5) or douban_client.search(title)
             for dr in douban_results:
                 alt_name = dr.get("subtitle", "") or dr.get("original_title", "")
                 if alt_name and alt_name != title and alt_name != subtitle:
-                    best = _pick_best(_search(alt_name), year)
+                    best = _pick_best(alt_name, _search(alt_name), year)
                     if best:
                         break
-                    best = _pick_best(_search_nolang(alt_name), year)
+                    best = _pick_best(alt_name, _search_nolang(alt_name), year)
                     if best:
                         break
         if not best:
-            best = _pick_best(_search_nolang(title), year)
+            best = _pick_best(title, _search_nolang(title), year)
         if not best:
             return {"found": False}
 
