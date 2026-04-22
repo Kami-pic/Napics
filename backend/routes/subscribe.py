@@ -114,7 +114,7 @@ def get_calendar():
     if not tmdb:
         return []
 
-    active_tv = [s for s in mgr.get_all() if s.type == "tv" and s.state in ("active", "paused")]
+    active_tv = [s for s in mgr.get_all() if s.type == "tv" and s.state in ("active", "paused") and s.purpose != "upgrade"]
     calendar = []
     for sub in active_tv:
         found_episodes = False

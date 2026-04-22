@@ -57,7 +57,7 @@ export default function SubscribeCalendar() {
           <div key={date}>
             <div className="flex items-center gap-2 mb-2">
               <span className={`text-xs font-medium ${isToday ? "text-blue-400" : isPast ? "text-slate-600" : "text-slate-400"}`}>
-                {isToday ? "今天" : date.slice(5)}
+                {isToday ? "今天" : date.slice(0, 4) === today.slice(0, 4) ? date.slice(5) : date}
               </span>
               {isToday && <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />}
             </div>
