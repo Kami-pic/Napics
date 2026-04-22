@@ -55,11 +55,9 @@ class RSSSourceManager:
 def should_search_now(sub: Subscription, base_interval_hours: float = 4.0) -> bool:
     """判断订阅当前是否应该搜索。
 
-    衰减策略：
-    - 前 72h：每 base_interval_hours 搜一次
-    - 3-14 天未命中：每 12h
-    - 14-30 天未命中：每 24h
-    - 30 天未命中：返回 False（调用方负责暂停）
+    优先级：
+    1. sub.search_interval_hours > 0 时使用自定义间隔
+    2. 否则使用衰减策略：前72h→base / 3-14天→12h / 14-30天→24h / 30天→暂停
     """
     if sub.state != "active":
         return False
@@ -75,6 +73,14 @@ def should_search_now(sub: Subscription, base_interval_hours: float = 4.0) -> bo
     except (ValueError, TypeError):
         return True
 
+    since_last = (now - last).total_seconds() / 3600  # 小时
+
+    # 自定义搜索间隔优先
+    custom_interval = getattr(sub, "search_interval_hours", 0) or 0
+    if custom_interval > 0:
+        return since_last >= custom_interval
+
+    # 默认衰减策略
     created = now
     if sub.created_at:
         try:
@@ -83,7 +89,6 @@ def should_search_now(sub: Subscription, base_interval_hours: float = 4.0) -> bo
             pass
 
     age_days = (now - created).total_seconds() / 86400
-    since_last = (now - last).total_seconds() / 3600  # 小时
 
     # 确定当前间隔
     if age_days <= 3 or sub.search_count <= 18:  # 前 72h（约 18 次 × 4h）
@@ -149,10 +154,13 @@ class SubscriptionScheduler:
             time.sleep(self.check_interval)
 
     def _tick(self):
-        """单次调度：遍历活跃订阅，判断是否该搜索"""
+        """单次调度：遍历活跃订阅，判断是否该搜索 + 检测下载失败重试"""
         active_subs = self.sub_manager.get_all(state="active")
         if not active_subs:
             return
+
+        # 检测下载失败，自动换候选重试
+        self._retry_failed_downloads(active_subs)
 
         for sub in active_subs:
             if not self._running:
@@ -188,11 +196,13 @@ class SubscriptionScheduler:
                 return []
 
         all_items: List[RSSItem] = []
+        source_errors: Dict[str, str] = {}
         for source in sources:
             try:
                 items = source.fetch(sub)
                 all_items.extend(items)
             except Exception as e:
+                source_errors[source.name] = str(e)
                 logger.error(f"[RSSEngine] 源 {source.name} 搜索失败: {e}")
 
         # 更新搜索时间和计数
@@ -203,6 +213,10 @@ class SubscriptionScheduler:
 
         # 匹配过滤
         matched = match_items(all_items, sub)
+
+        # 构建搜索结果摘要
+        summary = self._build_results_summary(all_items, matched, source_errors)
+        update_data["last_results_summary"] = summary
 
         if matched:
             update_data["search_count"] = 0  # 找到资源，重置计数
@@ -327,8 +341,9 @@ class SubscriptionScheduler:
 
         try:
             from download_manager import DownloadTask
+            ep_label = f" E{item.episode:02d}" if item.episode else ""
             task = DownloadTask(
-                media_name=f"{sub.title} E{item.episode or 0}",
+                media_name=f"{sub.title}{ep_label}",
                 download_url=item.download_url,
                 save_path=sub.save_path,
                 channel="qb",
@@ -337,7 +352,7 @@ class SubscriptionScheduler:
                 subscription_episode=item.episode,
             )
             self.download_manager.submit(task)
-            logger.info(f"[RSSEngine] 自动下载: {task.media_name}")
+            logger.info(f"[RSSEngine] 自动下载: {task.media_name} (来源: {item.source_name})")
         except Exception as e:
             logger.error(f"[RSSEngine] 下载提交失败: {e}")
 
@@ -365,3 +380,93 @@ class SubscriptionScheduler:
         except Exception:
             pass
         return False
+
+    def _build_results_summary(
+        self, all_items: List[RSSItem], matched: List[RSSItem], errors: Dict[str, str]
+    ) -> str:
+        """构建搜索结果摘要字符串，供前端展示。"""
+        parts = []
+        if matched:
+            # 找最高质量
+            best_quality = ""
+            for item in matched:
+                if item.quality_tag and item.quality_tag != "Unknown":
+                    best_quality = item.quality_tag
+                    break
+            if best_quality:
+                parts.append(f"搜到 {len(matched)} 条，最高 {best_quality}")
+            else:
+                parts.append(f"搜到 {len(matched)} 条")
+        elif all_items:
+            parts.append(f"搜到 {len(all_items)} 条，匹配 0 条")
+        else:
+            parts.append("未搜到资源")
+        if errors:
+            parts.append(f"{len(errors)} 源失败")
+        return " · ".join(parts)
+
+    def _retry_failed_downloads(self, active_subs: List[Subscription]):
+        """检测下载失败的订阅任务，从 found_resources 中选下一个候选重试。"""
+        if not self.download_manager:
+            return
+        for sub in active_subs:
+            if not sub.found_resources:
+                continue
+            # 检查该订阅是否有失败的下载任务
+            failed_tasks = [
+                t for t in self.download_manager.tasks
+                if t.subscription_id == sub.id and t.status in ("failed", "lost")
+            ]
+            if not failed_tasks:
+                continue
+            # 已尝试过的 URL 集合
+            tried_urls = {t.download_url for t in self.download_manager.tasks if t.subscription_id == sub.id}
+            # 从 found_resources 中找未尝试过的候选
+            for res in sub.found_resources:
+                url = res.get("download_url", "")
+                if not url or url in tried_urls:
+                    continue
+                # 找到候选，提交下载
+                try:
+                    from download_manager import DownloadTask
+                    ep = res.get("episode")
+                    ep_label = f" E{ep:02d}" if ep else ""
+                    task = DownloadTask(
+                        media_name=f"{sub.title}{ep_label} (重试)",
+                        download_url=url,
+                        save_path=sub.save_path,
+                        channel="qb",
+                        category_hint="tv" if sub.type == "tv" else "movie",
+                        subscription_id=sub.id,
+                        subscription_episode=ep,
+                    )
+                    self.download_manager.submit(task)
+                    logger.info(f"[RSSEngine] 下载失败重试: {task.media_name}")
+                    break  # 每次只重试一个候选
+                except Exception as e:
+                    logger.error(f"[RSSEngine] 重试提交失败: {e}")
+
+
+# ── RSSItem → SearchResult 桥接 ──
+
+def rss_item_to_search_result(item: RSSItem) -> dict:
+    """将 RSSItem 转换为 SearchResult 格式（dict），供下载和前端展示统一使用。"""
+    from quality_parser import parse_quality, compute_quality_score
+    quality = parse_quality(item.title)
+    return {
+        "title": item.title,
+        "download_url": item.download_url,
+        "info_url": item.info_url,
+        "size_gb": item.size_gb,
+        "seeders": item.seeders,
+        "indexer": item.indexer or item.source_name,
+        "source": item.source_name,
+        "info_hash": item.info_hash,
+        "quality": quality.model_dump() if hasattr(quality, "model_dump") else {},
+        "quality_score": compute_quality_score(quality),
+        "quality_tag": item.quality_tag,
+        "resolution": item.resolution,
+        "episode": item.episode,
+        "season": item.season,
+        "pub_date": item.pub_date,
+    }

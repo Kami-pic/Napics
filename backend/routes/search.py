@@ -18,6 +18,11 @@ from shared import (
 import searcher, douban_client, bangumi_client
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
+from search_service import (
+    build_keywords, search_all_sources_iter,
+    BT_SOURCE_DEFAULTS as _BT_SOURCE_DEFAULTS,
+    PAN_SOURCE_DEFAULTS as _PAN_SOURCE_DEFAULTS,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -102,166 +107,21 @@ def search_resources_stream(
 ):
     """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词 + 回退链。"""
     def _generate():
-        import concurrent.futures
-        from text_processing import split_by_language, normalize as _normalize
-        from search_keyword_mapper import MultiLangKeywords, get_search_keywords_for_source
-
-        # 构造多语言搜索词集合
-        parts = split_by_language(query)
-        kw_cn = cn_name.strip() or parts.get("cn", "") or ""
-        kw_en = en_name.strip() or shadow_name.strip() or parts.get("en", "") or ""
-        kw_original = original_name.strip() or ""
-        # 清洗中文名
-        if kw_cn:
-            kw_cn = _normalize(kw_cn)
-
-        keywords = MultiLangKeywords(
-            cn=kw_cn, en=kw_en, original=kw_original,
-            query=query, season_number=season_number,
+        keywords = build_keywords(
+            query=query, cn_name=cn_name, en_name=en_name,
+            original_name=original_name, shadow_name=shadow_name,
+            season_number=season_number,
         )
-
-        # 构造匹配名称列表（传给 enrich_result 解决跨语言匹配）
-        _match_names = [n for n in [kw_cn, kw_en, kw_original] if n and n != query]
-
         clients = get_clients()
         conf = config_m.config
         bt_overrides = conf.bt_search_sources or {}
 
-        def _search_prowlarr():
-            """Prowlarr 搜索 + 回退链 + 基础相关性过滤"""
-            try:
-                kw_list = get_search_keywords_for_source("prowlarr", keywords)
-                searched = []
-                hit_kw = ""
-                all_results = []
-                # 构造相关性检查用的关键词集合（中英文分离后的所有部分）
-                relevance_terms = set()
-                for t in [keywords.cn, keywords.en, keywords.original, keywords.query]:
-                    t = t.strip().lower()
-                    if t and len(t) >= 2:
-                        relevance_terms.add(t)
-                        # 也加入各个单词（英文标题拆词）
-                        for w in t.split():
-                            if len(w) >= 3:
-                                relevance_terms.add(w)
-
-                for kw in kw_list:
-                    searched.append(kw)
-                    logger.info(f"[SSE/Prowlarr] 搜索词: '{kw}'")
-                    import time as _t
-                    t0 = _t.time()
-                    raw = clients["search"].search(kw)
-                    elapsed = _t.time() - t0
-                    logger.info(f"[SSE/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
-                    if raw:
-                        if not hit_kw:
-                            hit_kw = kw
-                        seen = set()
-                        filtered_out = 0
-                        for r in raw:
-                            if r.download_url and r.download_url not in seen:
-                                seen.add(r.download_url)
-                                # 基础相关性过滤：标题必须包含至少一个搜索关键词
-                                if relevance_terms:
-                                    title_lower = (r.title or "").lower()
-                                    if not any(term in title_lower for term in relevance_terms):
-                                        filtered_out += 1
-                                        continue
-                                all_results.append(r)
-                        if filtered_out:
-                            logger.info(f"[SSE/Prowlarr] 过滤掉 {filtered_out} 条不相关结果")
-                        break  # 有结果就停止回退
-                return "prowlarr", all_results, None, searched, hit_kw
-            except Exception as e:
-                logger.info(f"[SSE/Prowlarr] 异常: {e}")
-                return "prowlarr", [], str(e), [], ""
-
-        def _search_direct(name, getter):
-            """直搜源搜索 + 回退链"""
-            try:
-                s = getter()
-                kw_list = get_search_keywords_for_source(name, keywords)
-                searched = []
-                hit_kw = ""
-                all_results = []
-                for kw in kw_list:
-                    searched.append(kw)
-                    results = s.search_as_search_results(kw, max_results=20)
-                    if results:
-                        if not hit_kw:
-                            hit_kw = kw
-                        all_results.extend(results)
-                        break  # 有结果就停止回退
-                return name, all_results, None, searched, hit_kw
-            except Exception as e:
-                return name, [], str(e), [], ""
-
-        scrapers = [
-            ("bitsearch", _get_bitsearch_scraper),
-            ("cilixiong", _get_cilixiong_scraper),
-            ("xl720", _get_xl720_scraper),
-            ("nyaa", _get_nyaa_scraper),
-            ("mikan", _get_mikan_scraper),
-            ("yts", _get_yts_scraper),
-            ("limetorrents", _get_limetorrents_scraper),
-            ("acgrip", _get_acgrip_scraper),
-            ("bangumi_moe", _get_bangumi_moe_scraper),
-        ]
-
-        # 推送所有源的 searching 状态
-        all_sources = []
-        if bt_overrides.get("prowlarr", _BT_SOURCE_DEFAULTS["prowlarr"]["enabled"]):
-            all_sources.append("prowlarr")
-        for name, _ in scrapers:
-            default_enabled = _BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
-            if bt_overrides.get(name, default_enabled):
-                all_sources.append(name)
-        for name in all_sources:
-            yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
-
-        # 全部并行提交，用 as_completed 逐个 yield
-        with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
-            future_map = {}
-            if bt_overrides.get("prowlarr", _BT_SOURCE_DEFAULTS["prowlarr"]["enabled"]):
-                f = pool.submit(_search_prowlarr)
-                future_map[f] = "prowlarr"
-            for name, getter in scrapers:
-                default_enabled = _BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
-                if bt_overrides.get(name, default_enabled):
-                    f = pool.submit(_search_direct, name, getter)
-                    future_map[f] = name
-
-            completed_sources = set()
-            try:
-                for future in concurrent.futures.as_completed(future_map, timeout=65):
-                    try:
-                        name, results, err, searched, hit_kw = future.result(timeout=65)
-                    except Exception as e:
-                        name = future_map[future]
-                        results, err, searched, hit_kw = [], str(e), [], ""
-                    completed_sources.add(name)
-                    # 同源内去重
-                    source_deduped = []
-                    source_hashes = set()
-                    for r in results:
-                        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-                        if h:
-                            hu = h.group(1).upper()
-                            if hu in source_hashes:
-                                continue
-                            source_hashes.add(hu)
-                        source_deduped.append(r)
-                    status = "done" if not err else "failed"
-                    enriched = [_enrich_result(r, query, match_names=_match_names) for r in source_deduped]
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'search_keywords': searched, 'hit_keyword': hit_kw, 'results': enriched}, default=str)}\n\n"
-            except concurrent.futures.TimeoutError:
-                pass
-            # 超时未完成的源推送 failed 状态
-            for future, name in future_map.items():
-                if name not in completed_sources:
-                    yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': '搜索超时', 'search_keywords': [], 'hit_keyword': '', 'results': []})}\n\n"
-
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        yield from search_all_sources_iter(
+            keywords=keywords,
+            query=query,
+            bt_overrides=bt_overrides,
+            search_client=clients["search"],
+        )
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
 
@@ -564,30 +424,7 @@ def search_single_keyword(
         return {"keyword": keyword, "bt_count": len(raw), "bt_results": [r.dict() for r in raw], "total_raw": len(raw), "total_filtered": len(raw)}
 
 
-# ── 搜索源管理 ──
-
-# BT 源默认配置
-_BT_SOURCE_DEFAULTS = {
-    "prowlarr": {"label": "Prowlarr", "enabled": True, "type": "bt"},
-    "bitsearch": {"label": "Bitsearch", "enabled": True, "type": "bt"},
-    "cilixiong": {"label": "磁力熊", "enabled": True, "type": "bt"},
-    "xl720": {"label": "XL720", "enabled": True, "type": "bt"},
-    "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt"},
-    "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt"},
-    "yts": {"label": "YTS", "enabled": True, "type": "bt"},
-    "limetorrents": {"label": "LimeTorrents", "enabled": False, "type": "bt"},  # 站点 CF 保护严格，暂不可用
-    "acgrip": {"label": "ACG.RIP", "enabled": True, "type": "bt"},
-    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "type": "bt"},
-}
-# 网盘源默认配置
-_PAN_SOURCE_DEFAULTS = {
-    "pansearch": {"label": "PanSearch", "enabled": True, "type": "pan"},
-    "gogopanso": {"label": "狗狗盘搜", "enabled": True, "type": "pan"},
-    "github": {"label": "GitHub", "enabled": True, "type": "pan"},
-    "rrdynb": {"label": "人人电影", "enabled": True, "type": "pan"},
-    "ddys": {"label": "低端影视", "enabled": True, "type": "pan"},
-    "pansou": {"label": "PanSou", "enabled": False, "type": "pan"},
-}
+# ── 搜索源管理（配置数据从 search_service 导入）──
 
 
 @router.get("/search/sources")

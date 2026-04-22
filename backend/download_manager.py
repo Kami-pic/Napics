@@ -584,8 +584,8 @@ class DownloadManager:
     def _notify_subscription_complete(self, task: DownloadTask):
         """下载完成时通知订阅管理器更新 downloaded_episodes，洗版模式触发归位"""
         try:
-            from subscriber import SubscriptionManager
-            mgr = SubscriptionManager(base_path=self.base_path)
+            from shared import _get_sub_manager
+            mgr = _get_sub_manager()
             info_hash = task.downloader_hash or task.download_url or ""
             mgr.on_download_complete(
                 subscription_id=task.subscription_id,

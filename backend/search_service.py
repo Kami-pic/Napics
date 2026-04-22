@@ -1,0 +1,326 @@
+"""搜索服务：统一搜索逻辑，供 SSE 端点、订阅调度器、手动搜索共用。
+
+从 routes/search.py 的 _generate() 闭包中抽离核心逻辑：
+- build_keywords()：构造多语言搜索词集合
+- search_prowlarr()：Prowlarr 搜索 + 回退链 + 相关性过滤
+- search_direct()：直搜源搜索 + 回退链
+- search_all_sources_iter()：迭代器版本（SSE 用）
+- search_all_sources()：同步版本（订阅调度器用）
+"""
+
+import re
+import json
+import logging
+import concurrent.futures
+import time
+from typing import List, Dict, Optional, Iterator, Tuple, Any
+
+from search_keyword_mapper import MultiLangKeywords, get_search_keywords_for_source
+from search_helpers import enrich_result
+from text_processing import split_by_language, normalize as text_normalize
+
+logger = logging.getLogger(__name__)
+
+# BT 源默认配置（从 routes/search.py 移入）
+BT_SOURCE_DEFAULTS = {
+    "prowlarr": {"label": "Prowlarr", "enabled": True, "type": "bt"},
+    "bitsearch": {"label": "Bitsearch", "enabled": True, "type": "bt"},
+    "cilixiong": {"label": "磁力熊", "enabled": True, "type": "bt"},
+    "xl720": {"label": "XL720", "enabled": True, "type": "bt"},
+    "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt"},
+    "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt"},
+    "yts": {"label": "YTS", "enabled": True, "type": "bt"},
+    "limetorrents": {"label": "LimeTorrents", "enabled": False, "type": "bt"},
+    "acgrip": {"label": "ACG.RIP", "enabled": True, "type": "bt"},
+    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "type": "bt"},
+}
+
+# 网盘源默认配置
+PAN_SOURCE_DEFAULTS = {
+    "pansearch": {"label": "PanSearch", "enabled": True, "type": "pan"},
+    "gogopanso": {"label": "狗狗盘搜", "enabled": True, "type": "pan"},
+    "github": {"label": "GitHub", "enabled": True, "type": "pan"},
+    "rrdynb": {"label": "人人电影", "enabled": True, "type": "pan"},
+    "ddys": {"label": "低端影视", "enabled": True, "type": "pan"},
+    "pansou": {"label": "PanSou", "enabled": False, "type": "pan"},
+}
+
+
+# infohash 提取正则
+_INFOHASH_RE = re.compile(r"btih:([a-fA-F0-9]{40})", re.IGNORECASE)
+
+
+def build_keywords(
+    query: str,
+    cn_name: str = "",
+    en_name: str = "",
+    original_name: str = "",
+    shadow_name: str = "",
+    season_number: int = 0,
+) -> MultiLangKeywords:
+    """从搜索参数构造多语言搜索词集合。"""
+    parts = split_by_language(query)
+    kw_cn = cn_name.strip() or parts.get("cn", "") or ""
+    kw_en = en_name.strip() or shadow_name.strip() or parts.get("en", "") or ""
+    kw_original = original_name.strip() or ""
+    if kw_cn:
+        kw_cn = text_normalize(kw_cn)
+    return MultiLangKeywords(
+        cn=kw_cn, en=kw_en, original=kw_original,
+        query=query, season_number=season_number,
+    )
+
+
+def _build_match_names(keywords: MultiLangKeywords, query: str) -> List[str]:
+    """构造匹配名称列表（传给 enrich_result 解决跨语言匹配）。"""
+    return [n for n in [keywords.cn, keywords.en, keywords.original] if n and n != query]
+
+
+def _build_relevance_terms(keywords: MultiLangKeywords) -> set:
+    """构造相关性检查用的关键词集合。"""
+    terms = set()
+    for t in [keywords.cn, keywords.en, keywords.original, keywords.query]:
+        t = t.strip().lower()
+        if t and len(t) >= 2:
+            terms.add(t)
+            for w in t.split():
+                if len(w) >= 3:
+                    terms.add(w)
+    return terms
+
+
+def _dedup_by_infohash(results: list) -> list:
+    """同源内按 infohash 去重。"""
+    deduped = []
+    seen = set()
+    for r in results:
+        m = _INFOHASH_RE.search(getattr(r, "download_url", "") if hasattr(r, "download_url") else r.get("download_url", ""))
+        if m:
+            h = m.group(1).upper()
+            if h in seen:
+                continue
+            seen.add(h)
+        deduped.append(r)
+    return deduped
+
+
+def search_prowlarr(
+    search_client,
+    keywords: MultiLangKeywords,
+) -> Tuple[str, list, Optional[str], list, str]:
+    """Prowlarr 搜索 + 回退链 + 基础相关性过滤。
+
+    返回: (source_name, results, error, searched_keywords, hit_keyword)
+    """
+    try:
+        kw_list = get_search_keywords_for_source("prowlarr", keywords)
+        searched = []
+        hit_kw = ""
+        all_results = []
+        relevance_terms = _build_relevance_terms(keywords)
+
+        for kw in kw_list:
+            searched.append(kw)
+            logger.info(f"[SearchService/Prowlarr] 搜索词: '{kw}'")
+            t0 = time.time()
+            raw = search_client.search(kw)
+            elapsed = time.time() - t0
+            logger.info(f"[SearchService/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
+            if raw:
+                if not hit_kw:
+                    hit_kw = kw
+                seen = set()
+                filtered_out = 0
+                for r in raw:
+                    if r.download_url and r.download_url not in seen:
+                        seen.add(r.download_url)
+                        if relevance_terms:
+                            title_lower = (r.title or "").lower()
+                            if not any(term in title_lower for term in relevance_terms):
+                                filtered_out += 1
+                                continue
+                        all_results.append(r)
+                if filtered_out:
+                    logger.info(f"[SearchService/Prowlarr] 过滤掉 {filtered_out} 条不相关结果")
+                break
+        return "prowlarr", all_results, None, searched, hit_kw
+    except Exception as e:
+        logger.info(f"[SearchService/Prowlarr] 异常: {e}")
+        return "prowlarr", [], str(e), [], ""
+
+
+def search_direct(
+    name: str,
+    getter,
+    keywords: MultiLangKeywords,
+) -> Tuple[str, list, Optional[str], list, str]:
+    """直搜源搜索 + 回退链。
+
+    返回: (source_name, results, error, searched_keywords, hit_keyword)
+    """
+    try:
+        s = getter()
+        kw_list = get_search_keywords_for_source(name, keywords)
+        searched = []
+        hit_kw = ""
+        all_results = []
+        for kw in kw_list:
+            searched.append(kw)
+            results = s.search_as_search_results(kw, max_results=20)
+            if results:
+                if not hit_kw:
+                    hit_kw = kw
+                all_results.extend(results)
+                break
+        return name, all_results, None, searched, hit_kw
+    except Exception as e:
+        return name, [], str(e), [], ""
+
+
+def _get_scraper_list() -> List[Tuple[str, Any]]:
+    """获取所有直搜源的 (name, getter) 列表。"""
+    from shared import (
+        _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper,
+        _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper,
+        _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper,
+    )
+    return [
+        ("bitsearch", _get_bitsearch_scraper),
+        ("cilixiong", _get_cilixiong_scraper),
+        ("xl720", _get_xl720_scraper),
+        ("nyaa", _get_nyaa_scraper),
+        ("mikan", _get_mikan_scraper),
+        ("yts", _get_yts_scraper),
+        ("limetorrents", _get_limetorrents_scraper),
+        ("acgrip", _get_acgrip_scraper),
+        ("bangumi_moe", _get_bangumi_moe_scraper),
+    ]
+
+
+def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]]]:
+    """根据配置返回启用的源。返回 (prowlarr_enabled, scrapers_list)。"""
+    prowlarr_enabled = bt_overrides.get("prowlarr", BT_SOURCE_DEFAULTS["prowlarr"]["enabled"])
+    scrapers = _get_scraper_list()
+    enabled_scrapers = []
+    for name, getter in scrapers:
+        default_enabled = BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
+        if bt_overrides.get(name, default_enabled):
+            enabled_scrapers.append((name, getter))
+    return prowlarr_enabled, enabled_scrapers
+
+
+def search_all_sources_iter(
+    keywords: MultiLangKeywords,
+    query: str,
+    bt_overrides: Optional[dict] = None,
+    search_client=None,
+    match_names: Optional[List[str]] = None,
+) -> Iterator[str]:
+    """迭代器版本：逐源返回 SSE 事件字符串。供 SSE 端点使用。
+
+    和原 _generate() 行为完全一致：
+    1. 推送所有源的 searching 状态
+    2. 全部并行提交，as_completed 逐个 yield source_done 事件
+    3. 超时未完成的源推送 failed
+    4. 最后推送 done
+    """
+    if bt_overrides is None:
+        bt_overrides = {}
+    if match_names is None:
+        match_names = _build_match_names(keywords, query)
+
+    prowlarr_enabled, enabled_scrapers = _get_enabled_sources(bt_overrides)
+
+    # 推送所有源的 searching 状态
+    all_source_names = []
+    if prowlarr_enabled:
+        all_source_names.append("prowlarr")
+    all_source_names.extend(name for name, _ in enabled_scrapers)
+    for name in all_source_names:
+        yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
+
+    # 全部并行提交
+    with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
+        future_map = {}
+        if prowlarr_enabled and search_client:
+            f = pool.submit(search_prowlarr, search_client, keywords)
+            future_map[f] = "prowlarr"
+        for name, getter in enabled_scrapers:
+            f = pool.submit(search_direct, name, getter, keywords)
+            future_map[f] = name
+
+        completed_sources = set()
+        try:
+            for future in concurrent.futures.as_completed(future_map, timeout=65):
+                try:
+                    name, results, err, searched, hit_kw = future.result(timeout=65)
+                except Exception as e:
+                    name = future_map[future]
+                    results, err, searched, hit_kw = [], str(e), [], ""
+                completed_sources.add(name)
+                source_deduped = _dedup_by_infohash(results)
+                status = "done" if not err else "failed"
+                enriched = [enrich_result(r, query, match_names=match_names) for r in source_deduped]
+                yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'search_keywords': searched, 'hit_keyword': hit_kw, 'results': enriched}, default=str)}\n\n"
+        except concurrent.futures.TimeoutError:
+            pass
+        for future, name in future_map.items():
+            if name not in completed_sources:
+                yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': 'failed', 'count': 0, 'added': 0, 'error': '搜索超时', 'search_keywords': [], 'hit_keyword': '', 'results': []})}\n\n"
+
+    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+
+def search_all_sources(
+    keywords: MultiLangKeywords,
+    query: str,
+    sources: Optional[List[str]] = None,
+    bt_overrides: Optional[dict] = None,
+    search_client=None,
+    match_names: Optional[List[str]] = None,
+    timeout: int = 60,
+) -> List[dict]:
+    """同步版本：搜索所有指定源，返回 enrich 后的结果列表。供订阅调度器使用。
+
+    参数:
+        sources: 指定源列表（如 ["prowlarr", "nyaa"]），None=全部启用的源
+        bt_overrides: BT 源启用覆盖配置
+        search_client: Prowlarr 搜索客户端
+        match_names: 匹配名称列表
+        timeout: 总超时秒数
+    """
+    if bt_overrides is None:
+        bt_overrides = {}
+    if match_names is None:
+        match_names = _build_match_names(keywords, query)
+
+    prowlarr_enabled, enabled_scrapers = _get_enabled_sources(bt_overrides)
+
+    # 如果指定了源列表，过滤
+    if sources:
+        source_set = set(sources)
+        prowlarr_enabled = prowlarr_enabled and "prowlarr" in source_set
+        enabled_scrapers = [(n, g) for n, g in enabled_scrapers if n in source_set]
+
+    all_results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
+        future_map = {}
+        if prowlarr_enabled and search_client:
+            f = pool.submit(search_prowlarr, search_client, keywords)
+            future_map[f] = "prowlarr"
+        for name, getter in enabled_scrapers:
+            f = pool.submit(search_direct, name, getter, keywords)
+            future_map[f] = name
+
+        for future in concurrent.futures.as_completed(future_map, timeout=timeout):
+            try:
+                name, results, err, searched, hit_kw = future.result(timeout=timeout)
+                if not err:
+                    deduped = _dedup_by_infohash(results)
+                    enriched = [enrich_result(r, query, match_names=match_names) for r in deduped]
+                    all_results.extend(enriched)
+            except Exception as e:
+                name = future_map.get(future, "unknown")
+                logger.error(f"[SearchService] {name} 搜索失败: {e}")
+
+    return all_results

@@ -98,7 +98,7 @@ class NyaaRSSSource(RSSSourceBase):
         aliases = subscription.aliases or {}
         for en in (aliases.get("en") or []):
             _add(en)
-        for jp in (aliases.get("jp") or []):
+        for jp in (aliases.get("original") or aliases.get("jp") or []):
             _add(jp)
         _add(subscription.title)
 

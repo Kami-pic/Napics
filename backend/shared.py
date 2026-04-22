@@ -55,6 +55,7 @@ from analysis_cache import AnalysisCache
 from pan_search_service import PanSearchService
 from pan_models import PanSearchResponse, TransferRequest, TransferResult
 from local_media_matcher import LocalMediaMatcher
+from subscriber import SubscriptionManager
 
 logger = logging.getLogger(__name__)
 # ── 全局单例 ──
@@ -77,6 +78,7 @@ except Exception as _e:
 # 注册回调：save_library 后自动刷新索引
 config_m._on_library_save_callbacks.append(lambda lib: media_matcher.build_index(lib))
 
+_sub_manager: Optional[SubscriptionManager] = None
 _download_manager: Optional[DownloadManager] = None
 _pan_search_service: Optional[PanSearchService] = None
 _recycle_bin: Optional[RecycleBin] = None
@@ -102,6 +104,16 @@ def _get_pan_search_service() -> PanSearchService:
             pansou_api_url="https://pansou.app",
         )
     return _pan_search_service
+
+
+def _get_sub_manager() -> SubscriptionManager:
+    """订阅管理器全局单例。所有调用方统一使用，避免多实例数据竞争。"""
+    global _sub_manager
+    if _sub_manager is None:
+        _sub_manager = SubscriptionManager(
+            base_path=os.path.dirname(os.path.abspath(__file__))
+        )
+    return _sub_manager
 
 
 def _get_download_manager() -> DownloadManager:

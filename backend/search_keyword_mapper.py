@@ -34,6 +34,8 @@ SOURCE_LANG_PRIORITY: Dict[str, List[str]] = {
     "mikan":        ["cn", "original", "en"],
     "acgrip":       ["cn", "original", "en"],
     "bangumi_moe":  ["cn", "original", "en"],
+    "eztv":         ["en", "cn"],             # EZTV 欧美剧集，英文优先
+    "dmhy":         ["cn", "original", "en"], # 动漫花园，中文优先
     # 网盘源（中文优先）
     "pansearch":    ["cn", "en"],
     "rrdynb":       ["cn", "en"],
@@ -47,12 +49,12 @@ SOURCE_LANG_PRIORITY: Dict[str, List[str]] = {
 }
 
 # 中文源集合（季号拼"第N季"）
-CN_SEASON_SOURCES = {"cilixiong", "xl720", "mikan", "acgrip", "bangumi_moe",
+CN_SEASON_SOURCES = {"cilixiong", "xl720", "mikan", "acgrip", "bangumi_moe", "dmhy",
                      "pansearch", "rrdynb", "ddys", "pansou", "sites",
                      "slowread", "wnsearch", "gogopanso", "github"}
 
 # 英文源集合（季号拼"S0N"）
-EN_SEASON_SOURCES = {"prowlarr", "bitsearch", "yts", "limetorrents", "nyaa"}
+EN_SEASON_SOURCES = {"prowlarr", "bitsearch", "yts", "limetorrents", "nyaa", "eztv"}
 
 
 def _get_keyword_by_lang(keywords: MultiLangKeywords, lang: str) -> str:

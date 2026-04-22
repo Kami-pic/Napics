@@ -21,7 +21,7 @@ _QUALITY_MIN_RANK = {
 def match_items(items: List[RSSItem], subscription) -> List[RSSItem]:
     """对 RSS 条目列表执行匹配过滤，返回符合订阅要求的条目。
 
-    过滤链：质量 → 包含/排除关键词 → 集数匹配 → 指纹去重
+    过滤链：质量 → 包含/排除关键词 → 集数匹配（含 Quality Cutoff）→ 指纹去重
     best_version 模式下跳过"已下载"限制，只做质量比较。
     """
     result = items
@@ -32,7 +32,7 @@ def match_items(items: List[RSSItem], subscription) -> List[RSSItem]:
     # 2. 包含/排除关键词
     result = _filter_keywords(result, subscription.include, subscription.exclude)
 
-    # 3. 集数匹配 + 指纹去重（洗版模式跳过已下载限制）
+    # 3. 集数匹配 + 指纹去重 + Quality Cutoff
     result = _filter_episodes(result, subscription)
 
     return result
@@ -75,11 +75,12 @@ def _filter_keywords(items: List[RSSItem], include: str, exclude: str) -> List[R
 
 
 def _filter_episodes(items: List[RSSItem], subscription) -> List[RSSItem]:
-    """集数匹配 + 指纹去重。
+    """集数匹配 + 指纹去重 + Quality Cutoff。
 
     电影：只要没下载过就通过
     剧集：只保留缺失集（不在 downloaded_episodes 中的）
     best_version 模式：不受"已下载"限制，但仍做指纹去重（同 hash 不重复推送）
+    Quality Cutoff：已下载集质量达到 target_quality 时，该集不再搜索更好版本
     """
     downloaded = subscription.downloaded_episodes or {}
     downloaded_hashes = set()
@@ -93,6 +94,24 @@ def _filter_episodes(items: List[RSSItem], subscription) -> List[RSSItem]:
     target_season = subscription.season
     best_version = getattr(subscription, "best_version", False)
 
+    # Quality Cutoff：已达到目标质量的集号集合
+    cutoff_episodes = set()
+    target_quality = getattr(subscription, "target_quality", "") or ""
+    if target_quality and downloaded:
+        target_rank = _QUALITY_MIN_RANK.get(target_quality, 0)
+        if target_rank > 0:
+            for ep_key, ep_info in downloaded.items():
+                qt = ""
+                if hasattr(ep_info, "quality_tag"):
+                    qt = ep_info.quality_tag
+                elif isinstance(ep_info, dict):
+                    qt = ep_info.get("quality_tag", "")
+                if qt:
+                    quality = parse_quality(qt)
+                    level = get_quality_level(quality)
+                    if level.rank >= target_rank:
+                        cutoff_episodes.add(ep_key)
+
     filtered = []
     for item in items:
         # 指纹去重：完全相同的 hash 不再推送
@@ -101,13 +120,15 @@ def _filter_episodes(items: List[RSSItem], subscription) -> List[RSSItem]:
 
         if best_version:
             # 洗版模式：不限制已下载集，但需要质量更高才有意义
-            # 质量比较在 rss_engine 的 _handle_results 中做
             if is_tv:
                 if item.episode is None:
                     if _looks_like_season_pack(item.title):
                         filtered.append(item)
                     continue
                 if target_season and item.season and item.season != target_season:
+                    continue
+                # Quality Cutoff：该集已达到目标质量，不再洗版
+                if str(item.episode) in cutoff_episodes:
                     continue
             filtered.append(item)
         else:

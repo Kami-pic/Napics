@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-04-22 订阅系统重设计 Phase 0-2b（后端核心链路）
+**变更**:
+- Phase 0：SubscriptionManager 改为 shared.py 全局单例，修复 download_manager 和 routes/subscribe.py 使用不同实例的数据竞争 bug
+- Phase 1a：Subscription 模型新增 7 个字段（purpose/target_quality/current_quality_score/local_file_path/search_interval_hours/last_results_summary/imdb_id），aliases 的 jp→original 迁移（_load 时自动映射），updatable 白名单扩展
+- Phase 1b：新建 search_service.py，从 routes/search.py 的 SSE 闭包中抽离搜索逻辑（search_prowlarr/search_direct/search_all_sources/search_all_sources_iter），SSE 端点改为薄壳调用，BT_SOURCE_DEFAULTS/PAN_SOURCE_DEFAULTS 移入 search_service
+- Phase 1c：新建 rss_source_eztv.py（EZTV RSS 源，支持 IMDB ID 精准订阅+关键词回退），search_keyword_mapper 补充 eztv/dmhy 映射，注册到 RSSSourceManager（共 4 个 RSS 源：Prowlarr/蜜柑/Nyaa/EZTV）
+- Phase 2a：rss_engine.py 增强（_build_results_summary 搜索摘要、rss_item_to_search_result 格式桥接、源错误收集）
+- Phase 2b：rss_matcher.py 新增 Quality Cutoff（已达目标质量的集不再匹配），should_search_now 支持自定义 search_interval_hours，_retry_failed_downloads 下载失败自动换候选
+- RSS 源文件（prowlarr/nyaa/mikan）aliases 读取兼容 original 和 jp 两种 key
+**延后**: 结果缓存层、search.py 行数拆分、Prowlarr 全站 RSS feed、rss_matcher L1/L2 增强、全局速率限制器
+**设计文档**: .kiro/docs/subscribe-redesign.md（含双通道架构、前端交互原型、实施步骤）
+
 ## 2026-04-22 技术债务清理（3/4 项）
 **变更**:
 - `pan_models.py` Pydantic V2 迁移：4 个 `@validator` → `@field_validator` + `@model_validator(mode="before")`，V2 中有默认值的字段不能用 `field_validator(mode="before")` 自动触发，改用 `model_validator` 统一处理 clean_title/resolution/is_complete 的自动填充

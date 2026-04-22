@@ -1,11 +1,13 @@
-"""蜜柑计划 (mikanani.me) RSS 源 — 字幕组聚合，番剧订阅核心。
+"""EZTV RSS 源 — 欧美剧集追更首选。
 
 RSS 接口：
-- 搜索 RSS：https://mikanani.me/RSS/Search?searchstr=关键词
-- 番剧 RSS：https://mikanani.me/RSS/Bangumi?bangumiId=xxx
+- 按 IMDB ID：https://eztv.re/ezrss.xml?imdb_id=0944947
+- 按关键词：https://eztv.re/ezrss.xml?search_string=xxx
+
+直搜 API（备用）：
+- https://eztv.re/api/get-torrents?imdb_id=0944947&limit=50
 
 需代理（config.http_proxy）。
-同时服务于订阅系统（定时轮询）和 BT 搜索（即时搜索）。
 """
 
 import re
@@ -17,6 +19,7 @@ from rss_source_base import RSSSourceBase, RSSItem, extract_episode, extract_sea
 from quality_parser import parse_quality
 
 logger = logging.getLogger(__name__)
+
 _MAGNET_HASH_RE = re.compile(r"btih:([a-fA-F0-9]{40})", re.IGNORECASE)
 _SIZE_RE = re.compile(r"(\d+\.?\d*)\s*(GB|MB|TB|GiB|MiB|TiB)", re.IGNORECASE)
 _SIZE_UNITS = {"TB": 1024, "TiB": 1024, "GB": 1, "GiB": 1, "MB": 1/1024, "MiB": 1/1024}
@@ -34,13 +37,13 @@ def _parse_size(text: str) -> float:
     return 0.0
 
 
-class MikanRSSSource(RSSSourceBase):
-    """蜜柑计划 RSS 源。"""
+class EZTVRSSSource(RSSSourceBase):
+    """EZTV RSS 源：按 IMDB ID 精准订阅或按关键词搜索。"""
 
-    name = "mikan"
-    display_name = "蜜柑计划"
+    name = "eztv"
+    display_name = "EZTV"
 
-    BASE_URL = "https://mikanani.me"
+    BASE_URL = "https://eztv.re"
 
     def __init__(self, proxy: str = ""):
         self._proxy = proxy
@@ -65,7 +68,20 @@ class MikanRSSSource(RSSSourceBase):
             return self._session
 
     def fetch(self, subscription) -> List[RSSItem]:
-        """根据订阅信息搜索蜜柑 RSS。"""
+        """根据订阅信息搜索 EZTV RSS。优先用 IMDB ID，回退到关键词搜索。"""
+        # 优先用 IMDB ID 精准订阅
+        imdb_id = getattr(subscription, "imdb_id", "") or ""
+        if imdb_id:
+            # EZTV 的 imdb_id 参数不带 "tt" 前缀
+            imdb_num = imdb_id.replace("tt", "")
+            try:
+                items = self._fetch_rss_by_imdb(imdb_num)
+                if items:
+                    return items
+            except Exception as e:
+                logger.warning("[eztv] IMDB RSS 失败 '%s': %s", imdb_id, str(e))
+
+        # 回退到关键词搜索
         keywords = self._build_search_keywords(subscription)
         if not keywords:
             return []
@@ -75,20 +91,22 @@ class MikanRSSSource(RSSSourceBase):
 
         for kw in keywords:
             try:
-                items = self._fetch_rss(kw)
+                items = self._fetch_rss_by_keyword(kw)
                 for item in items:
                     if item.info_hash and item.info_hash in seen_hashes:
                         continue
                     if item.info_hash:
                         seen_hashes.add(item.info_hash)
                     all_items.append(item)
+                if all_items:
+                    break  # 有结果就停止回退
             except Exception as e:
-                logger.warning("[mikan] RSS 搜索失败 '%s': %s", kw, str(e))
+                logger.warning("[eztv] RSS 搜索失败 '%s': %s", kw, str(e))
 
         return all_items
 
     def _build_search_keywords(self, subscription) -> List[str]:
-        """从订阅信息构造搜索词。"""
+        """从订阅信息构造搜索词（英文优先，EZTV 是英文站）。"""
         keywords = []
         seen = set()
 
@@ -103,46 +121,53 @@ class MikanRSSSource(RSSSourceBase):
             return keywords
 
         aliases = subscription.aliases or {}
-        # 蜜柑以中文和日文为主
-        for cn in (aliases.get("cn") or []):
-            _add(cn)
-        for jp in (aliases.get("original") or aliases.get("jp") or []):
-            _add(jp)
+        # EZTV 英文站，英文名优先
+        for en in (aliases.get("en") or []):
+            _add(en)
         _add(subscription.title)
 
         return keywords
 
-    def _fetch_rss(self, keyword: str) -> List[RSSItem]:
-        """请求蜜柑搜索 RSS 并解析。"""
-        url = f"{self.BASE_URL}/RSS/Search"
-        session = self._get_session()
+    def _fetch_rss_by_imdb(self, imdb_num: str) -> List[RSSItem]:
+        """按 IMDB ID 拉取 RSS feed。"""
+        url = f"{self.BASE_URL}/ezrss.xml"
+        return self._do_fetch(url, params={"imdb_id": imdb_num})
 
+    def _fetch_rss_by_keyword(self, keyword: str) -> List[RSSItem]:
+        """按关键词拉取 RSS feed。"""
+        url = f"{self.BASE_URL}/ezrss.xml"
+        return self._do_fetch(url, params={"search_string": keyword})
+
+    def _do_fetch(self, url: str, params: dict) -> List[RSSItem]:
+        """执行 RSS 请求并解析。"""
+        session = self._get_session()
         try:
             proxy = self._proxy if self._proxy else None
-            # curl_cffi 和 requests 的代理参数不同
             if hasattr(session, "impersonate"):
-                resp = session.get(url, params={"searchstr": keyword}, timeout=15, proxy=proxy)
+                resp = session.get(url, params=params, timeout=15, proxy=proxy)
             else:
-                resp = session.get(url, params={"searchstr": keyword}, timeout=15)
+                resp = session.get(url, params=params, timeout=15)
 
             if resp.status_code != 200:
-                logger.warning("[mikan] RSS 返回 %d", resp.status_code)
+                logger.warning("[eztv] RSS 返回 %d", resp.status_code)
                 return []
 
             return self._parse_rss_xml(resp.text)
-
         except Exception as e:
-            logger.error("[mikan] RSS 请求失败: %s", str(e))
+            logger.error("[eztv] RSS 请求失败: %s", str(e))
             return []
 
     def _parse_rss_xml(self, xml_text: str) -> List[RSSItem]:
-        """解析 RSS XML。"""
+        """解析 EZTV RSS XML。"""
         items = []
         try:
             root = ET.fromstring(xml_text)
         except ET.ParseError as e:
-            logger.warning("[mikan] RSS XML 解析失败: %s", str(e))
+            logger.warning("[eztv] RSS XML 解析失败: %s", str(e))
             return []
+
+        # EZTV RSS 使用 torrent 命名空间
+        ns = {"torrent": "http://xmlns.ezrss.it/0.1/"}
 
         for item_el in root.iter("item"):
             try:
@@ -150,37 +175,53 @@ class MikanRSSSource(RSSSourceBase):
                 if not title:
                     continue
 
-                # 磁力链接（enclosure 或 link）
-                enclosure = item_el.find("enclosure")
+                # 磁力链接：优先 torrent:magnetURI，回退到 link
                 download_url = ""
-                if enclosure is not None:
-                    download_url = enclosure.get("url", "")
+                magnet_el = item_el.find("torrent:magnetURI", ns)
+                if magnet_el is not None and magnet_el.text:
+                    download_url = magnet_el.text.strip()
                 if not download_url:
                     link = (item_el.findtext("link") or "").strip()
                     if link.startswith("magnet:"):
                         download_url = link
+                # 也尝试 enclosure
+                if not download_url:
+                    enclosure = item_el.find("enclosure")
+                    if enclosure is not None:
+                        download_url = enclosure.get("url", "")
 
                 if not download_url:
                     continue
 
                 # 提取 infohash
                 info_hash = ""
-                hash_match = _MAGNET_HASH_RE.search(download_url)
-                if hash_match:
-                    info_hash = hash_match.group(1).upper()
+                hash_el = item_el.find("torrent:infoHash", ns)
+                if hash_el is not None and hash_el.text:
+                    info_hash = hash_el.text.strip().upper()
+                if not info_hash:
+                    hash_match = _MAGNET_HASH_RE.search(download_url)
+                    if hash_match:
+                        info_hash = hash_match.group(1).upper()
 
                 # 大小
                 size_gb = 0.0
-                if enclosure is not None:
-                    length = enclosure.get("length", "0")
+                size_el = item_el.find("torrent:contentLength", ns)
+                if size_el is not None and size_el.text:
                     try:
-                        size_gb = round(int(length) / (1024 ** 3), 2)
+                        size_gb = round(int(size_el.text) / (1024 ** 3), 2)
                     except (ValueError, TypeError):
                         pass
                 if size_gb == 0:
-                    # 从 description 提取
-                    desc = item_el.findtext("description") or ""
-                    size_gb = _parse_size(desc + " " + title)
+                    size_gb = _parse_size(title)
+
+                # 做种数
+                seeders = 0
+                seeds_el = item_el.find("torrent:seeds", ns)
+                if seeds_el is not None and seeds_el.text:
+                    try:
+                        seeders = int(seeds_el.text)
+                    except (ValueError, TypeError):
+                        pass
 
                 # 发布时间
                 pub_date = (item_el.findtext("pubDate") or "").strip()
@@ -202,8 +243,8 @@ class MikanRSSSource(RSSSourceBase):
                     episode=episode,
                     season=season,
                     source_name=self.name,
-                    seeders=0,
-                    indexer="mikan",
+                    seeders=seeders,
+                    indexer="eztv",
                 ))
             except Exception:
                 continue

@@ -100,8 +100,8 @@ class ProwlarrRSSSource(RSSSourceBase):
         # 英文名（BT 站英文为主，优先级最高）
         for en in (aliases.get("en") or []):
             _add(en + season_suffix)
-        # 日文名（Nyaa/Mikan 日文命中率高）
-        for jp in (aliases.get("jp") or []):
+        # 日文/原始语言名（Nyaa/Mikan 日文命中率高）
+        for jp in (aliases.get("original") or aliases.get("jp") or []):
             _add(jp + season_suffix)
         # 中文名
         for cn in (aliases.get("cn") or []):

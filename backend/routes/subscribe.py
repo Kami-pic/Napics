@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter
 from typing import Optional
 
-from shared import config_m, media_matcher, _tmdb_client
+from shared import config_m, media_matcher, _tmdb_client, _get_sub_manager
 from subscriber import SubscriptionManager
 from alias_resolver import AliasResolver
 from rss_engine import RSSSourceManager, SubscriptionScheduler
@@ -15,18 +15,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# 懒加载单例
-_sub_manager: Optional[SubscriptionManager] = None
+# 懒加载单例（SubscriptionManager 从 shared.py 获取）
 _source_manager: Optional[RSSSourceManager] = None
 _scheduler: Optional[SubscriptionScheduler] = None
-
-
-def _get_sub_manager() -> SubscriptionManager:
-    global _sub_manager
-    if _sub_manager is None:
-        base = os.path.dirname(os.path.abspath(__file__))
-        _sub_manager = SubscriptionManager(base_path=os.path.dirname(base))
-    return _sub_manager
 
 
 def _get_source_manager() -> RSSSourceManager:
@@ -56,6 +47,14 @@ def _get_source_manager() -> RSSSourceManager:
             _source_manager.register(nyaa_source)
         except Exception as e:
             logger.error(f"[Subscribe] Nyaa RSS 源注册失败: {e}")
+        # 注册 EZTV RSS 源
+        try:
+            from rss_source_eztv import EZTVRSSSource
+            proxy = getattr(conf, "http_proxy", "") or ""
+            eztv_source = EZTVRSSSource(proxy=proxy)
+            _source_manager.register(eztv_source)
+        except Exception as e:
+            logger.error(f"[Subscribe] EZTV RSS 源注册失败: {e}")
     return _source_manager
 
 

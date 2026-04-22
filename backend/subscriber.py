@@ -51,7 +51,7 @@ class Subscription(BaseModel):
     exclude: str = ""             # 排除关键词
     save_path: str = ""
     search_keyword: str = ""      # 自定义搜索词（空则用 title）
-    aliases: Dict[str, List[str]] = Field(default_factory=lambda: {"cn": [], "en": [], "jp": []})
+    aliases: Dict[str, List[str]] = Field(default_factory=lambda: {"cn": [], "en": [], "original": []})
     sources: List[str] = Field(default_factory=list)  # 指定搜索源（空=用全局设置）
     state: str = "active"         # active / paused / completed
     mode: str = "notify"          # notify / auto
@@ -63,6 +63,14 @@ class Subscription(BaseModel):
     last_found: str = ""
     created_at: str = ""
     note: str = ""
+    # ── 新增字段（Phase 1a）──
+    purpose: str = "follow"           # "follow"(追更) | "upgrade"(洗版)
+    target_quality: str = ""          # 目标质量（"2160p" 等），达到后停止搜索
+    current_quality_score: int = 0    # 洗版用：当前文件的质量分
+    local_file_path: str = ""         # 洗版用：本地文件路径（归位替换用）
+    search_interval_hours: float = 0  # 搜索间隔（0=用全局默认，追更4h，洗版24h）
+    last_results_summary: str = ""    # 上次搜索结果摘要（前端展示用，含错误信息）
+    imdb_id: str = ""                 # IMDB ID（EZTV 精准订阅用，创建时从 TMDB 转换并缓存）
 
 
 # ── 核心管理器 ──
@@ -144,14 +152,14 @@ class SubscriptionManager:
                 logger.error(f"[Subscriber] 媒体库检查失败: {e}")
 
         # 预拉取别名
-        aliases = {"cn": [], "en": [], "jp": []}
+        aliases = {"cn": [], "en": [], "original": []}
         if alias_resolver:
             try:
                 alias_set = alias_resolver.resolve(title, year=year)
                 aliases = {
                     "cn": alias_set.cn_names or [],
                     "en": alias_set.en_names or [],
-                    "jp": alias_set.jp_names or [],
+                    "original": alias_set.jp_names or [],
                 }
             except Exception as e:
                 logger.error(f"[Subscriber] 别名拉取失败: {e}")
@@ -229,6 +237,9 @@ class SubscriptionManager:
             "state", "mode", "best_version", "note", "total_episode",
             "found_resources", "downloaded_episodes", "search_count",
             "first_search", "last_search", "last_found", "poster",
+            "purpose", "target_quality", "current_quality_score",
+            "local_file_path", "search_interval_hours", "last_results_summary",
+            "imdb_id", "sources",
         }
         with self._lock:
             for key, val in data.items():
@@ -385,6 +396,18 @@ class SubscriptionManager:
                     item["downloaded_episodes"] = {
                         str(ep): {"timestamp": ""} for ep in dl_eps
                     }
+                # aliases 兼容：jp → original 迁移
+                aliases = item.get("aliases", {})
+                if "jp" in aliases and "original" not in aliases:
+                    aliases["original"] = aliases.pop("jp")
+                elif "jp" in aliases:
+                    # 两者都有时，合并 jp 到 original 并去重
+                    merged = list(aliases.get("original", []))
+                    for name in aliases.pop("jp"):
+                        if name not in merged:
+                            merged.append(name)
+                    aliases["original"] = merged
+                item["aliases"] = aliases
                 self.subscriptions.append(Subscription(**item))
             logger.info(f"[Subscriber] 加载 {len(self.subscriptions)} 条订阅")
         except Exception as e:
