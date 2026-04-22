@@ -580,11 +580,12 @@ BT 标题的格式比本地文件名复杂（如 `[SubGroup] Title - 05 (1080p)`
 - [ ] SubscriptionItem 类型扩展新增字段
 - [ ] 发现页"蹲守升级"入口（local_status=owned_low）
 
-### Phase 3b：前端增强（展开态 + 日历优化）
-- [ ] SubscribeInline 展开态：每集详情（质量+来源+日期+播出状态）
-- [ ] 展开态合并 downloaded_episodes + calendar 数据
-- [ ] 日历视图只对 purpose=follow 显示 + 空状态优化
-- [ ] 订阅冲突提示
+### Phase 3b：前端增强（展开态 + 日历优化）✅
+- [x] SubscribeInline 展开态：点击卡片展开每集详情（质量+来源+日期+播出状态）
+- [x] 展开态合并 downloaded_episodes + calendar 数据（一次性拉取缓存）
+- [x] 折叠态显示"下一集"信息（从 calendar 计算）
+- [x] 日历视图空状态优化（友好提示文案）
+- [ ] 订阅冲突提示 — 延后
 
 ### Phase 4a：扩展 RSS 源（核心链路稳定后再铺开）
 - [ ] rss_source_dmhy.py — 动漫花园 RSS 源

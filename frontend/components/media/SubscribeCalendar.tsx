@@ -29,7 +29,12 @@ export default function SubscribeCalendar() {
     return <p className="text-center py-8 text-xs text-slate-600">加载日历...</p>;
   }
   if (entries.length === 0) {
-    return <p className="text-center py-8 text-xs text-slate-600">暂无剧集播出计划</p>;
+    return (
+      <div className="text-center py-12">
+        <p className="text-sm text-slate-600">📅 暂无剧集播出计划</p>
+        <p className="text-[11px] text-slate-700 mt-2">订阅剧集后这里会显示播出时间线</p>
+      </div>
+    );
   }
 
   // 按日期分组
