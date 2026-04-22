@@ -108,28 +108,33 @@ class SubscriptionManager:
         tmdb_id = data.get("tmdb_id")
         season = data.get("season")
 
-        # 自动补全 tmdb_id（用 TMDB 搜索）
+        # 自动补全 tmdb_id（用 TMDB 搜索，中文搜不到时用英文名重试）
         if not tmdb_id and tmdb and title:
-            try:
-                media_type = data.get("type", "movie")
-                if media_type == "tv":
-                    results = tmdb.search_tv(title)
-                else:
-                    results = tmdb.search_movie(title)
-                if results:
-                    best = results[0]
-                    # 年份校验（避免匹配到同名不同年份的作品）
-                    candidate_id = best.get("id")
-                    candidate_date = best.get("first_air_date") or best.get("release_date") or ""
-                    if candidate_id:
-                        if not year or not candidate_date or candidate_date.startswith(year):
-                            tmdb_id = candidate_id
-                            data["tmdb_id"] = tmdb_id
-                            logger.info(f"[Subscriber] TMDB 自动补全: {title} → tmdb_id={tmdb_id}")
-                        else:
-                            logger.info(f"[Subscriber] TMDB 年份不匹配: {title} 期望{year} 实际{candidate_date[:4]}")
-            except Exception as e:
-                logger.error(f"[Subscriber] TMDB 补全失败: {e}")
+            search_names = [title]
+            # 前端传来的英文清洗名作为回退搜索词
+            if data.get("clean_name_en"):
+                search_names.append(data["clean_name_en"])
+            for search_name in search_names:
+                try:
+                    media_type = data.get("type", "movie")
+                    if media_type == "tv":
+                        results = tmdb.search_tv(search_name)
+                    else:
+                        results = tmdb.search_movie(search_name)
+                    if results:
+                        best = results[0]
+                        candidate_id = best.get("id")
+                        candidate_date = best.get("first_air_date") or best.get("release_date") or ""
+                        if candidate_id:
+                            if not year or not candidate_date or candidate_date.startswith(year):
+                                tmdb_id = candidate_id
+                                data["tmdb_id"] = tmdb_id
+                                logger.info(f"[Subscriber] TMDB 补全: '{search_name}' → tmdb_id={tmdb_id}")
+                                break
+                            else:
+                                logger.info(f"[Subscriber] TMDB 年份不匹配: '{search_name}' 期望{year} 实际{candidate_date[:4]}")
+                except Exception as e:
+                    logger.error(f"[Subscriber] TMDB 补全失败 '{search_name}': {e}")
         for sub in self.subscriptions:
             if tmdb_id and sub.tmdb_id == tmdb_id and sub.season == season:
                 return {"status": "error", "message": f"已订阅: {sub.title}"}
@@ -151,18 +156,36 @@ class SubscriptionManager:
             except Exception as e:
                 logger.error(f"[Subscriber] 媒体库检查失败: {e}")
 
-        # 预拉取别名
+        # 构造 aliases：优先用前端传来的清洗名，alias_resolver 补充
         aliases = {"cn": [], "en": [], "original": []}
+        # 前端传来的清洗名（最可靠，来自发现页详情）
+        clean_cn = data.get("clean_name_cn", "").strip()
+        clean_en = data.get("clean_name_en", "").strip()
+        clean_original = data.get("clean_name_original", "").strip()
+        if clean_cn and clean_cn != title:
+            aliases["cn"].append(clean_cn)
+        if clean_en:
+            aliases["en"].append(clean_en)
+        if clean_original:
+            aliases["original"].append(clean_original)
+        # alias_resolver 补充（去重）
         if alias_resolver:
             try:
                 alias_set = alias_resolver.resolve(title, year=year)
-                aliases = {
-                    "cn": alias_set.cn_names or [],
-                    "en": alias_set.en_names or [],
-                    "original": alias_set.jp_names or [],
-                }
+                for cn in (alias_set.cn_names or []):
+                    if cn not in aliases["cn"]:
+                        aliases["cn"].append(cn)
+                for en in (alias_set.en_names or []):
+                    if en not in aliases["en"]:
+                        aliases["en"].append(en)
+                for jp in (alias_set.jp_names or []):
+                    if jp not in aliases["original"]:
+                        aliases["original"].append(jp)
             except Exception as e:
                 logger.error(f"[Subscriber] 别名拉取失败: {e}")
+        # 兜底：标题本身加入 cn
+        if title not in aliases["cn"]:
+            aliases["cn"].insert(0, title)
 
         # 获取剧集总集数
         total_episode = data.get("total_episode", 0)
@@ -186,7 +209,11 @@ class SubscriptionManager:
             save_path=data.get("save_path", ""),
             search_keyword=data.get("search_keyword", ""),
             aliases=aliases,
+            sources=data.get("sources", []),
             mode=data.get("mode", "notify"),
+            best_version=data.get("best_version", False),
+            purpose=data.get("purpose", "follow"),
+            target_quality=data.get("target_quality", ""),
             created_at=now,
         )
 

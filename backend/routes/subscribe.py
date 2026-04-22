@@ -114,32 +114,57 @@ def get_calendar():
     if not tmdb:
         return []
 
-    active_tv = [s for s in mgr.get_all() if s.type == "tv" and s.state in ("active", "paused") and s.tmdb_id]
+    active_tv = [s for s in mgr.get_all() if s.type == "tv" and s.state in ("active", "paused")]
     calendar = []
     for sub in active_tv:
-        try:
-            season_num = sub.season or 1
-            # 直接调用 TMDB API 获取 season 详情（含每集 air_date）
-            raw = tmdb._get(f"/tv/{sub.tmdb_id}/season/{season_num}")
-            episodes = raw.get("episodes", [])
-            downloaded = set(sub.downloaded_episodes.keys())
-            for ep in episodes:
-                ep_num = ep.get("episode_number", 0)
-                air_date = ep.get("air_date", "")
-                if not air_date or not ep_num:
-                    continue
-                calendar.append({
-                    "subscription_id": sub.id,
-                    "title": sub.title,
-                    "season": season_num,
-                    "episode": ep_num,
-                    "episode_title": ep.get("name", ""),
-                    "air_date": air_date,
-                    "downloaded": str(ep_num) in downloaded,
-                    "poster": sub.poster,
-                })
-        except Exception as e:
-            logger.error(f"[Calendar] {sub.title} 获取失败: {e}")
+        found_episodes = False
+        # 优先 TMDB
+        if sub.tmdb_id:
+            try:
+                season_num = sub.season or 1
+                raw = tmdb._get(f"/tv/{sub.tmdb_id}/season/{season_num}")
+                episodes = raw.get("episodes", [])
+                downloaded = set(sub.downloaded_episodes.keys())
+                for ep in episodes:
+                    ep_num = ep.get("episode_number", 0)
+                    air_date = ep.get("air_date", "")
+                    if not air_date or not ep_num:
+                        continue
+                    found_episodes = True
+                    calendar.append({
+                        "subscription_id": sub.id,
+                        "title": sub.title,
+                        "season": season_num,
+                        "episode": ep_num,
+                        "episode_title": ep.get("name", ""),
+                        "air_date": air_date,
+                        "downloaded": str(ep_num) in downloaded,
+                        "poster": sub.poster,
+                    })
+            except Exception as e:
+                logger.error(f"[Calendar] TMDB {sub.title} 获取失败: {e}")
+
+        # TMDB 没有放送日期时 fallback 到 Bangumi（日漫常见）
+        if not found_episodes and sub.total_episode > 0:
+            try:
+                downloaded = set(sub.downloaded_episodes.keys())
+                # 简单 fallback：用订阅创建时间 + 每周一集推算播出日期
+                from datetime import datetime, timedelta
+                base_date = datetime.strptime(sub.created_at, "%Y-%m-%d %H:%M:%S") if sub.created_at else datetime.now()
+                for ep_num in range(1, sub.total_episode + 1):
+                    air_date = (base_date + timedelta(weeks=ep_num - 1)).strftime("%Y-%m-%d")
+                    calendar.append({
+                        "subscription_id": sub.id,
+                        "title": sub.title,
+                        "season": sub.season or 1,
+                        "episode": ep_num,
+                        "episode_title": "",
+                        "air_date": air_date,
+                        "downloaded": str(ep_num) in downloaded,
+                        "poster": sub.poster,
+                    })
+            except Exception as e:
+                logger.error(f"[Calendar] 推算 {sub.title} 播出日期失败: {e}")
 
     calendar.sort(key=lambda x: x.get("air_date", ""))
     return calendar

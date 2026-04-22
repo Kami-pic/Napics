@@ -255,12 +255,34 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     const item = subConfigItem;
     const d = subConfigDetail;
     try {
-      const mediaType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
+      // type 优先从 item.media_type 取（卡片级别），回退到 detail，最后用 tab 级别
+      const mediaType = item.media_type || (d as any)?.media_type || (activeTabConfig.mediaType === "tv" ? "tv" : "movie");
+
+      // 清洗名：优先 detail，回退 item
+      const cnName = (d as any)?.clean_name_cn || item.clean_name_cn || item.title;
+      const enName = (d as any)?.clean_name_en || item.clean_name_en || (d as any)?.english_title || item._tmdb_original_title || "";
+      const originalName = (d as any)?.clean_name_original || item.clean_name_original || "";
+
+      // 季号：从标题中提取（"第二季" → 2, "S02" → 2）
+      let season: number | undefined;
+      const seasonMatch = item.title.match(/第([一二三四五六七八九十\d]+)季|S(\d{1,2})/i);
+      if (seasonMatch) {
+        const cnNum = seasonMatch[1];
+        const enNum = seasonMatch[2];
+        if (enNum) {
+          season = parseInt(enNum);
+        } else if (cnNum) {
+          const cnMap: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10 };
+          season = cnMap[cnNum] || parseInt(cnNum) || undefined;
+        }
+      }
+
       const result = await doSubscribe({
         title: item.title,
         year: item.year || d?.year || "",
         type: mediaType,
-        tmdb_id: d?.tmdb_id || d?.external_ids?.tmdb_id || undefined,
+        season,
+        tmdb_id: d?.tmdb_id || (d as any)?.external_ids?.tmdb_id || undefined,
         douban_id: item.douban_id || undefined,
         poster: item.cover_url || d?.poster_url || "",
         quality: config.quality,
@@ -273,6 +295,10 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
         search_keyword: config.search_keyword,
         sources: config.sources,
         purpose: config.purpose,
+        // 传递清洗名，后端用于构造 aliases
+        clean_name_cn: cnName,
+        clean_name_en: enName,
+        clean_name_original: originalName,
       });
       if (result.status === "ok") {
         setJustSubscribed(prev => new Set(prev).add(`${item.title}|${item.year || d?.year || ""}`));
