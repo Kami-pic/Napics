@@ -66,8 +66,10 @@ export default function SearchModal({
   const [totalRaw, setTotalRaw] = useState(0);
   const [smartFilter, setSmartFilter] = useState(false);  // 默认关闭过滤
   const [savePath, setSavePath] = useState("");
-  // AI 推荐标记
+  // AI 推荐
   const [aiRecommended, setAiRecommended] = useState<Map<number, string>>(new Map());
+  const [aiRecommendEnabled, setAiRecommendEnabled] = useState(false); // AI 推荐开关（默认关，需用户主动开）
+  const [aiAvailable, setAiAvailable] = useState(false); // AI 是否可用（后端配置了且 search_recommend 开启）
   // savePath 为空时下载用 defaultSavePath
   // 搜索标签系统（按确认的规则生成）
   const searchTags = useMemo(() => {
@@ -210,6 +212,10 @@ export default function SearchModal({
   useEffect(() => { setKeyword(query); }, [query]);
   useEffect(() => {
     if (open && query) doSearch(query);
+    if (open) {
+      // 检查 AI 推荐是否可用
+      api.getAIStatus().then(s => setAiAvailable(s.enabled && s.features?.search_recommend)).catch(() => setAiAvailable(false));
+    }
     if (!open) {
       setResults([]); setError(""); setToast(null); setHitKeyword("");
       setFilters(DEFAULT_FILTERS); setDownloadingUrl(null);
@@ -220,6 +226,7 @@ export default function SearchModal({
       panCache.current.clear();
       setActiveTab("bt");
       setBtActiveSource("all"); setPanActiveSource("all"); setSourceTabStates({}); setSourceKeywordInfo({});
+      setAiRecommended(new Map()); setAiRecommendEnabled(false);
     }
   }, [open, query]);
 
@@ -326,17 +333,19 @@ export default function SearchModal({
 
       if (sseDone && sseResults.length > 0) {
         searchCache.current.set(cacheKey, { results: sseResults, totalRaw: sseResults.length });
-        // 异步 AI 推荐（不阻塞结果展示）
+        // 异步 AI 推荐（仅用户开启时调用）
         setAiRecommended(new Map());
-        api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
-          .then(r => {
-            if (r.recommended?.length) {
-              const m = new Map<number, string>();
-              r.recommended.forEach((item: any) => m.set(item.index, item.reason));
-              setAiRecommended(m);
-            }
-          })
-          .catch(() => {});
+        if (aiRecommendEnabled) {
+          api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
+            .then(r => {
+              if (r.recommended?.length) {
+                const m = new Map<number, string>();
+                r.recommended.forEach((item: any) => m.set(item.index, item.reason));
+                setAiRecommended(m);
+              }
+            })
+            .catch(() => {});
+        }
       }
       setResults(sseResults);
       setHitKeyword(q);
@@ -627,6 +636,16 @@ export default function SearchModal({
               }`}>
               {(searching || panSearching) ? "搜索中..." : "搜索"}
             </button>
+            {/* AI 推荐开关 */}
+            {activeTab === "bt" && aiAvailable && (
+              <button onClick={() => setAiRecommendEnabled(!aiRecommendEnabled)}
+                title={aiRecommendEnabled ? "AI 推荐已开启（搜索完成后自动推荐最佳资源）" : "AI 推荐已关闭"}
+                className={`px-3 py-2 rounded-lg text-[11px] font-medium transition-colors whitespace-nowrap ${
+                  aiRecommendEnabled ? "bg-blue-600/20 text-blue-400 border border-blue-500/30" : "bg-white/[0.04] text-slate-500 border border-white/[0.06] hover:text-slate-300"
+                }`}>
+                🤖 AI
+              </button>
+            )}
           </div>
           {/* 保存路径移到底部 */}
           {/* 保存路径 + 通道切换（搜索框下方，同宽对齐） */}
