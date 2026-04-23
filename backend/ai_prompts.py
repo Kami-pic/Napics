@@ -168,3 +168,55 @@ def prompt_library_diagnosis(stats: dict, issues: list) -> list:
 priorities 最多 5 条，按严重程度排序。"""
         }
     ]
+
+
+# ── 场景 4：搜索结果智能推荐 ──
+
+SEARCH_RECOMMEND_SCHEMA = {
+    "recommended": {"type": list, "required": True},
+}
+
+
+def prompt_search_recommend(query: str, results: list, local_info: dict) -> list:
+    """从搜索结果中推荐最值得下载的资源"""
+    # 简化结果，只传关键字段
+    simplified = []
+    for i, r in enumerate(results[:20]):
+        simplified.append({
+            "index": i,
+            "title": (r.get("title", "") or "")[:80],
+            "size_gb": r.get("size_gb", 0),
+            "seeders": r.get("seeders", 0),
+            "quality_score": r.get("quality_score", 0),
+            "match_score": r.get("match_score", 0),
+            "quality_tag": r.get("quality_tag", ""),
+        })
+
+    local_str = ""
+    if local_info:
+        local_str = f"\n当前本地版本：分辨率 {local_info.get('resolution', '未知')}，编码 {local_info.get('codec', '未知')}，质量分 {local_info.get('quality_score', 0)}"
+
+    return [
+        {
+            "role": "system",
+            "content": "你是一个 BT 资源筛选专家。只返回合法的 JSON 对象，不要任何解释。"
+        },
+        {
+            "role": "user",
+            "content": f"""从以下搜索结果中推荐最值得下载的 1-3 个资源。
+
+搜索词：{query}{local_str}
+
+搜索结果：
+{json.dumps(simplified, ensure_ascii=False)}
+
+返回格式：{{"recommended": [{{"index": 序号, "reason": "推荐理由（一句话）"}}]}}
+
+规则：
+- 综合考虑：质量分(quality_score)、匹配度(match_score)、做种数(seeders)、文件大小(size_gb)
+- 如果有本地版本，优先推荐比本地版本质量更高的
+- 做种数为 0 的不推荐（除非是磁力链接）
+- 最多推荐 3 个，按推荐优先级排序
+- 如果没有值得推荐的，返回空数组"""
+        }
+    ]

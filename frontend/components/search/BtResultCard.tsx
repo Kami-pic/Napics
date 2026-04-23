@@ -19,9 +19,10 @@ export interface BtResultCardProps {
   qbConfigured: boolean;
   downloadingUrl: string | null;
   onDownload: (res: EnhancedSearchResult, channel: "qb" | "alist") => void;
+  aiReason?: string;
 }
 
-export default function BtResultCard({ res, index, currentResolution, qbConfigured, downloadingUrl, onDownload }: BtResultCardProps) {
+export default function BtResultCard({ res, index, currentResolution, qbConfigured, downloadingUrl, onDownload, aiReason }: BtResultCardProps) {
   const curRes = currentResolution;
   const isHigher = (() => {
     const resScore = (res as any).quality_score ?? 0;
@@ -46,7 +47,10 @@ export default function BtResultCard({ res, index, currentResolution, qbConfigur
     <div className="bg-[#0f0f0f] rounded-xl border border-white/[0.06] hover:border-white/[0.10] transition-colors overflow-hidden">
       <div className="flex items-center gap-4 px-4 py-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-slate-200 truncate leading-snug" title={res.title}>{res.title}</p>
+          <p className="text-[13px] text-slate-200 truncate leading-snug" title={res.title}>
+            {aiReason && <span className="text-[10px] text-blue-400 mr-1.5" title={aiReason}>🤖</span>}
+            {res.title}
+          </p>
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             {q?.resolution && (
               <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${

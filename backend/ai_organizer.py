@@ -274,3 +274,33 @@ def _collect_library_issues(library: list) -> list:
         })
 
     return issues
+
+
+def ai_search_recommend(query: str, results: list, local_info: dict = None) -> Optional[list]:
+    """AI 从搜索结果中推荐最值得下载的资源。
+    返回 [{"index": int, "reason": str}] 或 None。
+    """
+    if not results or len(results) < 2:
+        return None
+
+    client = get_ai_client()
+    if not client.is_feature_enabled("search_recommend"):
+        return None
+
+    from ai_prompts import prompt_search_recommend, SEARCH_RECOMMEND_SCHEMA
+    messages = prompt_search_recommend(query, results, local_info or {})
+    result = client.chat_json(
+        messages, temperature=0, timeout=20,
+        scene="search_recommend", schema=SEARCH_RECOMMEND_SCHEMA,
+    )
+    if result is None:
+        return None
+
+    recommended = result.get("recommended", [])
+    # 校验 index 范围
+    valid = []
+    for item in recommended:
+        idx = item.get("index")
+        if isinstance(idx, int) and 0 <= idx < len(results):
+            valid.append({"index": idx, "reason": item.get("reason", "")})
+    return valid if valid else None

@@ -828,8 +828,14 @@ def scrape_video(video_path: str, tmdb_client_instance, force: bool = False) -> 
     return {"status": "ok", "data": result.dict()}
 
 def batch_scrape(paths: list, tmdb_client_instance) -> Dict:
-    """批量刮削多个路径"""
+    """批量刮削多个路径。AI 开启时，对 not_found 的路径尝试 AI 候选匹配。"""
+    from ai_organizer import ai_select_scrape_candidate
+    from ai_client import get_ai_client
+
     results = {"success": 0, "failed": 0, "skipped": 0, "details": []}
+    ai_client = get_ai_client()
+    use_ai_candidate = ai_client.is_feature_enabled("scrape_candidate")
+
     for p in paths:
         try:
             if os.path.isdir(p):
@@ -841,15 +847,114 @@ def batch_scrape(paths: list, tmdb_client_instance) -> Dict:
             else:
                 status = "not_found"
                 r = {}
-            
+
+            # AI 候选匹配：刮削失败时尝试用 AI 从候选中选择
+            if status == "not_found" and use_ai_candidate and os.path.isdir(p):
+                ai_result = _ai_fallback_scrape(p, tmdb_client_instance)
+                if ai_result:
+                    r = ai_result
+                    status = r.get("self", {}).get("status", "not_found")
+
             if status == "ok":
                 results["success"] += 1
             elif status == "exists":
                 results["skipped"] += 1
             else:
                 results["failed"] += 1
-            results["details"].append({"path": p, "status": status})
+
+            detail = {"path": p, "status": status}
+            # 标记 AI 参与
+            if r.get("ai_selected"):
+                detail["ai_selected"] = True
+                detail["ai_confidence"] = r.get("ai_confidence", "")
+                detail["ai_reason"] = r.get("ai_reason", "")
+            results["details"].append(detail)
         except Exception as e:
             results["failed"] += 1
             results["details"].append({"path": p, "status": "error", "error": str(e)})
     return results
+
+
+def _ai_fallback_scrape(folder_path: str, tmdb_client_instance) -> Optional[Dict]:
+    """AI 候选匹配 fallback：搜索 TMDB 候选列表，让 AI 选择最佳匹配。"""
+    from ai_organizer import ai_select_scrape_candidate
+    from analyzer import _clean_filename_for_folder
+    import re as _re
+
+    folder_name = os.path.basename(folder_path)
+    clean_name = _clean_filename_for_folder(folder_name + ".tmp") or folder_name
+
+    # 收集文件列表（只传文件名，不传路径）
+    video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
+    try:
+        file_list = [f for f in os.listdir(folder_path)
+                     if os.path.splitext(f)[1].lower() in video_exts][:15]
+    except OSError:
+        file_list = []
+
+    # 搜索 TMDB 候选
+    movie_candidates = tmdb_client_instance.search_movie(clean_name)
+    tv_candidates = tmdb_client_instance.search_tv(clean_name)
+    all_candidates = []
+    for c in movie_candidates[:5]:
+        all_candidates.append({
+            "title": c.get("title", ""),
+            "original_title": c.get("original_title", ""),
+            "year": (c.get("release_date", "") or "")[:4],
+            "overview": (c.get("overview", "") or "")[:100],
+            "media_type": "movie",
+            "tmdb_id": c.get("id"),
+        })
+    for c in tv_candidates[:5]:
+        all_candidates.append({
+            "title": c.get("name", ""),
+            "original_title": c.get("original_name", ""),
+            "year": (c.get("first_air_date", "") or "")[:4],
+            "overview": (c.get("overview", "") or "")[:100],
+            "media_type": "tv",
+            "tmdb_id": c.get("id"),
+        })
+
+    if len(all_candidates) <= 1:
+        return None
+
+    # 让 AI 选择
+    ai_result = ai_select_scrape_candidate(folder_name, file_list, all_candidates)
+    if not ai_result or ai_result.get("selected_index", -1) < 0:
+        return None
+    if ai_result.get("confidence") == "low":
+        return None  # 低置信度不自动选择
+
+    idx = ai_result["selected_index"]
+    if idx >= len(all_candidates):
+        return None
+
+    selected = all_candidates[idx]
+    tmdb_id = selected.get("tmdb_id")
+    media_type = selected.get("media_type", "movie")
+
+    # 用选中的候选执行刮削
+    try:
+        if media_type == "movie":
+            detail = tmdb_client_instance.get_movie_detail(tmdb_id)
+        else:
+            detail = tmdb_client_instance.get_tv_detail(tmdb_id)
+
+        if detail and detail.tmdb_id:
+            # 写 NFO
+            proxy = getattr(tmdb_client_instance, 'proxy', '') or ''
+            write_nfo(folder_path, detail, proxy)
+            # 下载海报
+            if detail.poster_url:
+                download_poster(folder_path, detail.poster_url, proxy)
+            return {
+                "self": {"status": "ok", "data": detail.dict() if hasattr(detail, "dict") else {}},
+                "children": [],
+                "ai_selected": True,
+                "ai_confidence": ai_result.get("confidence", ""),
+                "ai_reason": ai_result.get("reason", ""),
+            }
+    except Exception as e:
+        logger.error(f"[AI Scrape] AI 选中候选后刮削失败: {e}")
+
+    return None

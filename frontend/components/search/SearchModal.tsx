@@ -66,6 +66,8 @@ export default function SearchModal({
   const [totalRaw, setTotalRaw] = useState(0);
   const [smartFilter, setSmartFilter] = useState(false);  // 默认关闭过滤
   const [savePath, setSavePath] = useState("");
+  // AI 推荐标记
+  const [aiRecommended, setAiRecommended] = useState<Map<number, string>>(new Map());
   // savePath 为空时下载用 defaultSavePath
   // 搜索标签系统（按确认的规则生成）
   const searchTags = useMemo(() => {
@@ -324,6 +326,17 @@ export default function SearchModal({
 
       if (sseDone && sseResults.length > 0) {
         searchCache.current.set(cacheKey, { results: sseResults, totalRaw: sseResults.length });
+        // 异步 AI 推荐（不阻塞结果展示）
+        setAiRecommended(new Map());
+        api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
+          .then(r => {
+            if (r.recommended?.length) {
+              const m = new Map<number, string>();
+              r.recommended.forEach((item: any) => m.set(item.index, item.reason));
+              setAiRecommended(m);
+            }
+          })
+          .catch(() => {});
       }
       setResults(sseResults);
       setHitKeyword(q);
@@ -741,9 +754,14 @@ export default function SearchModal({
                 </div>
               )}
               {/* 结果呈现 */}
-              {filtered.map((res, i) => (
-                <BtResultCard key={i} res={res} index={i} currentResolution={curRes} qbConfigured={qbConfigured} downloadingUrl={downloadingUrl} onDownload={handleDownload} />
-              ))}
+              {filtered.map((res, i) => {
+                // AI 推荐标记：从原始 results 数组中找到该结果的原始索引
+                const origIdx = results.indexOf(res);
+                const aiReason = origIdx >= 0 ? aiRecommended.get(origIdx) : undefined;
+                return (
+                  <BtResultCard key={i} res={res} index={i} currentResolution={curRes} qbConfigured={qbConfigured} downloadingUrl={downloadingUrl} onDownload={handleDownload} aiReason={aiReason} />
+                );
+              })}
               {filtered.length === 0 && activeResults.length > 0 && (
                 <p className="text-center py-10 text-xs text-slate-600">无匹配筛选条件的结果</p>
               )}

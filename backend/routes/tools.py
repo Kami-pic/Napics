@@ -244,6 +244,21 @@ def ai_diagnosis():
     return result
 
 
+class SearchRecommendRequest(BaseModel):
+    query: str
+    results: List[Dict]
+    local_info: Optional[Dict] = None
+
+
+@router.post("/ai/search-recommend")
+def ai_search_recommend(req: SearchRecommendRequest):
+    """AI 搜索结果推荐"""
+    result = ai_organizer.ai_search_recommend(req.query, req.results, req.local_info)
+    if result is None:
+        return {"recommended": []}
+    return {"recommended": result}
+
+
 @router.get("/ai/suggest")
 def get_ai_suggestions():
     """旧版 AI 整理建议（保留兼容）"""

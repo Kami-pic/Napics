@@ -460,4 +460,10 @@ export const api = {
   testAIConnection: () => request<{ success: boolean; response?: string; error?: string }>(`${BASE_URL}/ai/test`, { method: "POST" }),
   getAIStatus: () => request<any>(`${BASE_URL}/ai/status`),
   aiDiagnosis: () => request<any>(`${BASE_URL}/ai/diagnosis`, { method: "POST" }),
+  aiSearchRecommend: (query: string, results: any[], localInfo?: any) =>
+    request<{ recommended: { index: number; reason: string }[] }>(`${BASE_URL}/ai/search-recommend`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, results, local_info: localInfo }),
+    }),
 };

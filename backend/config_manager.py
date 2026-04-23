@@ -26,7 +26,7 @@ class AIFeaturesConfig(BaseModel):
     extract_episode: bool = True       # 文件名智能解析
     scrape_candidate: bool = True      # 刮削候选匹配
     library_diagnosis: bool = True     # 媒体库健康诊断
-    search_recommend: bool = False     # 搜索结果推荐（二期）
+    search_recommend: bool = True     # 搜索结果推荐
     natural_search: bool = False       # 自然语言搜索（二期）
     subscribe_recommend: bool = False  # 订阅推荐（二期）
 
