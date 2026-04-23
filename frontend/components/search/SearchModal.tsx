@@ -195,7 +195,7 @@ export default function SearchModal({
   }, []);
 
   // 已知直搜源名称（用于区分 Prowlarr 索引器）
-  const DIRECT_SOURCES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe"]);
+  const DIRECT_SOURCES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe", "eztv", "dmhy", "1337x"]);
   // Prowlarr 索引器（仅从 Prowlarr 来源的结果中提取，排除直搜源）
   const availableIndexers = useMemo(() => {
     const s = new Set<string>();
@@ -466,17 +466,35 @@ export default function SearchModal({
       setKeyword(allKeywordRef.current);
       return;
     }
-    // 切到单源：如果该源没有缓存状态，填入默认搜索词并自动搜索
+    // 切到单源：优先从 SSE 全量结果中提取该源的结果
     const existing = sourceTabStates[source];
-    if (!existing || existing.results.length === 0) {
-      const defaultKw = sourceDefaultKeywords[source] || keyword || query;
-      setKeyword(defaultKw);
-      doSourceSearch(source, defaultKw);
-    } else {
+    if (existing && existing.results.length > 0) {
       // 有缓存，恢复该源的搜索词
       setKeyword(existing.keyword);
+      return;
     }
-  }, [sourceTabStates, sourceDefaultKeywords, keyword, query, doSourceSearch]);
+    // 从 SSE 全量结果中过滤该源的结果
+    const sseSourceResults = results.filter((r: any) => r._source === source);
+    if (sseSourceResults.length > 0) {
+      const sseKw = sourceKeywordInfo[source]?.hit || keyword || query;
+      setKeyword(sseKw);
+      setSourceTabStates(prev => ({
+        ...prev,
+        [source]: {
+          keyword: sseKw,
+          results: sseSourceResults,
+          searchedKeywords: sourceKeywordInfo[source]?.searched || [sseKw],
+          hitKeyword: sourceKeywordInfo[source]?.hit || "",
+          searching: false,
+        },
+      }));
+      return;
+    }
+    // SSE 中也没有该源的结果，触发单源搜索
+    const defaultKw = sourceDefaultKeywords[source] || keyword || query;
+    setKeyword(defaultKw);
+    doSourceSearch(source, defaultKw);
+  }, [sourceTabStates, sourceDefaultKeywords, keyword, query, doSourceSearch, results, sourceKeywordInfo]);
 
   // 网盘源 Tab 切换处理
   const panAllKeywordRef = useRef(query);
@@ -512,7 +530,7 @@ export default function SearchModal({
     }
     // 排序：有做种 > 无做种 > 磁力链接，同层内按 quality_score > match_score > seeders > size
     // 已知无做种数信息的源（seeders=0 但不是死种）——新增直搜源时在此注册
-    const NO_SEEDER_INFO = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe"]);
+    const NO_SEEDER_INFO = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe", "dmhy"]);
     list = [...list].sort((a, b) => {
       // 三档分层：有做种/无做种数信息源(0) > 真正死种(1) > 磁力链接(2)
       const tier = (r: EnhancedSearchResult) => {
@@ -570,7 +588,7 @@ export default function SearchModal({
               {hitKeyword && <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">命中：{hitKeyword}</span>}
               {/* 搜索标签（点击快速切换搜索词）*/}
               {searchTags.length > 0 && searchTags.map((tag, ti) => (
-                <button key={ti} onClick={() => { userEditedRef.current = false; doSearch(tag.keyword); }}
+                <button key={ti} onClick={() => { setKeyword(tag.keyword); userEditedRef.current = false; btActiveSource === "all" ? doSearch(tag.keyword) : doSourceSearch(btActiveSource, tag.keyword); }}
                   className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
                     keyword === tag.keyword ? "bg-blue-600/30 text-blue-300" : "bg-white/[0.04] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]"
                   }`}>{tag.label}</button>

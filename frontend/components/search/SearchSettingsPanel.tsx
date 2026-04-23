@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import type { AppConfig, IndexerPriority, SortWeightsConfig } from "@/types";
 
-interface SearchSource { name: string; label: string; type: "bt" | "pan"; enabled: boolean; }
+interface SearchSource { name: string; label: string; type: "bt" | "pan"; enabled: boolean; needs_proxy?: boolean; proxy?: boolean; }
 type SettingsTab = "sources" | "filter" | "indexer" | "sort";
 
 export default function SearchSettingsPanel({ open, onClose, searching }: {
@@ -42,6 +42,12 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
     setSources(prev => prev.map(s => s.name === name ? { ...s, enabled } : s));
     try { await api.toggleSearchSource(name, enabled); }
     catch { setSources(prev => prev.map(s => s.name === name ? { ...s, enabled: !enabled } : s)); }
+  };
+
+  const toggleProxy = async (name: string, proxy: boolean) => {
+    setSources(prev => prev.map(s => s.name === name ? { ...s, proxy } : s));
+    try { await api.toggleSearchSourceProxy(name, proxy); }
+    catch { setSources(prev => prev.map(s => s.name === name ? { ...s, proxy: !proxy } : s)); }
   };
 
   const saveConfig = async () => {
@@ -102,7 +108,18 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
                 <>
                   <Section title="BT / 磁力">
                     {sources.filter(s => s.type === "bt").map(s => (
-                      <Toggle key={s.name} label={s.label} enabled={s.enabled} onChange={(v) => toggleSource(s.name, v)} />
+                      <div key={s.name} className="flex items-center justify-between py-0.5">
+                        <Toggle label={s.label} enabled={s.enabled} onChange={(v) => toggleSource(s.name, v)} />
+                        {s.needs_proxy !== undefined && (
+                          <button onClick={() => toggleProxy(s.name, !s.proxy)}
+                            title={s.proxy ? "走代理（点击切换为直连）" : "直连（点击切换为代理）"}
+                            className={`text-[9px] px-1.5 py-0.5 rounded transition-colors ml-2 ${
+                              s.proxy ? "bg-amber-500/15 text-amber-400" : "bg-slate-500/15 text-slate-500"
+                            }`}>
+                            {s.proxy ? "🌐代理" : "直连"}
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </Section>
                   <Section title="网盘资源">

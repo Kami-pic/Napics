@@ -1,5 +1,6 @@
-# [当前] 订阅系统重新设计
+# [废弃] 订阅系统重新设计
 
+> 全部完成。后端 Phase 0-4b + 前端 Phase 3a-3b 均已交付。
 > 两个核心需求：
 > 1. 剧集追更：订阅一部剧/动画 → 每周自动从指定源搜索新集 → 自动下载
 > 2. 洗版蹲守：本地已有的低质量资源 → 持续监控更高质量版本 → 自动替换
@@ -572,13 +573,13 @@ BT 标题的格式比本地文件名复杂（如 `[SubGroup] Title - 05 (1080p)`
 - [x] local_file_path 校验 + 自动重新定位（media_matcher）
 - [x] 洗版订阅（purpose=upgrade）电影下载完成自动标记 completed
 
-### Phase 3a：前端核心交互（先做折叠态，保证可用）
-- [ ] SubscribeConfigModal 增加 purpose 选择 + 目标质量 + 高级设置折叠
-- [ ] SubscribeSourceSelect 源按 RSS/直搜分组展示 + 内容类型推荐
-- [ ] SubscribeInline 折叠态改造：purpose 标签 + 季号 + 进度 + 下一集 + 搜索摘要 + 配置按钮
-- [ ] 洗版卡片：当前质量 → 目标质量
-- [ ] SubscriptionItem 类型扩展新增字段
-- [ ] 发现页"蹲守升级"入口（local_status=owned_low）
+### Phase 3a：前端核心交互（先做折叠态，保证可用）✅
+- [x] SubscribeConfigModal 增加 purpose 选择 + 目标质量 + 高级设置折叠
+- [x] SubscribeSourceSelect 源按 RSS/直搜分组展示 + 内容类型推荐
+- [x] SubscribeInline 折叠态改造：purpose 标签 + 季号 + 进度 + 下一集 + 搜索摘要 + 配置按钮
+- [x] 洗版卡片：当前质量 → 目标质量
+- [x] SubscriptionItem 类型扩展新增字段
+- [x] 发现页"蹲守升级"入口（local_status=owned_low）
 
 ### Phase 3b：前端增强（展开态 + 日历优化）✅
 - [x] SubscribeInline 展开态：点击卡片展开每集详情（质量+来源+日期+播出状态）

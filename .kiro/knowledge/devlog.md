@@ -5,6 +5,35 @@
 
 ---
 
+## 2026-04-23 新增直搜源（EZTV/动漫花园/1337x）+ 源级代理配置 + 单源搜索修复
+**变更**:
+- 新增 3 个 BT 直搜源：EZTV（bt_scraper_eztv.py，默认禁用，不支持关键词搜索）、动漫花园（bt_scraper_dmhy.py，RSS 端点搜索+chrome124 指纹）、1337x（bt_scraper_1337x.py，镜像站 1337xx.to+chrome120 指纹+两步请求取磁力+标题相关性过滤）
+- 源级代理配置：BT_SOURCE_DEFAULTS 新增 needs_proxy 字段，get_source_proxy() 统一决定每个源是否走代理；config.bt_search_sources 支持新格式 `{"proxy": false}` 按源覆盖；前端搜索设置页加代理开关按钮
+- 单源搜索端点 `/api/search/source` 的 enrich_result 补传 match_names 参数，修复单源 Tab 智能过滤失效的 bug
+- 前端单源 Tab 切换优先从 SSE 全量结果中过滤该源结果（`_source` 字段），避免重复请求
+- 前端搜索词标签点击改为根据当前 Tab 触发对应搜索 + 同步更新 input 框（之前只对"全部"Tab 生效）
+- 直搜源 max_results 从 20 提高到 40（search_direct + search_single_source + merge_bt_extra_sources 三处统一）
+- 前端 DIRECT_SOURCES / DIRECT_SOURCE_NAMES 集合补齐新源
+- routes/search.py 的 source_getters 字典补齐新源
+- ACG.RIP 改为默认禁用（直连超时+走代理 TLS 报错）
+- subscribe-redesign.md 标记废弃归档到 _archived/
+- ai-integration-test-report.md 移到 _one-off/
+- L5/L6 skill 文档全面更新，新增直搜源 Checklist（后端 7 文件 + 前端 4 文件 + 验证 6 项）
+- business-skills-plan.md 更新 L5/L6 状态为已沉淀，S2/S3/S4/S12 状态更新
+**踩坑**:
+- EZTV RSS 端点 `ezrss.xml?search_string=xxx` 完全忽略搜索参数，返回全站最新 20 条
+- 动漫花园 chrome131 TLS 报错，chrome120 也不稳定，chrome124 正常（CF 指纹检测动态变化）
+- 1337x 主站 1337x.to 所有指纹 403（高级 JS Challenge），镜像站 1337xx.to chrome120 正常
+- 1337x 搜索结果包含大量不相关内容（综合站），需加标题相关性过滤
+- 单源搜索端点 enrich_result 缺少 match_names 参数，导致 match_score=0 的不相关结果不被标记为 junk，智能过滤失效
+- 前端单源 Tab 切换时总是触发新的 API 请求而不复用 SSE 已有结果，导致 1337x 等慢源切 Tab 后显示空
+- routes/search.py 的 source_getters 和前端 DIRECT_SOURCES 遗漏新源注册，导致单源搜索返回"未知源"
+- 爬虫单例在首次创建时固定代理配置，用户改代理开关后需重启后端
+**架构决策**:
+- curl_cffi 能绕过中低级 CF 保护（频率触发型、TLS 指纹检测），无法绕过高级 JS Challenge（需执行 JavaScript），用镜像站绕过
+- 英文综合站（1337x）必须加标题相关性过滤，否则搜索结果充斥不相关热门内容
+- 新增直搜源需注册 11 个位置（后端 7 + 前端 4），建立 Checklist 防遗漏
+
 ## 2026-04-22 发现页详情匹配修复（TMDB ID 直拉 + best_match 评分）
 **变更**:
 - `_try_tmdb_detail` 的 `_pick_best` 从"取第一个+年份匹配"替换为 `tmdb_client.best_match`（多维度评分+30 分阈值），解决搜索返回不相关结果时盲选的问题

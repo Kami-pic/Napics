@@ -37,8 +37,8 @@
 - 设计文档：`docs/name-trust-design.md`
 
 ### 搜索架构（BT/磁力 + 网盘 双 Tab）
-- BT/磁力：Prowlarr（主力）+ 9 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑/YTS/LimeTorrents/ACG.RIP/Bangumi Moe）
-- SSE 全源并行搜索（/api/search/stream），as_completed 逐个推送，前端增量追加，max_workers=11
+- BT/磁力：Prowlarr（主力）+ 12 个直搜源（Bitsearch/磁力熊/XL720/Nyaa/蜜柑/YTS/LimeTorrents/ACG.RIP/Bangumi Moe/EZTV/动漫花园/1337x）
+- SSE 全源并行搜索（/api/search/stream），as_completed 逐个推送，前端增量追加，max_workers=14
 - 去重：同源内 infohash 去重，跨源不去重
 - 磁力链接源（磁力熊/XL720）seeders=0 且 size=0，不受做种数筛选影响
 - 无做种数信息源（ACG.RIP/Bangumi Moe）seeders=0 但 size>0，不标记为死种
@@ -46,17 +46,19 @@
 - 网盘：6 个源（pansearch/pansou/gogopanso/github/rrdynb/ddys），pan_search_service.py 聚合
 - 前端三层分离：results(全量) → displayResults(智能过滤+排序) → filtered(筛选器+源下拉)
 - 前端排序三档分层：有做种/无做种数信息源(tier 0) > 死种(tier 1) > 磁力链接(tier 2)，同层内 quality_score > match_score > seeders > size
-- 无做种数信息源集合 NO_SEEDER_INFO：cilixiong/xl720/acgrip/bangumi_moe，新增直搜源时在此注册
+- 无做种数信息源集合 NO_SEEDER_INFO：cilixiong/xl720/acgrip/bangumi_moe/dmhy，新增直搜源时在此注册
 - 智能过滤（🛡️按钮）：后端 compute_junk_flags 五规则标记 is_junk（枪版+低匹配+死种+跨语言不匹配+标题占比过低），前端过滤
 - 智能过滤依赖链：L1（标题清洗+中英分离+tokenize）→ L2（match_chain 评分）→ 业务层（compute_junk_flags 五规则判定）→ L3 模式（软标记+前端开关）
-- enrich_result 接受 match_names 参数（cn_name/en_name/original_name），解决跨语言匹配；SSE 搜索时从 keywords 构造传入
+- enrich_result 接受 match_names 参数（cn_name/en_name/original_name），解决跨语言匹配；SSE 搜索和单源搜索端点都必须传 match_names，否则智能过滤对不相关结果失效
 - 业务 skill：`skills/smart-filter.md`（五规则详细说明+源特征差异+占比计算逻辑）
 - SourceTabs + FilterBar 合并：源 Tab 切换 + 筛选器在同一区域，"全部"tab 用直搜源下拉，单源 tab 用专属筛选器
 - 网盘侧同样有 SourceTabs + 筛选器，绿色变体
 - BT 结果卡片索引器标签：Prowlarr 两段式（橙色p+灰色名），直搜源保留各自品牌色
 - 搜索设置在 SearchModal ⚙️ 二级菜单（搜索源/过滤规则/索引器/排序权重），不在总设置页
-- 需代理的源（Bitsearch/Nyaa/蜜柑/YTS/LimeTorrents）从 config.http_proxy 读取，和 TMDB 共用
-- 直连源（磁力熊/XL720/ACG.RIP/Bangumi Moe/rrdynb）不走代理
+- 需代理的源（Bitsearch/Nyaa/蜜柑/YTS/LimeTorrents/EZTV/动漫花园）从 BT_SOURCE_DEFAULTS.needs_proxy 读取默认值，用户可在 config.bt_search_sources 中按源覆盖
+- 直连源（磁力熊/XL720/ACG.RIP/Bangumi Moe/rrdynb）默认不走代理
+- 代理配置格式：bt_search_sources 支持旧格式 `{"bitsearch": true}` 和新格式 `{"bitsearch": {"enabled": true, "proxy": false}}`
+- 代理配置在爬虫首次创建时固定（单例），改配置后需重启后端生效
 - XL720 响应极慢（超时 12s + 1 次重试），搜索质量差需中文子串过滤
 - 搜索词传递：用户手动输入时不传 cn_name/en_name（让后端用 query 分词），点击标签时才传辅助参数
 
@@ -69,6 +71,8 @@
 - SSE source_done 事件返回 search_keywords（搜过的词列表）+ hit_keyword（命中的词）
 - 单源搜索端点：`/api/search/source`，JSON 响应，支持 fallback_keywords
 - 前端源 Tab 切换：SourceTabs 组件，每个 Tab 独立 keyword/results 状态
+- 前端单源 Tab 切换优先从 SSE 全量结果中过滤该源结果（`_source` 字段），避免重复请求；SSE 中无结果时才触发单源搜索端点
+- 前端搜索词标签点击根据当前 Tab 触发对应搜索（全部 Tab → SSE 全源，单源 Tab → 单源搜索），并同步更新 input 框
 - SSE 竞态保护：activeEsRef 跟踪当前 EventSource，新搜索关闭旧连接
 - 英文名获取：TMDB 用 `_get_english_title(language=en-US)` 主动获取；豆瓣从 subtitle 中用 detect_language 提取；Bangumi 无英文名
 - 关键红线：original_title 不能直接当英文名（中国电影是中文、日本动画是日文），必须做语言判断
@@ -140,9 +144,14 @@
 - rrdynb 多次搜索会触发 CF 限频（临时性，过段时间自动解除），请求间延迟 1.5-3s
 - ddys 已升级为 JSON API（POST /api/search-netdisk），link 字段是 base64 编码
 - 蜜柑 RSS 同时服务于 BT 搜索（即时）和订阅系统（定时轮询），共用 rss_source_mikan.py
-- 新增 BT 直搜源步骤：写爬虫(继承 ScraperBase) → shared.py 加 getter → routes/search.py 的 scrapers 列表加一行 → _BT_SOURCE_DEFAULTS 加配置
+- EZTV 同时有 RSS 源（rss_source_eztv.py）和直搜源（bt_scraper_eztv.py），直搜默认禁用（不支持关键词搜索，只能按 IMDB ID）
+- 动漫花园同时有 RSS 源（rss_source_dmhy.py）和直搜源（bt_scraper_dmhy.py），直搜通过 RSS 端点搜索，需代理+chrome124 指纹，无做种数信息
+- 1337x（bt_scraper_1337x.py）：综合性公开 BT 站，用镜像站 1337xx.to（主站 CF 严格），需代理+chrome120 指纹，两步请求（列表+详情取磁力），并发获取磁力链接，加标题相关性过滤防止返回不相关热门
+- curl_cffi impersonate 兼容性：chrome131 对动漫花园 TLS 报错，chrome124 正常；1337x 主站所有指纹 403，镜像站 chrome120 正常；CF 指纹检测是动态变化的
+- ACG.RIP 直连超时（被墙）、走代理所有指纹 TLS 报错，默认禁用
+- LimeTorrents 所有域名 TLS 报错，默认禁用
+- 新增 BT 直搜源完整 Checklist 见 `skills/L6-scraping-anti-bot.md`（后端 7 文件 + 前端 4 文件 + 验证 6 项），遗漏任何一个注册点都会导致新源在某些场景下不工作
 - YTS 主域名 yts.mx SSL 不通，用 yts.am 作主域名、movies-api.accel.li 作备用
-- LimeTorrents 所有域名 CF 保护严格，默认禁用（enabled=False）
 - Bangumi Moe API 端点是 /api/v2/torrent/search（不是 /api/torrent/search），size 字段是字符串格式如 "118.6 GB"
 - 搜索匹配通用模块：text_processing.py（L1）→ match_scoring.py（L2）→ data_filtering.py（L3）→ result_sorting.py（L4），业务代码调用这些模块而非自己实现匹配逻辑
 - 后端日志统一用 `logging` 模块（不用 print），每个文件顶层 `logger = logging.getLogger(__name__)`，shared.py 统一 basicConfig
@@ -158,6 +167,7 @@
 - 清洗名系统 → `skills/clean-name-system.md`
 - 发现推荐 → `knowledge/discover-recommend.md`
 - 订阅系统 → `knowledge/subscribe-system.md`
+- 订阅系统重设计 → `docs/_archived/subscribe-redesign.md`（已完成归档）
 - 订阅数据流 → `skills/subscribe-data-flow.md`
 - 订阅调度器 → `skills/subscribe-scheduler.md`
 - RSS 匹配器 → `skills/subscribe-rss-matcher.md`
@@ -167,13 +177,15 @@
 - BT 搜索扩展 TODO → `docs/bt-expand-todo.md`
 - 搜索匹配过滤调研 → `docs/search-match-filter-research.md`
 - 搜索匹配技能建设 TODO → `docs/skill-build-todo.md`
+- 多源聚合搜索 → `skills/L5-multi-source-search.md`
+- 爬虫与反爬 → `skills/L6-scraping-anti-bot.md`
 - 通用技能 L1-L4 → `skills/L1-text-processing.md` ~ `skills/L4-result-sorting.md`
 - 智能过滤业务技能 → `skills/smart-filter.md`
 - 多语言搜索词分发 → `skills/multilang-search-dispatch.md`
 - 多源英文名补全 → `skills/multilang-name-enrichment.md`
 - 发现页英文名缓存 → `skills/discover-enrich-cache.md`
 - AI 集成设计 → `docs/ai-integration-design.md`
-- AI 集成测试报告 → `docs/ai-integration-test-report.md`
+- AI 集成测试报告 → `docs/_one-off/ai-integration-test-report.md`
 - AI 客户端基础设施 → `skills/ai-client-infra.md`
 - AI 业务场景编排 → `skills/ai-business-scenes.md`
 - 多语言搜索词 TODO → `docs/multilang-search-todo.md`

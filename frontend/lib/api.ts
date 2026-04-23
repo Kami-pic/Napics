@@ -455,6 +455,12 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled }),
     }),
+  toggleSearchSourceProxy: (name: string, proxy: boolean) =>
+    request<any>(`${BASE_URL}/search/sources/${name}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ proxy }),
+    }),
 
   // ── AI 集成 ──
   testAIConnection: () => request<{ success: boolean; response?: string; error?: string }>(`${BASE_URL}/ai/test`, { method: "POST" }),

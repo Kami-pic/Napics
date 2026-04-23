@@ -196,6 +196,8 @@ def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
         _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper,
         _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper,
         _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper,
+        _get_eztv_scraper, _get_dmhy_scraper,
+        _get_1337x_scraper,
     )
     merged = list(existing_results)
     bt_overrides = _cfg.config.bt_search_sources or {}
@@ -209,14 +211,22 @@ def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
         ("limetorrents", _get_limetorrents_scraper),
         ("acgrip", _get_acgrip_scraper),
         ("bangumi_moe", _get_bangumi_moe_scraper),
+        ("eztv", _get_eztv_scraper),
+        ("dmhy", _get_dmhy_scraper),
+        ("1337x", _get_1337x_scraper),
     ]
 
     for name, getter in scrapers:
-        if not bt_overrides.get(name, True):
+        override = bt_overrides.get(name, True)
+        # 兼容新格式 {"enabled": true, "proxy": false}
+        if isinstance(override, dict):
+            if not override.get("enabled", True):
+                continue
+        elif not override:
             continue
         try:
             s = getter()
-            results = s.search_as_search_results(keyword, max_results=20)
+            results = s.search_as_search_results(keyword, max_results=40)
             added = 0
             source_hashes = set()
             for r in results:

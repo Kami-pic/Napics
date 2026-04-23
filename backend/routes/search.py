@@ -12,7 +12,7 @@ from shared import (
     _get_pan_search_service,
     _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper,
     _get_mikan_scraper, _get_yts_scraper, _get_limetorrents_scraper, _get_acgrip_scraper,
-    _get_bangumi_moe_scraper,
+    _get_bangumi_moe_scraper, _get_eztv_scraper, _get_dmhy_scraper, _get_1337x_scraper,
     get_clients,
 )
 import searcher, douban_client, bangumi_client
@@ -159,6 +159,9 @@ def search_single_source(
         "limetorrents": _get_limetorrents_scraper,
         "acgrip": _get_acgrip_scraper,
         "bangumi_moe": _get_bangumi_moe_scraper,
+        "eztv": _get_eztv_scraper,
+        "dmhy": _get_dmhy_scraper,
+        "1337x": _get_1337x_scraper,
     }
 
     if source not in source_getters:
@@ -188,7 +191,7 @@ def search_single_source(
             s = getter()
             for kw in kw_list:
                 searched.append(kw)
-                results = s.search_as_search_results(kw, max_results=20)
+                results = s.search_as_search_results(kw, max_results=40)
                 if results:
                     if not hit_kw:
                         hit_kw = kw
@@ -200,7 +203,7 @@ def search_single_source(
             "search_keywords": searched, "hit_keyword": hit_kw,
         }
 
-    # 去重 + enrich
+    # 去重 + enrich（用命中的搜索词做匹配，构造 match_names）
     deduped = []
     hashes = set()
     for r in all_results:
@@ -212,7 +215,10 @@ def search_single_source(
             hashes.add(hu)
         deduped.append(r)
 
-    enriched = [_enrich_result(r, keyword) for r in deduped]
+    # 构造 match_names：搜索词 + 回退词 + 命中词
+    match_names = list(dict.fromkeys([keyword] + kw_list + ([hit_kw] if hit_kw else [])))
+    enrich_query = hit_kw or keyword  # 用命中的搜索词做主匹配
+    enriched = [_enrich_result(r, enrich_query, match_names=match_names) for r in deduped]
 
     return {
         "source": source,
@@ -429,16 +435,27 @@ def search_single_keyword(
 
 @router.get("/search/sources")
 def get_search_sources():
-    """获取所有搜索源及启用状态。"""
+    """获取所有搜索源及启用状态和代理配置。"""
     conf = config_m.config
     bt_overrides = conf.bt_search_sources or {}
     pan_overrides = conf.pan_search_sources or {}
 
     sources = []
     for name, info in _BT_SOURCE_DEFAULTS.items():
+        override = bt_overrides.get(name)
+        if isinstance(override, dict):
+            enabled = override.get("enabled", info["enabled"])
+            proxy = override.get("proxy", info.get("needs_proxy", False))
+        elif isinstance(override, bool):
+            enabled = override
+            proxy = info.get("needs_proxy", False)
+        else:
+            enabled = info["enabled"]
+            proxy = info.get("needs_proxy", False)
         sources.append({
             "name": name, "label": info["label"], "type": info["type"],
-            "enabled": bt_overrides.get(name, info["enabled"]),
+            "enabled": enabled, "needs_proxy": info.get("needs_proxy", False),
+            "proxy": proxy,
         })
     for name, info in _PAN_SOURCE_DEFAULTS.items():
         sources.append({
@@ -450,21 +467,51 @@ def get_search_sources():
 
 @router.put("/search/sources/{name}")
 def toggle_search_source(name: str, req: dict):
-    """切换搜索源启用/禁用。"""
-    enabled = req.get("enabled", True)
+    """切换搜索源启用/禁用/代理。
+
+    请求体支持：
+    - {"enabled": true} — 只切换启用
+    - {"enabled": true, "proxy": false} — 同时切换启用和代理
+    - {"proxy": false} — 只切换代理
+    """
     conf = config_m.config
 
     # 判断是 BT 源还是网盘源
     if name in _BT_SOURCE_DEFAULTS:
         if not conf.bt_search_sources:
             conf.bt_search_sources = {}
-        conf.bt_search_sources[name] = enabled
+
+        has_proxy_field = "proxy" in req
+        has_enabled_field = "enabled" in req
+
+        if has_proxy_field:
+            # 需要用字典格式存储
+            current = conf.bt_search_sources.get(name)
+            if isinstance(current, dict):
+                new_val = dict(current)
+            else:
+                # 从旧格式迁移
+                default_enabled = _BT_SOURCE_DEFAULTS[name]["enabled"]
+                new_val = {"enabled": current if isinstance(current, bool) else default_enabled}
+            if has_enabled_field:
+                new_val["enabled"] = req["enabled"]
+            new_val["proxy"] = req["proxy"]
+            conf.bt_search_sources[name] = new_val
+        else:
+            # 只切换 enabled，保持原有格式
+            current = conf.bt_search_sources.get(name)
+            if isinstance(current, dict):
+                current["enabled"] = req.get("enabled", True)
+                conf.bt_search_sources[name] = current
+            else:
+                conf.bt_search_sources[name] = req.get("enabled", True)
+
     elif name in _PAN_SOURCE_DEFAULTS:
         if not conf.pan_search_sources:
             conf.pan_search_sources = {}
-        conf.pan_search_sources[name] = enabled
+        conf.pan_search_sources[name] = req.get("enabled", True)
     else:
         raise HTTPException(status_code=404, detail=f"未知搜索源: {name}")
 
     config_m.save(conf)
-    return {"ok": True, "name": name, "enabled": enabled}
+    return {"ok": True, "name": name}

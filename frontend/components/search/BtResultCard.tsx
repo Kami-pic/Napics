@@ -4,7 +4,7 @@ import type { EnhancedSearchResult } from "@/types";
 import { INDEXER_TAG_STYLE, INDEXER_DOT_COLOR } from "./FilterBar";
 
 // 已知直搜源名称
-const DIRECT_SOURCE_NAMES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe"]);
+const DIRECT_SOURCE_NAMES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe", "eztv", "dmhy", "1337x"]);
 
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 

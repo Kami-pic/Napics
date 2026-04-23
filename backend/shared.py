@@ -159,8 +159,9 @@ def _get_bitsearch_scraper():
     global _bitsearch_scraper
     if _bitsearch_scraper is None:
         from bt_scraper_bitsearch import BitsearchScraper
-        proxy = getattr(config_m.config, "http_proxy", "") or ""
-        _bitsearch_scraper = BitsearchScraper(proxy=proxy or None)
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("bitsearch")
+        _bitsearch_scraper = BitsearchScraper(proxy=proxy)
     return _bitsearch_scraper
 
 
@@ -174,7 +175,9 @@ def _get_cilixiong_scraper():
     global _cilixiong_scraper
     if _cilixiong_scraper is None:
         from bt_scraper_cilixiong import CilixiongScraper
-        _cilixiong_scraper = CilixiongScraper()
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("cilixiong")
+        _cilixiong_scraper = CilixiongScraper(proxy=proxy)
     return _cilixiong_scraper
 
 
@@ -183,7 +186,9 @@ def _get_xl720_scraper():
     global _xl720_scraper
     if _xl720_scraper is None:
         from bt_scraper_xl720 import XL720Scraper
-        _xl720_scraper = XL720Scraper()
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("xl720")
+        _xl720_scraper = XL720Scraper(proxy=proxy)
     return _xl720_scraper
 
 
@@ -192,8 +197,9 @@ def _get_nyaa_scraper():
     global _nyaa_scraper
     if _nyaa_scraper is None:
         from bt_scraper_nyaa import NyaaScraper
-        proxy = getattr(config_m.config, "http_proxy", "") or ""
-        _nyaa_scraper = NyaaScraper(proxy=proxy or None)
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("nyaa")
+        _nyaa_scraper = NyaaScraper(proxy=proxy)
     return _nyaa_scraper
 
 
@@ -205,8 +211,9 @@ def _get_mikan_scraper():
     global _mikan_scraper
     if _mikan_scraper is None:
         from bt_scraper_mikan import MikanScraper
-        proxy = getattr(config_m.config, "http_proxy", "") or ""
-        _mikan_scraper = MikanScraper(proxy=proxy or None)
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("mikan")
+        _mikan_scraper = MikanScraper(proxy=proxy)
     return _mikan_scraper
 
 
@@ -224,6 +231,9 @@ _yts_scraper = None
 _limetorrents_scraper = None
 _acgrip_scraper = None
 _bangumi_moe_scraper = None
+_eztv_scraper = None
+_dmhy_scraper = None
+_x1337x_scraper = None
 
 
 def _get_yts_scraper():
@@ -231,8 +241,9 @@ def _get_yts_scraper():
     global _yts_scraper
     if _yts_scraper is None:
         from bt_scraper_yts import YTSScraper
-        proxy = getattr(config_m.config, "http_proxy", "") or ""
-        _yts_scraper = YTSScraper(proxy=proxy or None)
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("yts")
+        _yts_scraper = YTSScraper(proxy=proxy)
     return _yts_scraper
 
 
@@ -241,8 +252,9 @@ def _get_limetorrents_scraper():
     global _limetorrents_scraper
     if _limetorrents_scraper is None:
         from bt_scraper_limetorrents import LimeTorrentsScraper
-        proxy = getattr(config_m.config, "http_proxy", "") or ""
-        _limetorrents_scraper = LimeTorrentsScraper(proxy=proxy or None)
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("limetorrents")
+        _limetorrents_scraper = LimeTorrentsScraper(proxy=proxy)
     return _limetorrents_scraper
 
 
@@ -251,7 +263,9 @@ def _get_acgrip_scraper():
     global _acgrip_scraper
     if _acgrip_scraper is None:
         from bt_scraper_acgrip import ACGRipScraper
-        _acgrip_scraper = ACGRipScraper()
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("acgrip")
+        _acgrip_scraper = ACGRipScraper(proxy=proxy)
     return _acgrip_scraper
 
 
@@ -260,8 +274,43 @@ def _get_bangumi_moe_scraper():
     global _bangumi_moe_scraper
     if _bangumi_moe_scraper is None:
         from bt_scraper_bangumi_moe import BangumiMoeScraper
-        _bangumi_moe_scraper = BangumiMoeScraper()
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("bangumi_moe")
+        _bangumi_moe_scraper = BangumiMoeScraper(proxy=proxy)
     return _bangumi_moe_scraper
+
+
+def _get_eztv_scraper():
+    """懒加载 EZTV BT 搜索爬虫（需代理）。"""
+    global _eztv_scraper
+    if _eztv_scraper is None:
+        from bt_scraper_eztv import EZTVScraper
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("eztv")
+        _eztv_scraper = EZTVScraper(proxy=proxy)
+    return _eztv_scraper
+
+
+def _get_dmhy_scraper():
+    """懒加载动漫花园 BT 搜索爬虫（需代理）。"""
+    global _dmhy_scraper
+    if _dmhy_scraper is None:
+        from bt_scraper_dmhy import DMHYScraper
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("dmhy")
+        _dmhy_scraper = DMHYScraper(proxy=proxy)
+    return _dmhy_scraper
+
+
+def _get_1337x_scraper():
+    """懒加载 1337x BT 搜索爬虫（需代理）。"""
+    global _x1337x_scraper
+    if _x1337x_scraper is None:
+        from bt_scraper_1337x import X1337xScraper
+        from search_service import get_source_proxy
+        proxy = get_source_proxy("1337x")
+        _x1337x_scraper = X1337xScraper(proxy=proxy)
+    return _x1337x_scraper
 
 
 def get_clients():

@@ -8,14 +8,16 @@ export const INDEXER_DOT_COLOR: Record<string, string> = {
   prowlarr: "bg-slate-400", bitsearch: "bg-blue-500", cilixiong: "bg-orange-500",
   xl720: "bg-orange-500", nyaa: "bg-purple-500", mikan: "bg-pink-500",
   yts: "bg-green-500", limetorrents: "bg-lime-500", acgrip: "bg-cyan-500",
-  bangumi_moe: "bg-rose-500",
+  bangumi_moe: "bg-rose-500", eztv: "bg-sky-500", dmhy: "bg-red-500",
+  "1337x": "bg-teal-500",
 };
 export const INDEXER_TAG_STYLE: Record<string, string> = {
   bitsearch: "bg-blue-500/15 text-blue-400", cilixiong: "bg-orange-500/15 text-orange-400",
   xl720: "bg-orange-500/15 text-orange-400", nyaa: "bg-purple-500/15 text-purple-400",
   mikan: "bg-pink-500/15 text-pink-400", yts: "bg-green-500/15 text-green-400",
   limetorrents: "bg-lime-500/15 text-lime-400", acgrip: "bg-cyan-500/15 text-cyan-400",
-  bangumi_moe: "bg-rose-500/15 text-rose-400",
+  bangumi_moe: "bg-rose-500/15 text-rose-400", eztv: "bg-sky-500/15 text-sky-400",
+  dmhy: "bg-red-500/15 text-red-400", "1337x": "bg-teal-500/15 text-teal-400",
 };
 
 export interface SourceStatus {
@@ -82,7 +84,7 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
 // ── 无做种数筛选的源（磁力链接源，做种数无意义）──
 const NO_SEEDER_FILTER_SOURCES = new Set(["cilixiong", "xl720"]);
 // ── 无做种数信息的源（ACG.RIP/Bangumi Moe seeders=0 但 size>0）──
-const NO_SEEDER_INFO_SOURCES = new Set(["acgrip", "bangumi_moe"]);
+const NO_SEEDER_INFO_SOURCES = new Set(["acgrip", "bangumi_moe", "dmhy"]);
 
 // ── 通用多选下拉 ──
 export function MultiSelect({ label, selected, options, onChange, variant = "blue" }: {

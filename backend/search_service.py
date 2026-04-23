@@ -23,16 +23,19 @@ logger = logging.getLogger(__name__)
 
 # BT 源默认配置（从 routes/search.py 移入）
 BT_SOURCE_DEFAULTS = {
-    "prowlarr": {"label": "Prowlarr", "enabled": True, "type": "bt"},
-    "bitsearch": {"label": "Bitsearch", "enabled": True, "type": "bt"},
-    "cilixiong": {"label": "磁力熊", "enabled": True, "type": "bt"},
-    "xl720": {"label": "XL720", "enabled": True, "type": "bt"},
-    "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt"},
-    "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt"},
-    "yts": {"label": "YTS", "enabled": True, "type": "bt"},
-    "limetorrents": {"label": "LimeTorrents", "enabled": False, "type": "bt"},
-    "acgrip": {"label": "ACG.RIP", "enabled": True, "type": "bt"},
-    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "type": "bt"},
+    "prowlarr": {"label": "Prowlarr", "enabled": True, "type": "bt", "needs_proxy": False},
+    "bitsearch": {"label": "Bitsearch", "enabled": True, "type": "bt", "needs_proxy": True},
+    "cilixiong": {"label": "磁力熊", "enabled": True, "type": "bt", "needs_proxy": False},
+    "xl720": {"label": "XL720", "enabled": True, "type": "bt", "needs_proxy": False},
+    "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt", "needs_proxy": True},
+    "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt", "needs_proxy": True},
+    "yts": {"label": "YTS", "enabled": True, "type": "bt", "needs_proxy": True},
+    "limetorrents": {"label": "LimeTorrents", "enabled": False, "type": "bt", "needs_proxy": True},
+    "acgrip": {"label": "ACG.RIP", "enabled": False, "type": "bt", "needs_proxy": True},
+    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "type": "bt", "needs_proxy": False},
+    "eztv": {"label": "EZTV", "enabled": False, "type": "bt", "needs_proxy": True},
+    "dmhy": {"label": "动漫花园", "enabled": True, "type": "bt", "needs_proxy": True},
+    "1337x": {"label": "1337x", "enabled": True, "type": "bt", "needs_proxy": True},
 }
 
 # 网盘源默认配置
@@ -48,6 +51,32 @@ PAN_SOURCE_DEFAULTS = {
 
 # infohash 提取正则
 _INFOHASH_RE = re.compile(r"btih:([a-fA-F0-9]{40})", re.IGNORECASE)
+
+
+def get_source_proxy(source_name: str, bt_overrides: Optional[dict] = None) -> Optional[str]:
+    """获取指定源应该使用的代理地址。
+
+    优先级：bt_search_sources 中源级别的 proxy 配置 > needs_proxy 默认值。
+    bt_search_sources 支持两种格式：
+    - 旧格式（布尔）：{"bitsearch": true} — 只控制启用，代理走默认
+    - 新格式（字典）：{"bitsearch": {"enabled": true, "proxy": false}} — 独立控制代理
+    """
+    from shared import config_m
+    global_proxy = getattr(config_m.config, "http_proxy", "") or ""
+
+    default_info = BT_SOURCE_DEFAULTS.get(source_name, {})
+    needs_proxy = default_info.get("needs_proxy", False)
+
+    # 检查源级别的 proxy 覆盖
+    if bt_overrides is None:
+        bt_overrides = config_m.config.bt_search_sources or {}
+    override = bt_overrides.get(source_name)
+    if isinstance(override, dict):
+        # 新格式：{"enabled": true, "proxy": false}
+        if "proxy" in override:
+            needs_proxy = override["proxy"]
+
+    return global_proxy if (needs_proxy and global_proxy) else None
 
 
 def build_keywords(
@@ -166,7 +195,7 @@ def search_direct(
         all_results = []
         for kw in kw_list:
             searched.append(kw)
-            results = s.search_as_search_results(kw, max_results=20)
+            results = s.search_as_search_results(kw, max_results=40)
             if results:
                 if not hit_kw:
                     hit_kw = kw
@@ -183,6 +212,8 @@ def _get_scraper_list() -> List[Tuple[str, Any]]:
         _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper,
         _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper,
         _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper,
+        _get_eztv_scraper, _get_dmhy_scraper,
+        _get_1337x_scraper,
     )
     return [
         ("bitsearch", _get_bitsearch_scraper),
@@ -194,17 +225,32 @@ def _get_scraper_list() -> List[Tuple[str, Any]]:
         ("limetorrents", _get_limetorrents_scraper),
         ("acgrip", _get_acgrip_scraper),
         ("bangumi_moe", _get_bangumi_moe_scraper),
+        ("eztv", _get_eztv_scraper),
+        ("dmhy", _get_dmhy_scraper),
+        ("1337x", _get_1337x_scraper),
     ]
 
 
 def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]]]:
-    """根据配置返回启用的源。返回 (prowlarr_enabled, scrapers_list)。"""
-    prowlarr_enabled = bt_overrides.get("prowlarr", BT_SOURCE_DEFAULTS["prowlarr"]["enabled"])
+    """根据配置返回启用的源。返回 (prowlarr_enabled, scrapers_list)。
+
+    bt_overrides 支持两种格式：
+    - 旧格式（布尔）：{"bitsearch": true}
+    - 新格式（字典）：{"bitsearch": {"enabled": true, "proxy": false}}
+    """
+    def _is_enabled(name: str) -> bool:
+        override = bt_overrides.get(name)
+        if override is None:
+            return BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
+        if isinstance(override, dict):
+            return override.get("enabled", True)
+        return bool(override)
+
+    prowlarr_enabled = _is_enabled("prowlarr")
     scrapers = _get_scraper_list()
     enabled_scrapers = []
     for name, getter in scrapers:
-        default_enabled = BT_SOURCE_DEFAULTS.get(name, {}).get("enabled", True)
-        if bt_overrides.get(name, default_enabled):
+        if _is_enabled(name):
             enabled_scrapers.append((name, getter))
     return prowlarr_enabled, enabled_scrapers
 
@@ -240,7 +286,7 @@ def search_all_sources_iter(
         yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
 
     # 全部并行提交
-    with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=14) as pool:
         future_map = {}
         if prowlarr_enabled and search_client:
             f = pool.submit(search_prowlarr, search_client, keywords)
@@ -261,6 +307,7 @@ def search_all_sources_iter(
                 source_deduped = _dedup_by_infohash(results)
                 status = "done" if not err else "failed"
                 enriched = [enrich_result(r, query, match_names=match_names) for r in source_deduped]
+                logger.info("[SSE] %s: raw=%d deduped=%d enriched=%d err=%s", name, len(results), len(source_deduped), len(enriched), err or "none")
                 yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'search_keywords': searched, 'hit_keyword': hit_kw, 'results': enriched}, default=str)}\n\n"
         except concurrent.futures.TimeoutError:
             pass
@@ -303,7 +350,7 @@ def search_all_sources(
         enabled_scrapers = [(n, g) for n, g in enabled_scrapers if n in source_set]
 
     all_results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=11) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=14) as pool:
         future_map = {}
         if prowlarr_enabled and search_client:
             f = pool.submit(search_prowlarr, search_client, keywords)

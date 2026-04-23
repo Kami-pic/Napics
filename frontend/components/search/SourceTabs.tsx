@@ -16,6 +16,9 @@ const BT_SOURCE_LABELS: Record<string, string> = {
   limetorrents: "LimeTorrents",
   acgrip: "ACG.RIP",
   bangumi_moe: "萌番组",
+  eztv: "EZTV",
+  dmhy: "动漫花园",
+  "1337x": "1337x",
 };
 
 const PAN_SOURCE_LABELS: Record<string, string> = {

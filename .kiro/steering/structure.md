@@ -38,6 +38,12 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── download_manager.py # 下载任务队列 + 生命周期管理
 │   ├── downloader.py       # qBittorrent + Alist 客户端
 │   ├── pan_search_service.py # 网盘搜索聚合
+│   ├── search_service.py    # 搜索服务（统一搜索逻辑，SSE/订阅/单源共用）
+│   ├── search_helpers.py    # 搜索辅助（enrich/junk标记/直搜源合并）
+│   ├── search_keyword_mapper.py # 多语言搜索词映射 + 回退链
+│   ├── bt_scraper_*.py      # BT 直搜源爬虫（继承 ScraperBase）
+│   ├── pan_scraper_*.py     # 网盘爬虫（继承 ScraperBase）
+│   ├── rss_source_*.py      # RSS 源（继承 RSSSourceBase，订阅系统用）
 │   ├── _*.py               # 一次性脚本（调试/批处理/迁移），不属于核心代码
 │   └── test_*.py           # 测试脚本
 ├── frontend/               # Next.js 前端
