@@ -619,14 +619,23 @@ export default function SearchModal({
                 <input value={keyword} onChange={(e) => { setKeyword(e.target.value); userEditedRef.current = true; }}
                   onKeyDown={(e) => { if (e.key === "Enter") { activeTab === "bt" ? (btActiveSource === "all" ? doSearch(keyword) : doSourceSearch(btActiveSource, keyword)) : doPanSearch(keyword); } }}
                   placeholder="输入搜索关键词..."
-                  className="flex-1 bg-transparent px-3 py-2 pr-10 text-sm text-white outline-none placeholder:text-slate-600 min-w-[120px]" />
-                {/* 过滤器图标（搜索框内右侧，仅 BT 模式）*/}
+                  className="flex-1 bg-transparent px-3 py-2 pr-[72px] text-sm text-white outline-none placeholder:text-slate-600 min-w-[120px]" />
+                {/* 搜索框内右侧按钮组：AI 推荐 + 智能过滤 */}
                 {activeTab === "bt" && (
-                  <button onClick={() => setSmartFilter(!smartFilter)}
-                    title={smartFilter ? "智能过滤已开启：隐藏不相关/枪版/死种" : "智能过滤已关闭：显示全部结果"}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${smartFilter ? "text-green-400 hover:bg-green-600/20" : "text-slate-600 hover:text-slate-400"}`}>
-                    {smartFilter ? "🛡️" : "🔓"}
-                  </button>
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                    {aiAvailable && (
+                      <button onClick={() => setAiRecommendEnabled(!aiRecommendEnabled)}
+                        title={aiRecommendEnabled ? "AI 推荐已开启：搜索完成后推荐最佳资源" : "AI 推荐已关闭"}
+                        className={`w-7 h-7 rounded flex items-center justify-center text-[11px] font-bold transition-colors ${aiRecommendEnabled ? "text-blue-400 hover:bg-blue-600/20" : "text-slate-600 hover:text-slate-400"}`}>
+                        🤖
+                      </button>
+                    )}
+                    <button onClick={() => setSmartFilter(!smartFilter)}
+                      title={smartFilter ? "智能过滤已开启：隐藏不相关/枪版/死种" : "智能过滤已关闭：显示全部结果"}
+                      className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${smartFilter ? "text-green-400 hover:bg-green-600/20" : "text-slate-600 hover:text-slate-400"}`}>
+                      {smartFilter ? "🛡️" : "🔓"}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -636,16 +645,6 @@ export default function SearchModal({
               }`}>
               {(searching || panSearching) ? "搜索中..." : "搜索"}
             </button>
-            {/* AI 推荐开关 */}
-            {activeTab === "bt" && aiAvailable && (
-              <button onClick={() => setAiRecommendEnabled(!aiRecommendEnabled)}
-                title={aiRecommendEnabled ? "AI 推荐已开启（搜索完成后自动推荐最佳资源）" : "AI 推荐已关闭"}
-                className={`px-3 py-2 rounded-lg text-[11px] font-medium transition-colors whitespace-nowrap ${
-                  aiRecommendEnabled ? "bg-blue-600/20 text-blue-400 border border-blue-500/30" : "bg-white/[0.04] text-slate-500 border border-white/[0.06] hover:text-slate-300"
-                }`}>
-                🤖 AI
-              </button>
-            )}
           </div>
           {/* 保存路径移到底部 */}
           {/* 保存路径 + 通道切换（搜索框下方，同宽对齐） */}
