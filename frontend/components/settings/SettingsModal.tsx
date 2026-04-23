@@ -53,6 +53,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [aiTesting, setAiTesting] = useState(false);
   const [aiUsage, setAiUsage] = useState<Record<string, { calls: number; tokens: number }>>({});
+  const [aiExpanded, setAiExpanded] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -90,8 +91,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
           {/* NAS 扫描路径 */}
           <div className="pb-3">
-            <label className="text-sm font-medium text-blue-400">NAS 扫描路径</label>
-            <p className="text-xs text-slate-500 mt-1 mb-3">添加需要扫描的媒体库目录</p>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-blue-400">NAS 扫描路径</label>
+            </div>
+            <div className="flex items-center justify-between mt-1 mb-3">
+              <p className="text-xs text-slate-500">添加需要扫描的媒体库目录</p>
+              <button onClick={() => setPaths([...paths, ""])} className="text-xs text-blue-400 hover:text-blue-300 flex-shrink-0">+ 添加路径</button>
+            </div>
             {paths.map((p, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <input value={p} onChange={e => updatePath(i, e.target.value)} placeholder="如 Z:\Movies 或 \\NAS\media"
@@ -99,14 +105,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 {paths.length > 1 && <button onClick={() => setPaths(paths.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 text-xs px-2">删除</button>}
               </div>
             ))}
-            <button onClick={() => setPaths([...paths, ""])} className="text-xs text-blue-400 hover:text-blue-300">+ 添加路径</button>
           </div>
           {/* 排除文件夹（紧跟路径下面）*/}
-          <div className="pb-3 border-b border-white/[0.06]">
+          <div className="pb-3 border-b border-white/[0.06] -mt-2">
             <label className="text-sm font-medium text-slate-300">排除文件夹</label>
-            <textarea rows={2} value={(config.exclude_dirs || "").split(",").join("\n")}
+            <textarea rows={1} value={(config.exclude_dirs || "").split(",").join("\n")}
               onChange={e => setConfig({ ...config, exclude_dirs: e.target.value.split("\n").join(",") })}
-              className="w-full mt-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30" placeholder="@eaDir&#10;#recycle" />
+              className="w-full mt-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30 resize-y min-h-[38px]" placeholder="@eaDir&#10;#recycle" />
           </div>
 
           {/* 按分组渲染字段 */}
@@ -180,10 +185,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                       )}
                     </div>
 
-                    {/* 功能开关 */}
+                    {/* 功能开关（折叠） */}
                     <div className="border-t border-white/[0.04] pt-3 mt-1">
-                      <label className="text-[10px] text-slate-500 mb-2 block">功能开关</label>
-                      <div className="space-y-1.5">
+                      <button onClick={() => setAiExpanded(!aiExpanded)} className="flex items-center gap-1.5 mb-2">
+                        <span className={`text-[10px] text-slate-500 transition-transform ${aiExpanded ? "rotate-90" : ""}`}>▶</span>
+                        <label className="text-[10px] text-slate-500 cursor-pointer">功能开关</label>
+                      </button>
+                      {aiExpanded && <div className="space-y-1.5">
                         {AI_FEATURE_LIST.map(f => {
                           const features = config.ai_features || { extract_episode: true, scrape_candidate: true, library_diagnosis: true, search_recommend: false, natural_search: false, subscribe_recommend: false };
                           const checked = features[f.key] ?? false;
@@ -200,7 +208,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                             </label>
                           );
                         })}
-                      </div>
+                      </div>}
                     </div>
 
                     {/* 用量统计 */}

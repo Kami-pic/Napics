@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NAS 媒体管理器",
-  description: "NAS 影视媒体库管理工具",
+  title: "Napics Media Manager",
+  description: "Napics 影视媒体库管理工具",
   icons: {
     icon: "/favicon.svg",
   },
