@@ -125,6 +125,12 @@ export default function OrganizeProgress({ open, path, onClose, onComplete }: Pr
                     {doneEvt?.folder_type && (
                       <span className="text-[10px] text-slate-500 ml-auto">{doneEvt.folder_type}</span>
                     )}
+                    {doneEvt?.result?.ai_parsed_count > 0 && (
+                      <span className="text-[10px] text-blue-400 ml-1">🤖 {doneEvt?.result?.ai_parsed_count}</span>
+                    )}
+                    {doneEvt?.result?.ai_selected_count > 0 && (
+                      <span className="text-[10px] text-blue-400 ml-1">🤖 {doneEvt?.result?.ai_selected_count}</span>
+                    )}
                   </div>
                 );
               })}
