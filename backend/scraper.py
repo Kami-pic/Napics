@@ -412,23 +412,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             # 三个全为 None → 正则失败
             if use_ai:
                 from ai_organizer import ai_extract_episode
-                ai_config = {
-                    "openai_api_key": getattr(tmdb_client_instance, '_ai_api_key', '') or '',
-                    "openai_base_url": getattr(tmdb_client_instance, '_ai_base_url', 'https://api.openai.com/v1'),
-                    "openai_model": getattr(tmdb_client_instance, '_ai_model', 'gpt-3.5-turbo'),
-                }
-                # 从全局 config 获取 AI 配置
-                try:
-                    import config_manager
-                    cm = config_manager.ConfigManager()
-                    ai_config = {
-                        "openai_api_key": cm.config.openai_api_key or '',
-                        "openai_base_url": cm.config.openai_base_url or 'https://api.openai.com/v1',
-                        "openai_model": cm.config.openai_model or 'gpt-3.5-turbo',
-                    }
-                except Exception:
-                    pass
-                ai_result = ai_extract_episode(vname, ai_config)
+                ai_result = ai_extract_episode(vname)
                 if ai_result:
                     method = "ai"
                     ai_s = ai_result.get("season")

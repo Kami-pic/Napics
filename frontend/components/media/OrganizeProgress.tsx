@@ -1,6 +1,6 @@
 // 一键整理进度反馈面板（SSE 流式 5 步进度）
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { api } from "@/lib/api";
 import type { OrganizeProgressEvent } from "@/types";
 
@@ -18,6 +18,15 @@ export default function OrganizeProgress({ open, path, onClose, onComplete }: Pr
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [completed, setCompleted] = useState(false);
+  const [useAi, setUseAi] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+
+  // 检查 AI 是否可用
+  useEffect(() => {
+    if (open) {
+      api.getAIStatus().then(s => setAiEnabled(s.enabled && s.features?.extract_episode)).catch(() => setAiEnabled(false));
+    }
+  }, [open]);
 
   const startOrganize = useCallback(async (dryRun: boolean) => {
     setRunning(true);
@@ -26,7 +35,7 @@ export default function OrganizeProgress({ open, path, onClose, onComplete }: Pr
     setEvents([]);
 
     try {
-      const response = await api.organizeFullStream(path, dryRun);
+      const response = await api.organizeFullStream(path, dryRun, useAi);
       const reader = response.body?.getReader();
       if (!reader) return;
 
@@ -75,15 +84,24 @@ export default function OrganizeProgress({ open, path, onClose, onComplete }: Pr
         <p className="text-xs text-slate-500 mb-4 font-mono truncate">{path}</p>
 
         {!running && !completed && !error && (
-          <div className="flex gap-3">
-            <button onClick={() => startOrganize(true)}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium transition-all">
-              推演预览
-            </button>
-            <button onClick={() => startOrganize(false)}
-              className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 rounded-xl text-sm font-medium transition-all">
-              直接执行
-            </button>
+          <div className="space-y-3">
+            {aiEnabled && (
+              <label className="flex items-center gap-2 px-1 cursor-pointer">
+                <input type="checkbox" checked={useAi} onChange={() => setUseAi(!useAi)}
+                  className="w-3.5 h-3.5 rounded accent-blue-500" />
+                <span className="text-xs text-slate-400">🤖 AI 辅助（乱码文件名自动识别）</span>
+              </label>
+            )}
+            <div className="flex gap-3">
+              <button onClick={() => startOrganize(true)}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium transition-all">
+                推演预览
+              </button>
+              <button onClick={() => startOrganize(false)}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 rounded-xl text-sm font-medium transition-all">
+                直接执行
+              </button>
+            </div>
           </div>
         )}
 
