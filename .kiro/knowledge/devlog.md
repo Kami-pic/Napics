@@ -355,3 +355,10 @@
 - 128 个测试全绿（25 mapper + 58 综合 + 45 英文名修复），覆盖 discover 注入/文件名解析/搜索词映射/语言检测/端到端链路
 **决策**: original_title 不能直接当英文名用（中国电影是中文、日本动画是日文），必须做语言判断后分配；subtitle 中的英文名用 detect_language 提取而非正则猜测
 **踩坑**: 豆瓣 original_title 对中国电影返回中文（和 title 相同），TMDB original_title 对中国电影也返回中文；Bangumi 完全没有英文名字段
+
+## 2026-04-23 设置页 UI 优化 + 产品标题更名
+**变更**:
+- 添加路径按钮从路径列表下方移到"添加需要扫描的媒体库目录"描述文字最右侧
+- 排除文件夹与上方路径模块间距缩小（-mt-2），textarea 从 rows=2 改为 rows=1 + resize-y + min-h-[38px]，和普通 input 等高
+- AI 功能开关区域改为折叠展开（▶ 箭头），AI 标题/总开关/服务商预设/API 配置/测试连接始终可见
+- 产品标题统一改为 Napics Media Manager（Header 顶栏、layout title、meta description）
