@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 
 from tmdb_client import parse_filename, ScrapeResult
 import scraper
+from core.constants import SIDE_CAR_SUFFIXES, VIDEO_EXTS
 
 # 注意：不在顶层 import organizer，避免循环依赖
 # organizer 的分类函数在 rename_videos_in_folder 内部延迟导入
@@ -148,7 +149,6 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
     whitelist: 如果提供，则只对名单内的文件生成重命名计划
     """
     results = []
-    video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
     folder_name = os.path.basename(folder_path)
     
     # 延迟导入 organizer 的分类函数，避免循环依赖
@@ -254,7 +254,7 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
 
     for item in sorted(os.listdir(folder_path)):
         full = os.path.normpath(os.path.abspath(os.path.join(folder_path, item)))
-        if not os.path.isfile(full) or os.path.splitext(item)[1].lower() not in video_exts:
+        if not os.path.isfile(full) or os.path.splitext(item)[1].lower() not in VIDEO_EXTS:
             continue
         
         # 白名单过滤：如果提供了白名单且当前文件不在名单内，跳过（它是老兵）
@@ -293,7 +293,7 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
                     # 同步重命名同名前缀的关联文件（旧格式兼容）
                     old_base = os.path.splitext(full)[0]
                     new_base = os.path.splitext(new_path)[0]
-                    for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
+                    for suffix in SIDE_CAR_SUFFIXES:
                         old_f = old_base + suffix
                         new_f = new_base + suffix
                         if os.path.exists(old_f):
@@ -375,7 +375,7 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
                 os.rename(full, new_path)
                 old_base = os.path.splitext(full)[0]
                 new_base = os.path.splitext(new_path)[0]
-                for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
+                for suffix in SIDE_CAR_SUFFIXES:
                     old_f = old_base + suffix
                     new_f = new_base + suffix
                     if os.path.exists(old_f):

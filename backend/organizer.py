@@ -8,6 +8,7 @@ import json
 from typing import List, Dict, Optional, Tuple
 from tmdb_client import parse_filename, ScrapeResult
 import scraper
+from core.constants import VIDEO_EXTS
 
 # ── 从拆分模块 re-export，保持对外兼容 ──
 from renamer import (
@@ -228,13 +229,12 @@ def _collect_children(folder_path: str) -> Tuple[List[str], List[str]]:
     """收集子目录和视频文件（忽略字幕/特典等）"""
     subdirs = []
     videos = []
-    video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
     for item in os.listdir(folder_path):
         full = os.path.join(folder_path, item)
         if os.path.isdir(full) and not item.startswith('.'):
             if not _is_ignorable_subdir(item):
                 subdirs.append(item)
-        elif os.path.isfile(full) and os.path.splitext(item)[1].lower() in video_exts:
+        elif os.path.isfile(full) and os.path.splitext(item)[1].lower() in VIDEO_EXTS:
             videos.append(item)
     return subdirs, videos
 
@@ -316,7 +316,6 @@ def _classify_by_structure(folder_path: str, folder_name: str, library_data: Lis
         return {"type": "collection", "folder_name": folder_name, "videos": videos}
     
     # ── 有子目录 ──
-    video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
     season_dirs = [d for d in subdirs if _is_season_dir(d)]
     non_season_dirs = [d for d in subdirs if not _is_season_dir(d)]
     
@@ -329,7 +328,7 @@ def _classify_by_structure(folder_path: str, folder_name: str, library_data: Lis
         for d in non_season_dirs:
             dp = os.path.join(folder_path, d)
             try:
-                sub_videos = [f for f in os.listdir(dp) if os.path.splitext(f)[1].lower() in video_exts]
+                sub_videos = [f for f in os.listdir(dp) if os.path.splitext(f)[1].lower() in VIDEO_EXTS]
                 ep_count = _count_episode_files(sub_videos)
                 if ep_count >= len(sub_videos) * 0.3 and len(sub_videos) >= 2:
                     actual_season_dirs.append(d)

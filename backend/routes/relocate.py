@@ -372,7 +372,7 @@ async def organize_dry_run(req: RelocateRequest):
             return {
                 "status": "awaiting_confirm",
                 "message": "发现库中存量旧版本，建议执行整理替换",
-                "coexist_pairs": [p.dict() for p in res.coexist_pairs],
+                "coexist_pairs": [p.model_dump() for p in res.coexist_pairs],
                 "plan": res.action_plan,
                 "new_files_all": display_new_files,
                 # 树状结构数据（前端优先使用）

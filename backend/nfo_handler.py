@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from typing import Optional, Dict
 from tmdb_client import ScrapeResult
+from core.constants import MOVIE_TV_NFO_NAMES, STANDARD_NFO_NAMES, VIDEO_EXTS
 
 logger = logging.getLogger(__name__)
 # ── NFO 读取 ──
@@ -22,7 +23,7 @@ def read_nfo(folder_path: str, no_fallback: bool = False) -> Optional[Dict]:
     nfo_path = None
     
     # 1. 标准文件夹级 NFO
-    for name in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
+    for name in STANDARD_NFO_NAMES:
         p = os.path.join(folder_path, name)
         if os.path.exists(p):
             nfo_path = p
@@ -41,8 +42,7 @@ def read_nfo(folder_path: str, no_fallback: bool = False) -> Optional[Dict]:
     # 3. Fallback 到视频同名 NFO（仅 movie 文件夹，tv/season 不 fallback）
     if not nfo_path and not no_fallback:
         try:
-            video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
-            video_files = [f for f in sorted(os.listdir(folder_path)) if os.path.splitext(f)[1].lower() in video_exts]
+            video_files = [f for f in sorted(os.listdir(folder_path)) if os.path.splitext(f)[1].lower() in VIDEO_EXTS]
             folder_name = os.path.basename(folder_path)
             if video_files and not _is_category_folder(folder_name, video_files):
                 for vf in video_files:
@@ -104,7 +104,7 @@ def read_video_nfo(video_path: str) -> Optional[Dict]:
     if not os.path.exists(nfo_path):
         # 尝试读取所在文件夹的 NFO（仅当文件夹有标准 movie.nfo/tvshow.nfo 时）
         folder = os.path.dirname(video_path)
-        for standard_name in ["movie.nfo", "tvshow.nfo"]:
+        for standard_name in MOVIE_TV_NFO_NAMES:
             p = os.path.join(folder, standard_name)
             if os.path.exists(p):
                 return read_nfo(folder)

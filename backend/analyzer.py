@@ -12,12 +12,9 @@ from organizer import (
     _extract_season_number, _count_episode_files
 )
 import scraper
+from core.constants import MEDIA_EXTS, SUBTITLE_EXTS, VIDEO_EXTS
 
 # ── 常量 ──
-
-VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
-SUBTITLE_EXTS = {".srt", ".ass", ".ssa", ".sub", ".idx", ".sup", ".vtt"}
-POSTER_NAMES = {"poster.jpg", "poster.png", "fanart.jpg", "fanart.png", "folder.jpg", "cover.jpg"}
 
 # 广告检测模式
 AD_PATTERNS = [
@@ -284,10 +281,8 @@ def _extract_cd_group_key(filename: str) -> Optional[str]:
 def _clean_filename_for_folder(filename: str) -> str:
     """清洗文件名用于生成文件夹名：去广告、去质量标签、去 CD 标记"""
     # 只去掉已知的媒体扩展名，避免误删 .Zero .Reign 等
-    known_exts = {'.mp4','.mkv','.avi','.ts','.rmvb','.rm','.flv','.wmv','.mov','.m4v',
-                  '.srt','.ass','.ssa','.sub','.idx','.sup','.vtt','.nfo','.jpg','.png','.tmp'}
     base, ext = os.path.splitext(filename)
-    name = base if ext.lower() in known_exts else filename
+    name = base if ext.lower() in MEDIA_EXTS else filename
 
     # 0. + 替换为空格（字幕组常用 + 代替空格）
     name = re.sub(r'\+', ' ', name)

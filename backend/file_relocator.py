@@ -22,6 +22,7 @@ from pydantic import BaseModel
 
 from download_manager import DownloadTask
 from recycle_bin import RecycleBin
+from core.constants import RECYCLE_DIR_NFO_AND_ART, VIDEO_EXTS
 
 logger = logging.getLogger(__name__)
 class CoexistPair(BaseModel):
@@ -42,10 +43,6 @@ class RelocateResult(BaseModel):
     relocated_count: int = 0
     coexist_pairs: List[CoexistPair] = []
     error: str = ""
-
-
-# 视频文件扩展名
-_VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
 
 
 def _safe_print(msg: str):
@@ -359,7 +356,7 @@ class FileRelocator:
                 
                 # 扫描散装视频文件
                 for f in files:
-                    if os.path.splitext(f)[1].lower() in _VIDEO_EXTS:
+                    if os.path.splitext(f)[1].lower() in VIDEO_EXTS:
                         f_path = os.path.abspath(os.path.join(root, f))
                         if not _is_file_in_whitelist(f_path, f):
                             p_info = parse_filename(f)
@@ -381,7 +378,7 @@ class FileRelocator:
                     has_video = False
                     try:
                         for item in os.listdir(d_path):
-                            if os.path.splitext(item)[1].lower() in _VIDEO_EXTS or os.path.isdir(os.path.join(d_path, item)):
+                            if os.path.splitext(item)[1].lower() in VIDEO_EXTS or os.path.isdir(os.path.join(d_path, item)):
                                 has_video = True
                                 break
                     except Exception:
@@ -442,7 +439,7 @@ class FileRelocator:
                     has_video_inside = False
                     try:
                         for item in os.listdir(old_path):
-                            if os.path.splitext(item)[1].lower() in _VIDEO_EXTS:
+                            if os.path.splitext(item)[1].lower() in VIDEO_EXTS:
                                 has_video_inside = True
                                 break
                     except Exception:
@@ -508,7 +505,7 @@ class FileRelocator:
                 self.recycle_bin.move_to_bin(poster, task_id)
 
         # 4 & 5. 目录级 NFO：movie.nfo 和 season.nfo（绝对不动 tvshow.nfo）
-        for dir_nfo in ["movie.nfo", "season.nfo", "poster.jpg", "fanart.jpg", "banner.jpg"]:
+        for dir_nfo in RECYCLE_DIR_NFO_AND_ART:
             dir_file_path = os.path.join(target_dir, dir_nfo)
             if os.path.exists(dir_file_path):
                 self.recycle_bin.move_to_bin(dir_file_path, task_id)
