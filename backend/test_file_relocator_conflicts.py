@@ -63,7 +63,7 @@ def test_detect_conflicts_keeps_whitelisted_new_files_out_of_old_candidates():
         )
 
         assert len(conflicts) == 1
-        assert conflicts[0].old_file == str(old_file.resolve())
+        assert conflicts[0].old_file == os.path.abspath(str(old_file))
         assert conflicts[0].category == "video"
         assert conflicts[0].is_folder is False
 
@@ -98,10 +98,12 @@ def test_detect_conflicts_records_same_season_old_folder_and_inner_video():
         categories = {conflict.old_file: conflict.category for conflict in conflicts}
 
         assert len(conflicts) == 2
-        assert str(old_folder.resolve()) in old_paths
-        assert str(old_file.resolve()) in old_paths
-        assert categories[str(old_folder.resolve())] == "folder"
-        assert categories[str(old_file.resolve())] == "video"
+        old_folder_path = os.path.abspath(str(old_folder))
+        old_file_path = os.path.abspath(str(old_file))
+        assert old_folder_path in old_paths
+        assert old_file_path in old_paths
+        assert categories[old_folder_path] == "folder"
+        assert categories[old_file_path] == "video"
 
     _with_temp_dir("relocator_conflict_folder", run)
 
@@ -189,7 +191,7 @@ def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_
         assert result.status == "archived"
         assert calls == [
             {
-                "path": str(task.download_dir),
+                "path": str(task.save_path),
                 "dry_run": False,
                 "use_ai": False,
                 "whitelist": None,
@@ -198,3 +200,56 @@ def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_
         assert recycle_bin.paths == [str(old_file)]
 
     _with_temp_dir("relocator_confirm_replace_fallback", run)
+
+
+def test_confirm_replace_prefers_save_path_for_execute_plan():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        download_dir = tmp_dir / "downloads" / "task-1"
+        old_file = save_path / "Show.S01E01.1080p.mkv"
+        new_file = save_path / "[Group] Show S01 2160p" / "Show.S01E02.2160p.mkv"
+        _touch(old_file)
+        _touch(new_file)
+        download_dir.mkdir(parents=True, exist_ok=True)
+
+        calls = []
+
+        async def fake_run_pipeline(path, dry_run, use_ai, whitelist=None):
+            calls.append(
+                {
+                    "path": path,
+                    "dry_run": dry_run,
+                    "use_ai": use_ai,
+                    "whitelist": list(whitelist) if whitelist else None,
+                }
+            )
+            return {"steps": {"rename": 1}}
+
+        relocator = FileRelocator(recycle_bin=RecordingRecycleBin(), run_pipeline_fn=fake_run_pipeline)
+        task = DownloadTask(
+            id="task-1",
+            save_path=str(save_path),
+            download_dir=str(download_dir),
+        )
+        plan = {
+            "plan": [
+                {
+                    "target_path": str(save_path / "Season 01" / "Show.S01E02.2160p.mkv"),
+                    "mapped": {"season": 1, "episode": 2},
+                }
+            ]
+        }
+
+        result = asyncio.run(relocator.confirm_replace(task, plan))
+
+        assert result.success is True
+        assert calls == [
+            {
+                "path": str(save_path),
+                "dry_run": False,
+                "use_ai": False,
+                "whitelist": None,
+            }
+        ]
+
+    _with_temp_dir("relocator_execute_save_path", run)

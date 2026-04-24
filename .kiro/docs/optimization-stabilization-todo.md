@@ -1256,3 +1256,47 @@ backend/test_file_relocator_conflicts.py
 【结论】
 安全可控。这是第三处基于既有基线切入的小范围业务修复；当前 confirm 阶段不再强依赖 qB 白名单才能延续 dry-run 的判定结果。
 ```
+
+### 本轮交付检查（2026-04-24：execute_plan 执行目录对齐修复）
+
+```text
+【本轮目标】
+修复 `FileRelocator._execute_plan()` 与前序 dry-run / confirm 阶段执行目录不一致的问题，使实际落盘执行优先沿用 `save_path`，不再默认跳回 `download_dir`。
+
+【涉及文件】
+backend/file_relocator.py
+backend/test_file_relocator_conflicts.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+业务逻辑修复（小范围）
+
+【已完成】
+- 修复 `_execute_plan()`：当前改为优先使用 `task.save_path`，仅在缺失时才回退到 `task.download_dir`
+- 更新 `test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_it`
+- 新增 `test_confirm_replace_prefers_save_path_for_execute_plan`
+- 顺手修正两条既有冲突测试的路径断言，使其不再依赖 `Path.resolve()`，避免沙箱路径与宿主路径混淆
+
+【未触碰】
+- 未修改 `backend/routes/relocate.py`
+- 未修改下载状态机、自动归位线程、真实 RecycleBin 落盘逻辑
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 冲突探测回归：
+  - `cd backend && python -X utf8 -m pytest test_file_relocator_conflicts.py -q`：5 passed，1 个既有 `.pytest_cache` 权限 warning
+- 相关基线回归：
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_download_manager_relocate_flow.py test_route_response_snapshot.py test_core_constants.py -q`：35 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【行为判断】
+- 是否行为等价：否，这是一次显式业务修复
+- 修复内容：让执行阶段和前序探测 / 确认阶段围绕同一目录（`save_path`）工作，避免前面在目标目录探测、后面却去 `download_dir` 执行
+- 风险范围：仅限 `confirm_replace()` → `_execute_plan()` 的执行路径选择
+
+【未能证明的风险】
+- 尚未覆盖 `save_path` 不存在但 `download_dir` 存在的真实环境案例。
+- 尚未覆盖真实 RecycleBin 落盘和真实线程竞争问题。
+
+【结论】
+安全可控。这是第四处基于既有基线切入的小范围业务修复；当前整理落盘阶段与前序 dry-run / confirm 的目录语义终于对齐。
+```

@@ -233,8 +233,9 @@ class FileRelocator:
     async def _execute_plan(self, task: DownloadTask, plan: dict) -> RelocateResult:
         """调用整理引擎落盘执行。"""
         try:
+            execute_path = task.save_path or task.download_dir
             result = await self._run_pipeline(
-                path=task.download_dir,
+                path=execute_path,
                 dry_run=False,
                 use_ai=False,
             )
