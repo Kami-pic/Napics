@@ -6,6 +6,62 @@
 
 ---
 
+## 当前汇总（2026-04-24）
+
+### 阶段进度
+
+- 整体进度：下载→归位闭环收口约 `100%`
+- 当前状态：已从“只补基线”切换到“基线保护下的小范围业务修复”
+- Git 检查点：
+  - `ddf0917` `检查点: 下载归位基线备份`
+  - `124bf20` `修复: relocate 路由白名单格式`
+  - `3d45f5b` `修复: relocate dry-run fallback`
+  - `c9353a6` `修复: confirm_replace 白名单兜底`
+  - `ca1518e` `修复: execute_plan 执行目录对齐`
+  - `9238d2b` `修复: 透传 execute action_plan`
+
+### 已完成的小范围业务修复
+
+- 已修复 `/organize/archive-both` 与 `/organize/purge-old` 传给 `FileRelocator.relocate()` 的白名单格式，统一改为“路径字符串白名单”
+- 已修复 `/organize/dry-run` 在 qB 文件列表缺失时错误迭代整个 `action_plan` 的 fallback 逻辑
+- 已修复 `confirm_replace()` 在 plan 未携带 `whitelist` 时不会自动回退磁盘扫描白名单的问题
+- 已修复 `_execute_plan()` 落盘执行目录与前序 dry-run / confirm 不一致的问题，当前优先使用 `save_path`
+- 已修复 `confirm_replace()` → `_execute_plan()` → `organize_full()` 这条执行链没有显式透传 `action_plan` 的问题
+
+### 当前已锁定的基线证据
+
+- `routes/relocate.py`：
+  - `/organize/dry-run` 的 `old_tree/new_tree/plan_tree` 结构
+  - `/organize/execute` 的白名单注入、成功归档与失败不归档
+  - `/organize/archive-both` 的重新探测与成功归档
+  - `/organize/purge-old` 的“无白名单即停止”和“逐个回收旧资源”
+- `file_relocator.py`：
+  - 白名单冲突探测
+  - 旧视频/NFO/海报/目录级 NFO 回收路径
+  - confirm 阶段白名单兜底
+  - execute 阶段执行目录与 action plan 透传
+- `download_manager.py`：
+  - 下载完成触发归位/订阅回调
+  - qB / Alist 关键状态映射
+  - 启动恢复 / 对账
+  - `_auto_relocate()` 的线程启动参数与补定位顺序
+
+### 当前剩余风险
+
+- 真实线程竞争：`_auto_relocate()` 的真实并发时序仍未在真实环境证明
+- 真实落盘：真实 RecycleBin 落盘、真实文件系统移动/封箱结果仍未覆盖
+- 真实下载器长尾：真实 qB / Alist 长时间卡住、异常返回结构等长尾情况仍未覆盖
+- 真实 NAS：尚未对真实 NAS 路径做 execute 级回归，当前仍以隔离测试为主
+
+### 下一步建议
+
+- 优先方向 1：继续补“真实环境级”保护，而不是再扩业务修复面
+  - 例如：真实 RecycleBin 落盘、真实 qB/alist 异常返回、真实线程竞争观测
+- 优先方向 2：如果继续修业务逻辑，只挑和回收/封箱/执行后落盘摘要直接相关的小点
+- 暂不建议切去搜索、命名、刮削链路；当前这一轮已经把“下载→归位闭环”单线收得比较完整
+
+---
+
 ## 0. 执行红线
 
 - [ ] 每轮只做一种改动：结构收口 / 类型补强 / 测试补强 / 文档补强
