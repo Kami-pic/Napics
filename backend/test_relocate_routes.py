@@ -238,8 +238,8 @@ def test_organize_archive_both_relocates_again_before_archiving(monkeypatch):
         {
             "task_id": "task-1",
             "whitelist": [
-                {"name": "[Group] Show S01 2160p/Show.S01E02.2160p.mkv", "size_bytes": 1234},
-                {"name": "[Group] Show S01 2160p/Subs/Show.S01E02.zh.ass", "size_bytes": 56},
+                "[Group] Show S01 2160p/Show.S01E02.2160p.mkv",
+                "[Group] Show S01 2160p/Subs/Show.S01E02.zh.ass",
             ],
         }
     ]
@@ -305,7 +305,7 @@ def test_organize_purge_old_recycles_each_detected_conflict(monkeypatch):
     assert relocator.relocate_calls == [
         {
             "task_id": "task-1",
-            "whitelist": [{"name": "[Group] Show S01 2160p/Show.S01E02.2160p.mkv", "size_bytes": 1234}],
+            "whitelist": ["[Group] Show S01 2160p/Show.S01E02.2160p.mkv"],
         }
     ]
     assert relocator.recycle_calls == [

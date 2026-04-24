@@ -1123,3 +1123,45 @@ backend/test_download_manager_relocate_flow.py
 【结论】
 安全。`_auto_relocate()` 的线程启动参数与补定位顺序已有隔离证据；“下载→归位闭环基线”仍未完全闭合，但剩余未证明风险已经进一步集中到真实线程竞争和少量真实环境长尾问题。
 ```
+
+### 本轮交付检查（2026-04-24：relocate 路由白名单格式修复）
+
+```text
+【本轮目标】
+在已有基线保护下，修复 `routes/relocate.py` 中 `/organize/archive-both` 与 `/organize/purge-old` 传给 `FileRelocator.relocate()` 的白名单格式，使其与 dry-run / execute 保持一致。
+
+【涉及文件】
+backend/routes/relocate.py
+backend/test_relocate_routes.py
+
+【改动性质】
+业务逻辑修复（小范围）
+
+【已完成】
+- 修复 `/organize/archive-both`：qB `get_torrent_files()` 返回的文件对象列表改为先提取 `name` 字段，再传给 `relocate()`
+- 修复 `/organize/purge-old`：同样改为传文件路径字符串白名单，而不是原始文件对象列表
+- 更新 `test_relocate_routes.py` 对应断言，锁定两条路由当前都会传字符串路径白名单
+
+【未触碰】
+- 未修改 `backend/file_relocator.py`
+- 未修改下载状态机、自动归位线程、真实 RecycleBin 落盘逻辑
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 路由回归：
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py -q`：6 passed，1 个既有 `.pytest_cache` 权限 warning
+- 相关基线回归：
+  - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py test_file_relocator_conflicts.py test_route_response_snapshot.py test_core_constants.py -q`：31 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【行为判断】
+- 是否行为等价：否，这是一次显式业务修复
+- 修复内容：把原本错误的“文件对象列表白名单”改成 `FileRelocator` 预期的“路径字符串白名单”
+- 风险范围：仅限 `/organize/archive-both` 和 `/organize/purge-old` 两条路由调用 `relocate()` 的参数格式，不影响 dry-run / execute 已有路径
+
+【未能证明的风险】
+- 尚未覆盖真实 qB 返回异常对象结构时的兼容性。
+- 尚未覆盖真实 RecycleBin 落盘和真实线程竞争问题。
+
+【结论】
+安全可控。这是“下载→归位闭环”上第一处基于现有基线切入的小范围业务修复，回归结果稳定，后续可继续按同样节奏推进。
+```

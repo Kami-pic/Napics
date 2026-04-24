@@ -444,7 +444,8 @@ async def organize_archive_both(req: ExecuteRelocateRequest):
         clients = get_clients()
         qb = clients.get("qb")
         if qb:
-            new_files = qb.get_torrent_files(task.downloader_hash)
+            file_info = qb.get_torrent_files(task.downloader_hash)
+            new_files = [f["name"] for f in file_info]
             
     res = await rel.relocate(task, new_files_whitelist=new_files)
     
@@ -468,7 +469,8 @@ async def organize_purge_old(task_id: str):
         clients = get_clients()
         qb = clients.get("qb")
         if qb:
-            new_files = qb.get_torrent_files(task.downloader_hash)
+            file_info = qb.get_torrent_files(task.downloader_hash)
+            new_files = [f["name"] for f in file_info]
     
     if not new_files:
         return {"status": "failed", "message": "无法识别新任务文件，为防误删，停止清理"}
