@@ -1300,3 +1300,50 @@ backend/test_file_relocator_conflicts.py
 【结论】
 安全可控。这是第四处基于既有基线切入的小范围业务修复；当前整理落盘阶段与前序 dry-run / confirm 的目录语义终于对齐。
 ```
+
+### 本轮交付检查（2026-04-24：execute_plan 显式透传 action_plan）
+
+```text
+【本轮目标】
+修复 `FileRelocator._execute_plan()` 没有把已确认的 `action_plan` 继续透传给底层整理入口的问题，确保 confirm 阶段执行的就是前面 dry-run / confirm 已确认过的计划。
+
+【涉及文件】
+backend/file_relocator.py
+backend/routes/organize.py
+backend/test_file_relocator_conflicts.py
+backend/test_organize_full_action_plan.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+业务逻辑修复（小范围）
+
+【已完成】
+- 修复 `_execute_plan()`：当前会把 `action_plan=plan` 继续传给底层 `run_pipeline_fn`
+- 扩展 `routes/organize.py` 中 `organize_full()` 的签名，支持显式 `action_plan` 参数
+- 保持兼容：只有在显式 `action_plan` 为 `None` 时，才继续从 request body 读取 `"action_plan"`
+- 更新 `test_file_relocator_conflicts.py`，锁定 confirm 阶段会把原始 `plan` 继续传给底层整理入口
+- 新增 `test_organize_full_action_plan.py`，锁定显式 `action_plan` 场景不会再去读取 request body
+
+【未触碰】
+- 未修改 `backend/routes/relocate.py`
+- 未修改下载状态机、自动归位线程、真实 RecycleBin 落盘逻辑
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 执行链路回归：
+  - `cd backend && python -X utf8 -m pytest test_file_relocator_conflicts.py test_organize_full_action_plan.py -q`：6 passed，1 个既有 `.pytest_cache` 权限 warning
+- 相关基线回归：
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_download_manager_relocate_flow.py test_route_response_snapshot.py test_core_constants.py -q`：35 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【行为判断】
+- 是否行为等价：否，这是一次显式业务修复
+- 修复内容：让 confirm 阶段不再只是“重新跑一遍执行入口”，而是真正把已确认的 action plan 透传到底层整理逻辑
+- 风险范围：仅限 `confirm_replace()` → `_execute_plan()` → `organize_full()` 的参数透传链
+
+【未能证明的风险】
+- 尚未覆盖显式 `action_plan` 与 request body 同时存在且内容冲突时的真实调用场景。
+- 尚未覆盖真实 RecycleBin 落盘和真实线程竞争问题。
+
+【结论】
+安全可控。这是第五处基于既有基线切入的小范围业务修复；当前 confirm 阶段终于真正执行了“已确认的计划”，而不是隐式回退到 request body 或默认执行路径。
+```

@@ -292,7 +292,8 @@ def organize_structure(path: str, dry_run: bool = True):
 
 @router.post("/organize/full")
 async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
-                        request: Request = None, whitelist: List[str] = None):
+                        request: Request = None, whitelist: List[str] = None,
+                        action_plan: dict = None):
     """V3 入口 B：一键完全整理（两段式提交）。
     dry_run=True：推演模式，返回 Action Plan（严禁任何文件系统写操作）。
     dry_run=False：确权执行，接收前端回传的 action_plan 直接执行。
@@ -352,13 +353,13 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
     else:
         # ══ 确权执行模式：接收 Plan 直接执行 ══
         # 从 request body 获取 action_plan（前端回传）
-        action_plan = None
-        try:
-            body = await request.json() if request else None
-            if body and "action_plan" in body:
-                action_plan = body["action_plan"]
-        except Exception:
-            pass
+        if action_plan is None:
+            try:
+                body = await request.json() if request else None
+                if body and "action_plan" in body:
+                    action_plan = body["action_plan"]
+            except Exception:
+                pass
 
         result = {
             "status": "ok", "mode": "full_organize", "dry_run": False,

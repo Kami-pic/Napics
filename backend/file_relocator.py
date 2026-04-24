@@ -238,6 +238,7 @@ class FileRelocator:
                 path=execute_path,
                 dry_run=False,
                 use_ai=False,
+                action_plan=plan,
             )
 
             steps = result.get("steps", {})

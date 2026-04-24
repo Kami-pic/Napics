@@ -159,13 +159,14 @@ def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_
         recycle_bin = RecordingRecycleBin()
         calls = []
 
-        async def fake_run_pipeline(path, dry_run, use_ai, whitelist=None):
+        async def fake_run_pipeline(path, dry_run, use_ai, whitelist=None, action_plan=None):
             calls.append(
                 {
                     "path": path,
                     "dry_run": dry_run,
                     "use_ai": use_ai,
                     "whitelist": list(whitelist) if whitelist else None,
+                    "action_plan": action_plan,
                 }
             )
             return {"steps": {"rename": 1}}
@@ -195,6 +196,7 @@ def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_
                 "dry_run": False,
                 "use_ai": False,
                 "whitelist": None,
+                "action_plan": plan,
             }
         ]
         assert recycle_bin.paths == [str(old_file)]
@@ -214,13 +216,14 @@ def test_confirm_replace_prefers_save_path_for_execute_plan():
 
         calls = []
 
-        async def fake_run_pipeline(path, dry_run, use_ai, whitelist=None):
+        async def fake_run_pipeline(path, dry_run, use_ai, whitelist=None, action_plan=None):
             calls.append(
                 {
                     "path": path,
                     "dry_run": dry_run,
                     "use_ai": use_ai,
                     "whitelist": list(whitelist) if whitelist else None,
+                    "action_plan": action_plan,
                 }
             )
             return {"steps": {"rename": 1}}
@@ -249,6 +252,7 @@ def test_confirm_replace_prefers_save_path_for_execute_plan():
                 "dry_run": False,
                 "use_ai": False,
                 "whitelist": None,
+                "action_plan": plan,
             }
         ]
 
