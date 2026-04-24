@@ -142,6 +142,58 @@ def test_organize_dry_run_returns_tree_snapshot_and_whitelist(monkeypatch):
     assert snapshot.list_lengths["plan_tree"] == 3
 
 
+def test_organize_dry_run_falls_back_to_action_plan_when_qb_file_list_missing(monkeypatch):
+    task = _make_task(downloader_hash="")
+    dm = FakeDownloadManager(task)
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(
+            success=False,
+            status="awaiting_confirm",
+            action_plan={
+                "plan": [
+                    {
+                        "source_path": r"C:\library\Show\[Group] Show S01 2160p\Show.S01E02.2160p.mkv",
+                        "original_filename": "Show.S01E02.2160p.mkv",
+                        "target_filename": "Show.S01E02.2160p.mkv",
+                        "target_season_dir": "Season 01",
+                        "mapped": {"season": 1, "episode": 2},
+                        "actions": ["write_episode_nfo"],
+                    }
+                ]
+            },
+            coexist_pairs=[
+                CoexistPair(
+                    new_file=r"C:\library\Show\Season 01\Show.S01E02.2160p.mkv",
+                    old_file=r"C:\library\Show\Season 01\Show.S01E01.1080p.mkv",
+                    old_size_gb=1.5,
+                    category="video",
+                    is_folder=False,
+                )
+            ],
+        )
+    )
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+
+    body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
+
+    assert relocator.relocate_calls == [{"task_id": "task-1", "whitelist": None}]
+    assert body["status"] == "awaiting_confirm"
+    assert body["new_files_all"] == [{"name": "[Group] Show S01 2160p\\Show.S01E02.2160p.mkv", "size": 0}]
+    assert body["new_tree"] == [
+        {
+            "name": "[Group] Show S01 2160p",
+            "type": "dir",
+            "size_bytes": 0,
+            "children": [{"name": "Show.S01E02.2160p.mkv", "type": "video", "size_bytes": 0}],
+        }
+    ]
+
+
 def test_organize_execute_injects_whitelist_before_confirm(monkeypatch):
     task = _make_task()
     dm = FakeDownloadManager(task)

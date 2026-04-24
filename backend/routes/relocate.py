@@ -359,9 +359,10 @@ async def organize_dry_run(req: RelocateRequest):
             # 🛡️ 兜底逻辑：如果 qB 没给文件列表，从推演计划中提取已识别的视频
             display_new_files = file_info_list
             if not display_new_files and res.action_plan:
+                fallback_plan = res.action_plan.get("plan", []) if isinstance(res.action_plan, dict) else []
                 display_new_files = [
                     {"name": os.path.relpath(item["source_path"], task.save_path), "size": 0}
-                    for item in res.action_plan
+                    for item in fallback_plan
                 ]
             
             # 构建三栏树状数据

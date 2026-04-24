@@ -1165,3 +1165,49 @@ backend/test_relocate_routes.py
 【结论】
 安全可控。这是“下载→归位闭环”上第一处基于现有基线切入的小范围业务修复，回归结果稳定，后续可继续按同样节奏推进。
 ```
+
+### 本轮交付检查（2026-04-24：relocate dry-run 的 action_plan fallback 修复）
+
+```text
+【本轮目标】
+修复 `/organize/dry-run` 在 qB 文件列表缺失时的兜底分支，让它能正确从 `action_plan["plan"]` 回推 `new_files_all` / `new_tree`，而不是错误迭代整个 `action_plan` 字典。
+
+【涉及文件】
+backend/routes/relocate.py
+backend/test_relocate_routes.py
+
+【改动性质】
+业务逻辑修复（小范围）
+
+【已完成】
+- 修复 `routes/relocate.py` 中 dry-run fallback 分支
+- 当 qB 文件列表为空但 `res.action_plan` 存在时，当前会从 `action_plan["plan"]` 提取 `source_path`
+- 新增 `test_organize_dry_run_falls_back_to_action_plan_when_qb_file_list_missing`
+- 锁定 fallback 场景下：
+  - `relocate()` 仍以 `whitelist=None` 执行
+  - `new_files_all` 会从 `source_path` 回推出相对路径
+  - `new_tree` 会按该相对路径构建目录树
+
+【未触碰】
+- 未修改 `backend/file_relocator.py`
+- 未修改下载状态机、自动归位线程、真实 RecycleBin 落盘逻辑
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 路由回归：
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py -q`：7 passed，1 个既有 `.pytest_cache` 权限 warning
+- 相关基线回归：
+  - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py test_file_relocator_conflicts.py test_route_response_snapshot.py test_core_constants.py -q`：31 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【行为判断】
+- 是否行为等价：否，这是一次显式业务修复
+- 修复内容：把原本会在 fallback 场景出错的 `action_plan` 迭代改成正确读取 `action_plan["plan"]`
+- 风险范围：仅限 `/organize/dry-run` 在“qB 文件列表缺失 + action_plan 存在”的兜底路径
+
+【未能证明的风险】
+- 尚未覆盖 `action_plan["plan"]` 内部项缺少 `source_path` 字段时的异常兼容性。
+- 尚未覆盖真实 RecycleBin 落盘和真实线程竞争问题。
+
+【结论】
+安全可控。这是第二处基于既有基线切入的小范围业务修复；当前 dry-run fallback 不再依赖 qB 文件列表才能构建最小预览。
+```
