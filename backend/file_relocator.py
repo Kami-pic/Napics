@@ -175,6 +175,8 @@ class FileRelocator:
     async def confirm_replace(self, task: DownloadTask, plan: dict) -> RelocateResult:
         """用户确认替换：旧资源入回收站 -> 新资源整理归档。"""
         whitelist = plan.get("whitelist", [])
+        if not whitelist:
+            whitelist = _scan_disk_for_whitelist(task.save_path)
         conflicts = self._detect_conflicts_v2(plan, task.save_path, whitelist)
 
         # 旧文件入回收站

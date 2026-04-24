@@ -3,9 +3,11 @@
 import os
 import shutil
 import uuid
+import asyncio
 from pathlib import Path
 
 from file_relocator import CoexistPair, FileRelocator
+from download_manager import DownloadTask
 
 
 class RecordingRecycleBin:
@@ -142,3 +144,57 @@ def test_recycle_old_files_records_video_sidecars_and_safe_dir_nfos():
         assert str(unused_clearlogo) not in moved_paths
 
     _with_temp_dir("relocator_recycle_sidecars", run)
+
+
+def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_it():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        old_file = save_path / "Show.S01E01.1080p.mkv"
+        new_file = save_path / "[Group] Show S01 2160p" / "Show.S01E02.2160p.mkv"
+        _touch(old_file)
+        _touch(new_file)
+
+        recycle_bin = RecordingRecycleBin()
+        calls = []
+
+        async def fake_run_pipeline(path, dry_run, use_ai, whitelist=None):
+            calls.append(
+                {
+                    "path": path,
+                    "dry_run": dry_run,
+                    "use_ai": use_ai,
+                    "whitelist": list(whitelist) if whitelist else None,
+                }
+            )
+            return {"steps": {"rename": 1}}
+
+        relocator = FileRelocator(recycle_bin=recycle_bin, run_pipeline_fn=fake_run_pipeline)
+        task = DownloadTask(
+            id="task-1",
+            save_path=str(save_path),
+            download_dir=str(save_path / "[Group] Show S01 2160p"),
+        )
+        plan = {
+            "plan": [
+                {
+                    "target_path": str(save_path / "Season 01" / "Show.S01E02.2160p.mkv"),
+                    "mapped": {"season": 1, "episode": 2},
+                }
+            ]
+        }
+
+        result = asyncio.run(relocator.confirm_replace(task, plan))
+
+        assert result.success is True
+        assert result.status == "archived"
+        assert calls == [
+            {
+                "path": str(task.download_dir),
+                "dry_run": False,
+                "use_ai": False,
+                "whitelist": None,
+            }
+        ]
+        assert recycle_bin.paths == [str(old_file)]
+
+    _with_temp_dir("relocator_confirm_replace_fallback", run)

@@ -1211,3 +1211,48 @@ backend/test_relocate_routes.py
 【结论】
 安全可控。这是第二处基于既有基线切入的小范围业务修复；当前 dry-run fallback 不再依赖 qB 文件列表才能构建最小预览。
 ```
+
+### 本轮交付检查（2026-04-24：confirm_replace 的白名单兜底修复）
+
+```text
+【本轮目标】
+修复 `FileRelocator.confirm_replace()` 在 plan 未携带 `whitelist` 时与 dry-run 阶段行为不一致的问题，使确认替换阶段也能沿用磁盘扫描白名单兜底。
+
+【涉及文件】
+backend/file_relocator.py
+backend/test_file_relocator_conflicts.py
+
+【改动性质】
+业务逻辑修复（小范围）
+
+【已完成】
+- 修复 `confirm_replace()`：当 `plan["whitelist"]` 为空时，当前会回退到 `_scan_disk_for_whitelist(task.save_path)`
+- 新增 `test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_it`
+- 锁定 fallback 场景下：
+  - `confirm_replace()` 会先通过磁盘扫描识别新资源白名单
+  - 旧资源仍会进入 `_recycle_old_files()`
+  - 随后继续调用 `_execute_plan()`
+
+【未触碰】
+- 未修改 `backend/routes/relocate.py`
+- 未修改下载状态机、自动归位线程、真实 RecycleBin 落盘逻辑
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 冲突探测回归：
+  - `cd backend && python -X utf8 -m pytest test_file_relocator_conflicts.py -q`：4 passed，1 个既有 `.pytest_cache` 权限 warning
+- 相关基线回归：
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_download_manager_relocate_flow.py test_route_response_snapshot.py test_core_constants.py -q`：35 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【行为判断】
+- 是否行为等价：否，这是一次显式业务修复
+- 修复内容：让 confirm 阶段和 dry-run 阶段使用一致的白名单兜底策略，避免 qB 文件列表缺失时两阶段判定来源不一致
+- 风险范围：仅限 `confirm_replace()` 在 plan 缺少 whitelist 的 fallback 路径
+
+【未能证明的风险】
+- 尚未覆盖磁盘扫描误判新资源目录的真实环境案例。
+- 尚未覆盖真实 RecycleBin 落盘和真实线程竞争问题。
+
+【结论】
+安全可控。这是第三处基于既有基线切入的小范围业务修复；当前 confirm 阶段不再强依赖 qB 白名单才能延续 dry-run 的判定结果。
+```
