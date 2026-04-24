@@ -181,7 +181,7 @@ class RecycleBin:
     def _save(self):
         path = os.path.join(self.recycle_dir, RECYCLE_META_FILE) if self.recycle_dir else RECYCLE_META_FILE
         try:
-            data = [e.dict() for e in self.entries]
+            data = [e.model_dump() for e in self.entries]
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:

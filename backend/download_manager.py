@@ -671,7 +671,7 @@ class DownloadManager:
         path = os.path.join(self.base_path, TASK_FILE)
         try:
             with self._lock:
-                data = [t.dict() for t in self.tasks]
+                data = [t.model_dump() for t in self.tasks]
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:

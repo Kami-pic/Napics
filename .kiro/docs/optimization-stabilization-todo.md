@@ -627,6 +627,7 @@ backend/test_route_response_snapshot.py
 为 `file_relocator.py` 的冲突探测补最小行为保护测试，先记录当前行为基线，不修改生产逻辑。
 
 【涉及文件】
+backend/recycle_bin.py
 backend/test_file_relocator_conflicts.py
 .kiro/docs/optimization-stabilization-todo.md
 
@@ -1402,4 +1403,261 @@ backend/test_organize_full_action_plan.py
 
 【结论】
 安全可控。这是第五处基于既有基线切入的小范围业务修复；当前 confirm 阶段终于真正执行了“已确认的计划”，而不是隐式回退到 request body 或默认执行路径。
+```
+
+### 本轮交付检查（2026-04-24：file_relocator 真实 RecycleBin 落盘测试补强）
+
+```text
+【本轮目标】
+继续沿“下载→归位闭环”补隔离测试，把 `file_relocator.py` 的旧资源回收从“只记录提交路径”推进到“真实回收站目录搬运 + 元数据落盘”验证，不修改业务逻辑。
+
+【涉及文件】
+backend/test_file_relocator_conflicts.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+测试补强
+
+【已完成】
+- 为 `_recycle_old_files()` 新增真实 `RecycleBin` 集成式隔离测试
+- 锁定旧视频、同名 episode NFO、目录级 `season.nfo` 会被真实移动出原目录
+- 锁定回收站目录下会生成带 `task_id` 前缀的回收文件
+- 锁定 `recycle_bin.json` 会真实落盘，并能在重新加载 `RecycleBin` 后恢复条目
+- 锁定落盘后的 `original_path` / `recycle_path` / `task_id` 映射与当前实现一致
+
+【未触碰】
+- 未修改 `backend/file_relocator.py`
+- 未修改下载状态机、自动归位线程、真实 qB / Alist 客户端逻辑
+- 未覆盖真实 NAS、真实线程竞争、真实 organize 落盘执行
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 静态检查：新增测试在临时目录内使用真实 `RecycleBin` 实例，不依赖 fake recycle bin，也不访问真实 NAS
+- 兼容性清理：将 `RecycleBin._save()` 从 Pydantic V1 `dict()` 切到 `model_dump()`，消除本轮测试新增暴露的废弃 warning，行为不变
+- 搜索检查：本轮不涉及搜索链路行为
+- 测试结果：
+  - `cd backend && python -X utf8 -m pytest test_file_relocator_conflicts.py -q`：6 passed，1 个既有 `.pytest_cache` 权限 warning
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_download_manager_relocate_flow.py test_organize_full_action_plan.py test_route_response_snapshot.py test_core_constants.py -q`：36 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【未能证明的风险】
+- 仍未证明真实线程并发竞争下 `_auto_relocate()` 的时序表现。
+- 仍未覆盖真实 NAS 上的 execute 级落盘与封箱结果。
+- 仍未覆盖真实 qB / Alist 长时间卡住或异常返回结构的长尾情况。
+- `.pytest_cache` 权限 warning 仍是既有 Windows 环境噪声，本轮未处理其根因。
+
+【风险检查】
+- 是否改业务逻辑：否
+- 是否改接口字段：否
+- 是否改路由行为：否
+- 是否影响主链路：否（仅新增隔离测试）
+
+【结论】
+安全。回收站这段不再只有 fake 记录证据，已经补到“真实文件移动 + 元数据落盘”的临时目录级验证；“下载→归位闭环”剩余未证明风险继续集中在线程时序、真实 NAS execute 和真实下载器长尾环境。
+```
+
+### 本轮交付检查（2026-04-24：download_manager 本地转移落盘测试补强）
+
+```text
+【本轮目标】
+继续沿“下载→归位闭环”补隔离测试，把 `download_manager.py` 中“下载完成后把文件从沙盒转到 `save_path`”这段补成真实文件系统级证据，不修改业务逻辑。
+
+【涉及文件】
+backend/test_download_manager_relocate_flow.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+测试补强
+
+【已完成】
+- 为 `_relocate_to_save_path()` 新增真实文件移动测试
+- 锁定视频文件和字幕文件会从 `download_dir` 真实移动到 `save_path`
+- 锁定存在实际移动时，任务状态会变成 `completed`
+- 锁定沙盒目录清空后会被删除，并触发一次 `_trigger_local_refresh(save_path)`
+- 为 `_relocate_to_save_path()` 新增同名目标跳过测试
+- 锁定目标文件已存在时当前不会覆盖旧文件，也不会触发局部刷新
+- 锁定“全是同名冲突、没有任何文件被移动”时当前会保留沙盒目录，任务状态维持原状
+
+【未触碰】
+- 未修改 `backend/download_manager.py`
+- 未修改 `backend/file_relocator.py`
+- 未修改 `backend/recycle_bin.py`
+- 未修改下载器状态机、自动归位线程、真实 qB / Alist 客户端逻辑
+- 未覆盖真实 NAS、真实线程竞争、真实 organize execute 落盘
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 静态检查：新增测试在临时目录里真实创建 `save_path/download_dir`，直接验证文件搬运、沙盒清理和同名跳过，不依赖 mock 文件系统
+- 搜索检查：本轮不涉及搜索链路行为
+- 测试结果：
+  - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py -q`：24 passed，1 个既有 `.pytest_cache` 权限 warning
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_file_relocator_conflicts.py test_organize_full_action_plan.py test_route_response_snapshot.py test_core_constants.py -q`：20 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【未能证明的风险】
+- 仍未证明真实线程并发竞争下 `_auto_relocate()` 的时序表现。
+- 仍未覆盖真实 NAS 上的 `organize_full` execute 级落盘与封箱结果。
+- 仍未覆盖真实 qB / Alist 长时间卡住或异常返回结构的长尾情况。
+- `.pytest_cache` 权限 warning 仍是既有 Windows 环境噪声，本轮未处理其根因。
+
+【风险检查】
+- 是否改业务逻辑：否
+- 是否改接口字段：否
+- 是否改路由行为：否
+- 是否影响主链路：否（仅新增隔离测试）
+
+【结论】
+安全。“下载完成→本地转移→局部刷新”这段已经从状态层验证推进到真实临时目录落盘验证；下载→归位闭环剩余未证明风险继续集中在真实线程竞争、真实 NAS execute 和真实下载器长尾环境。
+```
+
+### 本轮交付检查（2026-04-24：download_manager 持久化重载与升级订阅完成态测试补强）
+
+```text
+【本轮目标】
+继续沿“下载→归位闭环”补隔离测试，把 `download_manager.py` 中“任务队列落盘后重载”与“升级型电影订阅下载完成后的收口状态”补成明确证据；不改业务规则，只做兼容性清理。
+
+【涉及文件】
+backend/download_manager.py
+backend/test_download_manager_relocate_flow.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+测试补强
+
+【已完成】
+- 为 `DownloadManager._write_json()` → `_load()` 新增真实 JSON 往返测试
+- 锁定任务写入磁盘后重新创建 `DownloadManager` 时，`status/progress/phase/save_path/download_dir` 等关键字段不会漂移
+- 为 `_notify_subscription_complete()` 新增升级型电影订阅测试
+- 锁定 `purpose=upgrade` 且 `type=movie` 的订阅在下载完成时会调用 `mgr.update(..., {"state": "completed", "note": "洗版完成，已下载更高质量版本"})`
+- 锁定升级型电影订阅当前发送的是 `upgrade_complete` 通知，而不是普通 `download_complete`
+- 兼容性清理：把 `DownloadTask.dict()` 切到 `model_dump()`，消除潜在 Pydantic V2 废弃风险，行为不变
+
+【未触碰】
+- 未修改 `backend/file_relocator.py`
+- 未修改 `backend/recycle_bin.py`
+- 未修改下载器状态机、自动归位线程、真实 qB / Alist 客户端逻辑
+- 未覆盖真实 NAS、真实线程竞争、真实 organize execute 落盘
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 静态检查：新增测试在临时目录内真实写入 `download_tasks.json` 并重载，不依赖 fake 持久层
+- 搜索检查：本轮不涉及搜索链路行为
+- 测试结果：
+  - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py -q`：26 passed，1 个既有 `.pytest_cache` 权限 warning
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_file_relocator_conflicts.py test_organize_full_action_plan.py test_route_response_snapshot.py test_core_constants.py -q`：20 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【未能证明的风险】
+- 仍未证明真实线程并发竞争下 `_auto_relocate()` 的时序表现。
+- 仍未覆盖真实 NAS 上的 `organize_full` execute 级落盘与封箱结果。
+- 仍未覆盖真实 qB / Alist 长时间卡住或异常返回结构的长尾情况。
+- `.pytest_cache` 权限 warning 仍是既有 Windows 环境噪声，本轮未处理其根因。
+
+【风险检查】
+- 是否改业务逻辑：否
+- 是否改接口字段：否
+- 是否改路由行为：否
+- 是否影响主链路：否（仅新增隔离测试 + 等价兼容性清理）
+
+【结论】
+安全。下载闭环的“运行中状态”和“落盘后重载状态”现在都有了明确证据，升级型电影订阅的收口状态也被锁住；剩余未证明风险继续集中在线程竞争、真实 NAS execute 和真实下载器长尾环境。
+```
+
+### 本轮交付检查（2026-04-24：_auto_relocate 真实双线程观测测试补强）
+
+```text
+【本轮目标】
+继续沿“下载→归位闭环”补隔离测试，把 `_auto_relocate()` 从“假线程顺序执行”推进到“真实后台线程并发启动”的最小观测证据；不修改自动归位实现。
+
+【涉及文件】
+backend/test_download_manager_relocate_flow.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+测试补强
+
+【已完成】
+- 为 `_auto_relocate()` 新增真实双线程观测测试
+- 使用真实 `threading.Thread` 启动两个不同任务的自动归位线程，不再把线程替换成同步执行桩
+- 锁定两个任务都会分别进入 `relocate()`，不会因为单线程串行 mock 而掩盖线程创建问题
+- 锁定两次归位分别运行在 `relocate-task-1`、`relocate-task-2` 线程名下
+- 锁定“无冲突归档”并发场景下当前不会额外触发 `confirm_replace()`，也不会误更新订阅路径
+
+【未触碰】
+- 未修改 `backend/download_manager.py`
+- 未修改 `backend/file_relocator.py`
+- 未修改 `backend/recycle_bin.py`
+- 未修改下载器状态机、真实 qB / Alist 客户端逻辑
+- 未覆盖真实 NAS、真实 organize execute 落盘、真实文件系统级竞态冲突
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 静态检查：新增测试使用真实后台线程 + `threading.Event` 做最小并发观测，不依赖 fake Thread
+- 搜索检查：本轮不涉及搜索链路行为
+- 测试结果：
+  - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py -q`：27 passed，1 个既有 `.pytest_cache` 权限 warning
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_file_relocator_conflicts.py test_organize_full_action_plan.py test_route_response_snapshot.py test_core_constants.py -q`：20 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【未能证明的风险】
+- 仍未证明真实 NAS / 真实下载文件目录下的文件系统竞态是否会影响自动归位结果。
+- 仍未覆盖真实 `confirm_replace()` 与真实 organize execute 在并发线程下的交叠时序。
+- 仍未覆盖真实 qB / Alist 长时间卡住或异常返回结构的长尾情况。
+- `.pytest_cache` 权限 warning 仍是既有 Windows 环境噪声，本轮未处理其根因。
+
+【风险检查】
+- 是否改业务逻辑：否
+- 是否改接口字段：否
+- 是否改路由行为：否
+- 是否影响主链路：否（仅新增隔离测试）
+
+【结论】
+安全。`_auto_relocate()` 现在至少有了真实后台双线程启动与进入归位逻辑的观测证据；下载→归位闭环剩余未证明风险继续集中在真实文件系统级竞态、真实 NAS execute 和真实下载器长尾环境。
+```
+
+### 本轮交付检查（2026-04-24：_trigger_local_refresh 真实后台线程测试补强）
+
+```text
+【本轮目标】
+继续沿“下载→归位闭环”补隔离测试，把 `_trigger_local_refresh()` 从“只验证调用发生”推进到“真实后台线程里只写入新增媒体库项”的观测证据；不修改局部刷新实现。
+
+【涉及文件】
+backend/test_download_manager_relocate_flow.py
+.kiro/docs/optimization-stabilization-todo.md
+
+【改动性质】
+测试补强
+
+【已完成】
+- 为 `_trigger_local_refresh()` 新增真实后台线程测试
+- 使用真实线程 + `threading.Event` 等待 `save_library()` 被调用，而不是把线程改成同步桩
+- 锁定当前会读取已有媒体库，再把 `scanner.scan_folder(save_path)` 中“之前不存在的 file_path”追加进去
+- 锁定扫描结果里已存在于媒体库的 `file_path` 不会重复写回
+- 锁定新增条目时当前会走到 `ConfigManager.save_library()`，而不是只停留在内存判断
+
+【未触碰】
+- 未修改 `backend/download_manager.py`
+- 未修改 `backend/file_relocator.py`
+- 未修改 `backend/recycle_bin.py`
+- 未修改真实 qB / Alist 客户端逻辑
+- 未覆盖真实 NAS、真实 organize execute 落盘、真实下载器长尾异常
+- 未修改前端代码、UI、样式、design token
+
+【验证结果】
+- 静态检查：新增测试通过 fake `ConfigManager/scanner` + 真实后台线程锁定局部刷新写库行为，不依赖真实媒体库文件
+- 搜索检查：本轮不涉及搜索链路行为
+- 测试结果：
+  - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py -q`：28 passed，1 个既有 `.pytest_cache` 权限 warning
+  - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_file_relocator_conflicts.py test_organize_full_action_plan.py test_route_response_snapshot.py test_core_constants.py -q`：20 passed，1 个既有 `.pytest_cache` 权限 warning
+
+【未能证明的风险】
+- 仍未覆盖真实 NAS 上的媒体库 JSON 写入竞争、真实扫描结果规模和真实文件系统延迟。
+- 仍未覆盖真实 qB / Alist 长时间卡住或异常返回结构的长尾情况。
+- 仍未覆盖真实 `confirm_replace()` 与真实 organize execute 在并发线程下的交叠时序。
+- `.pytest_cache` 权限 warning 仍是既有 Windows 环境噪声，本轮未处理其根因。
+
+【风险检查】
+- 是否改业务逻辑：否
+- 是否改接口字段：否
+- 是否改路由行为：否
+- 是否影响主链路：否（仅新增隔离测试）
+
+【结论】
+安全。“下载完成→本地转移→后台局部刷新”这段现在已经补到真实后台线程下的写库观测证据；下载→归位闭环剩余未证明风险继续集中在真实 NAS 级写入竞争、真实 execute 时序和真实下载器长尾环境。
 ```

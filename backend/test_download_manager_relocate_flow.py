@@ -2,7 +2,10 @@
 
 import sys
 import threading
+import shutil
+import uuid
 from types import SimpleNamespace
+from pathlib import Path
 
 import requests
 
@@ -42,6 +45,36 @@ class FakeRelocator:
     async def confirm_replace(self, task, plan):
         self.confirm_calls.append({"task_id": task.id, "plan": dict(plan)})
         return self.confirm_result
+
+
+class BlockingConcurrentRelocator:
+    def __init__(self, expected_calls):
+        self.expected_calls = expected_calls
+        self.relocate_calls = []
+        self.thread_names = []
+        self.confirm_calls = []
+        self.all_started = threading.Event()
+        self.release = threading.Event()
+        self.all_finished = threading.Event()
+        self._lock = threading.Lock()
+        self._finished = 0
+
+    async def relocate(self, task):
+        with self._lock:
+            self.relocate_calls.append(task.id)
+            self.thread_names.append(threading.current_thread().name)
+            if len(self.relocate_calls) == self.expected_calls:
+                self.all_started.set()
+        self.release.wait(timeout=2)
+        with self._lock:
+            self._finished += 1
+            if self._finished == self.expected_calls:
+                self.all_finished.set()
+        return RelocateResult(success=True, status="archived", action_plan={"plan": []})
+
+    async def confirm_replace(self, task, plan):
+        self.confirm_calls.append({"task_id": task.id, "plan": dict(plan)})
+        return RelocateResult(success=True, status="archived", action_plan={"plan": []})
 
 
 class ImmediateThread:
@@ -103,6 +136,15 @@ class FakeAlistClient:
     def __init__(self):
         self.api_url = "http://alist"
         self.headers = {"Authorization": "token"}
+
+
+def _with_temp_dir(name, test_fn):
+    tmp_dir = Path.cwd() / f"{name}_{uuid.uuid4().hex[:8]}"
+    tmp_dir.mkdir()
+    try:
+        test_fn(tmp_dir)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def _make_task(**overrides):
@@ -293,6 +335,43 @@ def test_auto_relocate_relocates_after_recovering_missing_local_path(monkeypatch
     assert relocator.confirm_calls == []
 
 
+def test_auto_relocate_runs_two_tasks_on_real_threads_without_serializing(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        title="Show",
+        year=2024,
+        tmdb_id=1,
+        local_file_path="",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    relocator = BlockingConcurrentRelocator(expected_calls=2)
+
+    fake_shared = SimpleNamespace(
+        _get_file_relocator=lambda: relocator,
+        _get_sub_manager=lambda: mgr,
+        media_matcher=SimpleNamespace(match=lambda *_args, **_kwargs: ("missing", "")),
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task1 = _make_task(id="task-1")
+    task2 = _make_task(id="task-2", downloader_hash="hash-2")
+
+    dm._auto_relocate(task1, sub)
+    dm._auto_relocate(task2, sub)
+
+    assert relocator.all_started.wait(1.5) is True
+    assert set(relocator.relocate_calls) == {"task-1", "task-2"}
+    assert set(relocator.thread_names) == {"relocate-task-1", "relocate-task-2"}
+
+    relocator.release.set()
+
+    assert relocator.all_finished.wait(1.5) is True
+    assert relocator.confirm_calls == []
+    assert mgr.update_calls == []
+
+
 def test_sync_progress_triggers_relocate_and_subscription_callback_for_completed_qb(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(status="downloading", channel="qb")
@@ -334,6 +413,178 @@ def test_sync_progress_triggers_relocate_without_subscription_callback_for_compl
         ("relocate", "task-1"),
         ("save_now", None),
     ]
+
+
+def test_relocate_to_save_path_moves_files_and_cleans_empty_sandbox(monkeypatch):
+    def run(tmp_dir):
+        save_path = tmp_dir / "library" / "Show"
+        download_dir = tmp_dir / "downloads" / "task-1"
+        moved_file = download_dir / "Show.S01E01.2160p.mkv"
+        subtitle_file = download_dir / "Show.S01E01.2160p.srt"
+        download_dir.mkdir(parents=True, exist_ok=True)
+        moved_file.write_bytes(b"video")
+        subtitle_file.write_text("1\n00:00:01,000 --> 00:00:02,000\nhello\n", encoding="utf-8")
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        task = _make_task(
+            status="downloading",
+            save_path=str(save_path),
+            download_dir=str(download_dir),
+        )
+        refresh_calls = []
+        monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+
+        dm._relocate_to_save_path(task)
+
+        assert task.status == "completed"
+        assert (save_path / "Show.S01E01.2160p.mkv").read_bytes() == b"video"
+        assert (save_path / "Show.S01E01.2160p.srt").exists()
+        assert not download_dir.exists()
+        assert refresh_calls == [str(save_path)]
+
+    _with_temp_dir("download_manager_relocate_move", run)
+
+
+def test_relocate_to_save_path_skips_existing_destination_and_keeps_sandbox(monkeypatch):
+    def run(tmp_dir):
+        save_path = tmp_dir / "library" / "Show"
+        download_dir = tmp_dir / "downloads" / "task-1"
+        existing_file = save_path / "Show.S01E01.2160p.mkv"
+        duplicate_file = download_dir / "Show.S01E01.2160p.mkv"
+        save_path.mkdir(parents=True, exist_ok=True)
+        download_dir.mkdir(parents=True, exist_ok=True)
+        existing_file.write_bytes(b"old")
+        duplicate_file.write_bytes(b"new")
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        task = _make_task(
+            status="downloading",
+            save_path=str(save_path),
+            download_dir=str(download_dir),
+        )
+        refresh_calls = []
+        monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+
+        dm._relocate_to_save_path(task)
+
+        assert task.status == "downloading"
+        assert existing_file.read_bytes() == b"old"
+        assert duplicate_file.read_bytes() == b"new"
+        assert download_dir.exists()
+        assert refresh_calls == []
+
+    _with_temp_dir("download_manager_relocate_skip_duplicate", run)
+
+
+def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
+    def run(tmp_dir):
+        save_event = threading.Event()
+        saved_libraries = []
+        existing_path = str(tmp_dir / "library" / "Show" / "Show.S01E01.1080p.mkv")
+        new_path = str(tmp_dir / "library" / "Show" / "Show.S01E02.2160p.mkv")
+
+        class FakeConfigManagerForRefresh:
+            def load_library(self):
+                return [{"file_path": existing_path, "title": "Show"}]
+
+            def save_library(self, library):
+                saved_libraries.append(list(library))
+                save_event.set()
+
+        fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
+        fake_scanner = SimpleNamespace(
+            scan_folder=lambda path: [
+                {"file_path": existing_path, "title": "Show"},
+                {"file_path": new_path, "title": "Show"},
+            ]
+        )
+
+        monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
+        monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+
+        assert save_event.wait(1.5) is True
+        assert len(saved_libraries) == 1
+        assert saved_libraries[0] == [
+            {"file_path": existing_path, "title": "Show"},
+            {"file_path": new_path, "title": "Show"},
+        ]
+
+    _with_temp_dir("download_manager_local_refresh_thread", run)
+
+
+def test_write_json_and_load_round_trip_tasks_from_disk():
+    def run(tmp_dir):
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=str(tmp_dir))
+        task = _make_task(
+            id="task-persist",
+            status="archived",
+            progress=1.0,
+            phase="local_sync",
+            error="",
+            created_at="2026-04-24T10:00:00",
+            updated_at="2026-04-24T10:05:00",
+        )
+        dm.tasks = [task]
+
+        dm._write_json()
+
+        reloaded = DownloadManager(qb_client=None, alist_client=None, base_path=str(tmp_dir))
+        loaded = reloaded.get_task("task-persist")
+
+        assert loaded is not None
+        assert loaded.status == "archived"
+        assert loaded.progress == 1.0
+        assert loaded.phase == "local_sync"
+        assert loaded.save_path == task.save_path
+        assert loaded.download_dir == task.download_dir
+
+    _with_temp_dir("download_manager_persist_round_trip", run)
+
+
+def test_notify_subscription_complete_marks_upgrade_movie_completed(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        best_version=False,
+        purpose="upgrade",
+        type="movie",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    notifications = []
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: mgr)
+    fake_notification_service = SimpleNamespace(
+        add_notification=lambda *_args: notifications.append(_args[2:])
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+
+    dm._notify_subscription_complete(_make_task(subscription_episode=None, category_hint="movie"))
+
+    assert mgr.download_complete_calls == [
+        {
+            "subscription_id": "sub-1",
+            "episode": None,
+            "info_hash": "hash-1",
+            "title": "Show",
+            "quality_tag": "",
+            "source": "movie",
+            "channel": "qb",
+            "task_id": "task-1",
+        }
+    ]
+    assert mgr.update_calls == [
+        {
+            "sub_id": "sub-1",
+            "payload": {"state": "completed", "note": "洗版完成，已下载更高质量版本"},
+        }
+    ]
+    assert notifications == [("upgrade_complete", "洗版完成，已下载更高质量版本")]
 
 
 def test_sync_qb_progress_marks_completed_for_pausedup_state():

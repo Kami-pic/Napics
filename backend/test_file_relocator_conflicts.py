@@ -8,6 +8,7 @@ from pathlib import Path
 
 from file_relocator import CoexistPair, FileRelocator
 from download_manager import DownloadTask
+from recycle_bin import RecycleBin
 
 
 class RecordingRecycleBin:
@@ -146,6 +147,50 @@ def test_recycle_old_files_records_video_sidecars_and_safe_dir_nfos():
         assert str(unused_clearlogo) not in moved_paths
 
     _with_temp_dir("relocator_recycle_sidecars", run)
+
+
+def test_recycle_old_files_moves_files_into_real_recycle_bin_and_persists_metadata():
+    def run(tmp_dir):
+        show_dir = tmp_dir / "Show"
+        season_dir = show_dir / "Season 01"
+        recycle_dir = tmp_dir / ".recycle"
+        old_video = season_dir / "Show.S01E01.1080p.mkv"
+        sidecar_nfo = season_dir / "Show.S01E01.1080p.nfo"
+        season_nfo = season_dir / "season.nfo"
+
+        for path in [old_video, sidecar_nfo, season_nfo]:
+            _touch(path)
+
+        recycle_bin = RecycleBin(str(recycle_dir), retention_days=7)
+        relocator = FileRelocator(recycle_bin=recycle_bin)
+
+        result = relocator._recycle_old_files(
+            CoexistPair(
+                new_file=str(show_dir / "Season 01" / "Show.S01E02.2160p.mkv"),
+                old_file=str(old_video),
+            ),
+            task_id="task-1",
+        )
+
+        assert result is True
+        assert not old_video.exists()
+        assert not sidecar_nfo.exists()
+        assert not season_nfo.exists()
+
+        reloaded = RecycleBin(str(recycle_dir), retention_days=7)
+        entries = {entry.original_path: entry for entry in reloaded.list_entries()}
+
+        assert set(entries) == {str(old_video), str(sidecar_nfo), str(season_nfo)}
+        for original_path, entry in entries.items():
+            assert Path(entry.recycle_path).exists()
+            assert Path(entry.recycle_path).parent == recycle_dir
+            assert Path(entry.recycle_path).name.startswith("task-1_")
+            assert Path(entry.recycle_path).name.endswith(Path(original_path).name)
+            assert entry.task_id == "task-1"
+
+        assert (recycle_dir / "recycle_bin.json").exists()
+
+    _with_temp_dir("relocator_real_recycle_bin", run)
 
 
 def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_it():
