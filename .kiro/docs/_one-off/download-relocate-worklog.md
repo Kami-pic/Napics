@@ -64,6 +64,7 @@
   - 登录失败 / info 非 200 -> `unknown`
   - info 请求超时 / payload 非法 -> `unknown`
   - `organized=True` 时跳过 qB 查询
+  - 提交成功且拿到新 hash / 提交成功但暂未拿到 hash / 提交失败 / 提交抛异常
 
 - Alist 状态映射
   - undone `state!=2` -> `cloud_download`
@@ -75,6 +76,7 @@
   - undone 空 + done 非 200 -> `lost`
   - undone 空 + done 抛异常 -> `unknown`
   - 两边都找不到任务 -> `lost`
+  - transfer_link 成功 / 失败 / 抛异常
 
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`

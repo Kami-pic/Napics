@@ -132,10 +132,36 @@ class FakeQBClient:
         return self.login_result
 
 
+class FakeSubmitQBClient:
+    def __init__(self, add_result=True, add_exception=None):
+        self.add_result = add_result
+        self.add_exception = add_exception
+        self.calls = []
+
+    def add_torrent(self, download_url, save_path):
+        self.calls.append({"download_url": download_url, "save_path": save_path})
+        if self.add_exception:
+            raise self.add_exception
+        return self.add_result
+
+
 class FakeAlistClient:
     def __init__(self):
         self.api_url = "http://alist"
         self.headers = {"Authorization": "token"}
+
+
+class FakeSubmitAlistClient:
+    def __init__(self, transfer_result=True, transfer_exception=None):
+        self.transfer_result = transfer_result
+        self.transfer_exception = transfer_exception
+        self.calls = []
+
+    def transfer_link(self, download_url, download_dir):
+        self.calls.append({"download_url": download_url, "download_dir": download_dir})
+        if self.transfer_exception:
+            raise self.transfer_exception
+        return self.transfer_result
 
 
 def _with_temp_dir(name, test_fn):
@@ -613,6 +639,116 @@ def test_notify_subscription_complete_marks_upgrade_movie_completed(monkeypatch)
         }
     ]
     assert notifications == [("upgrade_complete", "洗版完成，已下载更高质量版本")]
+
+
+def test_get_qb_hashes_returns_empty_when_login_fails():
+    qb = FakeQBClient([], login_result=False)
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+
+    assert dm._get_qb_hashes() == set()
+
+
+def test_get_qb_hashes_returns_empty_when_payload_is_invalid(monkeypatch):
+    qb = FakeQBClient([])
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+
+    class BrokenResponse:
+        status_code = 200
+
+        def json(self):
+            raise ValueError("bad qb hashes payload")
+
+    monkeypatch.setattr(qb.session, "get", lambda url, timeout=None: BrokenResponse())
+
+    assert dm._get_qb_hashes() == set()
+
+
+def test_push_to_qb_returns_new_hash_when_detected(monkeypatch):
+    qb = FakeSubmitQBClient(add_result=True)
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(save_path=r"C:\library\Show")
+    hash_sets = [set(), {"hash-new"}]
+
+    monkeypatch.setattr(dm, "_get_qb_hashes", lambda: hash_sets.pop(0))
+    monkeypatch.setattr("download_manager.time.sleep", lambda _seconds: None)
+
+    success, hash_or_error = dm._push_to_qb(task)
+
+    assert success is True
+    assert hash_or_error == "hash-new"
+    assert qb.calls == [{"download_url": "magnet:?xt=urn:btih:123", "save_path": r"C:\library\Show"}]
+
+
+def test_push_to_qb_returns_empty_hash_when_added_but_not_detected(monkeypatch):
+    qb = FakeSubmitQBClient(add_result=True)
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(save_path=r"C:\library\Show")
+
+    monkeypatch.setattr(dm, "_get_qb_hashes", lambda: set())
+    monkeypatch.setattr("download_manager.time.sleep", lambda _seconds: None)
+
+    success, hash_or_error = dm._push_to_qb(task)
+
+    assert success is True
+    assert hash_or_error == ""
+
+
+def test_push_to_qb_returns_error_when_add_torrent_fails():
+    qb = FakeSubmitQBClient(add_result=False)
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task()
+
+    success, hash_or_error = dm._push_to_qb(task)
+
+    assert success is False
+    assert "qBittorrent 推送失败" in hash_or_error
+
+
+def test_push_to_qb_returns_exception_message_when_add_torrent_raises():
+    qb = FakeSubmitQBClient(add_exception=RuntimeError("qb add boom"))
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task()
+
+    success, hash_or_error = dm._push_to_qb(task)
+
+    assert success is False
+    assert hash_or_error == "qb add boom"
+
+
+def test_push_to_alist_returns_task_marker_when_transfer_succeeds():
+    alist = FakeSubmitAlistClient(transfer_result=True)
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(id="task-123", download_dir=r"C:\downloads\task-123")
+
+    success, task_id_or_error = dm._push_to_alist(task)
+
+    assert success is True
+    assert task_id_or_error == "alist_task-123"
+    assert alist.calls == [
+        {"download_url": "magnet:?xt=urn:btih:123", "download_dir": r"C:\downloads\task-123"}
+    ]
+
+
+def test_push_to_alist_returns_error_when_transfer_fails():
+    alist = FakeSubmitAlistClient(transfer_result=False)
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task()
+
+    success, task_id_or_error = dm._push_to_alist(task)
+
+    assert success is False
+    assert task_id_or_error == "Alist 所有工具均失败"
+
+
+def test_push_to_alist_returns_exception_message_when_transfer_raises():
+    alist = FakeSubmitAlistClient(transfer_exception=RuntimeError("alist boom"))
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task()
+
+    success, task_id_or_error = dm._push_to_alist(task)
+
+    assert success is False
+    assert task_id_or_error == "alist boom"
 
 
 def test_sync_qb_progress_marks_completed_for_pausedup_state():
