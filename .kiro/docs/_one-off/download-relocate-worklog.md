@@ -88,6 +88,12 @@
   - 单通道配置时直接返回唯一通道
   - 双通道都未配置时默认 `qb`
 
+- 状态管理分支
+  - `get_tasks()` 按 `created_at` 倒序，且先过滤再排序
+  - `update_status()` 会更新 `status/error` 并立即落盘
+  - `archive_task()` 会写入 `archived`，且可同步标记 `organized`
+  - `delete_task()` / `delete_tasks()` 只在实际删除时落盘
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`

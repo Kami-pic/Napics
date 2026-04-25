@@ -1286,3 +1286,117 @@ def test_recommend_channel_defaults_to_qb_when_no_channel_configured():
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
 
     assert dm.recommend_channel(seeders=0, size_gb=999) == "qb"
+
+
+def test_get_tasks_returns_items_sorted_by_created_at_desc():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    older = _make_task(id="task-old", status="completed", created_at="2026-04-24T10:00:00")
+    newer = _make_task(id="task-new", status="downloading", created_at="2026-04-24T11:00:00")
+    dm.tasks = [older, newer]
+
+    tasks = dm.get_tasks()
+
+    assert [task.id for task in tasks] == ["task-new", "task-old"]
+
+
+def test_get_tasks_filters_by_status_before_sorting():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    pending = _make_task(id="task-pending", status="pending", created_at="2026-04-24T09:00:00")
+    failed = _make_task(id="task-failed", status="failed", created_at="2026-04-24T12:00:00")
+    archived = _make_task(id="task-archived", status="failed", created_at="2026-04-24T10:00:00")
+    dm.tasks = [pending, archived, failed]
+
+    tasks = dm.get_tasks(status="failed")
+
+    assert [task.id for task in tasks] == ["task-failed", "task-archived"]
+
+
+def test_update_status_updates_task_error_and_saves(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(id="task-1", status="downloading", error="")
+    dm.tasks = [task]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm.update_status("task-1", "failed", "boom")
+
+    assert task.status == "failed"
+    assert task.error == "boom"
+    assert save_calls == ["saved"]
+
+
+def test_archive_task_marks_organized_and_saves(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(id="task-1", status="completed", organized=False)
+    dm.tasks = [task]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm.archive_task("task-1", organized=True)
+
+    assert task.status == "archived"
+    assert task.organized is True
+    assert save_calls == ["saved"]
+
+
+def test_delete_task_removes_existing_task_and_saves(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    keep = _make_task(id="task-keep")
+    remove = _make_task(id="task-remove")
+    dm.tasks = [keep, remove]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    removed = dm.delete_task("task-remove")
+
+    assert removed is True
+    assert [task.id for task in dm.tasks] == ["task-keep"]
+    assert save_calls == ["saved"]
+
+
+def test_delete_task_skips_save_when_task_missing(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(id="task-keep")]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    removed = dm.delete_task("task-missing")
+
+    assert removed is False
+    assert [task.id for task in dm.tasks] == ["task-keep"]
+    assert save_calls == []
+
+
+def test_delete_tasks_removes_multiple_tasks_and_saves(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    keep = _make_task(id="task-keep")
+    remove1 = _make_task(id="task-remove-1")
+    remove2 = _make_task(id="task-remove-2")
+    dm.tasks = [keep, remove1, remove2]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    removed = dm.delete_tasks(["task-remove-1", "task-remove-2"])
+
+    assert removed == 2
+    assert [task.id for task in dm.tasks] == ["task-keep"]
+    assert save_calls == ["saved"]
+
+
+def test_delete_tasks_skips_save_when_nothing_removed(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(id="task-keep")]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    removed = dm.delete_tasks(["task-missing"])
+
+    assert removed == 0
+    assert [task.id for task in dm.tasks] == ["task-keep"]
+    assert save_calls == []
