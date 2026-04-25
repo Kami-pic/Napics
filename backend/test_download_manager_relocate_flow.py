@@ -189,6 +189,92 @@ def _make_task(**overrides):
     return DownloadTask(**data)
 
 
+def test_submit_marks_qb_task_downloading_and_persists(monkeypatch):
+    def run(tmp_dir):
+        dm = DownloadManager(qb_client=object(), alist_client=None, base_path=str(tmp_dir))
+        task = _make_task(channel="qb", downloader_hash="")
+        save_calls = []
+
+        monkeypatch.setattr("download_manager.uuid.uuid4", lambda: "abcd1234-0000")
+        monkeypatch.setattr(dm, "_push_to_qb", lambda current: (True, "hash-new"))
+        monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+        result = dm.submit(task)
+
+        assert result is task
+        assert task.id == "abcd1234"
+        assert task.status == "downloading"
+        assert task.downloader_hash == "hash-new"
+        assert task.phase == ""
+        assert Path(task.download_dir).is_dir()
+        assert dm.tasks == [task]
+        assert save_calls == ["saved"]
+
+    _with_temp_dir("download_manager_submit_qb", run)
+
+
+def test_submit_marks_alist_task_downloading_with_cloud_phase(monkeypatch):
+    def run(tmp_dir):
+        dm = DownloadManager(qb_client=None, alist_client=object(), base_path=str(tmp_dir))
+        task = _make_task(channel="alist", downloader_hash="")
+        save_calls = []
+
+        monkeypatch.setattr("download_manager.uuid.uuid4", lambda: "efgh5678-0000")
+        monkeypatch.setattr(dm, "_push_to_alist", lambda current: (True, "alist_efgh5678"))
+        monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+        dm.submit(task)
+
+        assert task.id == "efgh5678"
+        assert task.status == "downloading"
+        assert task.downloader_hash == "alist_efgh5678"
+        assert task.phase == "cloud_download"
+        assert Path(task.download_dir).is_dir()
+        assert save_calls == ["saved"]
+
+    _with_temp_dir("download_manager_submit_alist", run)
+
+
+def test_submit_marks_task_failed_when_push_fails(monkeypatch):
+    def run(tmp_dir):
+        dm = DownloadManager(qb_client=object(), alist_client=None, base_path=str(tmp_dir))
+        task = _make_task(channel="qb", downloader_hash="")
+        save_calls = []
+
+        monkeypatch.setattr("download_manager.uuid.uuid4", lambda: "fail1234-0000")
+        monkeypatch.setattr(dm, "_push_to_qb", lambda current: (False, "qb failed"))
+        monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+        dm.submit(task)
+
+        assert task.status == "failed"
+        assert task.error == "qb failed"
+        assert task.downloader_hash == ""
+        assert Path(task.download_dir).is_dir()
+        assert save_calls == ["saved"]
+
+    _with_temp_dir("download_manager_submit_failed", run)
+
+
+def test_submit_marks_task_failed_when_channel_is_not_configured(monkeypatch):
+    def run(tmp_dir):
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=str(tmp_dir))
+        task = _make_task(channel="qb", downloader_hash="")
+        save_calls = []
+
+        monkeypatch.setattr("download_manager.uuid.uuid4", lambda: "miss1234-0000")
+        monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+        dm.submit(task)
+
+        assert task.status == "failed"
+        assert task.error == "下载通道 qb 未配置"
+        assert Path(task.download_dir).is_dir()
+        assert save_calls == ["saved"]
+
+    _with_temp_dir("download_manager_submit_missing_channel", run)
+
+
 def test_notify_subscription_complete_triggers_auto_relocate_for_best_version(monkeypatch):
     sub = SimpleNamespace(
         id="sub-1",
@@ -1168,3 +1254,35 @@ def test_reconcile_task_marks_task_lost_when_hash_missing():
 
     assert task.status == "lost"
     assert task.error == "无下载器 Hash，无法对账"
+
+
+def test_recommend_channel_prefers_qb_for_good_seeders_and_small_size():
+    dm = DownloadManager(qb_client=object(), alist_client=object(), base_path=".")
+
+    assert dm.recommend_channel(seeders=5, size_gb=50) == "qb"
+
+
+def test_recommend_channel_prefers_alist_for_low_seeders():
+    dm = DownloadManager(qb_client=object(), alist_client=object(), base_path=".")
+
+    assert dm.recommend_channel(seeders=4, size_gb=10) == "alist"
+
+
+def test_recommend_channel_prefers_alist_for_large_size():
+    dm = DownloadManager(qb_client=object(), alist_client=object(), base_path=".")
+
+    assert dm.recommend_channel(seeders=10, size_gb=51) == "alist"
+
+
+def test_recommend_channel_returns_only_configured_channel():
+    dm_qb_only = DownloadManager(qb_client=object(), alist_client=None, base_path=".")
+    dm_alist_only = DownloadManager(qb_client=None, alist_client=object(), base_path=".")
+
+    assert dm_qb_only.recommend_channel(seeders=0, size_gb=999) == "qb"
+    assert dm_alist_only.recommend_channel(seeders=999, size_gb=1) == "alist"
+
+
+def test_recommend_channel_defaults_to_qb_when_no_channel_configured():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+
+    assert dm.recommend_channel(seeders=0, size_gb=999) == "qb"

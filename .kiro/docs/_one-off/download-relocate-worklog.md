@@ -46,6 +46,10 @@
 ### DownloadManager
 
 - 下载完成触发归位 / 订阅回调
+- `submit()`：
+  - qB 成功提交后进入 `downloading`
+  - Alist 成功提交后进入 `downloading + cloud_download`
+  - 下载通道未配置 / 推送失败时进入 `failed`
 - `_auto_relocate()`：
   - 线程名与 daemon 参数
   - 本地路径缺失时先补定位再归位
@@ -77,6 +81,12 @@
   - undone 空 + done 抛异常 -> `unknown`
   - 两边都找不到任务 -> `lost`
   - transfer_link 成功 / 失败 / 抛异常
+
+- 通道推荐
+  - `seeders >= 5` 且 `size_gb <= 50` -> `qb`
+  - 低做种或大体积 -> `alist`
+  - 单通道配置时直接返回唯一通道
+  - 双通道都未配置时默认 `qb`
 
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
