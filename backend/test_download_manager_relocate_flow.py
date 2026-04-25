@@ -476,6 +476,34 @@ def test_relocate_to_save_path_skips_existing_destination_and_keeps_sandbox(monk
     _with_temp_dir("download_manager_relocate_skip_duplicate", run)
 
 
+def test_relocate_to_save_path_records_error_when_move_raises(monkeypatch):
+    def run(tmp_dir):
+        save_path = tmp_dir / "library" / "Show"
+        download_dir = tmp_dir / "downloads" / "task-1"
+        broken_file = download_dir / "Show.S01E01.2160p.mkv"
+        download_dir.mkdir(parents=True, exist_ok=True)
+        broken_file.write_bytes(b"video")
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        task = _make_task(
+            status="downloading",
+            save_path=str(save_path),
+            download_dir=str(download_dir),
+        )
+        refresh_calls = []
+        monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+        monkeypatch.setattr("download_manager.shutil.move", lambda src, dst: (_ for _ in ()).throw(PermissionError("denied")))
+
+        dm._relocate_to_save_path(task)
+
+        assert task.status == "downloading"
+        assert task.error == "转移失败: denied"
+        assert broken_file.exists()
+        assert refresh_calls == []
+
+    _with_temp_dir("download_manager_relocate_error", run)
+
+
 def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
@@ -700,6 +728,65 @@ def test_sync_qb_progress_marks_unknown_when_info_request_fails():
     assert task.status == "unknown"
 
 
+def test_sync_qb_progress_marks_unknown_when_info_request_times_out(monkeypatch):
+    qb = FakeQBClient([])
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb")
+
+    def fake_get(url, params=None, timeout=None):
+        raise requests.Timeout("qb timeout")
+
+    monkeypatch.setattr(qb.session, "get", fake_get)
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "unknown"
+
+
+def test_sync_qb_progress_marks_unknown_when_payload_is_invalid(monkeypatch):
+    qb = FakeQBClient([])
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb")
+
+    class BrokenResponse:
+        status_code = 200
+
+        def json(self):
+            raise ValueError("bad qb payload")
+
+    monkeypatch.setattr(qb.session, "get", lambda url, params=None, timeout=None: BrokenResponse())
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "unknown"
+
+
+def test_sync_qb_progress_skips_query_when_task_already_organized():
+    qb = FakeQBClient(
+        [
+            FakeResponse(
+                200,
+                [
+                    {
+                        "progress": 0.91,
+                        "dlspeed": 1024,
+                        "eta": 30,
+                        "state": "downloading",
+                    }
+                ],
+            )
+        ]
+    )
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb", organized=True)
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "downloading"
+    assert task.progress == 0.0
+    assert qb.session.calls == []
+
+
 def test_sync_alist_progress_marks_completed_when_done_and_local_files_exist(monkeypatch):
     responses = [
         FakeResponse(200, {"data": []}),
@@ -816,6 +903,90 @@ def test_sync_alist_progress_marks_unknown_when_undone_request_fails(monkeypatch
     task = _make_task(status="downloading", channel="alist")
 
     monkeypatch.setattr(requests, "post", lambda url, headers=None, timeout=None: FakeResponse(500, {}))
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "unknown"
+
+
+def test_sync_alist_progress_marks_unknown_when_undone_request_times_out(monkeypatch):
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    def fake_post(url, headers=None, timeout=None):
+        raise requests.Timeout("alist timeout")
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "unknown"
+
+
+def test_sync_alist_progress_marks_lost_when_done_request_fails_after_undone_empty(monkeypatch):
+    responses = [
+        FakeResponse(200, {"data": []}),
+        FakeResponse(500, {}),
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    def fake_post(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "lost"
+    assert task.error == "Alist 中未找到对应任务"
+
+
+def test_sync_alist_progress_marks_unknown_when_done_request_raises_after_undone_empty(monkeypatch):
+    responses = [
+        FakeResponse(200, {"data": []}),
+        RuntimeError("done boom"),
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    def fake_post(url, headers=None, timeout=None):
+        result = responses.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "unknown"
+
+
+def test_sync_alist_progress_marks_unknown_when_done_payload_is_invalid(monkeypatch):
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    class BrokenResponse:
+        def __init__(self, status_code):
+            self.status_code = status_code
+
+        def json(self):
+            raise ValueError("bad alist payload")
+
+    responses = [
+        FakeResponse(200, {"data": []}),
+        BrokenResponse(200),
+    ]
+
+    def fake_post(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
 
     dm._sync_alist_progress(task)
 
