@@ -1400,3 +1400,96 @@ def test_delete_tasks_skips_save_when_nothing_removed(monkeypatch):
     assert removed == 0
     assert [task.id for task in dm.tasks] == ["task-keep"]
     assert save_calls == []
+
+
+def test_get_task_returns_matching_task():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(id="task-1")
+    dm.tasks = [task]
+
+    assert dm.get_task("task-1") is task
+
+
+def test_get_task_returns_none_when_missing():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(id="task-1")]
+
+    assert dm.get_task("task-missing") is None
+
+
+def test_save_debounced_triggers_save_after_interval(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    save_calls = []
+
+    dm._last_save_time = 10
+    monkeypatch.setattr("download_manager.time.time", lambda: 41)
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm._save_debounced()
+
+    assert dm._dirty is True
+    assert save_calls == ["saved"]
+
+
+def test_save_debounced_keeps_dirty_without_save_before_interval(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    save_calls = []
+
+    dm._last_save_time = 10
+    monkeypatch.setattr("download_manager.time.time", lambda: 20)
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm._save_debounced()
+
+    assert dm._dirty is True
+    assert save_calls == []
+
+
+def test_flush_saves_only_when_dirty(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm._dirty = False
+    dm.flush()
+    dm._dirty = True
+    dm.flush()
+
+    assert save_calls == ["saved"]
+
+
+def test_check_local_files_exist_detects_video_file():
+    def run(tmp_dir):
+        target = tmp_dir / "library"
+        target.mkdir()
+        (target / "Show.S01E01.mkv").write_bytes(b"video")
+        (target / "note.txt").write_text("ignore", encoding="utf-8")
+
+        assert DownloadManager._check_local_files_exist(str(target)) is True
+
+    _with_temp_dir("download_manager_check_local_video", run)
+
+
+def test_check_local_files_exist_returns_false_for_non_video_files():
+    def run(tmp_dir):
+        target = tmp_dir / "library"
+        target.mkdir()
+        (target / "note.txt").write_text("ignore", encoding="utf-8")
+        (target / "poster.jpg").write_bytes(b"image")
+
+        assert DownloadManager._check_local_files_exist(str(target)) is False
+
+    _with_temp_dir("download_manager_check_local_non_video", run)
+
+
+def test_load_recovers_with_empty_tasks_when_json_is_invalid():
+    def run(tmp_dir):
+        task_file = tmp_dir / "download_tasks.json"
+        task_file.write_text("{not-json", encoding="utf-8")
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=str(tmp_dir))
+
+        assert dm.tasks == []
+
+    _with_temp_dir("download_manager_load_invalid_json", run)

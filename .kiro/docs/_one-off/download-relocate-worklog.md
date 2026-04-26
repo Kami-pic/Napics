@@ -90,9 +90,16 @@
 
 - 状态管理分支
   - `get_tasks()` 按 `created_at` 倒序，且先过滤再排序
+  - `get_task()` 命中返回任务，未命中返回 `None`
   - `update_status()` 会更新 `status/error` 并立即落盘
   - `archive_task()` 会写入 `archived`，且可同步标记 `organized`
   - `delete_task()` / `delete_tasks()` 只在实际删除时落盘
+
+- 本地持久化 / 查询小分支
+  - `_save_debounced()` 超过阈值才触发落盘，否则只保留 dirty
+  - `flush()` 只在 dirty 时落盘
+  - `_check_local_files_exist()` 只认视频扩展名
+  - `_load()` 遇到损坏 JSON 时回退为空任务列表
 
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
