@@ -124,6 +124,7 @@
 
 - [x] `file_relocator` 冲突探测与回收动作
 - [x] `routes/relocate.py` 关键闭环路由
+  - 当前：已补 task 缺失、顶层目录 / NAS 根目录拦截、archive_both 失败不归档、purge_old 无冲突返回
 - [x] `download_manager.py` 完成触发链
 - [x] qB / Alist 关键状态映射、提交入口、通道推荐、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认、自动归位补定位回退、submit/状态时间戳、失败态收口与部分长尾
 - [x] 任务持久化重载

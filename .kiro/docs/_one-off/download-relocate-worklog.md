@@ -32,9 +32,10 @@
 
 - `routes/relocate.py`
   - `/organize/dry-run` 的 `old_tree/new_tree/plan_tree`
+  - task 缺失、一级分类目录、NAS 根目录、relocator failed 的失败返回
   - `/organize/execute` 的白名单注入、成功归档与失败不归档
-  - `/organize/archive-both` 的重新探测与成功归档
-  - `/organize/purge-old` 的“无白名单即停止”和“逐个回收旧资源”
+  - `/organize/archive-both` 的重新探测、成功归档与失败不归档
+  - `/organize/purge-old` 的“无白名单即停止”“无冲突直接返回”“逐个回收旧资源”
 
 - `file_relocator.py`
   - 白名单冲突探测

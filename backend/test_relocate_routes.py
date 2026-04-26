@@ -250,6 +250,25 @@ def test_organize_execute_skips_archive_when_confirm_fails(monkeypatch):
     assert body == {"status": "failed", "message": "旧资源入回收站失败"}
 
 
+def test_organize_execute_raises_404_when_task_missing(monkeypatch):
+    dm = FakeDownloadManager(task=None)
+    relocator = FakeRelocator()
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+
+    req = relocate.ExecuteRelocateRequest(task_id="missing", plan={"plan": []})
+
+    try:
+        asyncio.run(relocate.organize_execute(req))
+    except Exception as exc:
+        assert exc.status_code == 404
+        assert exc.detail == "任务不存在"
+    else:
+        raise AssertionError("缺失任务时应抛出 HTTPException")
+
+
 def test_organize_archive_both_relocates_again_before_archiving(monkeypatch):
     task = _make_task()
     dm = FakeDownloadManager(task)
@@ -302,6 +321,58 @@ def test_organize_archive_both_relocates_again_before_archiving(monkeypatch):
     assert body == {"status": "archived", "message": "共存归档任务执行完毕"}
 
 
+def test_organize_archive_both_skips_archive_when_archive_both_fails(monkeypatch):
+    task = _make_task(downloader_hash="")
+    dm = FakeDownloadManager(task)
+    conflicts = [
+        CoexistPair(
+            new_file=r"C:\library\Show\Season 01\Show.S01E02.2160p.mkv",
+            old_file=r"C:\library\Show\Season 01\Show.S01E01.1080p.mkv",
+            old_size_gb=1.5,
+            category="video",
+            is_folder=False,
+        )
+    ]
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(
+            success=False,
+            status="awaiting_confirm",
+            action_plan={"plan": []},
+            coexist_pairs=conflicts,
+        ),
+        execute_result=RelocateResult(success=False, status="failed", error="archive both failed"),
+    )
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+
+    req = relocate.ExecuteRelocateRequest(task_id=task.id, plan={"plan": []})
+    body = asyncio.run(relocate.organize_archive_both(req))
+
+    assert dm.archive_calls == []
+    assert body == {"status": "failed", "message": "archive both failed"}
+
+
+def test_organize_archive_both_raises_404_when_task_missing(monkeypatch):
+    dm = FakeDownloadManager(task=None)
+    relocator = FakeRelocator()
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+
+    req = relocate.ExecuteRelocateRequest(task_id="missing", plan={"plan": []})
+
+    try:
+        asyncio.run(relocate.organize_archive_both(req))
+    except Exception as exc:
+        assert exc.status_code == 404
+        assert exc.detail == "任务不存在"
+    else:
+        raise AssertionError("缺失任务时应抛出 HTTPException")
+
+
 def test_organize_purge_old_requires_qb_file_list(monkeypatch):
     task = _make_task(downloader_hash="")
     dm = FakeDownloadManager(task)
@@ -316,6 +387,46 @@ def test_organize_purge_old_requires_qb_file_list(monkeypatch):
     assert relocator.relocate_calls == []
     assert relocator.recycle_calls == []
     assert body == {"status": "failed", "message": "无法识别新任务文件，为防误删，停止清理"}
+
+
+def test_organize_purge_old_returns_ok_when_no_conflicts_found(monkeypatch):
+    task = _make_task()
+    dm = FakeDownloadManager(task)
+    qb = FakeQBClient([{"name": "[Group] Show S01 2160p/Show.S01E02.2160p.mkv", "size_bytes": 1234}])
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(
+            success=True,
+            status="archived",
+            action_plan={"plan": []},
+            coexist_pairs=[],
+        )
+    )
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": qb})
+
+    body = asyncio.run(relocate.organize_purge_old(task.id))
+
+    assert relocator.recycle_calls == []
+    assert body == {"status": "ok", "message": "未发现需要清理的旧数据"}
+
+
+def test_organize_purge_old_raises_404_when_task_missing(monkeypatch):
+    dm = FakeDownloadManager(task=None)
+    relocator = FakeRelocator()
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+
+    try:
+        asyncio.run(relocate.organize_purge_old("missing"))
+    except Exception as exc:
+        assert exc.status_code == 404
+        assert exc.detail == "任务不存在"
+    else:
+        raise AssertionError("缺失任务时应抛出 HTTPException")
 
 
 def test_organize_purge_old_recycles_each_detected_conflict(monkeypatch):
@@ -365,3 +476,69 @@ def test_organize_purge_old_recycles_each_detected_conflict(monkeypatch):
         {"task_id": "task-1", "old_file": r"C:\library\Show\Season 01\Season 01"},
     ]
     assert body == {"status": "ok", "message": "已清理 2 组旧存量数据"}
+
+
+def test_organize_dry_run_fails_when_task_missing(monkeypatch):
+    dm = FakeDownloadManager(task=None)
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+
+    body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id="missing")))
+
+    assert body == {"status": "failed", "message": "任务不存在: missing", "coexist_pairs": []}
+
+
+def test_organize_dry_run_fails_for_top_category(monkeypatch):
+    task = _make_task(save_path=r"C:\library\TV")
+    dm = FakeDownloadManager(task)
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_is_top_category", lambda path: True)
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+
+    body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
+
+    assert body["status"] == "failed"
+    assert "一级分类目录" in body["message"]
+    assert body["coexist_pairs"] == []
+
+
+def test_organize_dry_run_fails_for_nas_root(monkeypatch):
+    task = _make_task(save_path=r"C:\library\root")
+    dm = FakeDownloadManager(task)
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
+    monkeypatch.setattr(
+        relocate,
+        "config_m",
+        SimpleNamespace(config=SimpleNamespace(nas_paths=[r"C:\library\root"])),
+    )
+
+    body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
+
+    assert body == {
+        "status": "failed",
+        "message": "该任务的保存路径是 NAS 根目录，无法进行整理替换探测。",
+        "coexist_pairs": [],
+    }
+
+
+def test_organize_dry_run_returns_failed_when_relocator_fails(monkeypatch):
+    task = _make_task(downloader_hash="")
+    dm = FakeDownloadManager(task)
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(success=False, status="failed", error="dry run failed")
+    )
+
+    monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
+    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+
+    body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
+
+    assert body == {"status": "failed", "message": "探测失败: dry run failed", "coexist_pairs": []}
