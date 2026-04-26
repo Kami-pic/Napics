@@ -43,6 +43,10 @@
   - `confirm_replace` 白名单兜底
   - `execute_plan` 执行目录与 `action_plan` 透传
   - 真实 RecycleBin 落盘与元数据重载
+  - `relocate()` 在引擎未就绪、下载目录未就绪、dry-run 空计划时的失败返回
+  - `confirm_replace()` 在旧资源回收失败时立即停止，不继续执行落盘
+  - `cancel_replace()` 会递归回收沙盒内所有文件
+  - `_execute_plan()` 在缺 `save_path` 时回退 `download_dir`，执行异常时返回 `failed`
 
 ### DownloadManager
 
