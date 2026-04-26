@@ -123,6 +123,11 @@
   - `update_status()` / `archive_task()` 对不存在任务也会照常触发落盘
   - `_load()` 在任务文件不存在时回退为空列表
 
+- qB 格式化 / 保底判定
+  - `progress >= 1.0` 即使 state 仍是 `downloading` 也直接收口到 `completed`
+  - `dlspeed >= 1 MB/s` 时格式化成 `x.y MB/s`
+  - `eta >= 100 天` 时当前清空 ETA 展示
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`

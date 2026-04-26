@@ -1183,6 +1183,59 @@ def test_sync_qb_progress_marks_completed_for_stalledup_state():
     assert task.eta == ""
 
 
+def test_sync_qb_progress_marks_completed_when_progress_reaches_one():
+    qb = FakeQBClient(
+        [
+            FakeResponse(
+                200,
+                [
+                    {
+                        "progress": 1.0,
+                        "dlspeed": 8192,
+                        "eta": 30,
+                        "state": "downloading",
+                    }
+                ],
+            )
+        ]
+    )
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb")
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "completed"
+    assert task.progress == 1.0
+    assert task.speed == ""
+    assert task.eta == ""
+
+
+def test_sync_qb_progress_formats_speed_in_mb_and_clears_huge_eta():
+    qb = FakeQBClient(
+        [
+            FakeResponse(
+                200,
+                [
+                    {
+                        "progress": 0.42,
+                        "dlspeed": 3 * 1024 * 1024,
+                        "eta": 8640000,
+                        "state": "downloading",
+                    }
+                ],
+            )
+        ]
+    )
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb")
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "downloading"
+    assert task.speed == "3.0 MB/s"
+    assert task.eta == ""
+
+
 def test_sync_qb_progress_marks_unknown_on_login_failure():
     qb = FakeQBClient([], login_result=False)
     dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
