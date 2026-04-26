@@ -30,7 +30,7 @@
 - `file_relocator`：白名单、冲突探测、`confirm_replace`、`_execute_plan`、`action_plan` 透传、真实 RecycleBin 落盘已补测试
 - `download_manager`：
   - 下载完成触发链
-  - qB / Alist 边界状态、提交入口、通道推荐、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认与若干长尾状态
+  - qB / Alist 边界状态、提交入口、通道推荐、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认、自动归位补定位回退与若干长尾状态
   - 启动恢复 / 对账
   - 本地转移 / 同名跳过 / 转移失败
   - 后台局部刷新
@@ -38,7 +38,7 @@
   - 升级订阅完成态
   - `_auto_relocate` 真实双线程观测
 - 小范围业务修复：白名单格式、dry-run fallback、confirm 白名单兜底、执行目录对齐、`action_plan` 透传
-- 隔离测试补强：`qB / Alist` 的超时、无效返回结构、提交入口异常、通道推荐阈值、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认已补到 `DownloadManager` 行为保护测试
+- 隔离测试补强：`qB / Alist` 的超时、无效返回结构、提交入口异常、通道推荐阈值、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认、自动归位补定位回退已补到 `DownloadManager` 行为保护测试
 
 ### 当前剩余风险
 
@@ -125,7 +125,7 @@
 - [x] `file_relocator` 冲突探测与回收动作
 - [x] `routes/relocate.py` 关键闭环路由
 - [x] `download_manager.py` 完成触发链
-- [x] qB / Alist 关键状态映射、提交入口、通道推荐、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认与部分长尾
+- [x] qB / Alist 关键状态映射、提交入口、通道推荐、状态管理分支、本地持久化小分支、订阅回调边界、同步/写盘回退、guard/no-op 分支、qB 格式化保底、Alist phase/progress 默认、自动归位补定位回退与部分长尾
 - [x] 任务持久化重载
 - [x] 本地转移 / 局部刷新
 - [x] 自动归位真实线程启动观测

@@ -133,6 +133,11 @@
   - undone 缺省 `state` 时当前仍按 `cloud_download` 处理
   - done 列表里只有非命中任务时当前仍落到 `lost`
 
+- 自动归位补定位回退
+  - `media_matcher.match()` 返回空 folder 时，当前不会写回订阅路径，但仍继续 `relocate()`
+  - `media_matcher.match()` 抛异常时，当前只记日志，仍继续 `relocate()`
+  - `sync_progress()` 遇到未知 `channel` 时当前只更新时间并走 `_save_debounced()`
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`

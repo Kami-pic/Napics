@@ -447,6 +447,68 @@ def test_auto_relocate_relocates_after_recovering_missing_local_path(monkeypatch
     assert relocator.confirm_calls == []
 
 
+def test_auto_relocate_keeps_relocating_when_matcher_returns_no_folder(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        title="Show",
+        year=2024,
+        tmdb_id=1,
+        local_file_path=r"C:\missing\Show",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(success=True, status="archived", action_plan={"plan": []}),
+    )
+
+    fake_shared = SimpleNamespace(
+        _get_file_relocator=lambda: relocator,
+        _get_sub_manager=lambda: mgr,
+        media_matcher=SimpleNamespace(match=lambda payload: ("missing", "")),
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setattr(threading, "Thread", ImmediateThread)
+    monkeypatch.setattr("download_manager.os.path.exists", lambda path: False)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm._auto_relocate(_make_task(), sub)
+
+    assert mgr.update_calls == []
+    assert relocator.relocate_calls == ["task-1"]
+
+
+def test_auto_relocate_keeps_relocating_when_matcher_raises(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        title="Show",
+        year=2024,
+        tmdb_id=1,
+        local_file_path=r"C:\missing\Show",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(success=True, status="archived", action_plan={"plan": []}),
+    )
+
+    fake_shared = SimpleNamespace(
+        _get_file_relocator=lambda: relocator,
+        _get_sub_manager=lambda: mgr,
+        media_matcher=SimpleNamespace(
+            match=lambda payload: (_ for _ in ()).throw(RuntimeError("match failed"))
+        ),
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setattr(threading, "Thread", ImmediateThread)
+    monkeypatch.setattr("download_manager.os.path.exists", lambda path: False)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm._auto_relocate(_make_task(), sub)
+
+    assert mgr.update_calls == []
+    assert relocator.relocate_calls == ["task-1"]
+
+
 def test_auto_relocate_runs_two_tasks_on_real_threads_without_serializing(monkeypatch):
     sub = SimpleNamespace(
         id="sub-1",
@@ -552,6 +614,22 @@ def test_sync_progress_uses_debounced_save_when_no_active_tasks(monkeypatch):
 
     dm.sync_progress()
 
+    assert events == [("save_debounced", None)]
+
+
+def test_sync_progress_updates_timestamp_and_debounces_for_unknown_channel(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="manual", updated_at="2026-04-24T10:00:00")
+    dm.tasks = [task]
+
+    events = []
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert task.updated_at != "2026-04-24T10:00:00"
+    assert task.status == "downloading"
     assert events == [("save_debounced", None)]
 
 
