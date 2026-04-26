@@ -727,6 +727,121 @@ def test_notify_subscription_complete_marks_upgrade_movie_completed(monkeypatch)
     assert notifications == [("upgrade_complete", "洗版完成，已下载更高质量版本")]
 
 
+def test_notify_subscription_complete_uses_download_url_when_hash_missing(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        best_version=False,
+        purpose="follow",
+        type="tv",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    notifications = []
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: mgr)
+    fake_notification_service = SimpleNamespace(
+        add_notification=lambda *_args: notifications.append(_args[2:])
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+
+    dm._notify_subscription_complete(
+        _make_task(downloader_hash="", download_url="magnet:?xt=urn:btih:fallback")
+    )
+
+    assert mgr.download_complete_calls == [
+        {
+            "subscription_id": "sub-1",
+            "episode": 2,
+            "info_hash": "magnet:?xt=urn:btih:fallback",
+            "title": "Show",
+            "quality_tag": "",
+            "source": "tv",
+            "channel": "qb",
+            "task_id": "task-1",
+        }
+    ]
+    assert notifications == [("download_complete", "下载完成: Show")]
+
+
+def test_notify_subscription_complete_uses_unknown_source_when_category_hint_missing(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        best_version=False,
+        purpose="follow",
+        type="movie",
+    )
+    mgr = FakeSubscriptionManager(sub)
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: mgr)
+    fake_notification_service = SimpleNamespace(add_notification=lambda *_args: None)
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+
+    dm._notify_subscription_complete(_make_task(category_hint=""))
+
+    assert mgr.download_complete_calls[0]["source"] == "unknown"
+
+
+def test_notify_subscription_complete_skips_auto_relocate_without_save_path(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        best_version=True,
+        purpose="follow",
+        type="tv",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    auto_relocate_calls = []
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: mgr)
+    fake_notification_service = SimpleNamespace(add_notification=lambda *_args: None)
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    monkeypatch.setattr(
+        dm,
+        "_auto_relocate",
+        lambda task, sub_obj=None: auto_relocate_calls.append(
+            {"task_id": task.id, "sub_id": getattr(sub_obj, "id", "")}
+        ),
+    )
+
+    dm._notify_subscription_complete(_make_task(save_path=""))
+
+    assert auto_relocate_calls == []
+
+
+def test_notify_subscription_complete_swallows_notification_errors(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        best_version=False,
+        purpose="follow",
+        type="tv",
+    )
+    mgr = FakeSubscriptionManager(sub)
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: mgr)
+    fake_notification_service = SimpleNamespace(
+        add_notification=lambda *_args: (_ for _ in ()).throw(RuntimeError("notify boom"))
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+
+    dm._notify_subscription_complete(_make_task())
+
+    assert len(mgr.download_complete_calls) == 1
+
+
 def test_get_qb_hashes_returns_empty_when_login_fails():
     qb = FakeQBClient([], login_result=False)
     dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
@@ -1254,6 +1369,28 @@ def test_reconcile_task_marks_task_lost_when_hash_missing():
 
     assert task.status == "lost"
     assert task.error == "无下载器 Hash，无法对账"
+
+
+def test_reconcile_task_keeps_qb_task_downloading_when_hash_exists(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb", downloader_hash="hash-1")
+
+    monkeypatch.setattr(dm, "_get_qb_hashes", lambda: {"hash-1"})
+
+    dm._reconcile_task(task)
+
+    assert task.status == "downloading"
+    assert task.error == ""
+
+
+def test_reconcile_task_keeps_alist_task_downloading():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="alist", downloader_hash="alist_1")
+
+    dm._reconcile_task(task)
+
+    assert task.status == "downloading"
+    assert task.error == ""
 
 
 def test_recommend_channel_prefers_qb_for_good_seeders_and_small_size():

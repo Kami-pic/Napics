@@ -101,6 +101,14 @@
   - `_check_local_files_exist()` 只认视频扩展名
   - `_load()` 遇到损坏 JSON 时回退为空任务列表
 
+- 订阅回调 / 对账边界
+  - `_notify_subscription_complete()` 在缺 hash 时回退到 `download_url`
+  - `category_hint` 为空时回退 `source=unknown`
+  - `best_version` 但缺少 `save_path` 时不触发 `_auto_relocate()`
+  - 通知发送异常不会中断订阅完成回调
+  - `_reconcile_task()` 在 qB hash 仍存在时保持 `downloading`
+  - `_reconcile_task()` 对 alist 任务保持原状，等待后续 `sync_progress()`
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`
