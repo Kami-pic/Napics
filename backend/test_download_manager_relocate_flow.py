@@ -527,6 +527,34 @@ def test_sync_progress_triggers_relocate_without_subscription_callback_for_compl
     ]
 
 
+def test_sync_progress_uses_debounced_save_when_status_unchanged(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb")
+    dm.tasks = [task]
+
+    events = []
+    monkeypatch.setattr(dm, "_sync_qb_progress", lambda current: None)
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert events == [("save_debounced", None)]
+
+
+def test_sync_progress_uses_debounced_save_when_no_active_tasks(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(status="completed", channel="qb")]
+
+    events = []
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert events == [("save_debounced", None)]
+
+
 def test_relocate_to_save_path_moves_files_and_cleans_empty_sandbox(monkeypatch):
     def run(tmp_dir):
         save_path = tmp_dir / "library" / "Show"
@@ -1349,6 +1377,22 @@ def test_on_startup_marks_pending_task_failed_and_saves(monkeypatch):
     assert save_calls == ["saved"]
 
 
+def test_on_startup_reconciles_alist_downloading_task_and_saves(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(id="task-alist", status="downloading", channel="alist", downloader_hash="alist_1")
+    dm.tasks = [task]
+
+    reconciled = []
+    save_calls = []
+    monkeypatch.setattr(dm, "_reconcile_task", lambda current: reconciled.append((current.id, current.channel)))
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm.on_startup()
+
+    assert reconciled == [("task-alist", "alist")]
+    assert save_calls == ["saved"]
+
+
 def test_reconcile_task_marks_qb_task_lost_when_hash_missing(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(status="downloading", channel="qb", downloader_hash="hash-1")
@@ -1630,3 +1674,15 @@ def test_load_recovers_with_empty_tasks_when_json_is_invalid():
         assert dm.tasks == []
 
     _with_temp_dir("download_manager_load_invalid_json", run)
+
+
+def test_write_json_swallows_file_errors(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(id="task-1")]
+
+    monkeypatch.setattr(
+        "builtins.open",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError("disk full")),
+    )
+
+    dm._write_json()

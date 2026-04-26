@@ -109,6 +109,12 @@
   - `_reconcile_task()` 在 qB hash 仍存在时保持 `downloading`
   - `_reconcile_task()` 对 alist 任务保持原状，等待后续 `sync_progress()`
 
+- 同步 / 写盘回退
+  - `sync_progress()` 无状态变化时只走 `_save_debounced()`
+  - `sync_progress()` 无活跃任务时也只走 `_save_debounced()`
+  - `on_startup()` 会对 alist downloading 任务同样进入 `_reconcile_task()`
+  - `_write_json()` 写盘异常只记日志，不向外抛出
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`
