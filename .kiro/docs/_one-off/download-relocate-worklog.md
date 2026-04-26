@@ -115,6 +115,14 @@
   - `on_startup()` 会对 alist downloading 任务同样进入 `_reconcile_task()`
   - `_write_json()` 写盘异常只记日志，不向外抛出
 
+- guard / no-op 分支
+  - `_relocate_to_save_path()` 在缺 `save_path` / 缺 `download_dir` / `download_dir` 非目录时直接返回
+  - `_trigger_local_refresh()` 在媒体库为空 / 扫描结果为空 / 没有新增文件时不写库
+  - `_sync_qb_progress()` 在缺客户端或缺 hash 时直接返回
+  - `_sync_alist_progress()` 在缺客户端时直接返回
+  - `update_status()` / `archive_task()` 对不存在任务也会照常触发落盘
+  - `_load()` 在任务文件不存在时回退为空列表
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`

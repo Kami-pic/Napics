@@ -644,6 +644,46 @@ def test_relocate_to_save_path_records_error_when_move_raises(monkeypatch):
     _with_temp_dir("download_manager_relocate_error", run)
 
 
+def test_relocate_to_save_path_returns_early_without_save_path(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(save_path="", download_dir=r"C:\downloads\task-1", status="downloading")
+    refresh_calls = []
+
+    monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+
+    dm._relocate_to_save_path(task)
+
+    assert task.status == "downloading"
+    assert refresh_calls == []
+
+
+def test_relocate_to_save_path_returns_early_when_download_dir_missing(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(save_path=r"C:\library\Show", download_dir="", status="downloading")
+    refresh_calls = []
+
+    monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+
+    dm._relocate_to_save_path(task)
+
+    assert task.status == "downloading"
+    assert refresh_calls == []
+
+
+def test_relocate_to_save_path_returns_early_when_download_dir_is_not_directory(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(save_path=r"C:\library\Show", download_dir=r"C:\downloads\task-1", status="downloading")
+    refresh_calls = []
+
+    monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+    monkeypatch.setattr("download_manager.os.path.isdir", lambda path: False)
+
+    dm._relocate_to_save_path(task)
+
+    assert task.status == "downloading"
+    assert refresh_calls == []
+
+
 def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
@@ -681,6 +721,84 @@ def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
         ]
 
     _with_temp_dir("download_manager_local_refresh_thread", run)
+
+
+def test_trigger_local_refresh_skips_when_library_is_empty(monkeypatch):
+    def run(tmp_dir):
+        save_event = threading.Event()
+
+        class FakeConfigManagerForRefresh:
+            def load_library(self):
+                return []
+
+            def save_library(self, library):
+                save_event.set()
+
+        fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
+        fake_scanner = SimpleNamespace(scan_folder=lambda path: [{"file_path": "x"}])
+
+        monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
+        monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+
+        assert save_event.wait(0.3) is False
+
+    _with_temp_dir("download_manager_local_refresh_empty_library", run)
+
+
+def test_trigger_local_refresh_skips_when_scan_returns_empty(monkeypatch):
+    def run(tmp_dir):
+        save_event = threading.Event()
+
+        class FakeConfigManagerForRefresh:
+            def load_library(self):
+                return [{"file_path": "existing"}]
+
+            def save_library(self, library):
+                save_event.set()
+
+        fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
+        fake_scanner = SimpleNamespace(scan_folder=lambda path: [])
+
+        monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
+        monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+
+        assert save_event.wait(0.3) is False
+
+    _with_temp_dir("download_manager_local_refresh_empty_scan", run)
+
+
+def test_trigger_local_refresh_skips_when_no_new_files(monkeypatch):
+    def run(tmp_dir):
+        save_event = threading.Event()
+        existing_path = str(tmp_dir / "library" / "Show" / "Show.S01E01.1080p.mkv")
+
+        class FakeConfigManagerForRefresh:
+            def load_library(self):
+                return [{"file_path": existing_path, "title": "Show"}]
+
+            def save_library(self, library):
+                save_event.set()
+
+        fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
+        fake_scanner = SimpleNamespace(
+            scan_folder=lambda path: [{"file_path": existing_path, "title": "Show"}]
+        )
+
+        monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
+        monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+
+        assert save_event.wait(0.3) is False
+
+    _with_temp_dir("download_manager_local_refresh_no_new_files", run)
 
 
 def test_write_json_and_load_round_trip_tasks_from_disk():
@@ -1008,6 +1126,25 @@ def test_sync_qb_progress_marks_completed_for_pausedup_state():
     assert qb.session.calls[0]["params"] == {"hashes": "hash-1"}
 
 
+def test_sync_qb_progress_returns_early_without_client_or_hash():
+    dm_no_client = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task_no_client = _make_task(status="downloading", channel="qb", downloader_hash="hash-1")
+
+    dm_no_client._sync_qb_progress(task_no_client)
+
+    assert task_no_client.status == "downloading"
+    assert task_no_client.progress == 0.0
+
+    qb = FakeQBClient([])
+    dm_no_hash = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task_no_hash = _make_task(status="downloading", channel="qb", downloader_hash="")
+
+    dm_no_hash._sync_qb_progress(task_no_hash)
+
+    assert task_no_hash.status == "downloading"
+    assert qb.session.calls == []
+
+
 def test_sync_qb_progress_marks_lost_when_hash_missing():
     qb = FakeQBClient([FakeResponse(200, [])])
     dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
@@ -1172,6 +1309,16 @@ def test_sync_alist_progress_marks_completed_when_done_and_local_files_exist(mon
     assert task.status == "completed"
     assert task.progress == 1.0
     assert task.phase == ""
+
+
+def test_sync_alist_progress_returns_early_without_client():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "downloading"
+    assert task.progress == 0.0
 
 
 def test_sync_alist_progress_keeps_local_sync_when_done_but_local_files_missing(monkeypatch):
@@ -1507,6 +1654,19 @@ def test_update_status_updates_task_error_and_saves(monkeypatch):
     assert save_calls == ["saved"]
 
 
+def test_update_status_still_saves_when_task_missing(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(id="task-1", status="downloading", error="")]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm.update_status("task-missing", "failed", "boom")
+
+    assert dm.tasks[0].status == "downloading"
+    assert save_calls == ["saved"]
+
+
 def test_archive_task_marks_organized_and_saves(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(id="task-1", status="completed", organized=False)
@@ -1519,6 +1679,20 @@ def test_archive_task_marks_organized_and_saves(monkeypatch):
 
     assert task.status == "archived"
     assert task.organized is True
+    assert save_calls == ["saved"]
+
+
+def test_archive_task_still_saves_when_task_missing(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm.tasks = [_make_task(id="task-1", status="completed", organized=False)]
+    save_calls = []
+
+    monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
+
+    dm.archive_task("task-missing", organized=True)
+
+    assert dm.tasks[0].status == "completed"
+    assert dm.tasks[0].organized is False
     assert save_calls == ["saved"]
 
 
@@ -1674,6 +1848,15 @@ def test_load_recovers_with_empty_tasks_when_json_is_invalid():
         assert dm.tasks == []
 
     _with_temp_dir("download_manager_load_invalid_json", run)
+
+
+def test_load_uses_empty_tasks_when_file_missing():
+    def run(tmp_dir):
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=str(tmp_dir))
+
+        assert dm.tasks == []
+
+    _with_temp_dir("download_manager_load_missing_file", run)
 
 
 def test_write_json_swallows_file_errors(monkeypatch):
