@@ -149,6 +149,9 @@
 - 失败态收口
   - `_auto_relocate()` 在 `relocate()` 返回非 `awaiting_confirm/archived` 状态时当前不走 `confirm_replace()`
   - `sync_progress()` 在 qB/alist 任务转成 `lost/unknown` 时当前只触发 `_save_now()`，不误触发归位或订阅回调
+  - `_auto_relocate()` 内部 `relocate()` 抛异常时当前只记日志，不向外冒泡
+  - `_notify_subscription_complete()` 外层订阅管理器异常当前只记日志，不向外冒泡
+  - `_get_qb_hashes()` 在 info 非 200 时当前回退空集合
 
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`

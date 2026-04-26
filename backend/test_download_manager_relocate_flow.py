@@ -585,6 +585,41 @@ def test_auto_relocate_skips_confirm_when_relocator_returns_failure_status(monke
     assert mgr.update_calls == []
 
 
+def test_auto_relocate_swallows_relocator_exceptions(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        title="Show",
+        year=2024,
+        tmdb_id=1,
+        local_file_path="",
+    )
+    mgr = FakeSubscriptionManager(sub)
+
+    class ExplodingRelocator:
+        def __init__(self):
+            self.relocate_calls = []
+
+        async def relocate(self, task):
+            self.relocate_calls.append(task.id)
+            raise RuntimeError("relocate boom")
+
+    relocator = ExplodingRelocator()
+    fake_shared = SimpleNamespace(
+        _get_file_relocator=lambda: relocator,
+        _get_sub_manager=lambda: mgr,
+        media_matcher=SimpleNamespace(match=lambda *_args, **_kwargs: ("missing", "")),
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setattr(threading, "Thread", ImmediateThread)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm._auto_relocate(_make_task(), sub)
+
+    assert relocator.relocate_calls == ["task-1"]
+    assert mgr.update_calls == []
+
+
 def test_sync_progress_triggers_relocate_and_subscription_callback_for_completed_qb(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(status="downloading", channel="qb")
@@ -1171,9 +1206,34 @@ def test_notify_subscription_complete_without_subscription_still_sends_download_
     assert auto_relocate_calls == []
 
 
+def test_notify_subscription_complete_swallows_manager_errors(monkeypatch):
+    class BrokenSubscriptionManager:
+        def on_download_complete(self, **kwargs):
+            raise RuntimeError("manager boom")
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: BrokenSubscriptionManager())
+    fake_notification_service = SimpleNamespace(add_notification=lambda *_args: None)
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+
+    dm._notify_subscription_complete(_make_task())
+
+
 def test_get_qb_hashes_returns_empty_when_login_fails():
     qb = FakeQBClient([], login_result=False)
     dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+
+    assert dm._get_qb_hashes() == set()
+
+
+def test_get_qb_hashes_returns_empty_when_info_status_is_not_200(monkeypatch):
+    qb = FakeQBClient([])
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+
+    monkeypatch.setattr(qb.session, "get", lambda url, timeout=None: FakeResponse(500, {}))
 
     assert dm._get_qb_hashes() == set()
 
