@@ -550,6 +550,41 @@ def test_auto_relocate_runs_two_tasks_on_real_threads_without_serializing(monkey
     assert mgr.update_calls == []
 
 
+def test_auto_relocate_skips_confirm_when_relocator_returns_failure_status(monkeypatch):
+    sub = SimpleNamespace(
+        id="sub-1",
+        title="Show",
+        year=2024,
+        tmdb_id=1,
+        local_file_path="",
+    )
+    mgr = FakeSubscriptionManager(sub)
+    relocator = FakeRelocator(
+        relocate_result=RelocateResult(
+            success=False,
+            status="failed",
+            error="boom",
+            action_plan={"plan": []},
+        ),
+    )
+
+    fake_shared = SimpleNamespace(
+        _get_file_relocator=lambda: relocator,
+        _get_sub_manager=lambda: mgr,
+        media_matcher=SimpleNamespace(match=lambda *_args, **_kwargs: ("missing", "")),
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setattr(threading, "Thread", ImmediateThread)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    dm._auto_relocate(_make_task(), sub)
+
+    assert relocator.relocate_calls == ["task-1"]
+    assert relocator.confirm_calls == []
+    assert mgr.update_calls == []
+
+
 def test_sync_progress_triggers_relocate_and_subscription_callback_for_completed_qb(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(status="downloading", channel="qb")
@@ -635,6 +670,42 @@ def test_sync_progress_updates_timestamp_and_debounces_for_unknown_channel(monke
     assert task.updated_at != "2026-04-24T10:00:00"
     assert task.status == "downloading"
     assert events == [("save_debounced", None)]
+
+
+def test_sync_progress_saves_now_when_qb_task_becomes_lost(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="qb")
+    dm.tasks = [task]
+
+    events = []
+    monkeypatch.setattr(dm, "_sync_qb_progress", lambda current: setattr(current, "status", "lost"))
+    monkeypatch.setattr(dm, "_relocate_to_save_path", lambda current: events.append(("relocate", current.id)))
+    monkeypatch.setattr(dm, "_notify_subscription_complete", lambda current: events.append(("notify", current.id)))
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert task.status == "lost"
+    assert events == [("save_now", None)]
+
+
+def test_sync_progress_saves_now_when_alist_task_becomes_unknown(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+    dm.tasks = [task]
+
+    events = []
+    monkeypatch.setattr(dm, "_sync_alist_progress", lambda current: setattr(current, "status", "unknown"))
+    monkeypatch.setattr(dm, "_relocate_to_save_path", lambda current: events.append(("relocate", current.id)))
+    monkeypatch.setattr(dm, "_notify_subscription_complete", lambda current: events.append(("notify", current.id)))
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert task.status == "unknown"
+    assert events == [("save_now", None)]
 
 
 def test_relocate_to_save_path_moves_files_and_cleans_empty_sandbox(monkeypatch):

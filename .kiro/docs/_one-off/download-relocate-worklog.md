@@ -142,6 +142,10 @@
   - `submit()` 当前先写 `created_at`，提交收口后再刷新一次 `updated_at`
   - `_notify_subscription_complete()` 在 `mgr.get()` 拿不到订阅对象时，当前仍会发送普通 `download_complete`
 
+- 失败态收口
+  - `_auto_relocate()` 在 `relocate()` 返回非 `awaiting_confirm/archived` 状态时当前不走 `confirm_replace()`
+  - `sync_progress()` 在 qB/alist 任务转成 `lost/unknown` 时当前只触发 `_save_now()`，不误触发归位或订阅回调
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`
