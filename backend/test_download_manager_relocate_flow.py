@@ -1439,6 +1439,29 @@ def test_sync_alist_progress_keeps_cloud_download_for_undone_task(monkeypatch):
     assert task.progress == 0.45
 
 
+def test_sync_alist_progress_uses_zero_progress_when_undone_progress_missing(monkeypatch):
+    responses = [
+        FakeResponse(
+            200,
+            {"data": [{"name": "magnet:?xt=urn:btih:123", "state": 1, "progress": 0}]},
+        )
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    def fake_post(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "downloading"
+    assert task.phase == "cloud_download"
+    assert task.progress == 0.0
+
+
 def test_sync_alist_progress_switches_to_local_sync_for_completed_undone_task(monkeypatch):
     responses = [
         FakeResponse(
@@ -1460,6 +1483,29 @@ def test_sync_alist_progress_switches_to_local_sync_for_completed_undone_task(mo
     assert task.status == "downloading"
     assert task.phase == "local_sync"
     assert task.progress == 1.0
+
+
+def test_sync_alist_progress_keeps_cloud_download_for_missing_state(monkeypatch):
+    responses = [
+        FakeResponse(
+            200,
+            {"data": [{"name": "magnet:?xt=urn:btih:123", "progress": 12}]},
+        )
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    def fake_post(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "downloading"
+    assert task.phase == "cloud_download"
+    assert task.progress == 0.12
 
 
 def test_sync_alist_progress_marks_unknown_when_undone_request_fails(monkeypatch):
@@ -1556,6 +1602,26 @@ def test_sync_alist_progress_marks_unknown_when_done_payload_is_invalid(monkeypa
     dm._sync_alist_progress(task)
 
     assert task.status == "unknown"
+
+
+def test_sync_alist_progress_marks_lost_when_done_list_has_only_non_matching_tasks(monkeypatch):
+    responses = [
+        FakeResponse(200, {"data": []}),
+        FakeResponse(200, {"data": [{"name": "other-task"}]}),
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(status="downloading", channel="alist")
+
+    def fake_post(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "lost"
+    assert task.error == "Alist 中未找到对应任务"
 
 
 def test_on_startup_marks_pending_task_failed_and_saves(monkeypatch):

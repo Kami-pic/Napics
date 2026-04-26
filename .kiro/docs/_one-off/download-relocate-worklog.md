@@ -128,6 +128,11 @@
   - `dlspeed >= 1 MB/s` 时格式化成 `x.y MB/s`
   - `eta >= 100 天` 时当前清空 ETA 展示
 
+- Alist phase / progress 默认
+  - undone `progress=0` 时当前保底写成 `0.0`
+  - undone 缺省 `state` 时当前仍按 `cloud_download` 处理
+  - done 列表里只有非命中任务时当前仍落到 `lost`
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`
