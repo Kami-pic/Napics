@@ -495,3 +495,75 @@ def test_execute_plan_returns_failed_when_pipeline_raises():
         assert result.error == "整理执行失败: boom"
 
     _with_temp_dir("relocator_execute_fail", run)
+
+
+def test_archive_both_returns_archived_when_conflicts_are_empty():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        save_path.mkdir(parents=True, exist_ok=True)
+        task = DownloadTask(id="task-1", save_path=str(save_path))
+
+        result = asyncio.run(FileRelocator(recycle_bin=RecordingRecycleBin()).archive_both(task, []))
+
+        assert result.success is True
+        assert result.status == "archived"
+        assert result.relocated_count == 0
+
+    _with_temp_dir("relocator_archive_both_empty", run)
+
+
+def test_archive_both_renames_old_files_into_backup_dir_and_avoids_name_collision():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        save_path.mkdir(parents=True, exist_ok=True)
+        old_file = save_path / "Show.S01E01.1080p.mkv"
+        backup_dir = save_path / f"[旧资源备份] - {save_path.name}"
+        existing_backup = backup_dir / old_file.name
+        _touch(old_file)
+        _touch(existing_backup)
+
+        task = DownloadTask(id="task-1", save_path=str(save_path))
+        conflicts = [CoexistPair(new_file=str(save_path / "Season 01" / "Show.S01E02.2160p.mkv"), old_file=str(old_file))]
+
+        result = asyncio.run(FileRelocator(recycle_bin=RecordingRecycleBin()).archive_both(task, conflicts))
+
+        moved_files = list(backup_dir.glob("Show.S01E01.1080p*"))
+        moved_names = {path.name for path in moved_files}
+
+        assert result.success is True
+        assert result.status == "archived"
+        assert old_file.exists() is False
+        assert old_file.name in moved_names
+        assert any(name.startswith("Show.S01E01.1080p_") and name.endswith(".mkv") for name in moved_names)
+
+    _with_temp_dir("relocator_archive_both_collision", run)
+
+
+def test_cancel_replace_fails_when_sandbox_directory_is_missing():
+    def run(tmp_dir):
+        sandbox = tmp_dir / "downloads" / "task-1"
+        task = DownloadTask(id="task-1", download_dir=str(sandbox))
+
+        result = FileRelocator(recycle_bin=RecordingRecycleBin()).cancel_replace(task)
+
+        assert result.success is False
+        assert result.status == "failed"
+        assert result.error == "沙盒目录不存在"
+
+    _with_temp_dir("relocator_cancel_replace_missing", run)
+
+
+def test_recycle_old_files_treats_missing_old_file_as_success_without_recycling():
+    def run(tmp_dir):
+        missing_old = tmp_dir / "Show" / "Show.S01E01.1080p.mkv"
+        recycle_bin = RecordingRecycleBin()
+
+        result = FileRelocator(recycle_bin=recycle_bin)._recycle_old_files(
+            CoexistPair(new_file=str(tmp_dir / "Show" / "Season 01" / "Show.S01E02.2160p.mkv"), old_file=str(missing_old)),
+            task_id="task-1",
+        )
+
+        assert result is True
+        assert recycle_bin.paths == []
+
+    _with_temp_dir("relocator_recycle_missing_old", run)

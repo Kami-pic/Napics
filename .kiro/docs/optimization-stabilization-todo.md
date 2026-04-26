@@ -123,7 +123,7 @@
 ### 当前已补到的高风险链路
 
 - [x] `file_relocator` 冲突探测与回收动作
-  - 当前：已补 `relocate()` 引擎未就绪 / 下载目录未就绪 / dry-run 空计划，`confirm_replace()` 回收失败即停止，`cancel_replace()` 沙盒回收，`_execute_plan()` 的 `download_dir` fallback 与执行异常返回
+  - 当前：已补 `relocate()` 引擎未就绪 / 下载目录未就绪 / dry-run 空计划，`confirm_replace()` 回收失败即停止，`cancel_replace()` 沙盒回收与缺目录失败，`archive_both()` 空冲突 / 重名封箱，`_recycle_old_files()` 缺旧文件 no-op，`_execute_plan()` 的 `download_dir` fallback 与执行异常返回
 - [x] `routes/relocate.py` 关键闭环路由
   - 当前：已补 task 缺失、顶层目录 / NAS 根目录拦截、archive_both 失败不归档、purge_old 无冲突返回
 - [x] `download_manager.py` 完成触发链

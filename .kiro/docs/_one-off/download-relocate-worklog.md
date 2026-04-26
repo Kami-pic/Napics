@@ -45,7 +45,9 @@
   - 真实 RecycleBin 落盘与元数据重载
   - `relocate()` 在引擎未就绪、下载目录未就绪、dry-run 空计划时的失败返回
   - `confirm_replace()` 在旧资源回收失败时立即停止，不继续执行落盘
-  - `cancel_replace()` 会递归回收沙盒内所有文件
+  - `cancel_replace()` 会递归回收沙盒内所有文件；沙盒缺失时返回 `failed`
+  - `archive_both()` 在无冲突时直接归档返回；备份目录重名时当前会自动追加时间戳避让
+  - `_recycle_old_files()` 在旧文件已不存在时当前按 no-op 成功处理
   - `_execute_plan()` 在缺 `save_path` 时回退 `download_dir`，执行异常时返回 `failed`
 
 ### DownloadManager
