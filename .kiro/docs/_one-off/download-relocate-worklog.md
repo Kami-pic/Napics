@@ -138,6 +138,10 @@
   - `media_matcher.match()` 抛异常时，当前只记日志，仍继续 `relocate()`
   - `sync_progress()` 遇到未知 `channel` 时当前只更新时间并走 `_save_debounced()`
 
+- submit / 订阅缺失边界
+  - `submit()` 当前先写 `created_at`，提交收口后再刷新一次 `updated_at`
+  - `_notify_subscription_complete()` 在 `mgr.get()` 拿不到订阅对象时，当前仍会发送普通 `download_complete`
+
 - 启动恢复 / 对账
   - 残留 `pending` -> `failed`
   - `downloading` -> `_reconcile_task()`

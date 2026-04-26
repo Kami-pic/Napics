@@ -194,8 +194,10 @@ def test_submit_marks_qb_task_downloading_and_persists(monkeypatch):
         dm = DownloadManager(qb_client=object(), alist_client=None, base_path=str(tmp_dir))
         task = _make_task(channel="qb", downloader_hash="")
         save_calls = []
+        now_values = iter(["2026-04-26T10:00:00", "2026-04-26T10:00:01"])
 
         monkeypatch.setattr("download_manager.uuid.uuid4", lambda: "abcd1234-0000")
+        monkeypatch.setattr("download_manager.datetime", SimpleNamespace(now=lambda: SimpleNamespace(isoformat=lambda: next(now_values))))
         monkeypatch.setattr(dm, "_push_to_qb", lambda current: (True, "hash-new"))
         monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
 
@@ -206,6 +208,8 @@ def test_submit_marks_qb_task_downloading_and_persists(monkeypatch):
         assert task.status == "downloading"
         assert task.downloader_hash == "hash-new"
         assert task.phase == ""
+        assert task.created_at == "2026-04-26T10:00:00"
+        assert task.updated_at == "2026-04-26T10:00:01"
         assert Path(task.download_dir).is_dir()
         assert dm.tasks == [task]
         assert save_calls == ["saved"]
@@ -1064,6 +1068,36 @@ def test_notify_subscription_complete_swallows_notification_errors(monkeypatch):
     dm._notify_subscription_complete(_make_task())
 
     assert len(mgr.download_complete_calls) == 1
+
+
+def test_notify_subscription_complete_without_subscription_still_sends_download_complete(monkeypatch):
+    mgr = FakeSubscriptionManager(sub=None)
+    notifications = []
+    auto_relocate_calls = []
+
+    fake_shared = SimpleNamespace(_get_sub_manager=lambda: mgr)
+    fake_notification_service = SimpleNamespace(
+        add_notification=lambda *_args: notifications.append(_args[2:])
+    )
+
+    monkeypatch.setitem(sys.modules, "shared", fake_shared)
+    monkeypatch.setitem(sys.modules, "notification_service", fake_notification_service)
+
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    monkeypatch.setattr(
+        dm,
+        "_auto_relocate",
+        lambda task, sub_obj=None: auto_relocate_calls.append(
+            {"task_id": task.id, "sub_id": getattr(sub_obj, "id", "")}
+        ),
+    )
+
+    dm._notify_subscription_complete(_make_task(subscription_id="sub-missing"))
+
+    assert len(mgr.download_complete_calls) == 1
+    assert mgr.update_calls == []
+    assert notifications == [("download_complete", "下载完成: Show")]
+    assert auto_relocate_calls == []
 
 
 def test_get_qb_hashes_returns_empty_when_login_fails():
