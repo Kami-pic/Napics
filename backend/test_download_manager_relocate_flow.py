@@ -1941,18 +1941,32 @@ def test_get_tasks_filters_by_status_before_sorting():
     assert [task.id for task in tasks] == ["task-failed", "task-archived"]
 
 
+def test_get_tasks_sorts_empty_created_at_last():
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    missing_time = _make_task(id="task-empty", status="completed", created_at="")
+    dated = _make_task(id="task-dated", status="completed", created_at="2026-04-24T11:00:00")
+    dm.tasks = [missing_time, dated]
+
+    tasks = dm.get_tasks()
+
+    assert [task.id for task in tasks] == ["task-dated", "task-empty"]
+
+
 def test_update_status_updates_task_error_and_saves(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(id="task-1", status="downloading", error="")
     dm.tasks = [task]
     save_calls = []
+    now_values = iter(["2026-04-26T11:00:00"])
 
+    monkeypatch.setattr("download_manager.datetime", SimpleNamespace(now=lambda: SimpleNamespace(isoformat=lambda: next(now_values))))
     monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
 
     dm.update_status("task-1", "failed", "boom")
 
     assert task.status == "failed"
     assert task.error == "boom"
+    assert task.updated_at == "2026-04-26T11:00:00"
     assert save_calls == ["saved"]
 
 
@@ -1974,13 +1988,16 @@ def test_archive_task_marks_organized_and_saves(monkeypatch):
     task = _make_task(id="task-1", status="completed", organized=False)
     dm.tasks = [task]
     save_calls = []
+    now_values = iter(["2026-04-26T12:00:00"])
 
+    monkeypatch.setattr("download_manager.datetime", SimpleNamespace(now=lambda: SimpleNamespace(isoformat=lambda: next(now_values))))
     monkeypatch.setattr(dm, "_save_now", lambda: save_calls.append("saved"))
 
     dm.archive_task("task-1", organized=True)
 
     assert task.status == "archived"
     assert task.organized is True
+    assert task.updated_at == "2026-04-26T12:00:00"
     assert save_calls == ["saved"]
 
 
