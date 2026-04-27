@@ -254,6 +254,10 @@
   - 同时联动移动并改名同 basename 的 `.nfo`、海报、字幕 sidecar
   - `episode.nfo` 改为写入目标文件，而不是先写原文件再做二次季化
   - 隔离验证：`test_organize_action_plan_execute.py` 已补，和 `test_file_relocator_conflicts.py`、`test_relocate_routes.py` 一起通过
+- 随后已切到影子副本验证方案
+  - 不再把正式 NAS 作为下一轮 execute 验证场
+  - 新增 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md)，把副本根目录、复制范围、快照、通过/失败判据压成执行面板
+  - 新增 `scripts/prepare_shadow_verify.ps1`，用于只复制单个样本目录到工作区 `shadow-verify`
 
 ---
 

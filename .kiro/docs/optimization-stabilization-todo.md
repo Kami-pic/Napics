@@ -153,6 +153,7 @@
 - [ ] 若继续推进下载→归位闭环，当前已选“真实环境验证”
 - [ ] 按 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md) 依次执行场景 A / B / C
 - [ ] 先完成“action_plan 按 `target_path` 落盘”的真实样本回归验证
+- [ ] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
 
 ### 暂停项
 
