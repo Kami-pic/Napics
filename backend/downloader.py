@@ -211,8 +211,8 @@ class AlistManager:
             logger.error(f"Alist error: {e}")
             return []
 
-    def transfer_link(self, download_url: str, remote_path: str) -> bool:
-        """将下载链接推送到 Alist 进行离线下载（优先 PikPak，其次 115）"""
+    def transfer_link(self, download_url: str, remote_path: str):
+        """将下载链接推送到 Alist 进行离线下载，返回 (success, task_id)。"""
         # 尝试的工具和路径列表（优先夸克）
         tools = [
             ("SimpleHttp", "/Quark"),
@@ -231,13 +231,32 @@ class AlistManager:
                 response = requests.post(url, json=payload, headers=self.headers, timeout=15)
                 data = response.json()
                 if data.get("code") == 200:
+                    task_id = self._extract_offline_task_id(data)
                     logger.info(f"[Alist] offline download via {tool} -> {save_path}")
-                    return True
+                    return True, task_id
             except Exception as e:
                 logger.error(f"[Alist] {tool} error: {e}")
                 continue
         logger.error("[Alist] all tools failed")
-        return False
+        return False, ""
+
+    @staticmethod
+    def _extract_offline_task_id(payload) -> str:
+        data = payload.get("data") if isinstance(payload, dict) else None
+        candidates = []
+        if isinstance(data, dict):
+            candidates.extend(data.get("tasks") or [])
+            if isinstance(data.get("task"), dict):
+                candidates.append(data["task"])
+            if data.get("id"):
+                return str(data["id"]).strip()
+        elif isinstance(data, list):
+            candidates.extend(data)
+
+        for item in candidates:
+            if isinstance(item, dict) and item.get("id"):
+                return str(item["id"]).strip()
+        return ""
 
 class QBittorrentClient:
     def __init__(self, url: str, username: str = "admin", password: str = ""):

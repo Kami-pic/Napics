@@ -1353,8 +1353,22 @@ def test_push_to_qb_returns_exception_message_when_add_torrent_raises():
     assert hash_or_error == "qb add boom"
 
 
-def test_push_to_alist_returns_task_marker_when_transfer_succeeds():
-    alist = FakeSubmitAlistClient(transfer_result=True)
+def test_push_to_alist_returns_real_task_id_when_transfer_provides_one():
+    alist = FakeSubmitAlistClient(transfer_result=(True, "task-real-123"))
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(id="task-123", download_dir=r"C:\downloads\task-123")
+
+    success, task_id_or_error = dm._push_to_alist(task)
+
+    assert success is True
+    assert task_id_or_error == "task-real-123"
+    assert alist.calls == [
+        {"download_url": "magnet:?xt=urn:btih:123", "download_dir": r"C:\downloads\task-123"}
+    ]
+
+
+def test_push_to_alist_falls_back_to_legacy_marker_when_task_id_missing():
+    alist = FakeSubmitAlistClient(transfer_result=(True, ""))
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(id="task-123", download_dir=r"C:\downloads\task-123")
 
@@ -1362,9 +1376,6 @@ def test_push_to_alist_returns_task_marker_when_transfer_succeeds():
 
     assert success is True
     assert task_id_or_error == "alist_task-123"
-    assert alist.calls == [
-        {"download_url": "magnet:?xt=urn:btih:123", "download_dir": r"C:\downloads\task-123"}
-    ]
 
 
 def test_push_to_alist_returns_error_when_transfer_fails():

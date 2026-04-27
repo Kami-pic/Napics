@@ -30,6 +30,12 @@ from download_manager import DownloadManager, DownloadTask
 
 router = APIRouter()
 
+
+def _alist_transfer_success(result) -> bool:
+    if isinstance(result, tuple):
+        return bool(result[0])
+    return bool(result)
+
 @router.post("/download")
 def trigger_download(req: DownloadRequest):
     conf = config_m.config
@@ -42,7 +48,7 @@ def trigger_download(req: DownloadRequest):
         if not conf.alist_url or not conf.alist_token:
             return {"success": False, "message": "Alist 未配置"}
         clients = get_clients()
-        success = clients["alist"].transfer_link(req.url, req.save_path)
+        success = _alist_transfer_success(clients["alist"].transfer_link(req.url, req.save_path))
     else:
         return {"success": False, "message": f"不支持的下载类型: {req.download_type}"}
     return {"success": success, "message": "任务已下达" if success else "执行异常"}
@@ -135,7 +141,7 @@ def batch_download(req: BatchDownloadRequest):
                 if not conf.alist_url or not conf.alist_token:
                     results.append({"index": i, "success": False, "message": "Alist 未配置"})
                     continue
-                success = clients["alist"].transfer_link(task.download_url, task.save_path)
+                success = _alist_transfer_success(clients["alist"].transfer_link(task.download_url, task.save_path))
             else:
                 results.append({"index": i, "success": False, "message": f"不支持的下载类型: {task.download_type}"})
                 continue

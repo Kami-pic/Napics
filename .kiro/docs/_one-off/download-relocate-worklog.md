@@ -428,6 +428,30 @@
     - `499b0bd2` 不是“等待恢复的 Alist unknown 样本”
     - 它是“旧错误路径掩盖下的实际失联样本”
     - 如果后续还要验证 Alist 的“异常解除后恢复推进”，需要重新找一笔仍存在于 Alist 任务列表里的真实样本
+- 随后继续补了 Alist 提交链的真实任务标识缺口
+  - 继续只读核对当前环境时发现：
+    - 真实 `GET /api/task/offline_download/undone` 返回 `[]`
+    - 真实 `GET /api/task/offline_download/done` 返回 `[]`
+    - 当前后端任务列表里只剩 1 笔 Alist 历史任务：`499b0bd2`
+  - 这说明下一轮真实恢复验证已经不缺“查询路径”，缺的是“提交时是否保存了真实 Alist tid”
+  - 继续读代码后确认：
+    - `downloader.AlistManager.transfer_link()` 之前只返回 `bool`
+    - `download_manager._push_to_alist()` 因此只能伪造 `alist_{task.id}`
+    - 即使 Alist 返回了真实任务列表，旧代码也会把真实 tid 丢掉
+  - 本轮最小修复：
+    - `transfer_link()` 改为返回 `(success, task_id)`
+    - 从 `add_offline_download` 返回体里优先提取 `data.tasks[].id` / `data.task.id` / `data.id`
+    - `_push_to_alist()` 优先落真实 tid，拿不到时才回退 `alist_{task.id}`
+    - 路由层兼容新的返回结构，只继续读取成功位
+  - 新增 / 调整隔离保护：
+    - 新增 `test_downloader_alist.py`，锁定 `transfer_link()` 能从返回体提取 tid
+    - `test_download_manager_relocate_flow.py` 新增“优先保存真实 tid / 缺失时回退旧 marker”保护
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_downloader_alist.py backend/test_download_manager_relocate_flow.py -k "alist or sync_progress"`
+    - 结果：`35 passed`
+  - 当前结论更新为：
+    - Alist 查询链和提交链两侧已都对齐到 AList V3 的真实接口/标识模型
+    - 当前缺的已不再是代码路径，而是新的真实 Alist 活跃样本
 
 ---
 

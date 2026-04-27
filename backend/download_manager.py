@@ -180,10 +180,13 @@ class DownloadManager:
     def _push_to_alist(self, task: DownloadTask) -> tuple:
         """推送到 Alist，返回 (success, task_id_or_error)。"""
         try:
-            ok = self.alist.transfer_link(task.download_url, task.download_dir)
+            result = self.alist.transfer_link(task.download_url, task.download_dir)
+            if isinstance(result, tuple):
+                ok, task_id = result
+            else:
+                ok, task_id = bool(result), ""
             if ok:
-                # Alist 不返回 task ID，用 URL hash 作为标识
-                return True, f"alist_{task.id}"
+                return True, task_id or f"alist_{task.id}"
             return False, "Alist 所有工具均失败"
         except Exception as e:
             return False, str(e)
