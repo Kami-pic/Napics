@@ -377,6 +377,19 @@
   - 当前结论：
     - 场景 C 已拿到真实 qB “异常解除后恢复推进”的证据
     - Alist 仍缺“从 unknown 恢复到 downloading/completed”的真实样本
+- 随后继续追 Alist 环境阻塞点，并把现象收窄到离线下载管理接口本身
+  - 使用 `backend/config.json` 里的现有 `alist_url + alist_token` 做直连核对
+  - 同一 token 下：
+    - `GET /api/admin/storage/list` 返回 `200 + application/json`
+    - `POST /api/fs/list` 返回 `200 + application/json`
+    - `POST /api/admin/task/offline_download/undone` 返回 `200 + text/html`
+    - `POST /api/admin/task/offline_download/done` 返回 `200 + text/html`
+  - 返回体前缀是 HTML 登录页，不是 Alist API JSON
+  - 这说明当前环境里，问题不再是 `sync_progress()` 没有继续轮询 Alist `unknown` 任务，而是“离线下载管理接口本身对这套鉴权/路由不返回 JSON”
+  - 因此本轮对 Alist 的真实结论只能收口为：
+    - `499b0bd2` 这类 `unknown + cloud_download` 任务在当前代码下会继续进入重试分支
+    - 但由于 `offline_download` 管理接口当前不可用，暂时拿不到“恢复到 downloading/completed”的真实环境样本
+  - 后续若要继续场景 C，应该先单独排查 Alist 的 `offline_download` 管理接口访问条件，再回到恢复验证
 
 ---
 
