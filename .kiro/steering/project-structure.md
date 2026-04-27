@@ -42,7 +42,7 @@ inclusion: always
 - `steering/` 文件通过前置元数据控制加载时机，具体见目录树中每个文件的标注
 - `knowledge/project-memory.md` 是项目业务知识库，AI 在涉及相关功能时按需读取
 - 新增设计文档放 `docs/`，行为规则放 `steering/`，项目知识放 `knowledge/`
-- 不要在其他位置维护重复内容
+- 不要在其他位置维护重复内容，发现重复规则时，优先保留 steering，其他位置改为引用，不新建第三份。
 
 ## docs 命名规范
 
