@@ -258,6 +258,17 @@
   - 不再把正式 NAS 作为下一轮 execute 验证场
   - 新增 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md)，把副本根目录、复制范围、快照、通过/失败判据压成执行面板
   - 新增 `scripts/prepare_shadow_verify.ps1`，用于只复制单个样本目录到工作区 `shadow-verify`
+- 影子副本 `青春之旅` 第一轮 execute 继续暴露了更前置的保护缺口
+  - `dry-run` 能正常产出标准化 `plan`，但同一批集数被两套源文件同时命中
+  - 具体表现是：一套 `.mkv` 和一套 `.mp4` 会同时落到同一季同一集的标准 basename，只是扩展名不同
+  - 这说明仅拦截“重复 `target_path`”不够，execute 前还需要拦截“重复逻辑目标”
+  - 下一步应在 `routes/organize.py` 执行前按“同目录 + 同 basename（忽略扩展名）” fail-fast，避免副本再次进入半执行
+- 现已补上 execute 前双重保护并完成离线验证
+  - 新增“重复逻辑目标”判定：同目录 + 同 basename（忽略扩展名）直接拦截
+  - 同时保留原有“重复 `target_path`”拦截
+  - 用当前工作区代码对影子副本 `青春之旅` 的真实 `dry-run` 结果做离线路由直调，已在写盘前直接 `400`
+  - 这次先命中的 actually 是 `Season 00\\青春之旅 - S00E01 - PAGE.0` 的重复 `target_path`，说明样本里除了 `.mkv/.mp4` 双份主线集数外，`SP/NCOP` 也映射到了同一个目标位
+  - 当前 `127.0.0.1:8000` 上的在线进程仍是旧代码；如需再做 HTTP 端到端验证，需要重启本地后端后再复跑
 
 ---
 

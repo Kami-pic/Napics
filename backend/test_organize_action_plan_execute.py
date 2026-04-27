@@ -3,7 +3,13 @@ import shutil
 import uuid
 from pathlib import Path
 
-from routes.organize import _apply_action_plan_moves
+from fastapi import HTTPException
+
+from routes.organize import (
+    _apply_action_plan_moves,
+    _find_duplicate_logical_targets,
+    _find_duplicate_target_paths,
+)
 
 
 def _touch(path: Path):
@@ -68,3 +74,79 @@ def test_apply_action_plan_moves_skips_missing_or_same_path_items():
         assert original.exists()
 
     _with_temp_dir("organize_action_plan_skip", run)
+
+
+def test_find_duplicate_target_paths_returns_conflicting_targets_once():
+    duplicates = _find_duplicate_target_paths([
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E01.mkv"},
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E01.mkv"},
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E02.mkv"},
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E02.mkv"},
+    ])
+
+    assert duplicates == [
+        r"C:\library\Show\Season 01\Show - S01E01.mkv",
+        r"C:\library\Show\Season 01\Show - S01E02.mkv",
+    ]
+
+
+def test_duplicate_target_paths_should_stop_execute_before_any_move():
+    duplicates = _find_duplicate_target_paths([
+        {"original_path": r"C:\source\a.mkv", "target_path": r"C:\library\Show\Season 01\Show - S01E01.mkv"},
+        {"original_path": r"C:\source\b.mkv", "target_path": r"C:\library\Show\Season 01\Show - S01E01.mkv"},
+    ])
+
+    try:
+        if duplicates:
+            sample_targets = "\n".join(duplicates[:3])
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"action_plan 存在重复 target_path（{len(duplicates)} 个），已停止执行。\n"
+                    f"{sample_targets}"
+                ),
+            )
+    except HTTPException as exc:
+        assert exc.status_code == 400
+        assert "重复 target_path" in exc.detail
+        assert "Show - S01E01.mkv" in exc.detail
+    else:
+        raise AssertionError("expected duplicate target_path guard to raise HTTPException")
+
+
+def test_find_duplicate_logical_targets_ignores_extension_difference():
+    duplicates = _find_duplicate_logical_targets([
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E01.mkv"},
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E01.mp4"},
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E02.mkv"},
+        {"target_path": r"C:\library\Show\Season 01\Show - S01E02.ass"},
+    ])
+
+    assert duplicates == [
+        r"C:\library\Show\Season 01\Show - S01E01",
+        r"C:\library\Show\Season 01\Show - S01E02",
+    ]
+
+
+def test_duplicate_logical_targets_should_stop_execute_before_any_move():
+    duplicates = _find_duplicate_logical_targets([
+        {"original_path": r"C:\source\a.mkv", "target_path": r"C:\library\Show\Season 01\Show - S01E01.mkv"},
+        {"original_path": r"C:\source\b.mp4", "target_path": r"C:\library\Show\Season 01\Show - S01E01.mp4"},
+    ])
+
+    try:
+        if duplicates:
+            sample_targets = "\n".join(duplicates[:3])
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"action_plan 存在重复逻辑目标（{len(duplicates)} 个），已停止执行。\n"
+                    f"{sample_targets}"
+                ),
+            )
+    except HTTPException as exc:
+        assert exc.status_code == 400
+        assert "重复逻辑目标" in exc.detail
+        assert "Show - S01E01" in exc.detail
+    else:
+        raise AssertionError("expected duplicate logical target guard to raise HTTPException")

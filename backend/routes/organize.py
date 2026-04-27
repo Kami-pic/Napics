@@ -31,6 +31,58 @@ _PLAN_POSTER_SUFFIXES = (
 _PLAN_SUBTITLE_EXTS = {".srt", ".ass", ".ssa", ".sub", ".idx", ".sup", ".vtt"}
 
 
+def _find_duplicate_target_paths(plan_items: list) -> list[str]:
+    """返回 action_plan 中重复命中的目标路径。"""
+    seen = set()
+    duplicates = set()
+    for item in plan_items or []:
+        target_path = item.get("target_path") or ""
+        if not target_path:
+            continue
+        norm_target = os.path.normcase(os.path.normpath(target_path))
+        if norm_target in seen:
+            duplicates.add(target_path)
+        else:
+            seen.add(norm_target)
+    return sorted(duplicates)
+
+
+def _find_duplicate_logical_targets(plan_items: list) -> list[str]:
+    """返回 action_plan 中重复命中的逻辑目标 basename（忽略扩展名）。"""
+    seen = set()
+    duplicates = {}
+    for item in plan_items or []:
+        target_path = item.get("target_path") or ""
+        if not target_path:
+            continue
+        target_dir = os.path.dirname(target_path)
+        target_stem = os.path.splitext(os.path.basename(target_path))[0]
+        if not target_dir or not target_stem:
+            continue
+        logical_key = os.path.normcase(os.path.normpath(os.path.join(target_dir, target_stem)))
+        duplicates.setdefault(logical_key, os.path.join(target_dir, target_stem))
+        if logical_key in seen:
+            continue
+        seen.add(logical_key)
+
+    counts = {}
+    for item in plan_items or []:
+        target_path = item.get("target_path") or ""
+        if not target_path:
+            continue
+        target_dir = os.path.dirname(target_path)
+        target_stem = os.path.splitext(os.path.basename(target_path))[0]
+        if not target_dir or not target_stem:
+            continue
+        logical_key = os.path.normcase(os.path.normpath(os.path.join(target_dir, target_stem)))
+        counts[logical_key] = counts.get(logical_key, 0) + 1
+
+    return sorted(
+        display_path for logical_key, display_path in duplicates.items()
+        if counts.get(logical_key, 0) > 1
+    )
+
+
 def _apply_action_plan_moves(plan_items: list) -> list:
     """按 action_plan 直接落盘视频与同 basename 附属文件。"""
     ops = []
@@ -449,6 +501,26 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
             tmdb_match = action_plan.get("tmdb_match", {})
             plan_items = action_plan.get("plan", [])
             folder_type = action_plan.get("folder_type", "")
+            duplicate_targets = _find_duplicate_target_paths(plan_items)
+            if duplicate_targets:
+                sample_targets = "\n".join(duplicate_targets[:3])
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"action_plan 存在重复 target_path（{len(duplicate_targets)} 个），已停止执行。\n"
+                        f"{sample_targets}"
+                    ),
+                )
+            duplicate_logical_targets = _find_duplicate_logical_targets(plan_items)
+            if duplicate_logical_targets:
+                sample_targets = "\n".join(duplicate_logical_targets[:3])
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"action_plan 存在重复逻辑目标（{len(duplicate_logical_targets)} 个），已停止执行。\n"
+                        f"{sample_targets}"
+                    ),
+                )
 
             # 执行 wrap_plan
             wrap_plan = action_plan.get("wrap_plan", [])
