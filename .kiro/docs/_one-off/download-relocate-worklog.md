@@ -240,6 +240,20 @@
 - 已开始最小代码收口
   - 方向：在冲突探测时排除当前 `plan` 的目标目录，避免真实 execute 后再次探测把新建的 `Season 01` 误判成旧资源
   - 保护：本轮只改判定逻辑和隔离测试，不再继续真实 NAS 写盘
+- 随后用真实样本回读确认：上一条修复没有打到根因
+  - 两个样本在新代码下再次 `dry-run` 仍然都是 `awaiting_confirm + 1`
+  - 但 `plan` 本身是完整 24 集，不是“只规划了一集”
+  - `old_tree` 里 `Season 01` 子项数量达到 `48`，样本名直接是原始发布组文件名
+  - 这说明残留冲突不是“目录误判”，而是 execute 后原始命名文件仍然留在季目录里
+- 已定位到真正根因在 `routes/organize.py` 的 `action_plan` 执行分支
+  - 当前逻辑只是对 `original_path` 写 `episode.nfo`，然后调用 `reorganize_seasons_by_nfo()` 把原文件搬进季目录
+  - 它并没有按 `plan.target_path / target_filename` 去真正重命名视频主文件
+  - 所以 execute 后保留下来的仍是原始发布组文件名，后续真实 `dry-run` 继续看到整个 `Season 01` 为旧存量是合理结果
+- 已改为“按 action_plan 直接落盘”
+  - 新增 helper：按 `original_path -> target_path` 移动视频主文件
+  - 同时联动移动并改名同 basename 的 `.nfo`、海报、字幕 sidecar
+  - `episode.nfo` 改为写入目标文件，而不是先写原文件再做二次季化
+  - 隔离验证：`test_organize_action_plan_execute.py` 已补，和 `test_file_relocator_conflicts.py`、`test_relocate_routes.py` 一起通过
 
 ---
 

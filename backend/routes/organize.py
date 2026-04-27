@@ -21,6 +21,84 @@ from organize_history import history_m
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+_PLAN_POSTER_SUFFIXES = (
+    ".nfo",
+    "-poster.jpg", "-poster.png",
+    "-thumb.jpg", "-thumb.png",
+    "-fanart.jpg", "-fanart.png",
+    "-clearlogo.png",
+)
+_PLAN_SUBTITLE_EXTS = {".srt", ".ass", ".ssa", ".sub", ".idx", ".sup", ".vtt"}
+
+
+def _apply_action_plan_moves(plan_items: list) -> list:
+    """按 action_plan 直接落盘视频与同 basename 附属文件。"""
+    ops = []
+    for item in plan_items or []:
+        original_path = item.get("original_path") or ""
+        target_path = item.get("target_path") or ""
+        if not original_path or not target_path or original_path == target_path:
+            continue
+        if not os.path.exists(original_path):
+            continue
+
+        source_dir = os.path.dirname(original_path)
+        source_base, source_ext = os.path.splitext(os.path.basename(original_path))
+        target_dir = os.path.dirname(target_path)
+        target_base, target_ext = os.path.splitext(os.path.basename(target_path))
+
+        ops.append({
+            "action": "move",
+            "old": original_path,
+            "new": target_path,
+            "mkdir": target_dir,
+        })
+
+        try:
+            siblings = os.listdir(source_dir)
+        except OSError:
+            siblings = []
+
+        for sibling in siblings:
+            sibling_path = os.path.join(source_dir, sibling)
+            if sibling_path == original_path or not os.path.isfile(sibling_path):
+                continue
+
+            sibling_lower = sibling.lower()
+            moved = False
+
+            for suffix in _PLAN_POSTER_SUFFIXES:
+                if sibling_lower == f"{source_base.lower()}{suffix}":
+                    ops.append({
+                        "action": "move",
+                        "old": sibling_path,
+                        "new": os.path.join(target_dir, f"{target_base}{suffix}"),
+                        "mkdir": target_dir,
+                    })
+                    moved = True
+                    break
+            if moved:
+                continue
+
+            if sibling_lower.startswith(f"{source_base.lower()}."):
+                subtitle_ext = os.path.splitext(sibling)[1].lower()
+                if subtitle_ext in _PLAN_SUBTITLE_EXTS:
+                    suffix = sibling[len(source_base):]
+                    ops.append({
+                        "action": "move",
+                        "old": sibling_path,
+                        "new": os.path.join(target_dir, f"{target_base}{suffix}"),
+                        "mkdir": target_dir,
+                    })
+
+    for op in ops:
+        if op.get("mkdir"):
+            os.makedirs(op["mkdir"], exist_ok=True)
+        if os.path.exists(op["old"]) and not os.path.exists(op["new"]):
+            shutil.move(op["old"], op["new"])
+
+    return ops
+
 @router.post("/organize/rollback")
 def rollback_rename(snapshot_id: int):
     """回滚重命名操作，同时更新媒体库路径"""
@@ -406,6 +484,11 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
                     if tv_detail.poster_url:
                         scraper.download_poster(path, tv_detail.poster_url, proxy=proxy)
 
+                plan_move_ops = _apply_action_plan_moves(plan_items)
+                if plan_move_ops:
+                    _sync_library_paths(plan_move_ops)
+                result["steps"]["structure"] = {"moved": len(plan_move_ops)}
+
                 # 写 episode.nfo
                 nfo_written = 0
                 showtitle = tv_detail.title if tv_detail else ""
@@ -416,7 +499,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
                     if not mapped:
                         continue
                     s, e = mapped["season"], mapped["episode"]
-                    vpath = item["original_path"]
+                    vpath = item.get("target_path") or item["original_path"]
                     if not os.path.exists(vpath):
                         continue
                     ep_scrape = tmdb_client.ScrapeResult(
@@ -428,16 +511,6 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
                     scraper.write_episode_nfo(vpath, ep_scrape, showtitle=showtitle)
                     nfo_written += 1
                 result["steps"]["scrape"] = {"nfo_written": nfo_written}
-
-            # Reload library
-            library = config_m.load_library()
-
-            # 执行结构归位（读 NFO 建季目录）
-            if folder_type == "tv":
-                reorg = organizer.reorganize_seasons_by_nfo(path, dry_run=False)
-                if reorg.get("ops"):
-                    _sync_library_paths(reorg["ops"])
-                result["steps"]["structure"] = {"moved": len(reorg.get("ops", []))}
 
             # Reload library
             library = config_m.load_library()
