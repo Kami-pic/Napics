@@ -214,6 +214,10 @@
   - 场景 A：真实 NAS `organize execute`
   - 场景 B：真实 `confirm_replace + execute` 交叠时序
   - 场景 C：真实 qB / Alist 异常小样本
+- 2026-04-27 首次尝试场景 A 时确认了运行阻塞：
+  - 后端 / qB / Alist 本机端口均未启动
+  - NAS 路径当前不可访问
+  - 已从历史任务中筛出 `1a607cf1`、`5ad5b6f9` 作为环境恢复后的首批候选样本
 
 ---
 
