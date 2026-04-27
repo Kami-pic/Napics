@@ -228,6 +228,11 @@
   - `backend/recycle_bin/recycle_bin.json` 已出现该任务的真实回收记录
   - 真实 NAS `dry-run -> execute` 主链路已开证
   - 但对同一任务再次执行 `dry-run` 仍会返回 `awaiting_confirm`，当前只剩 `Season 01` 目录级冲突，属于后续可单独收口的真实环境边角
+- 随后对第二个真实样本 `5ad5b6f9`（卡罗尔与星期二）执行了同样流程
+  - 真实 `/organize/execute` 后任务同样收口到 `archived`，且 `organized=true`
+  - 回收站元数据为该任务新增了 `37` 条真实记录
+  - 再次 `dry-run` 仍返回 `awaiting_confirm`，且缩成 `1` 个残留冲突
+  - 说明“执行后再次探测仍有目录级残留冲突”已在两个真实样本上复现
 
 ---
 
