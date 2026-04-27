@@ -642,6 +642,28 @@ def test_sync_progress_triggers_relocate_and_subscription_callback_for_completed
     ]
 
 
+def test_sync_progress_retries_unknown_qb_task_and_finishes_recovery_flow(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="unknown", channel="qb")
+    dm.tasks = [task]
+
+    events = []
+    monkeypatch.setattr(dm, "_sync_qb_progress", lambda current: setattr(current, "status", "completed"))
+    monkeypatch.setattr(dm, "_relocate_to_save_path", lambda current: events.append(("relocate", current.id)))
+    monkeypatch.setattr(dm, "_notify_subscription_complete", lambda current: events.append(("notify", current.id)))
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert task.status == "completed"
+    assert events == [
+        ("relocate", "task-1"),
+        ("notify", "task-1"),
+        ("save_now", None),
+    ]
+
+
 def test_sync_progress_triggers_relocate_without_subscription_callback_for_completed_alist(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
     task = _make_task(status="downloading", channel="alist", subscription_id=None, subscription_episode=None)
@@ -740,6 +762,32 @@ def test_sync_progress_saves_now_when_alist_task_becomes_unknown(monkeypatch):
     dm.sync_progress()
 
     assert task.status == "unknown"
+    assert events == [("save_now", None)]
+
+
+def test_sync_progress_retries_unknown_alist_task_until_it_recovers_to_downloading(monkeypatch):
+    dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+    task = _make_task(status="unknown", channel="alist")
+    dm.tasks = [task]
+
+    events = []
+
+    def recover(current):
+        current.status = "downloading"
+        current.phase = "local_sync"
+        current.progress = 1.0
+
+    monkeypatch.setattr(dm, "_sync_alist_progress", recover)
+    monkeypatch.setattr(dm, "_relocate_to_save_path", lambda current: events.append(("relocate", current.id)))
+    monkeypatch.setattr(dm, "_notify_subscription_complete", lambda current: events.append(("notify", current.id)))
+    monkeypatch.setattr(dm, "_save_now", lambda: events.append(("save_now", None)))
+    monkeypatch.setattr(dm, "_save_debounced", lambda: events.append(("save_debounced", None)))
+
+    dm.sync_progress()
+
+    assert task.status == "downloading"
+    assert task.phase == "local_sync"
+    assert task.progress == 1.0
     assert events == [("save_now", None)]
 
 

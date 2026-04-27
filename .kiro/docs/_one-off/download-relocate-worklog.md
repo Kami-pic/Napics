@@ -328,6 +328,35 @@
     - `summary.files_to_move=0`
     - `summary.shadows_to_fill=22`
   - 结论：主链路已经幂等收口；剩余的 `shadows_to_fill` 属于影子名补齐候选，不再代表结构或 NFO 执行残留
+- 随后开始真实下载器异常小样本的只读观测
+  - 本轮不人为停服务或注入故障，只利用现成真实任务做一次 `sync_progress` 观测
+  - qB 样本：`99c57d47 / 集成测试片`
+    - 观测前：`backend/download_tasks.json` 中仍是 `status=downloading`
+    - 触发：访问 `/download-manager/progress`，后端内部执行一次 `sync_progress`
+    - 观测后：任务回退为 `status=unknown`，`progress=0.0`，未误收口到 `completed`，也未触发归位/归档
+    - 说明：真实 qB 异常或未命中场景下，当前主链路会保守回退，不会误推进
+  - Alist 样本：`499b0bd2 / 妖精的旋律`
+    - 观测前后均为 `status=unknown`、`phase=cloud_download`
+    - 显式再调用一次 `/download-manager/sync` 后状态不变
+    - 说明：现有真实异常样本下，Alist 不会误触发 `completed` 或自动归位
+  - 当前不足：
+    - 这轮只证明了“异常期间不误收口”
+    - 还没有拿到“异常解除后恢复推进”的真实样本
+- 随后补了场景 C 的最小代码收口
+  - 真实观测暴露出根因：`DownloadManager.sync_progress()` 只轮询 `status == downloading`
+  - 这意味着任务一旦因 qB / Alist 短时异常被打成 `unknown`，后续即使下载器恢复，也没有任何自动恢复入口
+  - 本轮最小修复：
+    - `sync_progress()` 改为同时轮询 `downloading + unknown`
+    - 允许 `unknown -> completed` 时继续触发 `_relocate_to_save_path()` 和订阅完成回调
+  - 新增保护测试：
+    - `test_sync_progress_retries_unknown_qb_task_and_finishes_recovery_flow`
+    - `test_sync_progress_retries_unknown_alist_task_until_it_recovers_to_downloading`
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_progress"`
+    - 结果：`9 passed`
+  - 当前结论：
+    - “异常后永远停在 unknown” 这一恢复缺口已在代码层收口
+    - 还差一笔真实环境样本，证明下载器恢复后状态能真实回推进
 
 ---
 

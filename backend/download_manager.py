@@ -190,14 +190,15 @@ class DownloadManager:
     # ── 进度同步 ──
 
     def sync_progress(self):
-        """轮询所有 downloading 任务的进度。
+        """轮询所有 downloading / unknown 任务的进度。
 
         由外部定时调用（如 FastAPI BackgroundTasks 或定时器）。
         高频进度只更新内存，防抖落盘。
         下载完成后自动转移文件到 save_path。
+        `unknown` 代表下载器短时异常后的待恢复态，下一轮同步仍应继续尝试对账。
         """
         with self._lock:
-            active = [t for t in self.tasks if t.status == "downloading"]
+            active = [t for t in self.tasks if t.status in ("downloading", "unknown")]
 
         state_changed = False
         for task in active:
@@ -213,7 +214,7 @@ class DownloadManager:
                 state_changed = True
 
             # 下载完成 → 自动转移到 save_path
-            if task.status == "completed" and old_status == "downloading":
+            if task.status == "completed" and old_status in ("downloading", "unknown"):
                 self._relocate_to_save_path(task)
                 # 订阅回调：更新 downloaded_episodes
                 if task.subscription_id:

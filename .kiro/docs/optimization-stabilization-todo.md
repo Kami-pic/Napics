@@ -139,7 +139,7 @@
 - [ ] 真实 `confirm_replace + execute` 交叠时序验证
   - 当前：已用第二个样本 `5ad5b6f9` 复现真实 execute 收口；两笔样本都稳定暴露“执行后再次 dry-run 仍残留 1 个 `Season 01` 目录冲突”，并已进一步定位为 `action_plan` 执行阶段未按 `target_path` 重命名落盘，而是保留了原始发布组文件名
 - [ ] 真实 qB / Alist 超时 / 重试 / 返回结构异常小样本验证
-  - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试，真实下载器小样本仍未验证
+  - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试；真实环境已补一轮只读观测：`99c57d47`（qB）在 `sync_progress` 后从 `downloading` 回退到 `unknown`，未误收口到 `completed`；`499b0bd2`（Alist）保持 `unknown + cloud_download`，未误触发归位。已进一步修复 `sync_progress()` 只轮询 `downloading`、导致 `unknown` 永远无法自动恢复的问题，并补回归测试；仍未覆盖“真实环境下异常解除后的恢复收口”
 - [ ] 必要时补一个“真实环境验证记录”单独文档
   - 当前：已落一版执行清单，见 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 
@@ -152,10 +152,12 @@
 - [ ] 整理文档结构：保持 TODO 只做执行面板
 - [ ] 若继续推进下载→归位闭环，当前已选“真实环境验证”
 - [ ] 按 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md) 依次执行场景 A / B / C
-- [ ] 先完成“action_plan 按 `target_path` 落盘”的真实样本回归验证
-  - 当前：影子副本 `青春之旅` 已进一步暴露“同一集数被多份源文件同时命中”的执行前冲突；工作区代码已补 `target_path` + 逻辑目标双重前置拦截，离线路由直调与独立 8011 HTTP 端到端验证都会在写盘前直接 `400`
-- [ ] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
-  - 当前：已用 `d673d8fc / 四月是你的谎言` 打通副本链路；补完影子路径的 `category_hint` fallback 后，本地副本已能恢复 `tv + existing_nfo + 22/23`，并在独立端口上成功完成一次 `dry-run -> execute`；回看 summary 也已收口到 `will_process=0 / nfo_to_write=0 / files_to_move=0`
+- [x] 先完成“action_plan 按 `target_path` 落盘”的真实样本回归验证
+  - 当前：影子副本 `青春之旅` 已先暴露“同一集数被多份源文件同时命中”的执行前冲突；工作区代码补完 `target_path` + 逻辑目标双重前置拦截后，会在离线路由直调与独立 HTTP 端到端验证中于写盘前直接 `400`
+- [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
+  - 当前：已用 `d673d8fc / 四月是你的谎言` 打通副本链路；补完影子路径的 `category_hint` fallback 后，本地副本已恢复 `tv + existing_nfo + 22/23`，并在独立端口上成功完成一次 `dry-run -> execute`；回看 summary 已收口到 `will_process=0 / nfo_to_write=0 / files_to_move=0`
+- [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”
+  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；下一步只差补“真实环境下异常解除后是否能恢复收口”
 
 ### 暂停项
 
