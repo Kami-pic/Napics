@@ -206,6 +206,15 @@
 - 真实线程下 `confirm_replace + execute` 的交叠时序
 - 真实 qB / Alist 在超时、重试、返回结构变化下的更复杂异常
 
+### 下一阶段执行面板
+
+- 已从“继续补隔离层测试”切到“真实环境验证准备”
+- 独立执行清单已落到 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
+- 后续优先顺序固定为：
+  - 场景 A：真实 NAS `organize execute`
+  - 场景 B：真实 `confirm_replace + execute` 交叠时序
+  - 场景 C：真实 qB / Alist 异常小样本
+
 ---
 
 ## 关联存档点

@@ -139,6 +139,7 @@
 - [ ] 真实 qB / Alist 超时 / 重试 / 返回结构异常小样本验证
   - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试，真实下载器小样本仍未验证
 - [ ] 必要时补一个“真实环境验证记录”单独文档
+  - 当前：已落一版执行清单，见 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 
 ---
 
@@ -147,7 +148,8 @@
 ### 当前 task
 
 - [ ] 整理文档结构：保持 TODO 只做执行面板
-- [ ] 若继续推进下载→归位闭环，优先在“真实环境验证”与“真实下载器长尾”里二选一
+- [ ] 若继续推进下载→归位闭环，当前已选“真实环境验证”
+- [ ] 按 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md) 依次执行场景 A / B / C
 
 ### 暂停项
 
@@ -159,4 +161,5 @@
 
 - 主协议：[optimization-master-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/optimization-master-plan.md)
 - 本轮详细工作记录：[download-relocate-worklog.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-worklog.md)
+- 真实环境验证清单：[download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 - 项目记忆：[project-memory.md](/C:/Users/shenq/nas-video-upgrader/.kiro/knowledge/project-memory.md)
