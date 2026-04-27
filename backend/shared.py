@@ -330,22 +330,36 @@ def get_clients():
 def _get_category_from_path(path: str) -> str:
     """从文件路径推断一级分类标签（movie/tv）"""
     base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
-    if not base:
-        return ""
-    norm_path = os.path.normpath(path)
-    norm_base = os.path.normpath(base)
-    if not norm_path.startswith(norm_base):
-        return ""
-    rel = os.path.relpath(norm_path, norm_base)
-    parts = rel.split(os.sep)
-    if not parts or parts[0] == ".":
-        return ""
-    category_dir_name = parts[0]
-    category_dir_path = os.path.join(base, category_dir_name)
     configured_tags = config_m.config.category_tags or {}
-    if category_dir_path in configured_tags:
-        return configured_tags[category_dir_path]
-    return organizer.infer_category_tag(category_dir_name)
+    norm_path = os.path.normpath(path)
+
+    if base:
+        norm_base = os.path.normpath(base)
+        if norm_path.startswith(norm_base):
+            rel = os.path.relpath(norm_path, norm_base)
+            parts = rel.split(os.sep)
+            if parts and parts[0] != ".":
+                category_dir_name = parts[0]
+                category_dir_path = os.path.join(base, category_dir_name)
+                if category_dir_path in configured_tags:
+                    return configured_tags[category_dir_path]
+                return organizer.infer_category_tag(category_dir_name)
+
+    # 影子副本等非正式库路径：按路径分段回收已知一级分类名
+    configured_names = {
+        os.path.basename(os.path.normpath(category_dir_path)): tag
+        for category_dir_path, tag in configured_tags.items()
+    }
+    for part in norm_path.split(os.sep):
+        clean_part = part.strip()
+        if not clean_part:
+            continue
+        if clean_part in configured_names:
+            return configured_names[clean_part]
+        inferred = organizer.infer_category_tag(clean_part)
+        if inferred != "movie":
+            return inferred
+    return ""
 
 
 def _is_top_category(path: str) -> bool:

@@ -288,6 +288,30 @@
     - `tmdb_match={}`、`plan=[]`、`summary={}`
     - 即使额外包装一层 `四月是你的谎言` 目录，或挂到本地仿真 `视频/动画番/...` 路径下，结果仍相同
   - 当前判断：问题不在正式候选是否干净，而在“本地影子路径仍未保留足够的上下文让 analyzer/scraper 走到与正式库一致的 `existing_nfo -> tv` 分支”
+- 随后已定位并修通这个上下文缺口
+  - 根因不在 NFO 内容，而在 `shared._get_category_from_path()`：正式库路径能拿到 `动画番 -> tv` 的 `category_hint`，影子副本路径拿不到，于是退回旧结构推断，变成 `folder_type=series`
+  - 已补 fallback：当路径不在正式 NAS 根下时，也允许从路径分段中识别已知一级分类目录名
+  - 新增 `test_shared_category_hint.py` 锁定：
+    - `shadow-verify/library/视频/动画番/...` 能回收到 `tv`
+    - 未命中任何分类段的杂路径仍返回空
+  - 隔离验证通过后，用当前工作区代码直接调用 `organize_full(dry_run=True)`，`四月是你的谎言` 影子副本已恢复到与正式库一致的核心结果：
+    - `folder_type=tv`
+    - `tmdb_match.match_source=existing_nfo`
+    - `summary.total_videos=23 / will_process=22 / will_skip=1`
+- 已继续做影子副本的独立端口实证，不依赖旧的 `8000`
+  - 临时起一份 `python -m uvicorn main:app --host 127.0.0.1 --port 8013`
+  - 对 `shadow-verify/library/视频/动画番/四月是你的谎言` 执行真实 `dry-run -> execute`
+  - 结果：
+    - `dry-run`: `folder_type=tv`, `match_source=existing_nfo`, `will_process=22`
+    - `execute`: `200 OK`
+    - `steps.structure.moved=88`
+    - `steps.scrape.nfo_written=22`
+  - 随后再次只读 `dry-run` 回看：
+    - `folder_type` 仍为 `tv`
+    - `tmdb_match` 仍为 `existing_nfo`
+    - `analyze.structure_ops=0`
+  - 当前剩余观察点：
+    - 回看时 `summary.will_process` 仍为 `22`，说明这条链路当前会继续把“重写 episode.nfo/补齐 shadow”视为可执行项，但已不再表现为结构残留或类型退化
 
 ---
 
