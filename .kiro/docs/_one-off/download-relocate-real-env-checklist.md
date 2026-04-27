@@ -217,3 +217,25 @@
 
 - 环境恢复顺序应固定为：后端 -> qB -> Alist -> NAS 路径访问
 - 条件恢复后，优先拿候选 1 做第一次真实 `organize execute` 小样本
+
+### 恢复后首次结果
+
+- 后端 `8000`、qB `8080`、Alist `5244` 已恢复可访问
+- NAS 路径 `\\\\DS218play\\share\\视频\\` 已恢复可访问
+- 已对候选 1 `1a607cf1` 执行真实 `/organize/dry-run`
+- 返回结果：`awaiting_confirm`
+
+### 已确认观测
+
+- 当前样本：`军火女王 Jormungand`
+- `save_path`：`\\\\DS218play\\share\\视频\\动画番\\军火女王 Jormungand`
+- `download_dir` 当前已不存在，但 `dry-run` 仍可基于 `save_path + qB 文件列表` 完成真实探测
+- 探测结果已识别：
+  - 新资源会整理到 `Season 01`
+  - 库中已有 `军火女王 Season 01`、`军火女王 Season 02` 等旧资源冲突
+  - 当前状态停在 `awaiting_confirm`
+
+### 当前停止点
+
+- 尚未执行真实 `execute`
+- 原因：该步骤会真实移动 / 回收 NAS 文件，属于高风险操作，需用户明确确认后再继续

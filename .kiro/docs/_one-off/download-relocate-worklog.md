@@ -218,6 +218,11 @@
   - 后端 / qB / Alist 本机端口均未启动
   - NAS 路径当前不可访问
   - 已从历史任务中筛出 `1a607cf1`、`5ad5b6f9` 作为环境恢复后的首批候选样本
+- 随后已恢复后端 / qB / Alist / NAS 路径访问，并对候选样本 `1a607cf1` 执行真实 `/organize/dry-run`
+  - 返回 `awaiting_confirm`
+  - 已真实识别到 `军火女王 Jormungand` 目录下的旧季目录与旧视频冲突
+  - 新资源计划落到 `Season 01`
+  - 因 `execute` 会真实改动 NAS 文件，当前停在确认前，不自动继续
 
 ---
 
