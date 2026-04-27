@@ -155,6 +155,7 @@
 - [ ] 先完成“action_plan 按 `target_path` 落盘”的真实样本回归验证
   - 当前：影子副本 `青春之旅` 已进一步暴露“同一集数被多份源文件同时命中”的执行前冲突；工作区代码已补 `target_path` + 逻辑目标双重前置拦截，离线路由直调与独立 8011 HTTP 端到端验证都会在写盘前直接 `400`
 - [ ] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
+  - 当前：已筛出更干净的正式候选 `d673d8fc / 四月是你的谎言`；正式库只读 `dry-run` 为 `tv + existing_nfo + 22/23`，且无重复目标，但复制到本地影子路径后暂时退化成 `folder_type=series / tmdb_match={} / plan=[]`
 
 ### 暂停项
 

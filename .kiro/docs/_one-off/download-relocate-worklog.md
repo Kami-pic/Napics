@@ -275,6 +275,19 @@
   - 结果与离线判断一致：`execute` 返回 `400`
   - 报错详情为 `action_plan 存在重复 target_path（1 个）`，命中 `Season 00\\青春之旅 - S00E01 - PAGE.0.mkv`
   - 说明新保护已经真实落到 HTTP 路由层，当前不再会让这个副本样本继续进入半执行
+- 随后开始筛选第二个更干净的影子副本候选
+  - 用现有 `8000` 对多个正式库候选做只读 `dry-run` 摘要比对
+  - 当前最干净的是 `d673d8fc / 四月是你的谎言`
+    - 正式库结果：`folder_type=tv`
+    - `tmdb_match.match_source=existing_nfo`
+    - `summary.total_videos=23 / will_process=22 / will_skip=1`
+    - 离线重复统计：`dup_target=0 / dup_logical=0`
+  - 为避免正式库写盘，已把该目录只读复制到 `shadow-verify/samples/april-lie/source`
+  - 但当前影子副本还不能复现正式库的判定：
+    - 对副本路径做 `dry-run` 时返回 `folder_type=series`
+    - `tmdb_match={}`、`plan=[]`、`summary={}`
+    - 即使额外包装一层 `四月是你的谎言` 目录，或挂到本地仿真 `视频/动画番/...` 路径下，结果仍相同
+  - 当前判断：问题不在正式候选是否干净，而在“本地影子路径仍未保留足够的上下文让 analyzer/scraper 走到与正式库一致的 `existing_nfo -> tv` 分支”
 
 ---
 
