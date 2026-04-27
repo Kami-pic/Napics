@@ -123,7 +123,7 @@
 ### 当前已补到的高风险链路
 
 - [x] `file_relocator` 冲突探测与回收动作
-  - 当前：已补 `relocate()` 引擎未就绪 / 下载目录未就绪 / dry-run 空计划，`confirm_replace()` 回收失败即停止，`cancel_replace()` 沙盒回收与缺目录失败，`archive_both()` 空冲突 / 重名封箱，`_recycle_old_files()` 缺旧文件 no-op，`_execute_plan()` 的 `download_dir` fallback 与执行异常返回
+  - 当前：已补 `relocate()` 引擎未就绪 / 下载目录未就绪 / dry-run 空计划，`confirm_replace()` 回收失败即停止，`cancel_replace()` 沙盒回收与缺目录失败，`archive_both()` 空冲突 / 重名封箱，`_recycle_old_files()` 缺旧文件 no-op，`_execute_plan()` 的 `download_dir` fallback 与执行异常返回；已开始收口“真实 execute 后再次 dry-run 仍残留 `Season 01` 目录冲突”的判定边角
 - [x] `routes/relocate.py` 关键闭环路由
   - 当前：已补 task 缺失、顶层目录 / NAS 根目录拦截、archive_both 失败不归档、purge_old 无冲突返回
 - [x] `download_manager.py` 完成触发链
@@ -134,8 +134,10 @@
 
 ### 当前还欠的高风险验证
 
-- [ ] 真实 NAS `organize execute` 小样本验证
+- [x] 真实 NAS `organize execute` 小样本验证
+  - 当前：已用 `1a607cf1` 开证，真实 `dry-run -> execute` 已收口到 `archived`，并写入真实回收记录
 - [ ] 真实 `confirm_replace + execute` 交叠时序验证
+  - 当前：已用第二个样本 `5ad5b6f9` 复现真实 execute 收口；两笔样本都稳定暴露“执行后再次 dry-run 仍残留 1 个 `Season 01` 目录冲突”，下一步先收口代码判定，不继续扩大真实写盘范围
 - [ ] 真实 qB / Alist 超时 / 重试 / 返回结构异常小样本验证
   - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试，真实下载器小样本仍未验证
 - [ ] 必要时补一个“真实环境验证记录”单独文档
@@ -150,6 +152,7 @@
 - [ ] 整理文档结构：保持 TODO 只做执行面板
 - [ ] 若继续推进下载→归位闭环，当前已选“真实环境验证”
 - [ ] 按 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md) 依次执行场景 A / B / C
+- [ ] 先收口“execute 后重复 dry-run 残留 `Season 01` 目录冲突”的代码判定
 
 ### 暂停项
 

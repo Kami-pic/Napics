@@ -271,6 +271,30 @@ class FileRelocator:
             return conflicts
 
         target_base = os.path.normpath(os.path.abspath(target_base))
+
+        def _collect_planned_targets() -> tuple[set, set]:
+            """收集当前 plan 的目标文件与目标目录，避免执行后重跑时把新资源误判成旧资源。"""
+            planned_files = set()
+            planned_dirs = set()
+            for item in plan_items:
+                if not item:
+                    continue
+                target_path = item.get("target_path") or ""
+                if not target_path:
+                    continue
+                norm_target_path = os.path.normcase(os.path.normpath(os.path.abspath(target_path)))
+                planned_files.add(norm_target_path)
+                current_dir = os.path.dirname(norm_target_path)
+                base_norm = os.path.normcase(target_base)
+                while current_dir and os.path.normcase(current_dir).startswith(base_norm):
+                    if os.path.normcase(current_dir) == base_norm:
+                        break
+                    planned_dirs.add(os.path.normcase(current_dir))
+                    parent_dir = os.path.dirname(current_dir)
+                    if parent_dir == current_dir:
+                        break
+                    current_dir = parent_dir
+            return planned_files, planned_dirs
         
         # 智能路径拼合逻辑
         def get_abs_path(rel_p, base):
@@ -295,6 +319,7 @@ class FileRelocator:
         w_path_set = set()       # 绝对路径匹配
         w_basename_set = set()   # 文件名兜底匹配
         w_subdir_set = set()     # 种子内所有层级的目录名匹配
+        planned_target_files, planned_target_dirs = _collect_planned_targets()
         
         if whitelist:
             base_name_lower = os.path.normcase(os.path.basename(target_base))
@@ -324,14 +349,21 @@ class FileRelocator:
                     w_path_set.add(abs_dir)
                     abs_dir = os.path.dirname(abs_dir)
 
-        _safe_print(f"[Conflicts] 白名单: paths={len(w_path_set)}, basenames={len(w_basename_set)}, subdirs={len(w_subdir_set)}")
+        _safe_print(
+            f"[Conflicts] 白名单: paths={len(w_path_set)}, basenames={len(w_basename_set)}, "
+            f"subdirs={len(w_subdir_set)}, planned_files={len(planned_target_files)}, "
+            f"planned_dirs={len(planned_target_dirs)}"
+        )
 
         def _is_file_in_whitelist(file_path: str, file_name: str) -> bool:
             """判断文件是否在白名单中"""
+            norm_file_path = os.path.normcase(os.path.normpath(file_path))
+            if norm_file_path in planned_target_files:
+                return True
             if not whitelist:
                 return False
             # 第一层：绝对路径
-            if os.path.normcase(os.path.normpath(file_path)) in w_path_set:
+            if norm_file_path in w_path_set:
                 return True
             # 第二层：文件名
             if os.path.normcase(file_name) in w_basename_set:
@@ -340,9 +372,27 @@ class FileRelocator:
 
         def _is_dir_in_whitelist(dir_path: str, dir_name: str) -> bool:
             """判断目录是否属于新下载的种子文件夹"""
+            norm_dir_path = os.path.normcase(os.path.normpath(dir_path))
+            if norm_dir_path in planned_target_dirs:
+                has_unplanned_video = False
+                try:
+                    for walk_root, _, walk_files in os.walk(dir_path):
+                        for walk_file in walk_files:
+                            if os.path.splitext(walk_file)[1].lower() not in VIDEO_EXTS:
+                                continue
+                            walk_path = os.path.normcase(os.path.normpath(os.path.join(walk_root, walk_file)))
+                            if walk_path not in planned_target_files:
+                                has_unplanned_video = True
+                                break
+                        if has_unplanned_video:
+                            break
+                except Exception:
+                    has_unplanned_video = True
+                if not has_unplanned_video:
+                    return True
             if not whitelist:
                 return False
-            if os.path.normcase(os.path.normpath(dir_path)) in w_path_set:
+            if norm_dir_path in w_path_set:
                 return True
             if os.path.normcase(dir_name) in w_subdir_set:
                 return True

@@ -109,6 +109,33 @@ def test_detect_conflicts_records_same_season_old_folder_and_inner_video():
     _with_temp_dir("relocator_conflict_folder", run)
 
 
+def test_detect_conflicts_ignores_target_folder_created_by_current_plan():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        current_target_dir = save_path / "Season 01"
+        current_target_file = current_target_dir / "Show - S01E02.mkv"
+        _touch(current_target_file)
+
+        plan = {
+            "plan": [
+                {
+                    "target_path": str(current_target_file),
+                    "mapped": {"season": 1, "episode": 2},
+                }
+            ]
+        }
+
+        conflicts = FileRelocator(recycle_bin=None)._detect_conflicts_v2(
+            plan=plan,
+            target_base=str(save_path),
+            whitelist=["[Group] Show/Show.02.1080p.mkv"],
+        )
+
+        assert conflicts == []
+
+    _with_temp_dir("relocator_current_plan_folder", run)
+
+
 def test_recycle_old_files_records_video_sidecars_and_safe_dir_nfos():
     def run(tmp_dir):
         show_dir = tmp_dir / "Show"
