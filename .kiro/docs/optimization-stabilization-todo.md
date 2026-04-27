@@ -142,7 +142,7 @@
   - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试；真实环境已补一轮只读观测：`99c57d47`（qB）在 `sync_progress` 后从 `downloading` 回退到 `unknown`，未误收口到 `completed`；`499b0bd2`（Alist）保持 `unknown + cloud_download`，未误触发归位。已进一步修复 `sync_progress()` 只轮询 `downloading`、导致 `unknown` 永远无法自动恢复的问题，并在独立 `8014` 当前代码实例上实证：
     - `99c57d47 / 156f7e94 / 9e17d995 / 12ac52c5 / c3e3b147` 从 `unknown` 恢复到 `completed`
     - `e1927935 / fa9beea5 / 6500e314` 仍停在 `unknown`，但 `progress/updated_at` 已继续刷新，说明恢复轮询已生效
-    - `499b0bd2`（Alist）仍为 `unknown + cloud_download`，且已进一步确认当前环境下 `GET /api/admin/storage/list` 与 `/api/fs/list` 可正常返回 JSON，但 `POST /api/admin/task/offline_download/undone|done` 在同一 token 下返回的是 HTML 登录页，不是 JSON；因此这轮只能证明“会继续重试”，暂时拿不到真实恢复样本
+    - `499b0bd2`（Alist）最初表现为 `unknown + cloud_download`；随后已定位到代码侧根因：当前实例的 AList V3 任务查询接口应走 `GET /api/task/offline_download/undone|done`，旧代码误写成了 `/api/admin/task/...`，因此一直打到前端 HTML。修复后在独立 `8014` 当前代码实例上复测，`499b0bd2` 已从 `unknown` 收口为 `lost + Alist 中未找到对应任务`，说明这笔样本并非“待恢复”，而是旧错误路径掩盖了真实的失联状态
 - [ ] 必要时补一个“真实环境验证记录”单独文档
   - 当前：已落一版执行清单，见 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 
@@ -160,7 +160,7 @@
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通副本链路；补完影子路径的 `category_hint` fallback 后，本地副本已恢复 `tv + existing_nfo + 22/23`，并在独立端口上成功完成一次 `dry-run -> execute`；回看 summary 已收口到 `will_process=0 / nfo_to_write=0 / files_to_move=0`
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”
-  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”；Alist 侧已定位到当前环境的离线下载管理接口鉴权/路由阻塞，下一步应先单独排查 `offline_download` 管理接口为何返回 HTML 登录页，再补恢复样本
+  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”；Alist 侧已进一步定位并修复错误的任务查询路径，且真实复测已证明 `499b0bd2` 会从旧的 `unknown` 收口为 `lost`。下一步应继续找一笔“任务仍存在于 Alist done/undone 列表中”的真实样本，验证它能否恢复到 `downloading/completed`
 
 ### 暂停项
 

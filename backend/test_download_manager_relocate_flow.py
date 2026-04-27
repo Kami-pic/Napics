@@ -1642,10 +1642,10 @@ def test_sync_alist_progress_marks_completed_when_done_and_local_files_exist(mon
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
     monkeypatch.setattr(dm, "_check_local_files_exist", lambda directory: True)
 
     dm._sync_alist_progress(task)
@@ -1674,10 +1674,10 @@ def test_sync_alist_progress_keeps_local_sync_when_done_but_local_files_missing(
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
     monkeypatch.setattr(dm, "_check_local_files_exist", lambda directory: False)
 
     dm._sync_alist_progress(task)
@@ -1696,10 +1696,10 @@ def test_sync_alist_progress_marks_lost_when_task_missing(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1718,10 +1718,10 @@ def test_sync_alist_progress_keeps_cloud_download_for_undone_task(monkeypatch):
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1741,10 +1741,10 @@ def test_sync_alist_progress_uses_zero_progress_when_undone_progress_missing(mon
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1757,17 +1757,17 @@ def test_sync_alist_progress_switches_to_local_sync_for_completed_undone_task(mo
     responses = [
         FakeResponse(
             200,
-            {"data": [{"name": "magnet:?xt=urn:btih:123", "state": 2, "progress": 100}]},
+            {"data": [{"name": "magnet:?xt=urn:btih:123", "state": "succeeded", "progress": 100}]},
         )
     ]
     alist = FakeAlistClient()
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1787,10 +1787,10 @@ def test_sync_alist_progress_keeps_cloud_download_for_missing_state(monkeypatch)
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1804,7 +1804,7 @@ def test_sync_alist_progress_marks_unknown_when_undone_request_fails(monkeypatch
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    monkeypatch.setattr(requests, "post", lambda url, headers=None, timeout=None: FakeResponse(500, {}))
+    monkeypatch.setattr(requests, "get", lambda url, headers=None, timeout=None: FakeResponse(500, {}))
 
     dm._sync_alist_progress(task)
 
@@ -1816,10 +1816,10 @@ def test_sync_alist_progress_marks_unknown_when_undone_request_times_out(monkeyp
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         raise requests.Timeout("alist timeout")
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1835,10 +1835,10 @@ def test_sync_alist_progress_marks_lost_when_done_request_fails_after_undone_emp
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1855,13 +1855,13 @@ def test_sync_alist_progress_marks_unknown_when_done_request_raises_after_undone
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         result = responses.pop(0)
         if isinstance(result, Exception):
             raise result
         return result
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1885,10 +1885,10 @@ def test_sync_alist_progress_marks_unknown_when_done_payload_is_invalid(monkeypa
         BrokenResponse(200),
     ]
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
@@ -1904,15 +1904,42 @@ def test_sync_alist_progress_marks_lost_when_done_list_has_only_non_matching_tas
     dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
     task = _make_task(status="downloading", channel="alist")
 
-    def fake_post(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None):
         return responses.pop(0)
 
-    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     dm._sync_alist_progress(task)
 
     assert task.status == "lost"
     assert task.error == "Alist 中未找到对应任务"
+
+
+def test_sync_alist_progress_matches_done_task_by_download_url_file_name(monkeypatch):
+    responses = [
+        FakeResponse(200, {"data": []}),
+        FakeResponse(200, {"data": [{"name": "[ANK-Raws] 妖精的旋律 エルフェンリート Elfen Lied BDBOX"}]}),
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(
+        status="downloading",
+        channel="alist",
+        id="499b0bd2",
+        downloader_hash="alist_499b0bd2",
+        download_url="http://127.0.0.1:9696/7/download?file=%5BANK-Raws%5D+%E5%A6%96%E7%B2%BE%E7%9A%84%E6%97%8B%E5%BE%8B+%E3%82%A8%E3%83%AB%E3%83%95%E3%82%A7%E3%83%B3%E3%83%AA%E3%83%BC%E3%83%88+Elfen+Lied+BDBOX",
+    )
+
+    def fake_get(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(dm, "_check_local_files_exist", lambda directory: True)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "completed"
+    assert task.progress == 1.0
 
 
 def test_on_startup_marks_pending_task_failed_and_saves(monkeypatch):

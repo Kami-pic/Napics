@@ -18,6 +18,7 @@ import threading
 import requests
 from datetime import datetime
 from typing import List, Optional, Dict
+from urllib.parse import parse_qs, unquote_plus, urlparse
 from pydantic import BaseModel
 
 from downloader import QBittorrentClient, AlistManager
@@ -351,8 +352,8 @@ class DownloadManager:
 
         try:
             # 查询 Alist 离线下载任务列表
-            r = requests.post(
-                f"{self.alist.api_url}/api/admin/task/offline_download/undone",
+            r = requests.get(
+                f"{self.alist.api_url}/api/task/offline_download/undone",
                 headers=self.alist.headers,
                 timeout=5,
             )
@@ -365,14 +366,13 @@ class DownloadManager:
             # 在未完成任务中查找
             found = False
             for item in data:
-                # Alist 任务名通常包含下载 URL 或文件名
-                if task.download_url in str(item.get("name", "")) or task.id in str(item.get("name", "")):
+                if self._match_alist_task_item(task, item):
                     found = True
                     state = item.get("state", 0)
                     progress = item.get("progress", 0)
-                    task.progress = round(progress / 100, 4) if progress else 0.0
+                    task.progress = self._normalize_alist_progress(progress)
 
-                    if state == 2:  # 完成
+                    if self._is_alist_done_state(state):
                         task.phase = "local_sync"
                     else:
                         task.phase = "cloud_download"
@@ -380,14 +380,14 @@ class DownloadManager:
 
             if not found:
                 # 不在未完成列表中，检查已完成列表
-                r2 = requests.post(
-                    f"{self.alist.api_url}/api/admin/task/offline_download/done",
+                r2 = requests.get(
+                    f"{self.alist.api_url}/api/task/offline_download/done",
                     headers=self.alist.headers,
                     timeout=5,
                 )
                 done_data = r2.json().get("data", []) or [] if r2.status_code == 200 else []
                 for item in done_data:
-                    if task.download_url in str(item.get("name", "")) or task.id in str(item.get("name", "")):
+                    if self._match_alist_task_item(task, item):
                         found = True
                         # 云端已完成，检查本地文件是否存在
                         if self._check_local_files_exist(task.download_dir):
@@ -406,6 +406,50 @@ class DownloadManager:
 
         except Exception:
             task.status = "unknown"
+
+    @staticmethod
+    def _normalize_alist_progress(progress) -> float:
+        try:
+            value = float(progress)
+        except (TypeError, ValueError):
+            return 0.0
+        if value <= 0:
+            return 0.0
+        if value > 1:
+            value = value / 100
+        return round(min(value, 1.0), 4)
+
+    @staticmethod
+    def _is_alist_done_state(state) -> bool:
+        if state == 2:
+            return True
+        if isinstance(state, str):
+            return state.strip().lower() in {"2", "done", "success", "succeeded", "completed"}
+        return False
+
+    @staticmethod
+    def _alist_task_name_candidates(task: DownloadTask) -> List[str]:
+        candidates = [task.download_url, task.id, task.downloader_hash]
+        try:
+            parsed = urlparse(task.download_url or "")
+            file_name = parse_qs(parsed.query).get("file", [""])[0]
+            if file_name:
+                decoded = unquote_plus(file_name).strip()
+                if decoded:
+                    candidates.append(decoded)
+        except Exception:
+            pass
+        return [item for item in candidates if item]
+
+    def _match_alist_task_item(self, task: DownloadTask, item: dict) -> bool:
+        item_id = str(item.get("id", "")).strip()
+        item_name = str(item.get("name", "")).strip()
+        for candidate in self._alist_task_name_candidates(task):
+            if candidate == item_id:
+                return True
+            if candidate in item_name:
+                return True
+        return False
 
     @staticmethod
     def _check_local_files_exist(directory: str) -> bool:

@@ -390,6 +390,44 @@
     - `499b0bd2` 这类 `unknown + cloud_download` 任务在当前代码下会继续进入重试分支
     - 但由于 `offline_download` 管理接口当前不可用，暂时拿不到“恢复到 downloading/completed”的真实环境样本
   - 后续若要继续场景 C，应该先单独排查 Alist 的 `offline_download` 管理接口访问条件，再回到恢复验证
+- 随后已定位到真正根因并完成最小代码修复
+  - 查 AList V3 当前文档与本机实例行为后确认：
+    - 正确任务接口是 `GET /api/task/offline_download/undone`
+    - 正确任务接口是 `GET /api/task/offline_download/done`
+    - 旧代码误写成了 `POST /api/admin/task/offline_download/...`
+  - 这解释了为什么同一 token 能访问 `storage/list`、却在旧路径上只拿到前端 HTML：不是鉴权错，而是路由打错
+  - 本轮最小修复：
+    - `download_manager._sync_alist_progress()` 改为走官方 `GET /api/task/offline_download/*`
+    - Alist 进度值改为兼容 `0-1` 与 `0-100` 两种口径
+    - Alist 完成态兼容 `2 / succeeded / completed / done`
+    - 匹配规则从“只看完整 download_url”放宽到“download_url、task.id、downloader_hash、download_url 里的 file 文件名”
+  - 新增 / 调整隔离保护：
+    - Alist 同步相关测试全部切到 `requests.get`
+    - 新增“通过 `download_url?file=` 文件名命中 done 列表任务名”的保护样本
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_alist_progress or sync_progress"`
+    - 结果：`24 passed`
+  - 当前结论更新为：
+    - Alist 之前的 `unknown` 长尾并不只是环境问题，旧代码确实在任务查询路径上有 bug
+    - 代码层收口后，下一步应回到独立实例做真实样本复测，确认 `499b0bd2` 这类任务是否能恢复推进
+- 随后已在独立 `8014` 当前代码实例上做真实复测
+  - 触发方式：`GET /download-manager/progress`
+  - 样本：`499b0bd2 / 妖精的旋律`
+  - 复测前：
+    - `status=unknown`
+    - `phase=cloud_download`
+    - `error=""`
+  - 复测后：
+    - `status=lost`
+    - `phase=cloud_download`
+    - `error="Alist 中未找到对应任务"`
+  - 这说明修复后的行为符合当前代码设计：
+    - 旧代码因为打错 `/api/admin/task/...`，一直把“查不到真实任务”伪装成 `unknown`
+    - 新代码改走 `GET /api/task/offline_download/*` 后，`done/undone` 都为空，于是这笔样本被真实收口到 `lost`
+  - 当前结论再收窄一步：
+    - `499b0bd2` 不是“等待恢复的 Alist unknown 样本”
+    - 它是“旧错误路径掩盖下的实际失联样本”
+    - 如果后续还要验证 Alist 的“异常解除后恢复推进”，需要重新找一笔仍存在于 Alist 任务列表里的真实样本
 
 ---
 
