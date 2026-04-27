@@ -357,6 +357,26 @@
   - 当前结论：
     - “异常后永远停在 unknown” 这一恢复缺口已在代码层收口
     - 还差一笔真实环境样本，证明下载器恢复后状态能真实回推进
+- 随后补了独立端口的真实恢复实证
+  - 现网 `8000` 仍是旧进程：对同一批 `unknown` 任务执行 `/download-manager/sync` 后，`updated_at` 完全不变，说明没有进入新逻辑
+  - 为避免打断现网，临时起当前工作区代码到 `127.0.0.1:8014`
+  - 观测样本：
+    - qB：`99c57d47 / e1927935 / 156f7e94 / 9e17d995 / 12ac52c5 / c3e3b147 / fa9beea5 / 6500e314`
+    - Alist：`499b0bd2`
+  - 在 `8014` 上执行一次真实 `/download-manager/sync` 后：
+    - `99c57d47`：`unknown -> completed`
+    - `156f7e94`：`unknown -> completed`
+    - `9e17d995`：`unknown -> completed`
+    - `12ac52c5`：`unknown -> completed`
+    - `c3e3b147`：`unknown -> completed`
+    - `e1927935 / fa9beea5 / 6500e314`：仍为 `unknown`，但 `progress/updated_at` 已刷新，说明恢复轮询生效，只是下载器当前状态还不足以收口
+    - `499b0bd2`：仍为 `unknown + cloud_download`，`updated_at` 已刷新，说明 Alist 也会继续重试
+  - 额外观测：
+    - `99c57d47` 在恢复到 `completed` 后，后台真实触发了 `download_complete` 通知
+    - 当前运行日志出现 `notification_service` 的 Pydantic 序列化 warning，但不阻断这轮恢复验证；后续如要收口通知层，再单独开任务
+  - 当前结论：
+    - 场景 C 已拿到真实 qB “异常解除后恢复推进”的证据
+    - Alist 仍缺“从 unknown 恢复到 downloading/completed”的真实样本
 
 ---
 

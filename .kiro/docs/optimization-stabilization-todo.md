@@ -139,7 +139,10 @@
 - [ ] 真实 `confirm_replace + execute` 交叠时序验证
   - 当前：已用第二个样本 `5ad5b6f9` 复现真实 execute 收口；两笔样本都稳定暴露“执行后再次 dry-run 仍残留 1 个 `Season 01` 目录冲突”，并已进一步定位为 `action_plan` 执行阶段未按 `target_path` 重命名落盘，而是保留了原始发布组文件名
 - [ ] 真实 qB / Alist 超时 / 重试 / 返回结构异常小样本验证
-  - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试；真实环境已补一轮只读观测：`99c57d47`（qB）在 `sync_progress` 后从 `downloading` 回退到 `unknown`，未误收口到 `completed`；`499b0bd2`（Alist）保持 `unknown + cloud_download`，未误触发归位。已进一步修复 `sync_progress()` 只轮询 `downloading`、导致 `unknown` 永远无法自动恢复的问题，并补回归测试；仍未覆盖“真实环境下异常解除后的恢复收口”
+  - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试；真实环境已补一轮只读观测：`99c57d47`（qB）在 `sync_progress` 后从 `downloading` 回退到 `unknown`，未误收口到 `completed`；`499b0bd2`（Alist）保持 `unknown + cloud_download`，未误触发归位。已进一步修复 `sync_progress()` 只轮询 `downloading`、导致 `unknown` 永远无法自动恢复的问题，并在独立 `8014` 当前代码实例上实证：
+    - `99c57d47 / 156f7e94 / 9e17d995 / 12ac52c5 / c3e3b147` 从 `unknown` 恢复到 `completed`
+    - `e1927935 / fa9beea5 / 6500e314` 仍停在 `unknown`，但 `progress/updated_at` 已继续刷新，说明恢复轮询已生效
+    - `499b0bd2`（Alist）仍为 `unknown + cloud_download`，只证明了“会继续重试”，尚未拿到恢复样本
 - [ ] 必要时补一个“真实环境验证记录”单独文档
   - 当前：已落一版执行清单，见 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 
@@ -157,7 +160,7 @@
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通副本链路；补完影子路径的 `category_hint` fallback 后，本地副本已恢复 `tv + existing_nfo + 22/23`，并在独立端口上成功完成一次 `dry-run -> execute`；回看 summary 已收口到 `will_process=0 / nfo_to_write=0 / files_to_move=0`
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”
-  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；下一步只差补“真实环境下异常解除后是否能恢复收口”
+  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”，下一步只差 Alist 的恢复样本
 
 ### 暂停项
 
