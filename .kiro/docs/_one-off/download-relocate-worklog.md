@@ -223,6 +223,11 @@
   - 已真实识别到 `军火女王 Jormungand` 目录下的旧季目录与旧视频冲突
   - 新资源计划落到 `Season 01`
   - 因 `execute` 会真实改动 NAS 文件，当前停在确认前，不自动继续
+- 用户确认后，已继续执行真实 `/organize/execute`
+  - 任务 `1a607cf1` 已收口到 `archived`，且 `organized=true`
+  - `backend/recycle_bin/recycle_bin.json` 已出现该任务的真实回收记录
+  - 真实 NAS `dry-run -> execute` 主链路已开证
+  - 但对同一任务再次执行 `dry-run` 仍会返回 `awaiting_confirm`，当前只剩 `Season 01` 目录级冲突，属于后续可单独收口的真实环境边角
 
 ---
 
