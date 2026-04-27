@@ -25,6 +25,19 @@ logger = logging.getLogger(__name__)
 # ── 完整刮削流程 ──
 
 
+def _episode_nfo_matches_target(video_path: str, tmdb_id: int, season: int, episode: int, showtitle: str) -> bool:
+    """判断目标位的 episode NFO 是否已经匹配当前剧集。"""
+    info = read_video_nfo(video_path)
+    if not info:
+        return False
+    if info.get("tmdb_id") != tmdb_id:
+        return False
+    if info.get("season_number") != season or info.get("episode_number") != episode:
+        return False
+    existing_showtitle = (info.get("showtitle") or "").strip()
+    return not showtitle or existing_showtitle == showtitle
+
+
 def scrape_folder(folder_path: str, tmdb_client_instance, force: bool = False,
                   folder_type: str = None, depth: int = 0, max_depth: int = 2,
                   dry_run: bool = False, use_ai: bool = False,
@@ -491,7 +504,16 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             shadow += f" S{mapped_season:02d}E{mapped_episode:02d}"
             item["target_shadow_name"] = shadow
 
-            item["actions"] = ["write_episode_nfo", "move_to_season", "write_shadow"]
+            actions = []
+            norm_original = os.path.normcase(os.path.normpath(vpath))
+            norm_target = os.path.normcase(os.path.normpath(item["target_path"]))
+            if norm_original != norm_target:
+                actions.append("move_to_season")
+            if not _episode_nfo_matches_target(item["target_path"], tmdb_id, mapped_season, mapped_episode, showtitle):
+                actions.append("write_episode_nfo")
+            if item["target_shadow_name"]:
+                actions.append("write_shadow")
+            item["actions"] = actions
 
         plan.append(item)
 
@@ -559,7 +581,14 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                     logger.error(f"[Scrape] Season {sn} detail failed: {e}")
 
     # 构建 summary
-    will_process = len([i for i in plan if not i.get("skip_reason")])
+    actionable_items = [
+        i for i in plan
+        if not i.get("skip_reason") and any(a in i.get("actions", []) for a in ("move_to_season", "write_episode_nfo"))
+    ]
+    nfo_to_write = len([i for i in plan if "write_episode_nfo" in i.get("actions", []) and not i.get("skip_reason")])
+    files_to_move = len([i for i in plan if "move_to_season" in i.get("actions", []) and not i.get("skip_reason")])
+    shadows_to_fill = len([i for i in plan if "write_shadow" in i.get("actions", []) and not i.get("skip_reason")])
+    will_process = len(actionable_items)
     will_skip = len([i for i in plan if i.get("skip_reason")])
     seasons_to_create = sorted(set(
         i["target_season_dir"] for i in plan
@@ -574,9 +603,9 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
         "will_process": will_process,
         "will_skip": will_skip,
         "seasons_to_create": seasons_to_create,
-        "nfo_to_write": will_process,
-        "files_to_move": will_process,
-        "shadows_to_fill": will_process,
+        "nfo_to_write": nfo_to_write,
+        "files_to_move": files_to_move,
+        "shadows_to_fill": shadows_to_fill,
     }
     return results
 

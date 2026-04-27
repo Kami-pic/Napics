@@ -310,8 +310,24 @@
     - `folder_type` 仍为 `tv`
     - `tmdb_match` 仍为 `existing_nfo`
     - `analyze.structure_ops=0`
-  - 当前剩余观察点：
-    - 回看时 `summary.will_process` 仍为 `22`，说明这条链路当前会继续把“重写 episode.nfo/补齐 shadow”视为可执行项，但已不再表现为结构残留或类型退化
+- 已继续收口回看 summary 的幂等口径
+  - 根因：`scraper._scrape_tv_v3()` 之前把所有“可映射到集数”的视频都算进 `will_process`
+  - 即使文件已经在目标季目录、目标位 episode NFO 已匹配，`actions` 里也仍无条件带 `move_to_season / write_episode_nfo / write_shadow`
+  - 现已改为：
+    - `move_to_season` 只在 `original_path != target_path` 时出现
+    - `write_episode_nfo` 只在目标位 NFO 缺失或 `tmdb_id/season/episode/showtitle` 不匹配时出现
+    - `will_process` 只统计核心动作：`move_to_season + write_episode_nfo`
+  - 新增 `test_scraper_tv_dry_run_actions.py` 锁定：
+    - 已在 `Season 01`
+    - episode NFO 已匹配
+    - dry-run 只剩 `write_shadow`
+    - summary 收口为 `will_process=0 / files_to_move=0 / nfo_to_write=0 / shadows_to_fill=1`
+  - 用当前工作区代码回看 `四月是你的谎言` 影子副本：
+    - `summary.will_process=0`
+    - `summary.nfo_to_write=0`
+    - `summary.files_to_move=0`
+    - `summary.shadows_to_fill=22`
+  - 结论：主链路已经幂等收口；剩余的 `shadows_to_fill` 属于影子名补齐候选，不再代表结构或 NFO 执行残留
 
 ---
 
