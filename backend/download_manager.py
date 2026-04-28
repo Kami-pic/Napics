@@ -354,6 +354,9 @@ class DownloadManager:
             return
 
         try:
+            if self._sync_alist_progress_by_task_id(task):
+                return
+
             # 查询 Alist 离线下载任务列表
             r = requests.get(
                 f"{self.alist.api_url}/api/task/offline_download/undone",
@@ -409,6 +412,45 @@ class DownloadManager:
 
         except Exception:
             task.status = "unknown"
+
+    def _sync_alist_progress_by_task_id(self, task: DownloadTask) -> bool:
+        task_id = (task.downloader_hash or "").strip()
+        if not task_id or task_id.startswith("alist_"):
+            return False
+
+        response = requests.post(
+            f"{self.alist.api_url}/api/task/offline_download/info",
+            headers=self.alist.headers,
+            params={"tid": task_id},
+            timeout=5,
+        )
+        if response.status_code != 200:
+            return False
+
+        payload = response.json()
+        items = payload.get("data", []) or []
+        if not items:
+            return False
+
+        item = items[0]
+        progress = item.get("progress", 0)
+        task.progress = self._normalize_alist_progress(progress)
+
+        if self._is_alist_done_state(item.get("state")):
+            if self._check_local_files_exist(task.download_dir):
+                task.status = "completed"
+                task.progress = 1.0
+                task.phase = ""
+            else:
+                task.phase = "local_sync"
+                task.progress = max(task.progress, 0.8)
+            return True
+
+        task.phase = "cloud_download"
+        error = str(item.get("error", "")).strip()
+        if error:
+            task.error = error
+        return True
 
     @staticmethod
     def _normalize_alist_progress(progress) -> float:

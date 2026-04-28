@@ -452,6 +452,30 @@
   - 当前结论更新为：
     - Alist 查询链和提交链两侧已都对齐到 AList V3 的真实接口/标识模型
     - 当前缺的已不再是代码路径，而是新的真实 Alist 活跃样本
+- 随后继续把“真实 tid”真正接进同步链
+  - 既然提交链已经能保存真实 Alist tid，仅靠 `done/undone` 全量列表再猜任务名就不够了
+  - 本轮最小收口：
+    - `download_manager._sync_alist_progress()` 先尝试 `POST /api/task/offline_download/info?tid=...`
+    - 只有当 `downloader_hash` 还是历史伪标识 `alist_*`，或 `info` 查不到任务时，才回退到 `GET /api/task/offline_download/undone|done`
+    - `info` 命中后：
+      - 完成态直接按 `state` + 本地文件存在性收口到 `completed/local_sync`
+      - 非完成态继续留在 `cloud_download`
+  - 新增 / 调整隔离保护：
+    - “真实 tid 命中 info 后不再扫列表”
+    - “真实 tid 查不到时回退列表扫描”
+    - “历史 `alist_*` 伪标识不误打 info”
+    - 同时把测试基线调成：Alist 历史任务默认 `downloader_hash=alist_{task.id}`
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_alist_progress or sync_progress"`
+    - 结果：`27 passed`
+    - `python -X utf8 -m pytest backend/test_downloader_alist.py backend/test_download_manager_relocate_flow.py -k "alist or sync_progress"`
+    - 结果：`38 passed`
+  - 当前结论再收紧一步：
+    - 现在 Alist 的提交链、单任务查询链、列表回退链都已对齐
+    - 场景 C 继续往前推进时，已经可以明确区分：
+      - 真实 tid 任务本身的状态
+      - 历史伪标识任务的兼容回退
+      - 真正已经失联的样本
 
 ---
 

@@ -186,6 +186,8 @@ def _make_task(**overrides):
         "subscription_episode": 2,
     }
     data.update(overrides)
+    if data.get("channel") == "alist" and "downloader_hash" not in overrides:
+        data["downloader_hash"] = f"alist_{data['id']}"
     return DownloadTask(**data)
 
 
@@ -1664,6 +1666,100 @@ def test_sync_alist_progress_marks_completed_when_done_and_local_files_exist(mon
     assert task.status == "completed"
     assert task.progress == 1.0
     assert task.phase == ""
+
+
+def test_sync_alist_progress_uses_real_task_id_info_before_scanning_lists(monkeypatch):
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(
+        status="downloading",
+        channel="alist",
+        downloader_hash="task-real-123",
+    )
+    post_calls = []
+
+    def fake_post(url, headers=None, params=None, timeout=None):
+        post_calls.append({"url": url, "params": params})
+        return FakeResponse(
+            200,
+            {"data": [{"id": "task-real-123", "state": "succeeded", "progress": 100}]},
+        )
+
+    def fake_get(url, headers=None, timeout=None):
+        raise AssertionError("should not scan list when task info succeeds")
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(dm, "_check_local_files_exist", lambda directory: True)
+
+    dm._sync_alist_progress(task)
+
+    assert post_calls == [
+        {
+            "url": "http://alist/api/task/offline_download/info",
+            "params": {"tid": "task-real-123"},
+        }
+    ]
+    assert task.status == "completed"
+    assert task.progress == 1.0
+    assert task.phase == ""
+
+
+def test_sync_alist_progress_falls_back_to_list_scan_when_real_task_info_missing(monkeypatch):
+    responses = [
+        FakeResponse(200, {"data": [{"name": "magnet:?xt=urn:btih:123", "state": 1, "progress": 45}]}),
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(
+        status="downloading",
+        channel="alist",
+        downloader_hash="task-real-123",
+    )
+
+    def fake_post(url, headers=None, params=None, timeout=None):
+        return FakeResponse(200, {"data": []})
+
+    def fake_get(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "downloading"
+    assert task.phase == "cloud_download"
+    assert task.progress == 0.45
+
+
+def test_sync_alist_progress_skips_task_info_for_legacy_alist_marker(monkeypatch):
+    responses = [
+        FakeResponse(200, {"data": []}),
+        FakeResponse(200, {"data": [{"name": "magnet:?xt=urn:btih:123"}]}),
+    ]
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(
+        status="downloading",
+        channel="alist",
+        downloader_hash="alist_task-123",
+    )
+
+    def fake_post(url, headers=None, params=None, timeout=None):
+        raise AssertionError("legacy marker should not hit task info")
+
+    def fake_get(url, headers=None, timeout=None):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(dm, "_check_local_files_exist", lambda directory: True)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "completed"
+    assert task.progress == 1.0
 
 
 def test_sync_alist_progress_returns_early_without_client():
