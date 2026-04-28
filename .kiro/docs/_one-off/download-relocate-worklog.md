@@ -476,6 +476,29 @@
       - 真实 tid 任务本身的状态
       - 历史伪标识任务的兼容回退
       - 真正已经失联的样本
+- 随后对工作区大文件做了一轮收口清理，并调整后续验证策略
+  - 触发背景：
+    - 仓库工作区一度接近 `100 GB`
+    - 主要来源不是代码，而是：
+      - `shadow-verify` 重视频副本约 `45.64 GB`
+      - `.git` loose objects / garbage 约 `32 GB`
+      - `backend/recycle_bin` 真实回收残留约 `6.88 GB`
+  - 已执行的清理：
+    - 删除 `shadow-verify`
+    - 删除 `backend/recycle_bin`
+    - 删除 `.pytest_cache`、`backend/.pytest_cache`、`frontend/.next` 与一批临时目录
+    - 执行 `git gc --prune=now`
+  - 清理后工作区目录体积回落到：
+    - `frontend` 约 `0.46 GB`
+    - `backend` 约 `33 MB`
+    - `.git` 约 `7 MB`
+  - 这轮清理不改业务代码，但会带来一个明确约束：
+    - 旧的重视频 `shadow-verify` 样本和 `recycle_bin` 历史验证残留已不可复用
+    - 后续新对话继续这条主线时，不要再回到“复制真实大视频文件”的影子验证方案
+  - 后续策略现已固定为：
+    - 默认影子验证只保留真实文件名、目录结构、NFO/字幕/海报等 sidecar
+    - 视频主文件改成空文件或极小占位文件
+    - 只有在必须验证真实 I/O 时，才单独引入 1 个真实样本
 
 ---
 

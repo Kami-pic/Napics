@@ -1,7 +1,8 @@
 # [一次性] 下载→归位闭环影子副本验证方案
 
 > 目标：在不碰正式 NAS 本体的前提下，验证新代码下的 `dry-run -> execute` 是否会正确落盘、不会乱名、不会混季。  
-> 默认副本根目录：`C:\Users\shenq\nas-video-upgrader\shadow-verify`
+> 默认副本根目录：`C:\Users\shenq\nas-video-upgrader\shadow-verify`  
+> 当前策略：默认使用“真实文件名 / 目录结构 / sidecar + 占位视频文件”的轻量副本，不再复制大体积真实视频本体
 
 ---
 
@@ -11,6 +12,8 @@
 - 每次只复制一个样本目录，不做全库镜像
 - 副本验证独立于正式配置，不改现有 `config.json`
 - 先保留副本执行前快照，再执行，再对比
+- 默认不复制真实大视频文件；视频主文件只保留同名占位文件
+- 只有在必须验证真实 I/O、移动耗时、回收站真实落盘时，才单独引入 1 个真实样本
 
 ---
 
@@ -21,6 +24,11 @@
   1. 从正式库复制一个样本目录到本地影子副本
   2. 在副本目录上执行新的 `dry-run -> execute`
   3. 对比副本执行前后目录树
+- 2026-04-28 起，副本生成方式切换为：
+  1. 保留真实目录层级
+  2. 保留真实文件名
+  3. 保留 `.nfo` / 海报 / 字幕等 sidecar
+  4. 视频主文件改成空文件或极小占位文件
 
 ---
 
@@ -29,8 +37,14 @@
 - 副本根目录：`C:\Users\shenq\nas-video-upgrader\shadow-verify`
 - 每个样本单独一个子目录：
   - `shadow-verify\samples\<sample-name>\source`
+  - `shadow-verify\samples\<sample-name>\case`
   - `shadow-verify\samples\<sample-name>\before-tree.txt`
   - `shadow-verify\samples\<sample-name>\after-tree.txt`
+- 轻量副本要求：
+  - 视频文件名、扩展名保持不变
+  - 视频文件内容允许为 `0 byte` 或极小占位内容
+  - sidecar 保留真实内容
+  - 不再维护 `shadow-verify\library` 这种整棵副本镜像
 
 ---
 
@@ -53,6 +67,10 @@
   - 副本样本名
 - 输出：
   - `shadow-verify\samples\<sample-name>\source`
+- 复制规则：
+  - 视频文件：创建同名占位文件
+  - `.nfo` / `.srt` / `.ass` / `.ssa` / 图片文件：保留真实内容
+  - 目录层级：与正式样本一致
 
 ### 2. 记录执行前快照
 
@@ -72,6 +90,9 @@
   - 验证视频主文件是否按 `target_path` 真正落盘
   - 验证 sidecar 是否一起迁移/改名
   - 验证不会把不同季内容混进同一个 `Season 01`
+- 注意：
+  - 轻量副本只验证命名、路径、sidecar、冲突与动作链
+  - 不拿它验证真实 NAS I/O 吞吐或大文件移动耗时
 
 ### 5. 记录执行后快照
 
@@ -103,5 +124,6 @@
 
 ## 当前下一步
 
-- 用脚本先复制一个新鲜样本目录到 `shadow-verify`
+- 用脚本按“真实名字 + 占位视频文件”重建一个新鲜样本到 `shadow-verify`
+- 优先恢复一个能稳定进入 `awaiting_confirm` 的轻量单季样本
 - 不对正式 NAS 执行任何新的 `execute`

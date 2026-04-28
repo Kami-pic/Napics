@@ -46,12 +46,13 @@
 - 真实线程下 `confirm_replace + execute` 交叠时序仍未证明
 - 真实 qB / Alist 在网络抖动、超时、返回结构变化下的更复杂长尾仍未覆盖
 - Windows `.pytest_cache` 权限 warning 仍是既有环境噪声
+- 后续影子验证若继续复制真实大视频文件，会再次把工作区体积推高；当前已明确改成“真实文件名/结构 + 占位视频文件”的轻量副本策略
 
 ### 下一步建议
 
 1. 不再继续向 TODO 里堆回合日志，只在独立 worklog 记详细过程
-2. 若继续补这条线，优先做“真实 NAS execute 小样本验证”
-3. 若暂不碰真实 NAS，就只补“真实下载器异常返回 / 超时 / 重试”这一类隔离测试
+2. 若继续补这条线，优先恢复一套“轻量影子副本”验证底座，再做后续 `dry-run / execute` 回归
+3. 场景 C 继续推进前，先等或重新制造一笔真实 Alist 活跃样本
 
 ---
 
@@ -158,9 +159,11 @@
 - [x] 先完成“action_plan 按 `target_path` 落盘”的真实样本回归验证
   - 当前：影子副本 `青春之旅` 已先暴露“同一集数被多份源文件同时命中”的执行前冲突；工作区代码补完 `target_path` + 逻辑目标双重前置拦截后，会在离线路由直调与独立 HTTP 端到端验证中于写盘前直接 `400`
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
-  - 当前：已用 `d673d8fc / 四月是你的谎言` 打通副本链路；补完影子路径的 `category_hint` fallback 后，本地副本已恢复 `tv + existing_nfo + 22/23`，并在独立端口上成功完成一次 `dry-run -> execute`；回看 summary 已收口到 `will_process=0 / nfo_to_write=0 / files_to_move=0`
+  - 当前：已用 `d673d8fc / 四月是你的谎言` 打通过一次重副本链路；但重视频副本会明显推高工作区体积，当前已清理旧 `shadow-verify`，并将后续策略切换为“真实文件名/目录结构/NFO + 占位视频文件”的轻量副本模式
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”
   - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”；Alist 侧已进一步定位并修复错误的任务查询路径，补上提交链保存真实 tid 的能力，并在同步链上优先按 tid 直查 `task info`，且真实复测已证明 `499b0bd2` 会从旧的 `unknown` 收口为 `lost`。下一步应继续找一笔“任务仍存在于 Alist done/undone/info 中”的真实样本，验证它能否恢复到 `downloading/completed`
+- [ ] 为下一个对话准备轻量影子验证入口
+  - 当前：规则和方向已定；下一步应把 `download-relocate-shadow-verify-plan.md` 当作唯一入口，按“只保留真实文件名/目录层级/sidecar，视频主文件用空文件或极小占位文件”重建 `shadow-verify`
 
 ### 暂停项
 
