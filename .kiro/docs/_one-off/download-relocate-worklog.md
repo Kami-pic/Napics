@@ -538,6 +538,11 @@
   - 真实样本只读验证（不改 `8000` 现有进程，也不改任务文件）：
     - 用当前工作区代码直接对 `99c57d47 / e1927935 / 6500e314 / fa9beea5` 调 `_sync_qb_progress()`
     - 结果四笔样本都会从 `unknown` 恢复到 `downloading`
+  - 独立 HTTP 端到端验证：
+    - 临时起一份 `python -m uvicorn main:app --host 127.0.0.1 --port 8015`
+    - 对 `8015` 执行 `POST /download-manager/sync` 后，再读 `/download-manager/tasks`
+    - 同一批样本 `99c57d47 / e1927935 / 6500e314 / fa9beea5` 都已恢复为 `status=downloading`
+    - 验证后已立即关闭 `8015` 进程，未改动现有 `8000`
   - 本轮剩余阻塞：
     - Alist 当前 `GET /api/task/offline_download/undone` 与 `done` 都为空
     - 因此场景 C 还缺一笔“真实仍活着的 Alist 任务”来验证 `unknown -> downloading/completed`
