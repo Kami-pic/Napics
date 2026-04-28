@@ -499,6 +499,25 @@
     - 默认影子验证只保留真实文件名、目录结构、NFO/字幕/海报等 sidecar
     - 视频主文件改成空文件或极小占位文件
     - 只有在必须验证真实 I/O 时，才单独引入 1 个真实样本
+- 随后收口一轮由真实验证样本带出的前端 / 媒体库回归
+  - 触发现象：
+    - `军火女王`、`卡罗尔与星期二` 等真实样本在下载面板里已经是 `archived`，但前端没有 `archived` tab
+    - 完成/归档态“查看”按钮发出的 `save_path` 是绝对 NAS 路径，首页原先按相对层级分段查找，导致无法命中媒体库树
+    - 首页 `/library/tree` 首屏链路一度退化到分钟级，本地 `8000` 实测约 `22.3s`
+  - 本轮最小修法：
+    - `DownloadManagerPanel` 补回 `archived` tab
+    - 归档态保留“查看”，只把“整理替换”留给 `completed/awaiting_confirm`
+    - 首页跳转先按绝对路径精确命中树节点，再按 NAS base path 做兼容回退
+    - `routes/library.py` 的树构建不再在首屏实时探测 `movie.nfo/tvshow.nfo` 并读取 NAS 上 NFO，而是只用缓存库数据和树内子节点信息补齐 `clean_name_*`
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_library_tree.py`
+    - 结果：`1 passed`
+    - `frontend npm run build`
+    - 结果：通过
+    - `http://127.0.0.1:8000/library/tree`
+    - 实测：约 `22.3s -> 7.8s`
+    - `frontend npm run test -- home-library-path`
+    - 当前环境噪声：`vitest` 启动阶段因 `spawn EPERM` 失败，未形成前端自动化结论
 
 ---
 

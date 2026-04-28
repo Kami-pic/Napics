@@ -302,7 +302,15 @@ def set_clean_name(req: dict):
 def get_library_tree():
     """生成嵌套的目录树结构"""
     videos = config_m.load_library()
-    root_node = {"name": "媒体库", "path": "", "children": [], "videos": [], "video_count": 0, "has_cover": False}
+    root_node = {
+        "name": "媒体库",
+        "path": "",
+        "children": [],
+        "videos": [],
+        "video_count": 0,
+        "has_cover": False,
+        "_child_index": {},
+    }
     
     config = config_m.config
     base_path = config.nas_paths[0] if config.nas_paths else config.nas_path if config.nas_path else ""
@@ -316,7 +324,7 @@ def get_library_tree():
         current_rel = ""
         for part in parts:
             current_rel = os.path.join(current_rel, part) if current_rel else part
-            child = next((c for c in current_node["children"] if c["name"] == part), None)
+            child = current_node["_child_index"].get(part)
             if not child:
                 child = {
                     "name": part,
@@ -324,9 +332,11 @@ def get_library_tree():
                     "children": [],
                     "videos": [],
                     "video_count": 0,
-                    "has_cover": False
+                    "has_cover": False,
+                    "_child_index": {},
                 }
                 current_node["children"].append(child)
+                current_node["_child_index"][part] = child
             current_node = child
         current_node["videos"].append(v)
     
@@ -413,9 +423,6 @@ def get_library_tree():
 
         return ""
 
-    # NFO 读取缓存（避免 SMB 网络路径重复读取）
-    _nfo_cache = {}
-
     def finalize(node, parent_category_tag=""):
         count = len(node["videos"])
         has_cover = count > 0
@@ -482,9 +489,9 @@ def get_library_tree():
                     node["shadow_tmdb_id"] = child.get("shadow_tmdb_id")
                     break
 
-        # 文件夹级 clean_name：用新的清洗名系统
+        # 文件夹级 clean_name：只用缓存的库数据和树内信息推导，避免首屏读取 NAS 上的 NFO
         if node["path"] and node["path"] != base_path:
-            from clean_name_system import clean_for_folder, clean_from_scrape
+            from clean_name_system import clean_for_folder
             from organizer import _extract_season_number
             _season_num = _extract_season_number(node["name"]) if node.get("folder_type") == "season" else None
             _folder_result = clean_for_folder(
@@ -498,36 +505,27 @@ def get_library_tree():
             node["clean_name_en"] = _folder_result.en
             node["clean_name_original"] = _folder_result.original
 
-            # 补全：如果 en 或 original 为空，尝试从 NFO 读取
-            # 先快速检查 NFO 文件是否存在，避免对无 NFO 的文件夹做无用 IO
-            if not node["clean_name_en"] or not node["clean_name_original"]:
-                _nfo_exists = any(
-                    os.path.exists(os.path.join(node["path"], n))
-                    for n in ("movie.nfo", "tvshow.nfo")
-                )
-                if _nfo_exists:
-                    try:
-                        _nfo_cache_key = node["path"]
-                        if _nfo_cache_key not in _nfo_cache:
-                            _nfo_cache[_nfo_cache_key] = scraper.read_nfo(node["path"])
-                        _nfo = _nfo_cache[_nfo_cache_key]
-                        if _nfo:
-                            _nfo_result = clean_from_scrape(
-                                title=_nfo.get("title", ""),
-                                original_title=_nfo.get("original_title", ""),
-                                english_title=_nfo.get("english_title", ""),
-                                year=_nfo.get("year", ""),
-                                source="nfo",
-                            )
-                            if not node["clean_name_en"] and _nfo_result.en:
-                                node["clean_name_en"] = _nfo_result.en
-                            if not node["clean_name_original"] and _nfo_result.original:
-                                node["clean_name_original"] = _nfo_result.original
-                            if not node["clean_name_cn"] and _nfo_result.cn:
-                                node["clean_name_cn"] = _nfo_result.cn
-                                node["clean_name"] = _nfo_result.display or node["clean_name"]
-                    except Exception:
-                        pass
+            # 用当前目录下已缓存的视频字段补全
+            for video in node.get("videos", []):
+                if not node["clean_name_cn"] and video.get("clean_name_cn"):
+                    node["clean_name_cn"] = video["clean_name_cn"]
+                if not node["clean_name_en"] and video.get("clean_name_en"):
+                    node["clean_name_en"] = video["clean_name_en"]
+                if not node["clean_name_original"] and video.get("clean_name_original"):
+                    node["clean_name_original"] = video["clean_name_original"]
+                if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
+                    break
+
+            # 当前目录没有足够信息时，从已完成的子树向上冒泡
+            for child in node.get("children", []):
+                if not node["clean_name_cn"] and child.get("clean_name_cn"):
+                    node["clean_name_cn"] = child["clean_name_cn"]
+                if not node["clean_name_en"] and child.get("clean_name_en"):
+                    node["clean_name_en"] = child["clean_name_en"]
+                if not node["clean_name_original"] and child.get("clean_name_original"):
+                    node["clean_name_original"] = child["clean_name_original"]
+                if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
+                    break
         else:
             node["clean_name"] = node.get("name", "")
             node["clean_name_cn"] = ""
@@ -603,6 +601,13 @@ def get_library_tree():
         for child in node.get("children", []):
             post_process(child, cat, cur_cn, cur_en, cur_original)
     post_process(root_node)
+
+    def cleanup(node):
+        node.pop("_child_index", None)
+        for child in node.get("children", []):
+            cleanup(child)
+
+    cleanup(root_node)
 
     return root_node
 

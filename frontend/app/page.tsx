@@ -22,6 +22,52 @@ import DownloadManagerPanel from "@/components/download/DownloadManagerPanel";
 import { api } from "@/lib/api";
 import type { VideoInfo, FolderNode } from "@/types";
 
+function normalizeLibraryPath(path: string) {
+  return path.replace(/\//g, "\\").replace(/\\+$/, "").toLowerCase();
+}
+
+export function findLibraryNodeByPath(
+  root: FolderNode | null,
+  targetPath: string,
+  basePaths: string[] = [],
+): FolderNode | null {
+  if (!root || !targetPath) return null;
+
+  const normalizedTarget = normalizeLibraryPath(targetPath);
+  const walk = (node: FolderNode): FolderNode | null => {
+    if (node.path && normalizeLibraryPath(node.path) === normalizedTarget) {
+      return node;
+    }
+    for (const child of node.children || []) {
+      const found = walk(child);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const exact = walk(root);
+  if (exact) return exact;
+
+  for (const basePath of basePaths) {
+    const normalizedBase = normalizeLibraryPath(basePath);
+    if (!normalizedBase) continue;
+    if (normalizedTarget === normalizedBase || normalizedTarget.startsWith(`${normalizedBase}\\`)) {
+      const relative = normalizedTarget.slice(normalizedBase.length).replace(/^\\+/, "");
+      const parts = relative.split("\\").filter(Boolean);
+      let current: FolderNode | undefined;
+      let nodes = root.children || [];
+      for (const part of parts) {
+        current = nodes.find((node) => node.name.toLowerCase() === part);
+        if (!current) return null;
+        nodes = current.children || [];
+      }
+      return current || root;
+    }
+  }
+
+  return null;
+}
+
 export default function Home() {
   const {
     videos, fileTree, currentFolder, navigateTo, goBack, goForward, canGoBack, canGoForward,
@@ -93,21 +139,14 @@ export default function Home() {
   // 从发现页跳转到本地媒体库目录
   const handleNavigateToLocal = useCallback((folderPath: string) => {
     if (!folderPath || !fileTree) return;
-    // folderPath 格式如 "动画电影\你的名字。 Your Name. (2016) 1080p"
-    const parts = folderPath.replace(/\//g, "\\").split("\\").filter(Boolean);
-    let current: FolderNode | undefined;
-    let nodes = fileTree.children || [];
-    for (const part of parts) {
-      current = nodes.find((n: FolderNode) => n.name === part);
-      if (!current) break;
-      nodes = current.children || [];
-    }
-    if (current) {
-      navigateTo(current);
+    const basePaths = config.nas_paths?.length ? config.nas_paths : (config.nas_path ? [config.nas_path] : []);
+    const targetNode = findLibraryNodeByPath(fileTree, folderPath, basePaths);
+    if (targetNode) {
+      navigateTo(targetNode);
       // 滚动到顶部
       if (scrollContainerRef.current) scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [fileTree, navigateTo, scrollContainerRef]);
+  }, [config.nas_path, config.nas_paths, fileTree, navigateTo, scrollContainerRef]);
 
   // 监听下载面板的"查看"按钮事件
   useEffect(() => {
