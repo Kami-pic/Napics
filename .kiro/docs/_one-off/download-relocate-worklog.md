@@ -583,6 +583,18 @@
   - 当前结论：
     - 场景 C 现在已经拿到第一笔真实 Alist 活跃样本
     - 这笔样本没有恢复到 `completed`，但已证明“真实 Alist 活跃任务 + 错误返回”不会误收口，也不会再因结构兼容问题退成 `unknown`
+- 随后继续对这笔真实 Alist 样本做只读上游核对，确认 `429` 的真实来源
+  - 直接在本机对 `85499bc0.download_url` 发起普通 `GET`，结果同样返回 `429`
+  - 返回体不是 HTML，而是 Prowlarr 的 XML 错误：
+    - `Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`
+  - 更换 `User-Agent / Accept / Referer` 后结果不变，说明不是请求头姿势问题
+  - 结论收口：
+    - 当前这笔 Alist 活跃样本的剩余问题，不再是 DownloadManager/Alist 同步链路错误
+    - 它是上游 Prowlarr 索引器自身进入冷却窗口，导致 `/download?...` 链接本身不可用
+    - 因此当前代码能做到的正确行为就是：
+      - 保持任务在 `downloading + cloud_download`
+      - 暴露真实错误 `http status code 429`
+      - 不误收口到 `completed/lost/unknown`
 
 ---
 
