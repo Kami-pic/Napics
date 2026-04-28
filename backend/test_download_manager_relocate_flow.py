@@ -1577,6 +1577,60 @@ def test_sync_qb_progress_keeps_downloading_for_missingfiles_state():
     assert task.eta == "00:01:30"
 
 
+def test_sync_qb_progress_recovers_unknown_task_to_downloading_for_missingfiles_state():
+    qb = FakeQBClient(
+        [
+            FakeResponse(
+                200,
+                [
+                    {
+                        "progress": 0.37,
+                        "dlspeed": 4096,
+                        "eta": 90,
+                        "state": "missingFiles",
+                    }
+                ],
+            )
+        ]
+    )
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="unknown", channel="qb")
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "downloading"
+    assert task.progress == 0.37
+    assert task.speed == "4 KB/s"
+    assert task.eta == "00:01:30"
+
+
+def test_sync_qb_progress_recovers_unknown_task_to_downloading_for_forceddl_state():
+    qb = FakeQBClient(
+        [
+            FakeResponse(
+                200,
+                [
+                    {
+                        "progress": 0.4356,
+                        "dlspeed": 0,
+                        "eta": 0,
+                        "state": "forcedDL",
+                    }
+                ],
+            )
+        ]
+    )
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(status="unknown", channel="qb")
+
+    dm._sync_qb_progress(task)
+
+    assert task.status == "downloading"
+    assert task.progress == 0.4356
+    assert task.speed == ""
+    assert task.eta == ""
+
+
 def test_sync_qb_progress_marks_unknown_when_info_request_fails():
     qb = FakeQBClient([FakeResponse(500, {})])
     dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")

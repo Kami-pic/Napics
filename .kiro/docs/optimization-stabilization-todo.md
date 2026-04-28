@@ -145,6 +145,7 @@
     - `99c57d47 / 156f7e94 / 9e17d995 / 12ac52c5 / c3e3b147` 从 `unknown` 恢复到 `completed`
     - `e1927935 / fa9beea5 / 6500e314` 仍停在 `unknown`，但 `progress/updated_at` 已继续刷新，说明恢复轮询已生效
     - `499b0bd2`（Alist）最初表现为 `unknown + cloud_download`；随后已定位到代码侧根因：当前实例的 AList V3 任务查询接口应走 `GET /api/task/offline_download/undone|done`，旧代码误写成了 `/api/admin/task/...`，因此一直打到前端 HTML。修复后在独立 `8014` 当前代码实例上复测，`499b0bd2` 已从 `unknown` 收口为 `lost + Alist 中未找到对应任务`，说明这笔样本并非“待恢复”，而是旧错误路径掩盖了真实的失联状态；随后又补上了提交链对真实 Alist tid 的保存，并在同步链上改成“有真实 tid 时优先 `POST /api/task/offline_download/info?tid=...`，查不到再回退列表扫描”，避免后续继续退化成 `alist_{task.id}` 伪标识或列表猜名
+  - 最新补充（2026-04-28）：真实 qB 还暴露出第二个恢复缺口：`sync_progress()` 虽然已会继续轮询 `unknown` 任务，但 `_sync_qb_progress()` 在查到未完成 torrent（如 `forcedDL` / `missingFiles`）时没有把状态从 `unknown` 收回 `downloading`，导致 `99c57d47 / e1927935 / 6500e314 / fa9beea5` 在现网 `8000` 上只刷新 `updated_at`、不刷新状态。当前工作区代码已修复这个映射，并用真实 qB hash 只读验证确认这四笔样本都会恢复成 `downloading`；Alist 侧当前 `done/undone` 均为空，仍缺“真实活跃任务恢复推进”的样本
 - [ ] 必要时补一个“真实环境验证记录”单独文档
   - 当前：已落一版执行清单，见 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 
@@ -162,7 +163,7 @@
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通过一次重副本链路；但重视频副本会明显推高工作区体积，当前已清理旧 `shadow-verify`，并将后续策略切换为“真实文件名/目录结构/NFO + 占位视频文件”的轻量副本模式
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”
-  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”；Alist 侧已进一步定位并修复错误的任务查询路径，补上提交链保存真实 tid 的能力，并在同步链上优先按 tid 直查 `task info`，且真实复测已证明 `499b0bd2` 会从旧的 `unknown` 收口为 `lost`。下一步应继续找一笔“任务仍存在于 Alist done/undone/info 中”的真实样本，验证它能否恢复到 `downloading/completed`
+  - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”；Alist 侧已进一步定位并修复错误的任务查询路径，补上提交链保存真实 tid 的能力，并在同步链上优先按 tid 直查 `task info`，且真实复测已证明 `499b0bd2` 会从旧的 `unknown` 收口为 `lost`。本轮又补上 qB 的 `unknown -> downloading` 恢复映射，当前工作区代码对真实 `forcedDL/missingFiles` hash 已可恢复；下一步应继续找一笔“任务仍存在于 Alist done/undone/info 中”的真实样本，验证它能否恢复到 `downloading/completed`
 - [ ] 为下一个对话准备轻量影子验证入口
   - 当前：规则和方向已定；下一步应把 `download-relocate-shadow-verify-plan.md` 当作唯一入口，按“只保留真实文件名/目录层级/sidecar，视频主文件用空文件或极小占位文件”重建 `shadow-verify`
 - [x] 收口一轮已暴露的主链路前端回归

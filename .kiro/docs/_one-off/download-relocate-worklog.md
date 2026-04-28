@@ -518,6 +518,29 @@
     - 实测：约 `22.3s -> 7.8s`
     - `frontend npm run test -- home-library-path`
     - 当前环境噪声：`vitest` 启动阶段因 `spawn EPERM` 失败，未形成前端自动化结论
+- 继续推进场景 C 时，真实 qB 又暴露出一个更细的恢复缺口
+  - 先做只读环境核对：
+    - `POST http://127.0.0.1:8000/download-manager/sync` 后，`99c57d47 / e1927935 / 6500e314 / fa9beea5` 的 `updated_at` 都会刷新
+    - 但这四笔任务在 `8000` 上仍停在 `status=unknown`
+    - 同时直连 qB API 只读核对确认：
+      - `99c57d47` 真实状态是 `missingFiles`
+      - `e1927935 / 6500e314 / fa9beea5` 真实状态是 `forcedDL`
+    - 这说明“继续轮询 unknown”已经生效，但 `_sync_qb_progress()` 在“查到 torrent、只是尚未完成”这一分支没有把状态收回 `downloading`
+  - 本轮最小修复：
+    - 在 `download_manager._sync_qb_progress()` 中新增恢复逻辑：只要 qB 成功返回 torrent 且未命中完成态，就显式写回 `status=downloading`
+    - 不改完成态、丢失态和异常态判定
+  - 新增隔离保护：
+    - `test_sync_qb_progress_recovers_unknown_task_to_downloading_for_missingfiles_state`
+    - `test_sync_qb_progress_recovers_unknown_task_to_downloading_for_forceddl_state`
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_qb_progress or sync_progress"`
+    - 结果：`23 passed`
+  - 真实样本只读验证（不改 `8000` 现有进程，也不改任务文件）：
+    - 用当前工作区代码直接对 `99c57d47 / e1927935 / 6500e314 / fa9beea5` 调 `_sync_qb_progress()`
+    - 结果四笔样本都会从 `unknown` 恢复到 `downloading`
+  - 本轮剩余阻塞：
+    - Alist 当前 `GET /api/task/offline_download/undone` 与 `done` 都为空
+    - 因此场景 C 还缺一笔“真实仍活着的 Alist 任务”来验证 `unknown -> downloading/completed`
 
 ---
 

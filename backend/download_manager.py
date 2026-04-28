@@ -344,6 +344,8 @@ class DownloadManager:
                 task.progress = 1.0
                 task.speed = ""
                 task.eta = ""
+            else:
+                task.status = "downloading"
 
         except Exception:
             task.status = "unknown"
