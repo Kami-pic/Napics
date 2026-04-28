@@ -143,13 +143,27 @@ class DownloadManager:
         提交后通过 qB API 查询最近添加的种子获取 hash。
         """
         try:
+            url = task.download_url
+            # Prowlarr 代理链接预处理：解析重定向获取真正的磁力链接
+            if url and "/download?apikey=" in url and not url.startswith("magnet:"):
+                try:
+                    resp = requests.get(url, timeout=10, allow_redirects=False,
+                                        proxies={"http": None, "https": None}, stream=True)
+                    loc = resp.headers.get("Location", "")
+                    if loc.startswith("magnet:"):
+                        logger.info(f"[DM] Prowlarr 代理链接解析为磁力: {loc[:80]}")
+                        url = loc
+                    resp.close()
+                except Exception as e:
+                    logger.warning(f"[DM] Prowlarr 代理链接解析失败，使用原始 URL: {e}")
+
             # 先记录提交前的种子列表
             before_hashes = self._get_qb_hashes()
 
             # 传 save_path 给 qB（用户指定的目标路径，不是沙盒）
-            ok = self.qb.add_torrent(task.download_url, task.save_path or "")
+            ok = self.qb.add_torrent(url, task.save_path or "")
             if not ok:
-                return False, f"qBittorrent 推送失败（URL: {task.download_url[:80]}）"
+                return False, f"qBittorrent 推送失败（URL: {url[:80]}）"
 
             # 等待 qB 处理（最多 5 秒）
             for _ in range(10):

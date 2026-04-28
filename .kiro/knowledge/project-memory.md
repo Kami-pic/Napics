@@ -30,6 +30,9 @@
   - 发现页（douban_hot/recommend/explore）：统一注入 clean_name_cn/en/original
   - 前端搜索词：FolderDetail/VideoDetail/DiscoverPage 直接用结构化字段传给 SearchModal
 - 持久化字段：`clean_name`（display，向后兼容）+ `clean_name_cn` / `clean_name_en` / `clean_name_original`（结构化）
+- 自愈机制：树构建时自动补全缺失的结构化字段（反向解析 → 视频冒泡 → NFO 兜底 → 子树冒泡），补全后持久化到 media_library.json
+- 垃圾英文名检测：季号碎片/纯数字/常见非作品名自动清空，让视频冒泡覆盖正确值
+- 名称污染防护：finalize 冒泡仅限 tv/season，一级分类目录不冒泡不传播
 - 统一优先级表 `NAME_SOURCE_PRIORITY`：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
 - `safe_update_clean_name()`：多字段版本的优先级保护写入
 - 前端 SearchModal props：cnName / enName / originalName（原 jpName 已改名）

@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   },
 };
 
-import MaintenanceCenter from "@/components/MaintenanceCenter";
 
 export default function RootLayout({
   children,
@@ -34,7 +33,6 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <MaintenanceCenter />
       </body>
     </html>
   );

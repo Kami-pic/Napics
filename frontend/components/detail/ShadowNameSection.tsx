@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
 
-export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, onRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; onRefresh?: () => void }) {
+export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, cleanNameEn, onRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; cleanNameEn?: string; onRefresh?: () => void }) {
   // 文件夹模式：用 folderName/folderShadowName/folderCleanName；视频模式：用 video 字段
   const isFolder = !video && !!folderName;
   const fileName = video?.file_name || folderName || "";
   const shadowName = video?.shadow_name || folderShadowName || "";
   const cleanName = video?.clean_name || folderCleanName || "";
+  const enName = cleanNameEn || video?.clean_name_en || "";
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -135,7 +136,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
             </div>
           ) : (
             <span className="text-[11px] text-slate-600 truncate flex-1 cursor-pointer hover:text-slate-400"
-              onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}</span>
+              onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}{enName && !cleanName.includes(enName) ? <span className="text-slate-700 ml-1">{enName}</span> : null}</span>
           )
         ) : (
           <span className="text-[11px] text-slate-600 truncate flex-1">未设置</span>

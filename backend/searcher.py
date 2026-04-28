@@ -82,13 +82,23 @@ class ProwlarrClient:
                 title = item.get("title", "")
                 quality = parse_quality(title)
                 quality_level = get_quality_level(quality)
+                # 下载链接优先级：infoHash 构造磁力 > 真正的磁力链接 > Prowlarr 代理链接
+                info_hash = item.get("infoHash", "")
+                mag_url = item.get("magnetUrl", "")
+                dl_url = item.get("downloadUrl", "")
+                if info_hash:
+                    download_url = f"magnet:?xt=urn:btih:{info_hash}&dn={requests.utils.quote(title)}"
+                elif mag_url and mag_url.startswith("magnet:"):
+                    download_url = mag_url
+                else:
+                    download_url = mag_url or dl_url
                 results.append(SearchResult(
                     title=title,
                     size_gb=round(size / (1024**3), 2),
                     indexer=item.get("indexer", "Unknown"),
                     seeders=item.get("seeders", 0),
                     leechers=item.get("leechers", 0),
-                    download_url=item.get("downloadUrl", ""),
+                    download_url=download_url,
                     info_url=item.get("infoUrl", ""),
                     quality_tag=quality.display if quality.display else "Unknown",
                     quality=quality,

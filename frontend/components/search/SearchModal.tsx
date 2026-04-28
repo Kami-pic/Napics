@@ -578,7 +578,7 @@ export default function SearchModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">
-      <div className="bg-[var(--background)] border border-white/[0.06] rounded-2xl w-full max-w-[1200px] max-h-[85vh] flex flex-col">
+      <div className="bg-[var(--background)] border border-white/[0.06] rounded-2xl w-full max-w-[1200px] h-[85vh] flex flex-col">
         {/* 顶栏 */}
         <div className="p-5 border-b border-white/[0.06] space-y-3 flex-shrink-0 overflow-visible relative z-10">
           <div className="flex justify-between items-center">

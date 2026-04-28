@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-04-28 搜索下载修复 + 清洗名自愈机制 + 分季搜索 + 英文名展示
+
+**变更**:
+- **Prowlarr 下载链接修复**：`searcher.py` 优先用 `infoHash` 构造磁力链接（覆盖 ~86% 结果），其次用真正的 `magnetUrl`，最后回退到 Prowlarr 代理链接；`download_manager.py` 的 `_push_to_qb` 增加 Prowlarr 代理链接预处理（GET + allow_redirects=False 解析重定向获取磁力链接）
+- **搜索弹窗高度固定**：`SearchModal.tsx` 容器从 `max-h-[85vh]` 改为 `h-[85vh]`，不再因内容多少高低变化
+- **分季搜索词支持中文数字**：`FolderDetail.tsx` 季号提取增加中文数字解析（一~九十九），支持"第一季"到"第九十九季"
+- **移除重启后端组件**：`layout.tsx` 移除 `MaintenanceCenter` 引用和渲染
+- **清洗名名称污染修复**：`finalize` 中子节点向上冒泡限制为仅 tv/season 类型（同一部剧），一级分类目录不冒泡；`post_process` 中一级分类目录（`is_top_category`）不向下传播 cn/en/original
+- **清洗名自愈机制**（接入 `parse_legacy_clean_name`）：
+  - 自愈层1：视频条目缺失 `clean_name_cn`/`clean_name_en` 时，从 `clean_name`（display）反向解析（`parse_legacy_clean_name`），并持久化到 `media_library.json`
+  - 自愈层2：从视频条目冒泡补全文件夹节点，如果视频的英文名比文件夹名解析的更长则覆盖
+  - 自愈层3：NFO 兜底（文件夹名和视频都解析不出时读 NFO）
+  - 自愈层4：子树冒泡（仅 tv/season）
+  - 垃圾英文名检测：季号碎片、纯数字、常见非作品名（Season/SPs/EXTRA/menu 等）自动清空，让冒泡补全正确值
+- **前端英文名展示**：`ShadowNameSection` 新增 `cleanNameEn` prop，清洗名行追加显示英文名（如果 display 中不包含）；`FolderDetail` 传递 `node.clean_name_en`
+
+**踩坑**:
+- Prowlarr API 返回的 `downloadUrl` 是代理链接（`http://127.0.0.1:9696/X/download?apikey=...`），qBittorrent 无法正确处理 301 重定向到 magnet: 的情况；`magnetUrl` 也是代理链接不是真正的磁力链接；只有 `infoHash` 是可靠的
+- `clean_name_cn`/`clean_name_en` 在 `media_library.json` 中全部为空（0% 覆盖率），根因是 `parse_legacy_clean_name` 函数已实现但从未被业务代码调用——清洗名系统上线时没有做存量数据迁移
+- `finalize` 中子节点向上冒泡没有限制范围，导致一级分类目录（如"欧美剧"）从第一个有 `clean_name_en` 的子节点（如 better call saul）冒泡英文名，然后 `post_process` 向下传播污染所有兄弟节点
+- `clean_for_folder` 对含季号范围的文件夹名（如"进击的巨人s1-s5"）解析出垃圾英文名（如 `en='1 s 5'`），阻止了视频冒泡的正确英文名覆盖
+- 电影 vs 电视剧清洗名展示差异：电影文件夹名本身含中英文所以 display 有英文，电视剧的 display 由 `compose_display(include_en=False)` 组装只有中文，英文名存在 `clean_name_en` 但前端 ShadowNameSection 没有展示
+
 ## 2026-04-23 新增直搜源（EZTV/动漫花园/1337x）+ 源级代理配置 + 单源搜索修复
 **变更**:
 - 新增 3 个 BT 直搜源：EZTV（bt_scraper_eztv.py，默认禁用，不支持关键词搜索）、动漫花园（bt_scraper_dmhy.py，RSS 端点搜索+chrome124 指纹）、1337x（bt_scraper_1337x.py，镜像站 1337xx.to+chrome120 指纹+两步请求取磁力+标题相关性过滤）
@@ -362,3 +385,52 @@
 - 排除文件夹与上方路径模块间距缩小（-mt-2），textarea 从 rows=2 改为 rows=1 + resize-y + min-h-[38px]，和普通 input 等高
 - AI 功能开关区域改为折叠展开（▶ 箭头），AI 标题/总开关/服务商预设/API 配置/测试连接始终可见
 - 产品标题统一改为 Napics Media Manager（Header 顶栏、layout title、meta description）
+
+## 2026-04-28 下载→归位闭环收口（阶段收口）
+**变更**:
+- 保留 `optimization-stabilization-todo.md` 作为 `v1` 历史清单，新建 `optimization-stabilization-todo-v2.md` 作为新的收口执行面板
+- 收口口径改为“用户主链路可用性”，不再沿用 `v1` 中失真的 `40%`
+- 下载→归位闭环主链路正式收口为“已开证，转观察态”
+- 已开证范围包括：
+  - 下载提交（qB / Alist）
+  - 下载进度同步（qB `unknown -> downloading/completed` 恢复映射、AList V3 `task info / done / undone`）
+  - 自动归位 / `confirm` / `execute`
+  - 前端主入口回归（`archived` tab、查看入口、绝对 NAS 路径命中、首页媒体库树首屏性能回退修复）
+- `85499bc0 / 5xvyCPXpAe5J9_HTL7Kxb` 样本完成最终只读复测后，已从“阻塞样本”降级为“上游观察样本”
+**决策**:
+- 后续不再围绕同一个 AList `429` 冷却样本重复复测
+- 轻量影子副本默认不重建，仅在后续再次出现 `execute / dry-run` 回归且不适合直接碰真实 NAS 时再启用
+- 自动推进策略改为“每 30 分钟继续推进当前最高价值小闭环”，不再锁死在单一样本复测
+**踩坑**:
+- 真实 AList 离线任务即使仍存在于 `done/info`，也可能因为上游 Prowlarr indexer 长时间冷却而持续返回 `429`，这种情况不应再被当作 DownloadManager 同步链 bug
+- 本地 `download_tasks.json` 与 AList 真实任务列表可能出现“本地任务已清理，但远端 tid 仍保留”的时间差，验证时必须同时看本地状态和远端 `tid`
+
+## 2026-04-28 搜索 / 命名 / 刮削基线快照（小闭环）
+**变更**:
+- 新增 `backend/test_searcher.py`，固定 Prowlarr 下载链接归一化优先级（`infoHash` 构造磁链 > 真实 `magnetUrl`）
+- 新增 `backend/test_search_route_snapshots.py`，固定 `/api/search/source` 返回结构与 SSE `/api/search/stream` 的 `source_done` 事件结构
+- 扩充 `backend/test_scraper_tv_dry_run_actions.py`，把 `existing_nfo -> tmdb_match -> episode NFO 字段 -> dry-run summary` 固定成代表性 TV 样本
+- 更新 `search-naming-scrape-baseline-snapshot.md` 与 `optimization-stabilization-todo-v2.md`，把三条基线从“缺快照”推进到“已有入口快照，可转观察”
+**决策**:
+- 本轮只补验证入口和证据文档，不扩搜索 / 命名 / 刮削业务逻辑
+- 搜索链路的“快照”口径以接口结构稳定性为主，不把外站可用性波动混入当前收口标准
+**踩坑**:
+- `StreamingResponse.body_iterator` 在测试里是 async generator，SSE 快照要异步收集，不能直接 `list(...)`
+- 当前 `DownloadManager` 对 Prowlarr 代理链接的预解析实际走的是 `requests.get(..., allow_redirects=False, stream=True)`，不是 `HEAD`
+- 当前完整验证仍有两组既有噪声：
+  - 前端 `vitest` 失败集中在 `split-components` / `subscribe-*` 老测试
+  - 后端完整 `pytest .` 会被多份历史脚本式测试文件在导入阶段 `sys.exit(...)` 打断
+
+## 2026-04-28 媒体库首页性能专项入口（基线）
+**变更**:
+- 新增 `library-home-performance-baseline.md`，把首页性能从观察项拉成专项入口
+- 复核当前首页首屏链路：
+  - `/library/tree` 继续保持“不实时读 NAS NFO”
+  - 前端 `useLibrary` 初始化和刷新仍是 `/library + /library/tree` 双请求并行
+- 新增 `backend/test_library_route_snapshot.py`，固定 `/library/tree` 返回形状
+- 本机 `8000` 粗测：
+  - `/library/tree` 约 `910ms`
+  - `/library` 约 `305ms`
+**决策**:
+- 当前先停在“基线 + 下一步候选”，不直接扩成首页重构
+- 下一轮若仍要压首页体感，优先看 `useLibrary.refreshLibrary()` 的双请求刷新成本

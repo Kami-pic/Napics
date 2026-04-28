@@ -288,10 +288,10 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
       {!isAggregate && confidence && <ConfidenceBadge confidence={confidence} pendingConfirm={pendingConfirm} onConfirm={() => setPendingConfirm(false)} onReject={() => { setPendingConfirm(false); }} />}
       {/* movie 类型显示视频级标准名，tv/season 显示文件夹级标准名 */}
       {folderType === "movie" && node.videos[0] && (
-        <ShadowNameSection path={node.videos[0].file_path} video={node.videos[0]} onRefresh={onRefresh} />
+        <ShadowNameSection path={node.videos[0].file_path} video={node.videos[0]} cleanNameEn={node.clean_name_en || node.videos[0]?.clean_name_en} onRefresh={onRefresh} />
       )}
       {(folderType === "tv" || folderType === "season") && (
-        <ShadowNameSection path={node.path} folderName={node.name} folderShadowName={node.shadow_name} folderCleanName={node.clean_name} onRefresh={onRefresh} />
+        <ShadowNameSection path={node.path} folderName={node.name} folderShadowName={node.shadow_name} folderCleanName={node.clean_name} cleanNameEn={node.clean_name_en} onRefresh={onRefresh} />
       )}
       <div className="grid grid-cols-3 gap-2">
         {[[String(node.video_count), "视频"], [String(node.children?.length || 0), "子目录"], [formatSize(totalSize), "总大小"]].map(([v, l]) => (
@@ -315,9 +315,27 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
         }
         if (!cnName) cnName = node.clean_name || node.name;
         const ft = node.folder_type || "";
-        // 季号：从 node.name 中提取
+        // 季号：从 node.name 中提取（支持阿拉伯数字和中文数字）
+        const CN_NUM: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10 };
         const sMatch = node.name.match(/(?:Season|S)\s*(\d+)/i) || node.name.match(/第(\d+)季/);
-        const sNum = sMatch ? parseInt(sMatch[1]) : undefined;
+        let sNum: number | undefined;
+        if (sMatch) {
+          sNum = parseInt(sMatch[1]);
+        } else {
+          const cnMatch = node.name.match(/第([一二三四五六七八九十]+)季/);
+          if (cnMatch) {
+            const cnStr = cnMatch[1];
+            if (cnStr.length === 1) sNum = CN_NUM[cnStr];
+            else if (cnStr === "十") sNum = 10;
+            else if (cnStr.startsWith("十")) sNum = 10 + (CN_NUM[cnStr[1]] || 0);
+            else if (cnStr.endsWith("十")) sNum = (CN_NUM[cnStr[0]] || 0) * 10;
+            else if (cnStr.includes("十")) {
+              // "二十一" → 21
+              const parts = cnStr.split("十");
+              sNum = (CN_NUM[parts[0]] || 0) * 10 + (CN_NUM[parts[1]] || 0);
+            } else sNum = undefined;
+          }
+        }
         // 默认搜索词
         const defaultQuery = ft === "season" && sNum
           ? `${cnName} Season ${sNum}`

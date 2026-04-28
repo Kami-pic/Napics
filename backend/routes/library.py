@@ -491,7 +491,7 @@ def get_library_tree():
 
         # 文件夹级 clean_name：只用缓存的库数据和树内信息推导，避免首屏读取 NAS 上的 NFO
         if node["path"] and node["path"] != base_path:
-            from clean_name_system import clean_for_folder
+            from clean_name_system import clean_for_folder, parse_legacy_clean_name
             from organizer import _extract_season_number
             _season_num = _extract_season_number(node["name"]) if node.get("folder_type") == "season" else None
             _folder_result = clean_for_folder(
@@ -505,27 +505,80 @@ def get_library_tree():
             node["clean_name_en"] = _folder_result.en
             node["clean_name_original"] = _folder_result.original
 
-            # 用当前目录下已缓存的视频字段补全
+            # 垃圾英文名检测：季号碎片、纯数字、太短的、常见非作品名不算有效英文名
+            _en = node["clean_name_en"]
+            if _en and node.get("folder_type") in ("tv", "season", "movie", "mixed", ""):
+                import re as _re_en
+                _JUNK_EN = {"season", "seasons", "sps", "sp", "extra", "extras", "ncop", "nced",
+                            "pv", "menu", "tv", "ova", "oad", "bonus", "specials"}
+                _en_stripped = _re_en.sub(r'[sS]\s*\d+', '', _en).strip()
+                _en_stripped = _re_en.sub(r'\d+', '', _en_stripped).strip()
+                if len(_en_stripped) <= 3 or _en.lower().strip() in _JUNK_EN:
+                    node["clean_name_en"] = ""
+
+            # ── 自愈层1：视频条目缺失结构化字段时，从 clean_name 反向解析 ──
+            # 这样视频冒泡时才有 cn/en 可冒
+            for video in node.get("videos", []):
+                if not video.get("clean_name_cn") and not video.get("clean_name_en") and video.get("clean_name"):
+                    _legacy = parse_legacy_clean_name(video)
+                    if _legacy.cn:
+                        video["clean_name_cn"] = _legacy.cn
+                    if _legacy.en:
+                        video["clean_name_en"] = _legacy.en
+                    if _legacy.original:
+                        video["clean_name_original"] = _legacy.original
+                    if _legacy.cn or _legacy.en:
+                        library_dirty[0] = True
+
+            # ── 自愈层2：从视频条目冒泡补全文件夹 ──
+            # 如果文件夹的 en 为空或明显是垃圾（比视频的 en 短很多），用视频的覆盖
+            _folder_en_len = len(node["clean_name_en"])
             for video in node.get("videos", []):
                 if not node["clean_name_cn"] and video.get("clean_name_cn"):
                     node["clean_name_cn"] = video["clean_name_cn"]
-                if not node["clean_name_en"] and video.get("clean_name_en"):
-                    node["clean_name_en"] = video["clean_name_en"]
+                v_en = video.get("clean_name_en", "")
+                if v_en and (not node["clean_name_en"] or (len(v_en) > _folder_en_len + 3)):
+                    node["clean_name_en"] = v_en
+                    _folder_en_len = len(v_en)
                 if not node["clean_name_original"] and video.get("clean_name_original"):
                     node["clean_name_original"] = video["clean_name_original"]
                 if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
                     break
 
-            # 当前目录没有足够信息时，从已完成的子树向上冒泡
-            for child in node.get("children", []):
-                if not node["clean_name_cn"] and child.get("clean_name_cn"):
-                    node["clean_name_cn"] = child["clean_name_cn"]
-                if not node["clean_name_en"] and child.get("clean_name_en"):
-                    node["clean_name_en"] = child["clean_name_en"]
-                if not node["clean_name_original"] and child.get("clean_name_original"):
-                    node["clean_name_original"] = child["clean_name_original"]
-                if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
-                    break
+            # ── 自愈层3：从 NFO 补全（文件夹名和视频都解析不出时的兜底）──
+            if node.get("folder_type") in ("tv", "season", "movie") and (not node["clean_name_en"] or not node["clean_name_cn"]):
+                try:
+                    from nfo_handler import read_nfo
+                    from clean_name_system import clean_from_scrape
+                    _nfo = read_nfo(node["path"], no_fallback=True)
+                    if _nfo and _nfo.get("title"):
+                        _scrape_result = clean_from_scrape(
+                            title=_nfo["title"],
+                            original_title=_nfo.get("original_title", ""),
+                            english_title=_nfo.get("english_title", ""),
+                            year=_nfo.get("year", ""),
+                            source="nfo",
+                        )
+                        if not node["clean_name_cn"] and _scrape_result.cn:
+                            node["clean_name_cn"] = _scrape_result.cn
+                        if not node["clean_name_en"] and _scrape_result.en:
+                            node["clean_name_en"] = _scrape_result.en
+                        if not node["clean_name_original"] and _scrape_result.original:
+                            node["clean_name_original"] = _scrape_result.original
+                except Exception:
+                    pass
+
+            # ── 自愈层4：从子树冒泡（仅 tv/season，同一部剧的不同季）──
+            if node.get("folder_type") in ("tv", "season"):
+                for child in node.get("children", []):
+                    if not node["clean_name_cn"] and child.get("clean_name_cn"):
+                        node["clean_name_cn"] = child["clean_name_cn"]
+                    if not node["clean_name_en"] and child.get("clean_name_en"):
+                        node["clean_name_en"] = child["clean_name_en"]
+                    if not node["clean_name_original"] and child.get("clean_name_original"):
+                        node["clean_name_original"] = child["clean_name_original"]
+                    if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
+                        break
         else:
             node["clean_name"] = node.get("name", "")
             node["clean_name_cn"] = ""
@@ -533,6 +586,8 @@ def get_library_tree():
             node["clean_name_original"] = ""
         return count, has_cover
 
+    # 自愈标志：视频条目的结构化清洗名被补全时标记为 dirty，最后持久化
+    library_dirty = [False]
     finalize(root_node)
 
     # 二次遍历：标记 season + 传播 parent_category_tag + 计算层级 clean_name
@@ -553,9 +608,15 @@ def get_library_tree():
                     break
 
         # 当前节点的结构化名称，用于传递给子节点
-        cur_cn = node.get("clean_name_cn", "") or parent_cn
-        cur_en = node.get("clean_name_en", "") or parent_en
-        cur_original = node.get("clean_name_original", "") or parent_original
+        # 一级分类目录不向下传播（子节点是不同作品）
+        if node.get("is_top_category"):
+            cur_cn = ""
+            cur_en = ""
+            cur_original = ""
+        else:
+            cur_cn = node.get("clean_name_cn", "") or parent_cn
+            cur_en = node.get("clean_name_en", "") or parent_en
+            cur_original = node.get("clean_name_original", "") or parent_original
 
         # tv 的子目录标记为 season + 计算季 clean_name
         if node.get("folder_type") == "tv":
@@ -597,6 +658,7 @@ def get_library_tree():
                         v["clean_name_cn"] = result.cn
                         v["clean_name_en"] = result.en
                         v["clean_name_original"] = result.original
+                        library_dirty[0] = True
 
         for child in node.get("children", []):
             post_process(child, cat, cur_cn, cur_en, cur_original)
@@ -608,6 +670,14 @@ def get_library_tree():
             cleanup(child)
 
     cleanup(root_node)
+
+    # 自愈持久化：视频条目的结构化清洗名被补全后回写 media_library.json
+    if library_dirty[0]:
+        try:
+            config_m.save_library(videos)
+            logger.info("[tree] 自愈：已补全视频条目的结构化清洗名并持久化")
+        except Exception as e:
+            logger.warning(f"[tree] 自愈持久化失败: {e}")
 
     return root_node
 
