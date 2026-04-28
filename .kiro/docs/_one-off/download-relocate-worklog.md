@@ -553,3 +553,34 @@
 
 - 远端分支：`origin/codex-relocate-baseline-checkpoint`
 - 提交：`6195eeb` `测试: 补强下载归位闭环验证`
+
+---
+
+## 2026-04-28 补记：归档执行层遗漏 `Subs/Fonts` 跟随归位
+
+- 触发背景：
+  - 用户基于真实样本 `卡罗尔与星期二`、`军火女王` 复核下载→归位结果时，确认“新视频替掉旧视频”已经发生
+  - 但归档后新资源里的字幕、字体等附属目录没有跟着进入目标季目录
+  - 同时 `军火女王` 的双季包还暴露出“附属目录失去季上下文后被误并”的风险
+- 根因定位：
+  - 自动归档仍走 `download_manager -> file_relocator.confirm_replace() -> routes.organize._apply_action_plan_moves()` 这条执行链
+  - 其中 `_apply_action_plan_moves()` 之前只会处理两类文件：
+    - 视频本体
+    - 与视频同 basename 的 `.nfo / -poster / -thumb / -fanart / 字幕`
+  - 白名单里那些“未进 plan、但确实属于新下载资源”的附属文件（例如 `Subs/*.ass`、`Fonts/*.ttf`）只会在 dry-run 树里展示，不会真正落盘
+- 本轮最小修法：
+  - 给 `_apply_action_plan_moves()` 增加 `base_path + whitelist` 上下文
+  - 执行时把白名单中的未处理文件再次过一遍，按下面规则决定落点：
+    - 先看它是否处在某个已知源季目录下面；若是，则保留相对层级并归到对应 `Season XX`
+    - 再看文件名或路径里是否能解析出季号；若能，则归到对应 `Season XX`
+    - 若整个包只有 1 个目标季，则把剩余附属文件默认并入这个季（等价于默认 `Season 01`）
+    - 多季且无法判季的共享资源暂不瞎搬，避免再次误并
+- 新增隔离验证：
+  - `test_apply_action_plan_moves_moves_single_season_extra_dirs_from_whitelist_into_target_season`
+  - `test_apply_action_plan_moves_routes_multi_season_extra_dirs_by_source_season_folder`
+  - 连同既有回归一起执行：
+    - `python -X utf8 -m pytest backend/test_organize_action_plan_execute.py backend/test_relocate_routes.py backend/test_file_relocator_conflicts.py`
+    - 结果：`42 passed`
+- 当前结论：
+  - 这次修的是“执行层漏搬 sidecar/附属目录”的根因，不是前端展示问题
+  - 后续如果再出现“多季共享 Fonts 根目录也要复制到各季”这类更激进规则，需要基于真实样本再单独确认，不在本轮最小修复范围内

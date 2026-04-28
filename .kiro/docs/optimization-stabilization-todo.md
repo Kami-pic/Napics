@@ -140,6 +140,7 @@
   - 当前：已用 `1a607cf1` 开证，真实 `dry-run -> execute` 已收口到 `archived`，并写入真实回收记录
 - [ ] 真实 `confirm_replace + execute` 交叠时序验证
   - 当前：已用第二个样本 `5ad5b6f9` 复现真实 execute 收口；两笔样本都稳定暴露“执行后再次 dry-run 仍残留 1 个 `Season 01` 目录冲突”，并已进一步定位为 `action_plan` 执行阶段未按 `target_path` 重命名落盘，而是保留了原始发布组文件名
+  - 最新补充（2026-04-28）：真实样本 `卡罗尔与星期二 / 军火女王` 又补出第二个执行层遗漏：`action_plan` 之前只会搬“视频同 basename 的字幕/NFO/海报”，不会把白名单里的 `Subs/Fonts` 等附属目录内容一起归到目标季目录，且多季包会把季目录上下文丢掉。本轮已把执行层改成“基于白名单 + plan 季映射”搬运未进 plan 的附属文件：单季包默认并入 `Season 01`，多季包按源季目录归到各自 `Season XX`；隔离测试已补 `single season extras` / `multi season extras` 两个回归样本
 - [ ] 真实 qB / Alist 超时 / 重试 / 返回结构异常小样本验证
   - 当前：隔离层的超时 / payload 异常 / 提交入口异常 / 异常吞掉回退已补测试；真实环境已补一轮只读观测：`99c57d47`（qB）在 `sync_progress` 后从 `downloading` 回退到 `unknown`，未误收口到 `completed`；`499b0bd2`（Alist）保持 `unknown + cloud_download`，未误触发归位。已进一步修复 `sync_progress()` 只轮询 `downloading`、导致 `unknown` 永远无法自动恢复的问题，并在独立 `8014` 当前代码实例上实证：
     - `99c57d47 / 156f7e94 / 9e17d995 / 12ac52c5 / c3e3b147` 从 `unknown` 恢复到 `completed`
@@ -160,6 +161,8 @@
 - [ ] 按 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md) 依次执行场景 A / B / C
 - [x] 先完成“action_plan 按 `target_path` 落盘”的真实样本回归验证
   - 当前：影子副本 `青春之旅` 已先暴露“同一集数被多份源文件同时命中”的执行前冲突；工作区代码补完 `target_path` + 逻辑目标双重前置拦截后，会在离线路由直调与独立 HTTP 端到端验证中于写盘前直接 `400`
+- [x] 补齐 `action_plan` 对字幕 / 字体等附属文件的落盘归位
+  - 当前：执行层已不再只搬“同 basename sidecar”；现在会结合 `whitelist + mapped season + 源季目录上下文` 一并搬运 `Subs/Fonts` 等附属文件。单季默认归入 `Season 01`，多季按源季目录分别落到 `Season XX`
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通过一次重副本链路；但重视频副本会明显推高工作区体积，当前已清理旧 `shadow-verify`，并将后续策略切换为“真实文件名/目录结构/NFO + 占位视频文件”的轻量副本模式
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”

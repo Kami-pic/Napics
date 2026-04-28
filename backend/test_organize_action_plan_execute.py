@@ -59,6 +59,88 @@ def test_apply_action_plan_moves_renames_video_and_sidecars_into_target_dir():
     _with_temp_dir("organize_action_plan_move", run)
 
 
+def test_apply_action_plan_moves_moves_single_season_extra_dirs_from_whitelist_into_target_season():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        source_dir = save_path / "[Group] Show"
+        original = source_dir / "[Group] Show - 01.mkv"
+        subtitle = source_dir / "Subs" / "[Group] Show - 01.zh.ass"
+        font = source_dir / "Fonts" / "font.ttf"
+        target = save_path / "Season 01" / "Show - S01E01.mkv"
+
+        for path in [original, subtitle, font]:
+            _touch(path)
+
+        ops = _apply_action_plan_moves(
+            [
+                {
+                    "original_path": str(original),
+                    "target_path": str(target),
+                    "mapped": {"season": 1, "episode": 1},
+                }
+            ],
+            base_path=str(save_path),
+            whitelist=[
+                "[Group] Show/[Group] Show - 01.mkv",
+                "[Group] Show/Subs/[Group] Show - 01.zh.ass",
+                "[Group] Show/Fonts/font.ttf",
+            ],
+        )
+
+        moved_targets = {Path(op["new"]) for op in ops}
+        assert target in moved_targets
+        assert (save_path / "Season 01" / "Subs" / "[Group] Show - 01.zh.ass").exists()
+        assert (save_path / "Season 01" / "Fonts" / "font.ttf").exists()
+        assert not subtitle.exists()
+        assert not font.exists()
+
+    _with_temp_dir("organize_action_plan_single_season_extras", run)
+
+
+def test_apply_action_plan_moves_routes_multi_season_extra_dirs_by_source_season_folder():
+    def run(tmp_dir):
+        save_path = tmp_dir / "Show"
+        source_s1 = save_path / "[Group] Show" / "Season 1"
+        source_s2 = save_path / "[Group] Show" / "Season 2"
+        original_s1 = source_s1 / "Show - 01.mkv"
+        original_s2 = source_s2 / "Show - 02.mkv"
+        subtitle_s1 = source_s1 / "Subs" / "Show - 01.zh.ass"
+        font_s2 = source_s2 / "Fonts" / "font.ttf"
+
+        for path in [original_s1, original_s2, subtitle_s1, font_s2]:
+            _touch(path)
+
+        ops = _apply_action_plan_moves(
+            [
+                {
+                    "original_path": str(original_s1),
+                    "target_path": str(save_path / "Season 01" / "Show - S01E01.mkv"),
+                    "mapped": {"season": 1, "episode": 1},
+                },
+                {
+                    "original_path": str(original_s2),
+                    "target_path": str(save_path / "Season 02" / "Show - S02E01.mkv"),
+                    "mapped": {"season": 2, "episode": 1},
+                },
+            ],
+            base_path=str(save_path),
+            whitelist=[
+                "[Group] Show/Season 1/Show - 01.mkv",
+                "[Group] Show/Season 1/Subs/Show - 01.zh.ass",
+                "[Group] Show/Season 2/Show - 02.mkv",
+                "[Group] Show/Season 2/Fonts/font.ttf",
+            ],
+        )
+
+        moved_targets = {Path(op["new"]) for op in ops}
+        assert (save_path / "Season 01" / "Subs" / "Show - 01.zh.ass") in moved_targets
+        assert (save_path / "Season 02" / "Fonts" / "font.ttf") in moved_targets
+        assert (save_path / "Season 01" / "Subs" / "Show - 01.zh.ass").exists()
+        assert (save_path / "Season 02" / "Fonts" / "font.ttf").exists()
+
+    _with_temp_dir("organize_action_plan_multi_season_extras", run)
+
+
 def test_apply_action_plan_moves_skips_missing_or_same_path_items():
     def run(tmp_dir):
         save_path = tmp_dir / "Show"

@@ -83,9 +83,33 @@ def _find_duplicate_logical_targets(plan_items: list) -> list[str]:
     )
 
 
-def _apply_action_plan_moves(plan_items: list) -> list:
-    """按 action_plan 直接落盘视频与同 basename 附属文件。"""
+def _resolve_plan_whitelist_path(raw_path: str, base_path: str) -> str:
+    """将 qB/file_relocator 白名单路径解析为当前工作区中的绝对路径。"""
+    if not raw_path:
+        return ""
+
+    normalized_base = os.path.normpath(base_path or "")
+    normalized_raw = os.path.normpath(raw_path.replace("/", os.sep).replace("\\", os.sep))
+    if os.path.isabs(normalized_raw):
+        return normalized_raw
+
+    parts = normalized_raw.split(os.sep)
+    if len(parts) > 1:
+        base_name = os.path.basename(normalized_base)
+        if base_name and parts[0].lower() == base_name.lower():
+            normalized_raw = os.path.join(*parts[1:])
+
+    return os.path.join(normalized_base, normalized_raw)
+
+
+def _apply_action_plan_moves(plan_items: list, base_path: str = "", whitelist: List[str] = None) -> list:
+    """按 action_plan 直接落盘视频与附属文件。"""
     ops = []
+    handled_old_paths = set()
+    planned_original_paths = set()
+    plan_contexts = []
+    target_dir_by_season = {}
+
     for item in plan_items or []:
         original_path = item.get("original_path") or ""
         target_path = item.get("target_path") or ""
@@ -94,10 +118,22 @@ def _apply_action_plan_moves(plan_items: list) -> list:
         if not os.path.exists(original_path):
             continue
 
+        planned_original_paths.add(os.path.normcase(os.path.normpath(os.path.abspath(original_path))))
         source_dir = os.path.dirname(original_path)
         source_base, source_ext = os.path.splitext(os.path.basename(original_path))
         target_dir = os.path.dirname(target_path)
         target_base, target_ext = os.path.splitext(os.path.basename(target_path))
+        mapped = item.get("mapped") or {}
+        mapped_season = mapped.get("season")
+        if mapped_season is not None:
+            target_dir_by_season[mapped_season] = target_dir
+        plan_contexts.append(
+            {
+                "source_dir": os.path.abspath(source_dir),
+                "target_dir": os.path.abspath(target_dir),
+                "season": mapped_season,
+            }
+        )
 
         ops.append({
             "action": "move",
@@ -105,6 +141,7 @@ def _apply_action_plan_moves(plan_items: list) -> list:
             "new": target_path,
             "mkdir": target_dir,
         })
+        handled_old_paths.add(os.path.normcase(os.path.normpath(os.path.abspath(original_path))))
 
         try:
             siblings = os.listdir(source_dir)
@@ -127,6 +164,7 @@ def _apply_action_plan_moves(plan_items: list) -> list:
                         "new": os.path.join(target_dir, f"{target_base}{suffix}"),
                         "mkdir": target_dir,
                     })
+                    handled_old_paths.add(os.path.normcase(os.path.normpath(os.path.abspath(sibling_path))))
                     moved = True
                     break
             if moved:
@@ -142,6 +180,91 @@ def _apply_action_plan_moves(plan_items: list) -> list:
                         "new": os.path.join(target_dir, f"{target_base}{suffix}"),
                         "mkdir": target_dir,
                     })
+                    handled_old_paths.add(os.path.normcase(os.path.normpath(os.path.abspath(sibling_path))))
+
+    if whitelist and plan_contexts:
+        from organizer import _extract_season_number
+        from tmdb_client import parse_filename
+
+        source_dirs = [ctx["source_dir"] for ctx in plan_contexts]
+        try:
+            common_source_root = os.path.commonpath(source_dirs)
+        except ValueError:
+            common_source_root = source_dirs[0]
+
+        ancestor_target_dirs = {}
+        root_norm = os.path.normcase(os.path.normpath(common_source_root))
+        for ctx in plan_contexts:
+            current_dir = ctx["source_dir"]
+            target_dir = ctx["target_dir"]
+            while current_dir:
+                current_norm = os.path.normcase(os.path.normpath(current_dir))
+                ancestor_target_dirs.setdefault(current_norm, set()).add(target_dir)
+                if current_norm == root_norm:
+                    break
+                parent_dir = os.path.dirname(current_dir)
+                if parent_dir == current_dir:
+                    break
+                current_dir = parent_dir
+
+        unique_target_dirs = {ctx["target_dir"] for ctx in plan_contexts}
+        single_target_dir = next(iter(unique_target_dirs)) if len(unique_target_dirs) == 1 else ""
+
+        def _resolve_extra_target_path(extra_path: str) -> str:
+            current_dir = os.path.dirname(extra_path)
+            while current_dir:
+                current_norm = os.path.normcase(os.path.normpath(current_dir))
+                mapped_dirs = ancestor_target_dirs.get(current_norm)
+                if mapped_dirs and len(mapped_dirs) == 1:
+                    target_dir = next(iter(mapped_dirs))
+                    rel_tail = os.path.relpath(extra_path, current_dir)
+                    return os.path.join(target_dir, rel_tail)
+                if current_norm == root_norm:
+                    break
+                parent_dir = os.path.dirname(current_dir)
+                if parent_dir == current_dir:
+                    break
+                current_dir = parent_dir
+
+            rel_path = os.path.relpath(extra_path, common_source_root)
+            rel_parts = rel_path.split(os.sep)
+            for idx in range(len(rel_parts) - 1):
+                season_num = _extract_season_number(rel_parts[idx])
+                if season_num is None:
+                    continue
+                target_dir = target_dir_by_season.get(season_num)
+                if target_dir:
+                    rel_tail = os.path.join(*rel_parts[idx + 1:]) if idx + 1 < len(rel_parts) else os.path.basename(extra_path)
+                    return os.path.join(target_dir, rel_tail)
+
+            parsed = parse_filename(os.path.basename(extra_path))
+            season_num = parsed.get("season")
+            if season_num is not None and season_num in target_dir_by_season:
+                return os.path.join(target_dir_by_season[season_num], os.path.basename(extra_path))
+
+            if single_target_dir:
+                rel_tail = os.path.relpath(extra_path, common_source_root)
+                return os.path.join(single_target_dir, rel_tail)
+
+            return ""
+
+        for raw_path in whitelist:
+            abs_path = os.path.abspath(_resolve_plan_whitelist_path(raw_path, base_path))
+            norm_abs_path = os.path.normcase(os.path.normpath(abs_path))
+            if not os.path.isfile(abs_path):
+                continue
+            if norm_abs_path in handled_old_paths or norm_abs_path in planned_original_paths:
+                continue
+            target_path = _resolve_extra_target_path(abs_path)
+            if not target_path:
+                continue
+            ops.append({
+                "action": "move",
+                "old": abs_path,
+                "new": target_path,
+                "mkdir": os.path.dirname(target_path),
+            })
+            handled_old_paths.add(norm_abs_path)
 
     for op in ops:
         if op.get("mkdir"):
@@ -556,7 +679,11 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
                     if tv_detail.poster_url:
                         scraper.download_poster(path, tv_detail.poster_url, proxy=proxy)
 
-                plan_move_ops = _apply_action_plan_moves(plan_items)
+                plan_move_ops = _apply_action_plan_moves(
+                    plan_items,
+                    base_path=path,
+                    whitelist=action_plan.get("whitelist"),
+                )
                 if plan_move_ops:
                     _sync_library_paths(plan_move_ops)
                 result["steps"]["structure"] = {"moved": len(plan_move_ops)}
