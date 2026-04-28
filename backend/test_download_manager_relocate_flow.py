@@ -1775,7 +1775,11 @@ def test_sync_alist_progress_accepts_dict_payload_from_real_task_info(monkeypatc
         )
 
     def fake_get(url, headers=None, timeout=None):
-        raise AssertionError("should not scan list when task info returns a dict payload")
+        class ProbeResponse:
+            status_code = 429
+            text = '<?xml version="1.0"?><error code="429" description="Indexer is disabled till 2026/4/28 19:05:12 due to recent failures." />'
+
+        return ProbeResponse()
 
     monkeypatch.setattr(requests, "post", fake_post)
     monkeypatch.setattr(requests, "get", fake_get)
@@ -1785,7 +1789,7 @@ def test_sync_alist_progress_accepts_dict_payload_from_real_task_info(monkeypatc
     assert task.status == "downloading"
     assert task.phase == "cloud_download"
     assert task.progress == 0.0
-    assert task.error == "http status code 429"
+    assert task.error == "Prowlarr 429: Indexer is disabled till 2026/4/28 19:05:12 due to recent failures."
 
 
 def test_sync_alist_progress_falls_back_to_list_scan_when_real_task_info_missing(monkeypatch):

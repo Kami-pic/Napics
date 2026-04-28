@@ -16,6 +16,7 @@ import uuid
 import shutil
 import threading
 import requests
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import List, Optional, Dict
 from urllib.parse import parse_qs, unquote_plus, urlparse
@@ -458,7 +459,7 @@ class DownloadManager:
         task.phase = "cloud_download"
         error = str(item.get("error", "")).strip()
         if error:
-            task.error = error
+            task.error = self._refine_alist_error(task, error)
         return True
 
     @staticmethod
@@ -504,6 +505,23 @@ class DownloadManager:
             if candidate in item_name:
                 return True
         return False
+
+    def _refine_alist_error(self, task: DownloadTask, error: str) -> str:
+        message = error.strip()
+        if message != "http status code 429":
+            return message
+
+        try:
+            response = requests.get(task.download_url, timeout=5)
+            if response.status_code != 429:
+                return message
+            root = ET.fromstring(response.text)
+            description = (root.attrib.get("description") or "").strip()
+            if description:
+                return f"Prowlarr 429: {description}"
+        except Exception:
+            pass
+        return message
 
     @staticmethod
     def _check_local_files_exist(directory: str) -> bool:

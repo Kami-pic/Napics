@@ -595,6 +595,27 @@
       - 保持任务在 `downloading + cloud_download`
       - 暴露真实错误 `http status code 429`
       - 不误收口到 `completed/lost/unknown`
+- 最后补了一层错误文案收口
+  - 既然根因已经确认为 Prowlarr 冷却，继续让任务面板只显示裸 `http status code 429` 信息价值太低
+  - 本轮最小修法：
+    - 当 Alist 任务错误正好是 `http status code 429` 时，对原始 `download_url` 再做一次轻量只读探测
+    - 若返回的是 Prowlarr 的 XML 错误，就抽取 `description`，改写成更可读的 `Prowlarr 429: ...`
+  - 新增 / 调整隔离保护：
+    - 复用 `test_sync_alist_progress_accepts_dict_payload_from_real_task_info`
+    - 断言错误文案从裸 `429` 收口为可读的 Prowlarr 冷却描述
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_alist_progress or sync_progress"`
+    - 结果：`28 passed`
+  - 独立 HTTP 回归：
+    - 临时起 `127.0.0.1:8019`
+    - 对真实样本 `85499bc0` 执行 `POST /download-manager/sync`
+    - 回读结果已变成：
+      - `status=downloading`
+      - `phase=cloud_download`
+      - `error=Prowlarr 429: Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`
+  - 当前结论：
+    - 同步链路本身已收口
+    - 这条主线当前剩余的不是代码误判，而是“Alist 吃到的是一个处于 Prowlarr 冷却窗口的代理下载链接”
 
 ---
 
