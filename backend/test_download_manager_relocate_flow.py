@@ -1319,6 +1319,32 @@ def test_push_to_qb_returns_new_hash_when_detected(monkeypatch):
     assert qb.calls == [{"download_url": "magnet:?xt=urn:btih:123", "save_path": r"C:\library\Show"}]
 
 
+def test_push_to_qb_resolves_prowlarr_proxy_redirect_to_magnet(monkeypatch):
+    qb = FakeSubmitQBClient(add_result=True)
+    dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")
+    task = _make_task(
+        download_url="http://127.0.0.1:9696/download?apikey=test&link=abc",
+        save_path=r"C:\library\Show",
+    )
+    hash_sets = [set(), {"hash-new"}]
+
+    class RedirectResponse:
+        headers = {"Location": "magnet:?xt=urn:btih:redirected"}
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr("download_manager.requests.get", lambda *args, **kwargs: RedirectResponse())
+    monkeypatch.setattr(dm, "_get_qb_hashes", lambda: hash_sets.pop(0))
+    monkeypatch.setattr("download_manager.time.sleep", lambda _seconds: None)
+
+    success, hash_or_error = dm._push_to_qb(task)
+
+    assert success is True
+    assert hash_or_error == "hash-new"
+    assert qb.calls == [{"download_url": "magnet:?xt=urn:btih:redirected", "save_path": r"C:\library\Show"}]
+
+
 def test_push_to_qb_returns_empty_hash_when_added_but_not_detected(monkeypatch):
     qb = FakeSubmitQBClient(add_result=True)
     dm = DownloadManager(qb_client=qb, alist_client=None, base_path=".")

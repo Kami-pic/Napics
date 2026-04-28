@@ -4,7 +4,7 @@ import uuid
 from pathlib import Path
 from types import SimpleNamespace
 
-from nfo_handler import write_episode_nfo, write_tvshow_nfo
+from nfo_handler import read_nfo, read_video_nfo, write_episode_nfo, write_tvshow_nfo
 from scraper import _scrape_tv_v3
 from tmdb_client import ScrapeResult
 
@@ -63,6 +63,14 @@ def test_scrape_tv_v3_dry_run_skips_move_and_episode_nfo_when_target_already_mat
         write_tvshow_nfo(str(show_dir), tv_scrape)
         write_episode_nfo(str(video_path), ep_scrape, showtitle="四月是你的谎言")
 
+        tvshow_nfo = read_nfo(str(show_dir))
+        episode_nfo = read_video_nfo(str(video_path))
+        assert tvshow_nfo["tmdb_id"] == 61663
+        assert tvshow_nfo["english_title"] == "Your Lie in April"
+        assert episode_nfo["showtitle"] == "四月是你的谎言"
+        assert episode_nfo["season_number"] == 1
+        assert episode_nfo["episode_number"] == 1
+
         result = _scrape_tv_v3(
             str(show_dir),
             "四月是你的谎言",
@@ -82,6 +90,8 @@ def test_scrape_tv_v3_dry_run_skips_move_and_episode_nfo_when_target_already_mat
         actionable = [item for item in result["plan"] if item.get("mapped")]
         assert len(actionable) == 1
         assert actionable[0]["actions"] == ["write_shadow"]
+        assert result["tmdb_match"]["tmdb_id"] == 61663
+        assert result["tmdb_match"]["match_source"] == "existing_nfo"
         assert result["summary"]["will_process"] == 0
         assert result["summary"]["files_to_move"] == 0
         assert result["summary"]["nfo_to_write"] == 0

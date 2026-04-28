@@ -1,0 +1,112 @@
+import asyncio
+import json
+
+from fastapi.responses import StreamingResponse
+
+from routes import search as search_routes
+from searcher import SearchResult
+from test_support.route_response_snapshot import RouteResponseSnapshot
+
+
+class FakeSearchClient:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls = []
+
+    def search(self, keyword):
+        self.calls.append(keyword)
+        return list(self.responses.get(keyword, []))
+
+
+def test_search_single_source_snapshot_keeps_keyword_chain_shape(monkeypatch):
+    client = FakeSearchClient(
+        {
+            "进击的巨人": [],
+            "Attack on Titan": [
+                SearchResult(
+                    title="Attack on Titan S01E01",
+                    size_gb=1.23,
+                    indexer="Prowlarr",
+                    seeders=15,
+                    leechers=3,
+                    download_url="magnet:?xt=urn:btih:ABCDEF1234567890ABCDEF1234567890ABCDEF12",
+                    info_url="https://example.com/aot",
+                    quality_tag="WEB-1080p",
+                )
+            ],
+        }
+    )
+
+    monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": client})
+    monkeypatch.setattr(
+        search_routes,
+        "_enrich_result",
+        lambda result, query, match_names=None: {
+            "title": result.title,
+            "download_url": result.download_url,
+            "_source": result.indexer.lower(),
+            "match_score": 92,
+            "search_query": query,
+            "match_names": list(match_names or []),
+        },
+    )
+
+    body = search_routes.search_single_source(
+        source="prowlarr",
+        keyword="进击的巨人",
+        fallback_keywords="Attack on Titan,進撃の巨人",
+    )
+    snapshot = RouteResponseSnapshot.from_body(200, body)
+
+    assert client.calls == ["进击的巨人", "Attack on Titan"]
+    assert body["hit_keyword"] == "Attack on Titan"
+    assert body["search_keywords"] == ["进击的巨人", "Attack on Titan"]
+    assert snapshot.field_types["source"] == "str"
+    assert snapshot.field_types["results"] == "list"
+    assert snapshot.field_types["results[].title"] == "str"
+    assert snapshot.field_types["results[].download_url"] == "str"
+    assert snapshot.field_types["results[].match_score"] == "int"
+    assert snapshot.field_types["results[].match_names"] == "list"
+    assert snapshot.field_types["search_keywords"] == "list"
+    assert snapshot.list_lengths["results"] == 1
+    assert snapshot.list_lengths["search_keywords"] == 2
+
+
+def test_search_stream_snapshot_emits_source_done_event(monkeypatch):
+    monkeypatch.setattr(search_routes, "build_keywords", lambda **kwargs: {"query": kwargs["query"]})
+    monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": object()})
+    monkeypatch.setattr(
+        search_routes,
+        "search_all_sources_iter",
+        lambda **kwargs: iter(
+            [
+                'event: source_start\ndata: {"source":"prowlarr","keyword":"Attack on Titan"}\n\n',
+                'event: source_done\ndata: {"source":"prowlarr","count":1,"search_keywords":["Attack on Titan","进击的巨人"],"hit_keyword":"Attack on Titan"}\n\n',
+            ]
+        ),
+    )
+
+    response = search_routes.search_resources_stream(
+        query="Attack on Titan",
+        cn_name="进击的巨人",
+        en_name="Attack on Titan",
+        original_name="進撃の巨人",
+        season_number=1,
+    )
+
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "text/event-stream"
+
+    async def _collect():
+        return [chunk async for chunk in response.body_iterator]
+
+    chunks = asyncio.run(_collect())
+    assert len(chunks) == 2
+    assert 'event: source_start' in chunks[0]
+    assert 'event: source_done' in chunks[1]
+
+    payload = json.loads(chunks[1].split("data: ", 1)[1].strip())
+    assert payload["source"] == "prowlarr"
+    assert payload["count"] == 1
+    assert payload["search_keywords"] == ["Attack on Titan", "进击的巨人"]
+    assert payload["hit_keyword"] == "Attack on Titan"

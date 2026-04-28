@@ -6,12 +6,20 @@
 
 ---
 
-## 当前总览（2026-04-24）
+## 当前总览（2026-04-28）
 
 ### 当前主线
 
-- 当前正在收口的主线：`下载完成 → 本地转移 → 局部刷新 → 自动归位 → confirm/execute → 回收站/持久化`
-- 当前策略：暂停继续扩测试面，先把 TODO 收回成可执行清单；详细回合记录已迁到 [download-relocate-worklog.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-worklog.md)
+- 当前正在处理：搜索下载修复 + 清洗名自愈机制 + 前端英文名展示
+- 上一条主线（下载→归位闭环）已暂停，详见 [download-relocate-worklog.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-worklog.md)
+
+### 本轮完成
+
+- Prowlarr 下载链接修复（infoHash 构造磁力 + 代理链接预处理）
+- 搜索弹窗固定高度、分季搜索中文数字支持、移除重启后端组件
+- 清洗名名称污染防护（finalize 冒泡限制 + 一级分类目录不传播）
+- 清洗名自愈机制（parse_legacy_clean_name 接入 + 四层回退 + 垃圾英文名检测 + 持久化）
+- 前端 ShadowNameSection 展示 clean_name_en
 
 ### 阶段判断
 
@@ -147,6 +155,18 @@
     - `e1927935 / fa9beea5 / 6500e314` 仍停在 `unknown`，但 `progress/updated_at` 已继续刷新，说明恢复轮询已生效
     - `499b0bd2`（Alist）最初表现为 `unknown + cloud_download`；随后已定位到代码侧根因：当前实例的 AList V3 任务查询接口应走 `GET /api/task/offline_download/undone|done`，旧代码误写成了 `/api/admin/task/...`，因此一直打到前端 HTML。修复后在独立 `8014` 当前代码实例上复测，`499b0bd2` 已从 `unknown` 收口为 `lost + Alist 中未找到对应任务`，说明这笔样本并非“待恢复”，而是旧错误路径掩盖了真实的失联状态；随后又补上了提交链对真实 Alist tid 的保存，并在同步链上改成“有真实 tid 时优先 `POST /api/task/offline_download/info?tid=...`，查不到再回退列表扫描”，避免后续继续退化成 `alist_{task.id}` 伪标识或列表猜名
   - 最新补充（2026-04-28）：真实 qB 还暴露出第二个恢复缺口：`sync_progress()` 虽然已会继续轮询 `unknown` 任务，但 `_sync_qb_progress()` 在查到未完成 torrent（如 `forcedDL` / `missingFiles`）时没有把状态从 `unknown` 收回 `downloading`，导致 `99c57d47 / e1927935 / 6500e314 / fa9beea5` 在现网 `8000` 上只刷新 `updated_at`、不刷新状态。当前工作区代码已修复这个映射，并分别通过“真实 qB hash 只读直调”和“独立 `8015` HTTP 实例下 `POST /download-manager/sync`”两层验证，确认这四笔样本都会恢复成 `downloading`；随后又补造了一笔真实 Alist 活跃样本 `85499bc0 / 5xvyCPXpAe5J9_HTL7Kxb`，定位到 `_sync_alist_progress_by_task_id()` 误把 `info.data` 当列表读取，命中真实任务后会抛异常退回 `unknown`。修复为兼容 dict payload，并在“命中真实未完成任务”时显式收回 `downloading` 后，已在独立 `8018` HTTP 实例上实证：该样本会稳定停在 `downloading + cloud_download + error=http status code 429`，不再误退 `unknown`。进一步只读核对又确认：这笔 `429` 来自上游 Prowlarr 下载链接本身，普通本机 `GET` 同样返回 `Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`，说明当前剩余问题已从“同步链 bug”切换为“上游 indexer 冷却”。本轮再补一层错误文案收口后，独立 `8019` HTTP 实例上已能直接看到 `error=Prowlarr 429: Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`，避免面板只暴露裸 `http status code 429`
+  - 最新补充（2026-04-28 16:30）：本轮未继续造新任务，只做只读复核。直接核对真实下载器后确认：
+    - qB 四笔样本 `99c57d47 / e1927935 / fa9beea5 / 6500e314` 当前在下载器侧仍真实存在，状态分别是 `missingFiles / forcedDL / forcedDL / forcedDL`
+    - AList 当前 `undone` 列表为空，`done` 列表里仅剩真实 tid `5xvyCPXpAe5J9_HTL7Kxb`，状态 `state=7 + error=http status code 429`
+    - 用当前工作区代码直接跑一轮 `DownloadManager.sync_progress()` 后，qB 四笔样本都会稳定保持 `downloading`，不会再退回 `unknown`
+    - 同一轮同步里，`85499bc0` 会保持 `downloading + cloud_download`，且错误文案会从裸 `http status code 429` 升级成 `Prowlarr 429: Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`
+    - 结论：当前剩余阻塞不在代码，而在上游 Prowlarr 冷却窗口；下一步要么等冷却时间过后再对 `85499bc0` 做一次只读复测，要么重新找一笔新的 AList 活跃任务继续场景 C
+  - 最新补充（2026-04-28 19:07 后）：到点后继续只读复测发现，这笔样本已经从“待恢复任务”变成“纯上游观察样本”：
+    - 本地 `backend/download_tasks.json` 中已不存在任务 `85499bc0`
+    - 但 AList `done/info` 里真实 tid `5xvyCPXpAe5J9_HTL7Kxb` 仍存在，状态仍是 `state=7 + error=http status code 429`
+    - 从 AList 返回里反解原始 `download_url` 后再次直探，返回的 Prowlarr 冷却时间已顺延到 `2026/4/29 19:07:13`
+    - 用当前工作区代码构造同等任务对象重放 `_sync_alist_progress()`，结果仍稳定为 `downloading + cloud_download + Prowlarr 429...`
+    - 结论：这笔样本已经完成了代码侧验证价值，当前剩余的是外部 indexer 长时冷却，不再适合作为场景 C 的阻塞样本；后续若还要继续扩 AList 异常覆盖，应等自然出现新的真实活跃样本再增量吸收
 - [ ] 必要时补一个“真实环境验证记录”单独文档
   - 当前：已落一版执行清单，见 [download-relocate-real-env-checklist.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-real-env-checklist.md)
 
@@ -167,6 +187,9 @@
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通过一次重副本链路；但重视频副本会明显推高工作区体积，当前已清理旧 `shadow-verify`，并将后续策略切换为“真实文件名/目录结构/NFO + 占位视频文件”的轻量副本模式
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”
   - 当前：已完成一轮只读 `sync_progress` 观测，并修复 `unknown` 任务不会被下一轮同步重新对账的问题；在独立 `8014` 当前代码实例上，真实 qB 样本已证明“异常解除后能恢复收口”；Alist 侧已进一步定位并修复错误的任务查询路径，补上提交链保存真实 tid 的能力，并在同步链上优先按 tid 直查 `task info`，且真实复测已证明 `499b0bd2` 会从旧的 `unknown` 收口为 `lost`。本轮又补上 qB 的 `unknown -> downloading` 恢复映射，当前工作区代码对真实 `forcedDL/missingFiles` hash 已可恢复；下一步应继续找一笔“任务仍存在于 Alist done/undone/info 中”的真实样本，验证它能否恢复到 `downloading/completed`
+  - 当前补充：现成样本 `85499bc0 / 5xvyCPXpAe5J9_HTL7Kxb` 仍可作为场景 C 的只读复测对象，但它现在暴露的是上游 `Prowlarr 429` 冷却，不是同步链 bug；优先级应调整为“等冷却窗口结束后复测这笔样本”，只有它彻底失效时才重新造新的 AList 活跃样本
+  - 本轮补充（2026-04-28 16:39）：已尝试继续复测，但当前本机时间仍早于 `Prowlarr 429` 文案里的冷却结束点 `2026-04-28 19:05:12`，因此此刻继续打同一条链接不会产生新信号。`85499bc0` 当前任务文件仍保持 `downloading + cloud_download`，错误文案仍是可读的 `Prowlarr 429...`；下一个有效动作仍然是等冷却时间过去后再做只读复测
+  - 当前结论更新：`85499bc0` 到点复测后已降级为“纯上游观察样本”，不再适合作为当前阻塞；后续若场景 C 还要继续扩覆盖，只在自然出现新的 AList 活跃样本时再增量吸收
 - [ ] 为下一个对话准备轻量影子验证入口
   - 当前：规则和方向已定；下一步应把 `download-relocate-shadow-verify-plan.md` 当作唯一入口，按“只保留真实文件名/目录层级/sidecar，视频主文件用空文件或极小占位文件”重建 `shadow-verify`
 - [x] 收口一轮已暴露的主链路前端回归
