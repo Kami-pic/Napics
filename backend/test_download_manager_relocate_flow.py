@@ -1759,6 +1759,35 @@ def test_sync_alist_progress_uses_real_task_id_info_before_scanning_lists(monkey
     assert task.phase == ""
 
 
+def test_sync_alist_progress_accepts_dict_payload_from_real_task_info(monkeypatch):
+    alist = FakeAlistClient()
+    dm = DownloadManager(qb_client=None, alist_client=alist, base_path=".")
+    task = _make_task(
+        status="downloading",
+        channel="alist",
+        downloader_hash="task-real-123",
+    )
+
+    def fake_post(url, headers=None, params=None, timeout=None):
+        return FakeResponse(
+            200,
+            {"data": {"id": "task-real-123", "state": 7, "progress": 0, "error": "http status code 429"}},
+        )
+
+    def fake_get(url, headers=None, timeout=None):
+        raise AssertionError("should not scan list when task info returns a dict payload")
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    dm._sync_alist_progress(task)
+
+    assert task.status == "downloading"
+    assert task.phase == "cloud_download"
+    assert task.progress == 0.0
+    assert task.error == "http status code 429"
+
+
 def test_sync_alist_progress_falls_back_to_list_scan_when_real_task_info_missing(monkeypatch):
     responses = [
         FakeResponse(200, {"data": [{"name": "magnet:?xt=urn:btih:123", "state": 1, "progress": 45}]}),

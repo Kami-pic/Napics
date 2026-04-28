@@ -433,8 +433,14 @@ class DownloadManager:
         items = payload.get("data", []) or []
         if not items:
             return False
-
-        item = items[0]
+        if isinstance(items, dict):
+            item = items
+        elif isinstance(items, list):
+            item = items[0] if items else None
+        else:
+            item = None
+        if not isinstance(item, dict):
+            return False
         progress = item.get("progress", 0)
         task.progress = self._normalize_alist_progress(progress)
 
@@ -448,6 +454,7 @@ class DownloadManager:
                 task.progress = max(task.progress, 0.8)
             return True
 
+        task.status = "downloading"
         task.phase = "cloud_download"
         error = str(item.get("error", "")).strip()
         if error:

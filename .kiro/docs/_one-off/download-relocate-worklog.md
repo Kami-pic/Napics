@@ -546,6 +546,43 @@
   - 本轮剩余阻塞：
     - Alist 当前 `GET /api/task/offline_download/undone` 与 `done` 都为空
     - 因此场景 C 还缺一笔“真实仍活着的 Alist 任务”来验证 `unknown -> downloading/completed`
+- 随后直接补造了场景 C 所需的第一笔真实 Alist 活跃样本
+  - 提交方式：
+    - 不动现有 `8000`，临时起当前工作区代码到 `127.0.0.1:8016`
+    - 复用历史 Alist 样本 `499b0bd2` 的真实下载 URL，通过 `/download-manager/submit` 新建 1 笔最小任务
+  - 提交结果：
+    - 新任务 ID：`85499bc0`
+    - 真实 `downloader_hash`：`5xvyCPXpAe5J9_HTL7Kxb`
+    - 初始状态：`downloading + cloud_download`
+  - 第一轮真实同步现象：
+    - 连续 4 次 `POST /download-manager/sync` 后，该任务都会退回 `unknown + cloud_download`
+    - 但通过只读直连 Alist API 核对可确认：
+      - `GET /api/task/offline_download/done` 已能查到同一个 tid
+      - `POST /api/task/offline_download/info?tid=5xvyCPXpAe5J9_HTL7Kxb` 返回 `200 + data=dict`
+      - 返回内容包含：`state=7`、`error="http status code 429"`
+    - 这说明真实任务并没有“查不到”，而是代码把 `info.data` 的结构读错了
+  - 根因定位：
+    - `_sync_alist_progress_by_task_id()` 之前假定 `payload.data` 一定是列表，直接取 `items[0]`
+    - 真实接口返回的是单个对象 dict，于是命中真实 tid 后抛异常，再被外层吞成 `status=unknown`
+  - 本轮最小修复：
+    - 兼容 `info.data` 为 dict 或 list 两种结构
+    - 当真实 tid 命中且任务尚未完成时，显式把状态收回 `downloading`，而不是保留旧的 `unknown`
+  - 新增隔离保护：
+    - `test_sync_alist_progress_accepts_dict_payload_from_real_task_info`
+  - 本地验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_alist_progress or sync_progress"`
+    - 结果：`28 passed`
+  - 独立 HTTP 端到端回归：
+    - 临时起 `127.0.0.1:8018`
+    - 对同一任务执行 `POST /download-manager/sync`
+    - 回读 `/download-manager/tasks` 后，`85499bc0` 已收口为：
+      - `status=downloading`
+      - `phase=cloud_download`
+      - `error=http status code 429`
+    - 说明当前代码已能正确表达“真实任务存在，但下载器返回 429”，而不会再误退成 `unknown`
+  - 当前结论：
+    - 场景 C 现在已经拿到第一笔真实 Alist 活跃样本
+    - 这笔样本没有恢复到 `completed`，但已证明“真实 Alist 活跃任务 + 错误返回”不会误收口，也不会再因结构兼容问题退成 `unknown`
 
 ---
 
