@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
 
-export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, cleanNameEn, onRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; cleanNameEn?: string; onRefresh?: () => void }) {
+export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, cleanNameEn, onRefresh, onTreeRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; cleanNameEn?: string; onRefresh?: () => void; onTreeRefresh?: () => void }) {
   // 文件夹模式：用 folderName/folderShadowName/folderCleanName；视频模式：用 video 字段
   const isFolder = !video && !!folderName;
   const fileName = video?.file_name || folderName || "";
@@ -70,7 +70,11 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
         });
       }
       setEditing(false);
-      onRefresh?.();
+      if (isFolder) {
+        onTreeRefresh?.();
+      } else {
+        onRefresh?.();
+      }
     } catch (e: any) { alert("保存标准名失败: " + (e?.message || "")); }
     setSaving(false);
   };

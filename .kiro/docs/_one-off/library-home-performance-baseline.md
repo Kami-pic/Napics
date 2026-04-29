@@ -128,6 +128,9 @@
     - `GET /library/tree`
   - 现在改成只请求：
     - `GET /library/tree`
+- 本轮继续补了一处同类入口：
+  - `tv/season` 文件夹详情里的“标准名保存”
+  - 成功后也改成只请求 `GET /library/tree`
 - 当前故意没动的入口：
   - 重命名
   - 批量管理

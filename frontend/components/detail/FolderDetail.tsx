@@ -291,7 +291,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         <ShadowNameSection path={node.videos[0].file_path} video={node.videos[0]} cleanNameEn={node.clean_name_en || node.videos[0]?.clean_name_en} onRefresh={onRefresh} />
       )}
       {(folderType === "tv" || folderType === "season") && (
-        <ShadowNameSection path={node.path} folderName={node.name} folderShadowName={node.shadow_name} folderCleanName={node.clean_name} cleanNameEn={node.clean_name_en} onRefresh={onRefresh} />
+        <ShadowNameSection path={node.path} folderName={node.name} folderShadowName={node.shadow_name} folderCleanName={node.clean_name} cleanNameEn={node.clean_name_en} onRefresh={onRefresh} onTreeRefresh={onTreeRefresh} />
       )}
       <div className="grid grid-cols-3 gap-2">
         {[[String(node.video_count), "视频"], [String(node.children?.length || 0), "子目录"], [formatSize(totalSize), "总大小"]].map(([v, l]) => (

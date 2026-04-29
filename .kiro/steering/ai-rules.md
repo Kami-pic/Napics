@@ -60,6 +60,8 @@ inclusion: always
 - 里程碑完成后提交，提交前更新 TODO + 相关 knowledge 文件 + devlog.md 归档，用户确认后再 push
 - commit message 中文多行：第一行 `类型: 描述`，body 写变更要点和踩坑经验
 - 提交前核对文件列表，严禁提交 node_modules/venv/dist/__pycache__ 等
+- 多 agent 并行时，只提交当前对话中由自己直接修改并完成验证的文件；不要把其他 agent 或用户正在处理的改动一起打包
+- 汇报时也只总结自己本轮实际处理的范围；其他并行改动默认单独归属，不代为收口
 
 ## 9. 项目推进
 - 日常迭代用 TODO 驱动（`.kiro/docs/*-todo.md`），不主动创建新 spec
