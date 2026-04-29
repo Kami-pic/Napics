@@ -442,6 +442,8 @@
 - `frontend/components/detail/ShadowNameSection.tsx` 在 `tv/season` 文件夹模式下保存标准名后也改成只刷新 `/library/tree`
 - 新增 `frontend/__tests__/use-library-refresh.test.tsx`，固定“树刷新不会重复拉全量 `/library`”
 - 新增 `frontend/__tests__/shadow-name-section.test.tsx`，固定“文件夹模式保存标准名只触发树刷新”
+- `frontend/components/detail/FolderDetail.tsx` 在文件夹封面上传 / 删除后也改成只刷新 `/library/tree`
+- 新增 `frontend/__tests__/folder-detail-tree-refresh.test.tsx`，固定“文件夹封面上传回调只触发树刷新”
 - 更新 `library-home-performance-baseline.md`、`optimization-stabilization-todo.md`、`optimization-stabilization-todo-v2.md`
 **决策**:
 - 本轮只压掉“纯树元数据改动”这一类不必要的双请求刷新

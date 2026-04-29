@@ -196,7 +196,7 @@
   - 当前：已修复 `DownloadManagerPanel` 缺少 `archived` tab、归档任务没有稳定“查看”入口、首页对绝对 NAS 路径 `save_path` 无法命中媒体库树的问题；同时把 `/library/tree` 首屏链路从“实时读 NAS 上 NFO”收回到“只用缓存库数据和树内信息推导”，避免再次退化到分钟级
 - [x] 补媒体库首页性能专项入口基线
   - 当前：已新增 [library-home-performance-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/library-home-performance-baseline.md)，记录 `/library` 与 `/library/tree` 的本机粗测、当前链路判断，以及 `/library/tree` 返回结构快照测试入口
-  - 最新补充（2026-04-29）：已先压掉两类低风险前端刷新成本；`分类标签 / folder_type` 修改后、以及 `tv/season` 文件夹标准名保存后，都不再全量双拉 `/library + /library/tree`，而是只刷新目录树
+  - 最新补充（2026-04-29）：已先压掉三类低风险前端刷新成本；`分类标签 / folder_type` 修改后、`tv/season` 文件夹标准名保存后、以及文件夹封面上传 / 删除后，都不再全量双拉 `/library + /library/tree`，而是只刷新目录树
 
 ### 暂停项
 

@@ -230,7 +230,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         <div className="relative">
           <Poster key={posterKey} fallbackName={node.name} localPath={node.path} posterDeleted={posterDeleted} noScrape={isAggregate} />
           <div className="absolute top-2 right-2 z-10">
-            <PosterUpload path={node.path} hideDeleteScrape={isAggregate} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); if (!isAggregate) setScrapeData(null); } else { setPosterDeleted(false); } if (!isAggregate) reload(); onRefresh(); }} />
+            <PosterUpload path={node.path} hideDeleteScrape={isAggregate} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); if (!isAggregate) setScrapeData(null); } else { setPosterDeleted(false); } if (!isAggregate) reload(); (onTreeRefresh || onRefresh)(); }} />
           </div>
         </div>
       )}
