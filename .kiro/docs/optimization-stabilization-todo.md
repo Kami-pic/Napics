@@ -194,6 +194,8 @@
   - 当前：规则和方向已定；下一步应把 `download-relocate-shadow-verify-plan.md` 当作唯一入口，按“只保留真实文件名/目录层级/sidecar，视频主文件用空文件或极小占位文件”重建 `shadow-verify`
 - [x] 收口一轮已暴露的主链路前端回归
   - 当前：已修复 `DownloadManagerPanel` 缺少 `archived` tab、归档任务没有稳定“查看”入口、首页对绝对 NAS 路径 `save_path` 无法命中媒体库树的问题；同时把 `/library/tree` 首屏链路从“实时读 NAS 上 NFO”收回到“只用缓存库数据和树内信息推导”，避免再次退化到分钟级
+- [x] 补媒体库首页性能专项入口基线
+  - 当前：已新增 [library-home-performance-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/library-home-performance-baseline.md)，记录 `/library` 与 `/library/tree` 的本机粗测、当前链路判断，以及 `/library/tree` 返回结构快照测试入口
 
 ### 暂停项
 

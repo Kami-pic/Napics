@@ -654,3 +654,120 @@
 - 当前结论：
   - 这次修的是“执行层漏搬 sidecar/附属目录”的根因，不是前端展示问题
   - 后续如果再出现“多季共享 Fonts 根目录也要复制到各季”这类更激进规则，需要基于真实样本再单独确认，不在本轮最小修复范围内
+
+## 2026-04-28 补记：场景 C 只读复核，确认当前剩余阻塞是上游冷却
+
+- 触发背景：
+  - TODO 当前主线仍停在“场景 C：真实下载器异常小样本”
+  - 但上一轮已经补完同步链修复，本轮更需要判断“当前代码是否还存在真实环境缺口”，而不是继续补测试或继续造任务
+- 本轮动作：
+  - 先跑定向后端验证：
+    - `python -X utf8 -m pytest backend/test_download_manager_relocate_flow.py -k "sync_qb_progress or sync_alist_progress or sync_progress"`
+    - 结果：`42 passed`
+  - 再做真实下载器只读核对：
+    - qB 四笔历史样本
+      - `99c57d47 -> missingFiles`
+      - `e1927935 -> forcedDL`
+      - `fa9beea5 -> forcedDL`
+      - `6500e314 -> forcedDL`
+    - AList 离线任务
+      - `undone` 当前为空
+      - `done` 当前只剩 1 笔真实 tid：`5xvyCPXpAe5J9_HTL7Kxb`
+      - 该任务状态：`state=7`、`error=http status code 429`
+  - 最后用当前工作区代码直接跑一轮 `DownloadManager.sync_progress()`，只同步现有任务文件，不新建任务
+- 同步结果：
+  - qB 四笔样本 `99c57d47 / e1927935 / fa9beea5 / 6500e314` 都稳定保持 `status=downloading`
+  - 没有任何一笔再退回 `unknown`
+  - AList 样本 `85499bc0` 保持：
+    - `status=downloading`
+    - `phase=cloud_download`
+    - `error=Prowlarr 429: Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`
+- 本轮结论：
+  - qB 侧当前代码对真实 `missingFiles/forcedDL` 样本的恢复映射已经稳定
+  - AList 侧当前代码也已经能正确表达“真实任务存在，但上游下载链接处于 Prowlarr 冷却窗口”
+  - 因而场景 C 当前剩余阻塞不再是 DownloadManager/Alist 同步链 bug，而是上游 indexer 冷却
+  - 下一步最小动作应改成：
+    - 等 `2026-04-28 19:05:12` 之后，对 `85499bc0` 做一次只读复测
+    - 若复测后该任务已不具备价值，再重新找或重新造 1 笔新的 AList 活跃样本
+
+### 同日继续尝试（2026-04-28 16:39）
+
+- 本轮继续点：
+  - 用户要求继续推进场景 C，因此先检查当前本机时间与样本 `85499bc0` 的落盘状态
+- 结果：
+  - 当前本机时间：`2026-04-28 16:39:04 +08:00`
+  - 仍早于上一轮错误文案中的冷却结束点：`2026-04-28 19:05:12`
+  - `backend/download_tasks.json` 里的 `85499bc0` 仍保持：
+    - `status=downloading`
+    - `phase=cloud_download`
+    - `error=Prowlarr 429: Indexer is disabled till 2026/4/28 19:05:12 due to recent failures.`
+- 结论：
+  - 这次不是新的代码阻塞，而是时间窗尚未到达
+  - 在 `19:05:12` 之前继续复打同一条下载链路不会带来新的判定信息
+
+## 2026-04-28 补记：收口执行面板切到 V2
+
+- 触发背景：
+  - 用户明确指出当前 `v1` TODO 的 `40%` 完成度与真实项目推进速度不匹配
+  - 需要加快收口，但不能因为赶进度降低主链路安全线
+- 本轮处理：
+  - 保留 `v1` 原始清单不删除
+  - 新增 [optimization-stabilization-todo-v2.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/optimization-stabilization-todo-v2.md) 作为新的执行面板
+  - `v2` 只保留两类内容：
+    - 真正影响用户路径判断的阻塞项
+    - 不再阻塞、但需要持续观察的长尾项
+- 当前口径调整：
+  - 不再使用 `v1` 的 `40%` 作为推进指标
+  - 按“用户主链路可用性”重估：
+    - stabilization 收口：`80%-85%`
+    - 下载→归位闭环：`92%-95%`
+- 后续修正：
+  - 首版 `v2` 更像“优先级面板”，没有把 `v1` 中所有未完成项完整映射出来，容易给人“这些项被删了/漏了”的感觉
+  - 已补成“完整映射 + 分层标注”：
+    - 当前阻塞项
+    - 非阻塞未完成项
+    - 高风险未完成项
+  - 这样 `v2` 仍然保持执行优先级，但不再丢失 `v1` 的未完成语义
+- 新的执行节奏：
+  - 主链路继续强验证
+  - 长尾真实样本不再阻塞整个 TODO
+  - 当前最小阻塞只剩：
+    - `85499bc0` 在 Prowlarr 冷却结束后的只读复测
+    - 是否继续保留轻量影子验证入口的收尾决定
+
+### 同日继续推进（2026-04-28 17:08）
+
+- 本轮继续点：
+  - 用户要求继续推进，不接受停在等待时间窗
+  - 当前时间仍是 `2026-04-28 17:08:14 +08:00`，尚未到 `19:05:12`
+- 本轮处理：
+  - 不空等 `85499bc0`
+  - 直接把 `v2` 中“是否继续保留轻量影子验证入口”的收尾决定完成
+- 已定结论：
+  - 当前阶段默认不重建 `shadow-verify`
+  - 只有在后续再次出现 execute / dry-run 回归，且真实 NAS 不适合直接复现时，才重新启用轻量影子副本
+  - 因此 `v2` 当前只剩 1 个真实阻塞项：`85499bc0` 冷却结束后的只读复测
+
+### 到点复测结果（2026-04-28 19:07 后）
+
+- 本轮动作：
+  - 先检查本地 `backend/download_tasks.json` 中是否仍有 `85499bc0`
+  - 再检查 AList `undone / done / info`
+  - 最后从 AList `info` 返回中反解原始 `download_url`，并用当前工作区代码构造同等任务对象重放 `_sync_alist_progress()`
+- 结果：
+  - 本地任务文件中已找不到 `85499bc0`
+  - AList 侧：
+    - `undone=[]`
+    - `done/info` 仍命中真实 tid `5xvyCPXpAe5J9_HTL7Kxb`
+    - 状态仍是 `state=7`
+    - 错误仍是 `http status code 429`
+  - 从 AList 返回里反解原始链接后再次直探：
+    - 仍返回 `429`
+    - 冷却文案已顺延为：`Indexer is disabled till 2026/4/29 19:07:13 due to recent failures.`
+  - 用当前代码构造同等任务对象重放 `_sync_alist_progress()`：
+    - 结果仍稳定为 `downloading + cloud_download + Prowlarr 429...`
+- 本轮结论：
+  - 这笔样本已经不再提供新的同步链验证价值
+  - 它证明的是：当前代码能稳定表达“真实 AList 任务存在，但上游 indexer 持续冷却”
+  - 因此 `85499bc0` 应从阻塞样本降级为观察样本
+  - 这条 heartbeat 也不再值得继续保留
