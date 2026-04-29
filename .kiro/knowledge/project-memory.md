@@ -21,17 +21,21 @@
 - **清洗名系统**（`clean_name_system.py`）：统一入口，所有清洗逻辑集中在此
   - `CleanNameResult` 结构化输出：cn（中文）/ en（英文）/ original（日/韩/法等原始语言）/ display（展示名）/ suffix（季集号）
   - 三层清洗：strip_noise（去噪）→ split_names（语言分离）→ compose_display（组装展示名）
+  - strip_noise 去噪规则：方括号/广告/URL/质量标签/字幕组 + 季范围尾缀（1-8季/S1-S3）+ 尾部独立季号（S1/16季/S）+ 紧跟中文的TV版
+  - split_by_language 季集号保护：S/E+数字（如 s5、S01E03）作为整体 token 归入 en，不被拆分
   - 三个业务入口：`clean_from_filename`（文件名解析）/ `clean_from_scrape`（刮削结果）/ `clean_for_folder`（文件夹）
   - 搜索词构造：`clean_for_season_search` / `clean_for_episode_search`（对接多语言搜索）
 - **字段命名**：cn / en / original 三字段。original 放所有非中非英的原始语言名，不单独设 jp 字段
 - **全链路接入**：
   - 树构建（get_library_tree）：finalize 从文件名+shadow_name+NFO 生成，post_process 继承父级并尊重高优先级
+  - post_process 覆盖 tv/season/movie 三种类型（电影文件夹下的视频也参与清洗名补全）
   - 刮削后（_update_clean_names_after_scrape）：从刮削结果写入结构化字段
   - 发现页（douban_hot/recommend/explore）：统一注入 clean_name_cn/en/original
   - 前端搜索词：FolderDetail/VideoDetail/DiscoverPage 直接用结构化字段传给 SearchModal
 - 持久化字段：`clean_name`（display，向后兼容）+ `clean_name_cn` / `clean_name_en` / `clean_name_original`（结构化）
 - 自愈机制：树构建时自动补全缺失的结构化字段（反向解析 → 视频冒泡 → NFO 兜底 → 子树冒泡），补全后持久化到 media_library.json
 - 垃圾英文名检测：季号碎片/纯数字/常见非作品名自动清空，让视频冒泡覆盖正确值
+- 垃圾英文名检测同时作用于：文件夹级 finalize、自愈层2 冒泡、clean_from_filename 纯数字过滤
 - 名称污染防护：finalize 冒泡仅限 tv/season，一级分类目录不冒泡不传播
 - 统一优先级表 `NAME_SOURCE_PRIORITY`：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
 - `safe_update_clean_name()`：多字段版本的优先级保护写入
@@ -160,6 +164,10 @@
 - 后端日志统一用 `logging` 模块（不用 print），每个文件顶层 `logger = logging.getLogger(__name__)`，shared.py 统一 basicConfig
 - pan_models.py 使用 Pydantic V2 语法（`@field_validator` + `@model_validator`），不用已废弃的 `@validator`
 - 发现推荐的 enrich 逻辑在 `discover_enrich.py`（业务层），`routes/discover.py` 只放路由端点
+- 下载管理已知问题（待修复，详见 `docs/clean-name-fix-todo.md`）：
+  - sync_progress 没有后台定时调用，只在前端请求时触发
+  - sync_from_qb 会把 qB 中所有种子导入为新任务，用户删除的失败任务重启后会复活
+  - 前端"已完成"和"待整理"Tab 从用户角度是重复的
 
 ## 领域索引
 
@@ -168,6 +176,7 @@
 - BT 搜索 → `knowledge/bt-search-pipeline.md`
 - 下载归位替换 → `knowledge/download-replace-pipeline.md`
 - 清洗名系统 → `skills/clean-name-system.md`
+- 清洗名修复 TODO → `docs/clean-name-fix-todo.md`（含下载管理 3 个 bug）
 - 发现推荐 → `knowledge/discover-recommend.md`
 - 订阅系统 → `knowledge/subscribe-system.md`
 - 订阅系统重设计 → `docs/_archived/subscribe-redesign.md`（已完成归档）
