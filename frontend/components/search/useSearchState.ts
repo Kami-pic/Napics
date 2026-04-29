@@ -277,16 +277,18 @@ export function useSearchState({
 
         es.onmessage = (event) => {
           // 搜索 ID 不匹配 → 旧搜索的残留消息，丢弃
-          if (searchIdRef.current !== thisSearchId) { es.close(); return; }
+          if (searchIdRef.current !== thisSearchId) { es.close(); activeEsRef.current = null; return; }
           try {
             const data = JSON.parse(event.data);
             if (data.type === "status") {
+              if (searchIdRef.current !== thisSearchId) return;
               setSourceStatuses(prev => ({
                 ...prev,
                 [data.source]: { status: data.status as SourceStatus["status"], count: data.count ?? 0 },
               }));
               setSearchingStep(`${data.source}: 搜索中...`);
             } else if (data.type === "source_done") {
+              if (searchIdRef.current !== thisSearchId) return;
               setSourceStatuses(prev => ({
                 ...prev,
                 [data.source]: { status: (data.status === "done" ? "done" : "failed") as SourceStatus["status"], count: data.count ?? 0 },
@@ -305,9 +307,11 @@ export function useSearchState({
                   quality_rank: r.quality_rank ?? 0,
                 }));
                 sseResults = [...sseResults, ...newItems];
-                setResults([...sseResults]);
-                setSearching(false);
-                setSearchingStep("");
+                if (searchIdRef.current === thisSearchId) {
+                  setResults([...sseResults]);
+                  setSearching(false);
+                  setSearchingStep("");
+                }
               }
             } else if (data.type === "done") {
               sseDone = true;
@@ -324,23 +328,29 @@ export function useSearchState({
       if (sseDone && sseResults.length > 0) {
         searchCache.current.set(cacheKey, { results: sseResults, totalRaw: sseResults.length });
         // 异步 AI 推荐（仅用户开启时调用）
-        setAiRecommended(new Map());
-        if (aiRecommendEnabled) {
-          api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
-            .then(r => {
-              if (r.recommended?.length) {
-                const m = new Map<number, string>();
-                r.recommended.forEach((item: any) => m.set(item.index, item.reason));
-                setAiRecommended(m);
-              }
-            })
-            .catch(() => {});
+        if (searchIdRef.current === thisSearchId) {
+          setAiRecommended(new Map());
+          if (aiRecommendEnabled) {
+            api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
+              .then(r => {
+                if (searchIdRef.current !== thisSearchId) return;
+                if (r.recommended?.length) {
+                  const m = new Map<number, string>();
+                  r.recommended.forEach((item: any) => m.set(item.index, item.reason));
+                  setAiRecommended(m);
+                }
+              })
+              .catch(() => {});
+          }
         }
       }
-      setResults(sseResults);
-      setHitKeyword(q);
+      if (searchIdRef.current === thisSearchId) {
+        setResults(sseResults);
+        setHitKeyword(q);
+      }
     } catch {
-      // SSE 失败，fallback 到普通搜索
+      // SSE 失败，fallback 到普通搜索（仅当前搜索仍有效时）
+      if (searchIdRef.current !== thisSearchId) return;
       try {
         const d = await api.searchSingle(q, { skip_filter: true });
         const raw: EnhancedSearchResult[] = (d.bt_results || []).map((r: any) => ({
@@ -351,14 +361,20 @@ export function useSearchState({
         if (raw.length > 0) {
           searchCache.current.set(q, { results: raw, totalRaw: d.total_raw || raw.length });
         }
-        setResults(raw);
-        setHitKeyword(q);
+        if (searchIdRef.current === thisSearchId) {
+          setResults(raw);
+          setHitKeyword(q);
+        }
       } catch {
-        setError("搜索失败，请检查 Prowlarr 配置后重试");
+        if (searchIdRef.current === thisSearchId) {
+          setError("搜索失败，请检查 Prowlarr 配置后重试");
+        }
       }
     }
-    setSearching(false);
-    setSearchingStep("");
+    if (searchIdRef.current === thisSearchId) {
+      setSearching(false);
+      setSearchingStep("");
+    }
   }, [cnName, enName, originalName, seasonNumber]);
 
   // ── 网盘搜索 ──
