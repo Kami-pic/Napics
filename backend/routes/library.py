@@ -283,17 +283,26 @@ def set_category_tag(req: dict):
 
 @router.post("/library/clean-name")
 def set_clean_name(req: dict):
-    """手动修改清洗名（manual 来源，最高优先级）"""
+    """手动修改清洗名（manual 来源，最高优先级）
+    
+    支持字段：clean_name（display/cn）、clean_name_en（英文名）
+    """
     file_path = req.get("file_path", "")
     clean_name = req.get("clean_name", "")
+    clean_name_en = req.get("clean_name_en")  # None 表示不修改，"" 表示清空
     if not file_path:
         return {"status": "error", "message": "file_path required"}
     
     library = config_m.load_library()
     for v in library:
         if v.get("file_path") == file_path:
-            v["clean_name"] = clean_name
-            v["clean_name_source"] = "manual" if clean_name else ""
+            if clean_name is not None:
+                v["clean_name"] = clean_name
+                v["clean_name_source"] = "manual" if clean_name else ""
+            if clean_name_en is not None:
+                v["clean_name_en"] = clean_name_en
+                if not v.get("clean_name_source"):
+                    v["clean_name_source"] = "manual"
             config_m.save_library(library)
             return {"status": "ok"}
     return {"status": "not_found"}
@@ -476,7 +485,14 @@ def get_library_tree():
         if node.get("videos"):
             for v in node["videos"]:
                 if v.get("shadow_name"):
-                    node["shadow_name"] = v["shadow_name"]
+                    _raw_shadow = v["shadow_name"]
+                    # TV/season 文件夹冒泡时去掉尾部季集号（S01E01 等），只保留剧名
+                    if node.get("folder_type") in ("tv", "season"):
+                        import re as _re_shadow
+                        _raw_shadow = _re_shadow.sub(r'\s+S\d+E\d+\s*$', '', _raw_shadow, flags=_re_shadow.IGNORECASE).strip()
+                        _raw_shadow = _re_shadow.sub(r'\s+S\d+\s*$', '', _raw_shadow, flags=_re_shadow.IGNORECASE).strip()
+                        _raw_shadow = _re_shadow.sub(r'\s+E\d+\s*$', '', _raw_shadow, flags=_re_shadow.IGNORECASE).strip()
+                    node["shadow_name"] = _raw_shadow
                     node["shadow_tmdb_id"] = v.get("shadow_tmdb_id")
                     break
         
@@ -484,8 +500,14 @@ def get_library_tree():
         if not node.get("shadow_name") and node.get("children"):
             for child in node["children"]:
                 if child.get("shadow_name"):
-                    # 继承子节点的译名（通常用于 TV Show 根目录继承 Season/Episode 信息）
-                    node["shadow_name"] = child["shadow_name"]
+                    _raw_shadow2 = child["shadow_name"]
+                    # TV 文件夹从 season 子节点冒泡时去掉尾部季集号
+                    if node.get("folder_type") in ("tv",):
+                        import re as _re_shadow2
+                        _raw_shadow2 = _re_shadow2.sub(r'\s+S\d+E\d+\s*$', '', _raw_shadow2, flags=_re_shadow2.IGNORECASE).strip()
+                        _raw_shadow2 = _re_shadow2.sub(r'\s+S\d+\s*$', '', _raw_shadow2, flags=_re_shadow2.IGNORECASE).strip()
+                        _raw_shadow2 = _re_shadow2.sub(r'\s+E\d+\s*$', '', _raw_shadow2, flags=_re_shadow2.IGNORECASE).strip()
+                    node["shadow_name"] = _raw_shadow2
                     node["shadow_tmdb_id"] = child.get("shadow_tmdb_id")
                     break
 

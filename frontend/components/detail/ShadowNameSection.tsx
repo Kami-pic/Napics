@@ -16,8 +16,10 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
   const [saving, setSaving] = useState(false);
   const [editingClean, setEditingClean] = useState(false);
   const [cleanEditValue, setCleanEditValue] = useState("");
+  const [editingEn, setEditingEn] = useState(false);
+  const [enEditValue, setEnEditValue] = useState("");
 
-  useEffect(() => { setEditing(false); setEditingClean(false); }, [path, video?.file_name]);
+  useEffect(() => { setEditing(false); setEditingClean(false); setEditingEn(false); }, [path, video?.file_name]);
 
   if (!fileName) return null;
 
@@ -91,6 +93,19 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
     } catch { alert("保存失败"); }
   };
 
+  const handleSaveEn = async (newEn: string) => {
+    const filePath = video?.file_path || path;
+    if (!filePath) { setEditingEn(false); return; }
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/clean-name`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({file_path: filePath, clean_name_en: newEn.trim()})
+      });
+      setEditingEn(false);
+      if (isFolder) { onTreeRefresh?.(); } else { onRefresh?.(); }
+    } catch { alert("保存失败"); }
+  };
+
   if (editing) {
     return (
       <div className="space-y-1">
@@ -140,10 +155,27 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
             </div>
           ) : (
             <span className="text-[11px] text-slate-600 truncate flex-1 cursor-pointer hover:text-slate-400"
-              onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}{enName && !cleanName.includes(enName) ? <span className="text-slate-700 ml-1">{enName}</span> : null}</span>
+              onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}</span>
           )
         ) : (
           <span className="text-[11px] text-slate-600 truncate flex-1">未设置</span>
+        )}
+      </div>
+      {/* 英文名 */}
+      <div className="flex items-center gap-2 px-1">
+        <span className="text-[10px] text-slate-600">🔤</span>
+        {editingEn ? (
+          <div className="flex items-center gap-1.5 flex-1">
+            <input value={enEditValue} onChange={e => setEnEditValue(e.target.value)} autoFocus
+              onKeyDown={e => { if (e.key === "Enter") handleSaveEn(enEditValue); if (e.key === "Escape") setEditingEn(false); }}
+              onBlur={() => setTimeout(() => setEditingEn(false), 150)}
+              placeholder="英文名"
+              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded px-2 py-0.5 text-[11px] text-white outline-none focus:border-blue-500/40 min-w-0" />
+            <button onMouseDown={e => e.preventDefault()} onClick={() => handleSaveEn(enEditValue)} className="text-[10px] text-blue-400 flex-shrink-0">保存</button>
+          </div>
+        ) : (
+          <span className="text-[11px] text-slate-700 truncate flex-1 cursor-pointer hover:text-slate-400"
+            onClick={() => { setEnEditValue(enName); setEditingEn(true); }} title="点击编辑英文名">{enName || "英文名 —"}</span>
         )}
       </div>
     </div>

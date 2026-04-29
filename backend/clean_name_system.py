@@ -318,6 +318,12 @@ def split_names(text: str) -> Dict[str, str]:
                 original = cn
             cn = cn_simp
 
+    # 6. 从 en 中去除尾部季集号（S01E01、S01、E03 等不是英文名的一部分）
+    if en:
+        en = re.sub(r'\s+[sS]\d+[eE]\d+\s*$', '', en).strip()
+        en = re.sub(r'\s+[sS]\d+\s*$', '', en).strip()
+        en = re.sub(r'\s+[eE]\d+\s*$', '', en).strip()
+
     return {"cn": cn, "en": en, "original": original, "year": year}
 
 

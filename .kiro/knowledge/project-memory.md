@@ -35,6 +35,8 @@
 - 持久化字段：`clean_name`（display，向后兼容）+ `clean_name_cn` / `clean_name_en` / `clean_name_original`（结构化）
 - 自愈机制：树构建时自动补全缺失的结构化字段（反向解析 → 视频冒泡 → NFO 兜底 → 子树冒泡），补全后持久化到 media_library.json
 - 垃圾英文名检测：季号碎片/纯数字/常见非作品名自动清空，让视频冒泡覆盖正确值
+- split_names: 从 en 中去除尾部季集号（S01E01/S01/E03），季集号不是英文名的一部分
+- shadow_name 冒泡: TV/season 文件夹从子视频冒泡影子名时去掉尾部季集号，避免 TV 文件夹影子名带 S01E01
 - 垃圾英文名检测同时作用于：文件夹级 finalize、自愈层2 冒泡、clean_from_filename 纯数字过滤
 - 名称污染防护：finalize 冒泡仅限 tv/season，一级分类目录不冒泡不传播
 - 统一优先级表 `NAME_SOURCE_PRIORITY`：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1) > ""(0)
