@@ -67,6 +67,11 @@ export function FileTreeNode({ node, depth = 0, variant = "new" }: FileTreeNodeP
     const label = node.category === "video" ? "🗑 待清理" : node.category === "non_video" ? "⚠️ 保留" : "📁 含视频";
     const cls = CATEGORY_COLORS[node.category] || "";
     tags.push({ text: label, cls });
+    // 文件类型标签
+    const ft = node.type === "video" ? "video" : node.type === "subtitle" ? "subtitle" : (isDir ? "" : getFileType(node.name));
+    if (ft === "video") tags.push({ text: "视频", cls: "bg-green-500/10 text-green-500/60" });
+    else if (ft === "subtitle") tags.push({ text: "字幕", cls: "bg-yellow-500/10 text-yellow-500/60" });
+    else if (ft && !isDir) tags.push({ text: node.name.split(".").pop() || "", cls: "bg-slate-500/10 text-slate-500/60" });
   }
   if (variant === "new") {
     const ft = node.type === "video" ? "video" : node.type === "subtitle" ? "subtitle" : (isDir ? "" : getFileType(node.name));
@@ -78,6 +83,11 @@ export function FileTreeNode({ node, depth = 0, variant = "new" }: FileTreeNodeP
     const actionLabel = node.action === "rename" ? "✅ 重命名" : node.action === "skip" ? "⏭ 跳过" : node.action === "create" ? "📁 新建" : node.action === "delete" ? "🗑 删除" : node.action === "keep" ? "⚠️ 保留" : "";
     if (actionLabel) tags.push({ text: actionLabel, cls: ACTION_COLORS[node.action] || "" });
     if (node.skip_reason) tags.push({ text: node.skip_reason, cls: "text-yellow-500/50" });
+    // 文件类型标签（和 new 栏一致）
+    const ft = node.type === "video" ? "video" : node.type === "subtitle" ? "subtitle" : (isDir ? "" : getFileType(node.name));
+    if (ft === "video") tags.push({ text: "视频", cls: "bg-green-500/10 text-green-500/60" });
+    else if (ft === "subtitle") tags.push({ text: "字幕", cls: "bg-yellow-500/10 text-yellow-500/60" });
+    else if (ft && !isDir) tags.push({ text: node.name.split(".").pop() || "", cls: "bg-slate-500/10 text-slate-500/60" });
   }
 
   // 子节点统计

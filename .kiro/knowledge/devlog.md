@@ -15,6 +15,7 @@
 - **前端搜索词过滤**：`FolderDetail.tsx` 和 `VideoDetail.tsx` 中 cnName 回退时过滤一级分类目录名（"电影"/"电视剧"等），避免搜索词变成"电影白"
 - **TV文件夹影子名去集号**：shadow_name 冒泡到 TV/season 文件夹时去掉尾部 S01E01 等季集号；split_names 从 en 中去除尾部季集号
 - **英文名可编辑**：ShadowNameSection 清洗名行同行布局（中文名 + 英文名），各自独立编辑热区；后端 `/library/clean-name` 扩展支持 `clean_name_en`
+- **整理替换三栏文件类型标签**：plan 栏和 old 栏补上文件类型标签（视频/字幕/扩展名），与 new 栏一致
 
 **踩坑**:
 - `split_by_language` 的 token 化顺序很重要：`S/E+数字` 模式必须在英文字母模式之前匹配，否则 `s` 会被先匹配为独立字母 token
