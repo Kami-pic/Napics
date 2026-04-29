@@ -195,24 +195,21 @@ def _classify_movie_category(folder_path: str, folder_name: str, subdirs: List[s
     """电影分类下的子文件夹判断：movie / collection / series / mixed
     处理三种情况：
     1. 纯末端（无子目录）：单视频=movie，多视频=collection/series
-    2. 纯封装（有子目录无散落视频）：看深度和系列关系
-    3. 混合（有子目录也有散落视频）：封装+散装共存 → collection
+    2. 有散落视频（不管有没有子目录）：单视频=movie，多视频=collection/series
+       子目录可能是正在下载的种子文件夹，不影响分类
+    3. 纯封装（有子目录无散落视频）：看深度和系列关系
     """
-    # 末端文件夹（无子目录）
-    if not subdirs:
-        if not videos:
-            return {"type": "empty", "folder_name": folder_name}
+    # 有散落视频时，以视频数量为准判定类型（忽略子目录）
+    if videos:
         if len(videos) == 1:
             return {"type": "movie", "folder_name": folder_name, "videos": videos}
-        # 多视频：判断是 collection 还是 series
         if _is_series_collection(videos, folder_name):
             return {"type": "series", "folder_name": folder_name, "videos": videos}
         return {"type": "collection", "folder_name": folder_name, "videos": videos}
     
-    # 有子目录也有散落视频 → 封装+散装共存
-    if videos:
-        return {"type": "collection", "folder_name": folder_name,
-                "subdirs": subdirs, "loose_videos": videos}
+    # 无视频无子目录
+    if not subdirs:
+        return {"type": "empty", "folder_name": folder_name}
     
     # 纯封装（有子目录无散落视频）：计算深度决定展示方式
     depth = _calc_depth(folder_path)
