@@ -196,6 +196,9 @@
     5. 电影目录被 classify_folder 误判为 collection（种子子目录干扰），已用 category_hint 覆盖
     6. 无冲突但有整理计划时（纯新下载），dry-run 端点也返回 plan 供前端展示
     7. 下载管理面板 UI：去掉待整理 tab、名称截断、已完成增加归档按钮
+    8. 搜索 SSE 竞态保护加强：所有 setState 前检查 searchIdRef
+    9. 电影分类修复：_classify_movie_category 有散落视频时忽略子目录，不再误判 collection
+    10. 种子目录壳清理增强：清理只剩垃圾文件的种子目录
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通过一次重副本链路；但重视频副本会明显推高工作区体积，当前已清理旧 `shadow-verify`，并将后续策略切换为“真实文件名/目录结构/NFO + 占位视频文件”的轻量副本模式
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”

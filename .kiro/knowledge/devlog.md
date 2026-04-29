@@ -520,3 +520,14 @@
 - 已完成任务增加"归档"按钮，直接将 completed 转为 archived
 - 后端新增 `/download-manager/archive` 端点
 - 按钮区域 shrink-0 + whitespace-nowrap 防止被名称挤压变形
+
+## 2026-04-29 搜索竞态 + 电影分类误判 + 种子目录清理
+
+**变更**:
+- `frontend/components/search/useSearchState.ts`：SSE 竞态保护加强，所有 setState 调用前检查 searchIdRef，防止旧搜索结果混入新搜索
+- `backend/organizer.py`：`_classify_movie_category` 修复——有散落视频时以视频数量为准判定类型，忽略子目录（种子文件夹不影响分类）
+- `backend/routes/organize.py`：`_cleanup_empty_dirs` 增强——不仅清理空目录，也清理只剩垃圾文件（txt/nfo/jpg）的种子目录壳
+**根因**:
+- 搜索竞态：旧 SSE 的 onmessage 回调在新搜索启动后仍可能写入 state
+- 电影分类：种子子目录（正在下载或已下载）导致 `_classify_movie_category` 把 movie 误判为 collection，影响媒体库树展示和整理替换
+- 种子目录残留：整理后种子目录里可能还有 txt/nfo/jpg 等垃圾文件，旧的 `_cleanup_empty_dirs` 只清理空目录

@@ -111,6 +111,7 @@
 - 电影整理替换：_scrape_movie 支持 dry_run + plan 生成，执行时写 movie.nfo（不是 tvshow.nfo）
 - 无冲突但有整理计划时（如纯新下载），也返回 awaiting_confirm + plan 供前端展示
 - 分类覆盖：推演阶段 category_hint（movie/tv）优先于 classify_folder 结果，避免种子子目录干扰分类
+- 电影分类修复：`_classify_movie_category` 有散落视频时以视频数量为准，忽略子目录（种子文件夹不影响分类）
 
 ### 整理流水线
 - 三段式架构，详见 knowledge/organize-pipeline-v3.md
