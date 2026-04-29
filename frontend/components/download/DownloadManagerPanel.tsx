@@ -216,7 +216,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
             </div>
 
             <div className="px-5 py-3 flex gap-2 border-b border-white/[0.04] shrink-0">
-              {(["", "downloading", "completed", "awaiting_confirm", "archived", "failed"] as StatusFilter[]).map(s => (
+              {(["", "downloading", "completed", "archived", "failed"] as StatusFilter[]).map(s => (
                 <button key={s} onClick={() => setFilter(s)}
                   className={`px-3 py-1 rounded-lg text-[11px] transition-colors ${filter === s ? "bg-blue-600 text-white" : "bg-white/[0.04] text-slate-500 hover:text-slate-300"}`}>
                   {s === "" ? "全部" : (s === "downloading" ? "活跃中" : STATUS_LABELS[s]?.label || s)}
@@ -238,33 +238,41 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
 
                 return (
                   <div key={task.id} className="bg-[#1a1a1a] rounded-xl border border-white/[0.04] p-4 hover:border-white/[0.1] transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0 pr-4">
-                        <p className="text-sm text-white font-medium truncate mb-1">{task.media_name}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-white font-medium truncate mb-1 max-w-[320px]" title={task.media_name}>{task.media_name}</p>
                         <div className="flex items-center gap-3">
                           <span className={`text-[10px] font-medium ${st.color}`}>{st.label}</span>
-                          <span className="text-[10px] text-slate-600 truncate">{task.save_path}</span>
+                          <span className="text-[10px] text-slate-600 truncate max-w-[240px]" title={task.save_path}>{task.save_path}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {(canView || canWash) && (
                           <>
                           {canView && (
-                            <button onClick={() => { onClose(); /* 通过 URL hash 或事件通知媒体库跳转 */ window.dispatchEvent(new CustomEvent("navigate-to-folder", { detail: task.save_path })); }}
-                              className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all">
+                            <button onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("navigate-to-folder", { detail: task.save_path })); }}
+                              className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all whitespace-nowrap">
                               📂 查看
+                            </button>
+                          )}
+                          {task.status === "completed" && (
+                            <button onClick={async () => {
+                              try { await api.archiveDownloadTask(task.id); loadTasks(); } catch { alert("归档失败"); }
+                            }}
+                              className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-400 hover:text-slate-300 transition-all whitespace-nowrap">
+                              归档
                             </button>
                           )}
                           {canWash && (
                             <button onClick={() => handleEnterWash(task.id, task.media_name)} disabled={isSyncing}
-                              className="px-4 py-1.5 rounded-lg text-[11px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-all flex items-center gap-2">
+                              className="px-4 py-1.5 rounded-lg text-[11px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-all flex items-center gap-2 whitespace-nowrap">
                               {isSyncing ? <div className="w-3 h-3 border-2 border-blue-400/20 border-t-blue-400 rounded-full animate-spin" /> : null}
                               整理替换
                             </button>
                           )}
                           </>
                         )}
-                        <button onClick={() => handleDelete(task.id)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-400">✕</button>
+                        <button onClick={() => handleDelete(task.id)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-400 shrink-0">✕</button>
                       </div>
                     </div>
                     {/* 只要任务活跃或有进度，就显示进度条 */}

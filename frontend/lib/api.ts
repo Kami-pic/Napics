@@ -301,6 +301,9 @@ export const api = {
       body: JSON.stringify(taskIds),
     }),
 
+  archiveDownloadTask: (taskId: string) =>
+    request<any>(`${BASE_URL}/download-manager/archive?task_id=${encodeURIComponent(taskId)}`, { method: "POST" }),
+
   recommendChannel: (seeders: number, sizeGb: number) =>
     request<any>(`${BASE_URL}/download-manager/recommend-channel?seeders=${seeders}&size_gb=${sizeGb}`),
 

@@ -361,6 +361,20 @@ def delete_download_tasks(task_ids: List[str]):
     removed = dm.delete_tasks(task_ids)
     return {"removed": removed}
 
+
+@router.post("/download-manager/archive")
+def archive_download_task(task_id: str):
+    """手动将已完成的任务标记为已归档。"""
+    dm = _get_download_manager()
+    task = dm.get_task(task_id)
+    if not task:
+        return {"success": False, "message": "任务不存在"}
+    if task.status not in ("completed", "awaiting_confirm"):
+        return {"success": False, "message": f"当前状态 {task.status} 不支持归档"}
+    dm.archive_task(task_id, organized=False)
+    return {"success": True}
+
+
 @router.get("/download-manager/recommend-channel")
 def recommend_download_channel(seeders: int = 0, size_gb: float = 0):
     """推荐下载通道。"""
