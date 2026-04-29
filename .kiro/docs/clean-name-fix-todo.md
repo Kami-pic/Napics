@@ -35,6 +35,25 @@
 
 ---
 
+## 已完成：补充修复（2026-04-29 下午）
+
+### 修复的 Bug
+
+| Bug | 根因 | 修复 | 文件 |
+|-----|------|------|------|
+| TV 文件夹影子名带集号（`冰菓 Hyouka S01E01`） | shadow_name 从子视频冒泡时没去掉尾部季集号 | 冒泡时用正则去除尾部 S01E01/S01/E03 | `library.py` |
+| `clean_name_en` 含季集号（`Hyouka S01E01`） | split_names 没去 en 尾部季集号 | split_names 返回前去除 en 尾部 SxxExx/Sxx/Exx | `clean_name_system.py` |
+
+### 新增功能
+
+| 功能 | 说明 | 文件 |
+|------|------|------|
+| 英文名可编辑 | ShadowNameSection 清洗名行同行布局，中文名和英文名各自独立编辑热区 | `ShadowNameSection.tsx` / `library.py` |
+| 后端 clean_name_en 保存 | `/library/clean-name` 端点扩展支持 `clean_name_en` 字段 | `library.py` |
+| 整理替换三栏文件类型标签 | plan 栏和 old 栏补上文件类型标签（视频/字幕/扩展名） | `FileTreeNode.tsx` |
+
+---
+
 ## 待处理：季集缺失信息展示（新对话）
 
 > 用户需求：从刮削源获取剧集有多少季、每季多少集，对比本地已有的，展示缺失信息
