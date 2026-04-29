@@ -46,12 +46,13 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
   const parentCategoryTag = node.category_tag || currentCategoryTag || 
     ((folderType === "tv" || folderType === "season") ? "tv" : "movie");
   const canScrape = !isRoot && !node.is_top_category && node.name !== "" && !noScrape && !isAggregate;
+  const refreshFolderTree = () => (onTreeRefresh || onRefresh)();
   // 刮削搜索名：优先用 clean_name（刮削后保存的干净名或清洗后的名字）
   const scrapeName = canScrape 
     ? (node.clean_name || node.videos[0]?.clean_name || node.name)
     : "";
   const { data: scrape, loading: scrapeLoading, status: scrapeStatus, rescrape: _rescrape, reload, setData: setScrapeData, confidence, pendingConfirm, setPendingConfirm } = useScrape(scrapeName, canScrape ? node.path : "", false, folderType === "tv" || folderType === "season");
-  const rescrape = async () => { await _rescrape(); setPosterKey(k => k + 1); setPosterDeleted(false); onRefresh(); };
+  const rescrape = async () => { await _rescrape(); setPosterKey(k => k + 1); setPosterDeleted(false); refreshFolderTree(); };
 
   // 加载禁止刮削状态
   useEffect(() => {
@@ -230,7 +231,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         <div className="relative">
           <Poster key={posterKey} fallbackName={node.name} localPath={node.path} posterDeleted={posterDeleted} noScrape={isAggregate} />
           <div className="absolute top-2 right-2 z-10">
-            <PosterUpload path={node.path} hideDeleteScrape={isAggregate} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); if (!isAggregate) setScrapeData(null); } else { setPosterDeleted(false); } if (!isAggregate) reload(); (onTreeRefresh || onRefresh)(); }} />
+            <PosterUpload path={node.path} hideDeleteScrape={isAggregate} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); if (!isAggregate) setScrapeData(null); } else { setPosterDeleted(false); } if (!isAggregate) reload(); refreshFolderTree(); }} />
           </div>
         </div>
       )}
@@ -245,7 +246,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, tag: newTag})
               });
-              await (onTreeRefresh || onRefresh)();
+              await refreshFolderTree();
             } catch {}
           }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#1a1a1a] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
             {[
@@ -267,7 +268,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, folder_type: newType})
               });
-              await (onTreeRefresh || onRefresh)();
+              await refreshFolderTree();
             } catch {}
           }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#1a1a1a] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
             {(parentCategoryTag === "tv"
@@ -350,7 +351,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <div className="grid grid-cols-3 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
             <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">一键刮削</button>
-            <CandidatePicker name={node.clean_name || node.videos[0]?.clean_name || node.name} path={node.path} onSelected={(d) => { if (d) setScrapeData(d); setPosterKey(k => k + 1); onRefresh(); }} />
+            <CandidatePicker name={node.clean_name || node.videos[0]?.clean_name || node.name} path={node.path} onSelected={(d) => { if (d) setScrapeData(d); setPosterKey(k => k + 1); refreshFolderTree(); }} />
           </div>
         );
       })()}

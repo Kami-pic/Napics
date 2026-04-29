@@ -24,7 +24,9 @@ vi.mock("@/components/detail/PosterUpload", () => ({
 }));
 
 vi.mock("@/components/detail/CandidatePicker", () => ({
-  CandidatePicker: () => <div>candidate-picker</div>,
+  CandidatePicker: ({ onSelected }: { onSelected: (data: { title: string }) => void }) => (
+    <button onClick={() => onSelected({ title: "军火女王" })}>mock-candidate-picker</button>
+  ),
 }));
 
 vi.mock("@/components/detail/ShadowNameSection", () => ({
@@ -81,6 +83,38 @@ describe("FolderDetail tree refresh", () => {
     );
 
     fireEvent.click(screen.getByText("mock-poster-upload"));
+
+    await waitFor(() => {
+      expect(onTreeRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("文件夹手动候选确认后只触发树刷新", async () => {
+    const onRefresh = vi.fn();
+    const onTreeRefresh = vi.fn();
+
+    render(
+      <FolderDetail
+        node={{
+          name: "军火女王",
+          path: "\\\\NAS\\视频\\动画番\\军火女王",
+          folder_type: "tv",
+          category_tag: "tv",
+          videos: [],
+          children: [],
+          video_count: 0,
+          has_cover: true,
+        }}
+        onRefresh={onRefresh}
+        onTreeRefresh={onTreeRefresh}
+        onSearch={vi.fn()}
+        currentCategoryTag="tv"
+      />,
+    );
+
+    fireEvent.click(screen.getByText("mock-candidate-picker"));
 
     await waitFor(() => {
       expect(onTreeRefresh).toHaveBeenCalledTimes(1);

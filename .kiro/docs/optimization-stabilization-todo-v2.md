@@ -206,6 +206,7 @@
     - `分类标签 / folder_type` 修改后只刷新 `/library/tree`
     - `tv/season` 文件夹标准名保存后只刷新 `/library/tree`
     - `FolderDetail` 文件夹封面上传 / 删除后只刷新 `/library/tree`
+    - `FolderDetail` 手动候选确认后只刷新 `/library/tree`
   - 其余更重的刷新入口暂不混改；后续若继续压性能，仍优先围绕 `useLibrary` 双请求刷新成本展开
 
 ---
