@@ -51,6 +51,7 @@
 | 英文名可编辑 | ShadowNameSection 清洗名行同行布局，中文名和英文名各自独立编辑热区 | `ShadowNameSection.tsx` / `library.py` |
 | 后端 clean_name_en 保存 | `/library/clean-name` 端点扩展支持 `clean_name_en` 字段 | `library.py` |
 | 整理替换三栏文件类型标签 | plan 栏和 old 栏补上文件类型标签（视频/字幕/扩展名） | `FileTreeNode.tsx` |
+| 搜索 SSE 竞态保护 | searchIdRef 防止旧搜索结果混入新搜索，关闭弹窗时递增 ID 丢弃残留消息 | `useSearchState.ts` |
 
 ---
 

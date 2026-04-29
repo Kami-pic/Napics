@@ -16,6 +16,7 @@
 - **TV文件夹影子名去集号**：shadow_name 冒泡到 TV/season 文件夹时去掉尾部 S01E01 等季集号；split_names 从 en 中去除尾部季集号
 - **英文名可编辑**：ShadowNameSection 清洗名行同行布局（中文名 + 英文名），各自独立编辑热区；后端 `/library/clean-name` 扩展支持 `clean_name_en`
 - **整理替换三栏文件类型标签**：plan 栏和 old 栏补上文件类型标签（视频/字幕/扩展名），与 new 栏一致
+- **搜索 SSE 竞态保护**：`useSearchState.ts` 增加 `searchIdRef`，每次搜索递增 ID，`onmessage` 中检查 ID 是否匹配当前搜索，不匹配则丢弃；关闭弹窗时递增 ID 确保残留消息被丢弃
 
 **踩坑**:
 - `split_by_language` 的 token 化顺序很重要：`S/E+数字` 模式必须在英文字母模式之前匹配，否则 `s` 会被先匹配为独立字母 token
