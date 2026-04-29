@@ -569,7 +569,7 @@ export default function SearchModal({
         save_path: savePath || defaultSavePath, channel,
       });
       if (d.success) { setToast({ msg: "任务已提交到下载队列", ok: true }); }
-      else { setToast({ msg: "失败: " + (d.task?.error || "未知错误"), ok: false }); }
+      else { setToast({ msg: "失败: " + (d.error || d.task?.error || "未知错误"), ok: false }); }
     } catch { setToast({ msg: "通信失败，请检查网络", ok: false }); }
     finally { setDownloadingUrl(null); }
   };
