@@ -84,21 +84,53 @@ def _find_duplicate_logical_targets(plan_items: list) -> list[str]:
 
 
 def _cleanup_empty_dirs(base_path: str):
-    """自底向上清理 base_path 下的空目录（种子文件夹壳）。
+    """自底向上清理 base_path 下的空目录和只剩垃圾文件的种子目录壳。
     
-    不删除 base_path 本身，也不删除 Season 开头的目录（刚创建的季目录）。
+    不删除 base_path 本身，也不删除 Season 开头的目录。
+    "垃圾文件"指 txt、jpg（非标准海报名）、nfo（种子目录内的，非根目录的）等。
     """
+    from core.constants import VIDEO_EXTS
+    # 种子目录内可安全删除的垃圾文件扩展名
+    _junk_exts = {".txt", ".nfo", ".jpg", ".png", ".url", ".lnk", ".exe", ".html", ".htm"}
+    
     for root, dirs, files in os.walk(base_path, topdown=False):
         if os.path.normcase(os.path.normpath(root)) == os.path.normcase(os.path.normpath(base_path)):
             continue
         dir_name = os.path.basename(root)
-        # 保留 Season 目录（即使暂时为空，后续还要写 NFO）
         if dir_name.lower().startswith("season"):
             continue
         try:
-            if not os.listdir(root):
+            remaining = os.listdir(root)
+            if not remaining:
                 os.rmdir(root)
                 logger.info(f"[ActionPlan] 清理空目录: {root}")
+                continue
+            # 检查是否只剩垃圾文件（无视频、无子目录）
+            has_video = False
+            has_subdir = False
+            for item in remaining:
+                item_path = os.path.join(root, item)
+                if os.path.isdir(item_path):
+                    has_subdir = True
+                    break
+                ext = os.path.splitext(item)[1].lower()
+                if ext in VIDEO_EXTS:
+                    has_video = True
+                    break
+            if not has_video and not has_subdir:
+                # 只剩垃圾文件，全部删除后清理目录
+                for item in remaining:
+                    item_path = os.path.join(root, item)
+                    ext = os.path.splitext(item)[1].lower()
+                    if ext in _junk_exts or item.startswith("."):
+                        try:
+                            os.remove(item_path)
+                        except OSError:
+                            pass
+                # 再次检查是否为空
+                if not os.listdir(root):
+                    os.rmdir(root)
+                    logger.info(f"[ActionPlan] 清理种子目录壳: {root}")
         except OSError:
             pass
 
