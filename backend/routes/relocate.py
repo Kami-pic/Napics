@@ -492,7 +492,11 @@ async def organize_dry_run(req: RelocateRequest):
         res = await rel.relocate(task, new_files_whitelist=new_files)
 
         try:
-            logger.error(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
+            logger.info(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}, error={res.error}")
+            if res.action_plan and isinstance(res.action_plan, dict):
+                plan_items = res.action_plan.get("plan", [])
+                ft = res.action_plan.get("folder_type", "")
+                logger.info(f"[DryRun] plan: {len(plan_items)} items, folder_type={ft}")
         except UnicodeEncodeError:
             logger.info(f"[DryRun] result: status={res.status}, pairs={len(res.coexist_pairs)}")
 
@@ -527,8 +531,33 @@ async def organize_dry_run(req: RelocateRequest):
             return {"status": "failed", "message": f"探测失败: {res.error}", "coexist_pairs": []}
         
         if res.status == "archived":
-            # 探测阶段禁止自动归档，仅返回状态供 UI 提示
-            pass
+            # 无冲突但有整理计划（如电影重命名）→ 返回 plan 供前端展示和执行
+            if res.action_plan and isinstance(res.action_plan, dict):
+                plan_items = res.action_plan.get("plan", [])
+                has_actions = any(
+                    item.get("actions") and not item.get("skip_reason")
+                    for item in plan_items if item
+                )
+                if has_actions:
+                    display_new_files = file_info_list
+                    if not display_new_files and res.action_plan:
+                        fallback_plan = res.action_plan.get("plan", [])
+                        display_new_files = [
+                            {"name": item.get("original_filename", ""), "size": 0}
+                            for item in fallback_plan if item
+                        ]
+                    plan_tree = _build_plan_tree(res.action_plan, [], task.save_path, display_new_files)
+                    new_tree = _build_new_tree(display_new_files)
+                    return {
+                        "status": "awaiting_confirm",
+                        "message": "未发现旧版本冲突，可直接整理归档",
+                        "coexist_pairs": [],
+                        "plan": res.action_plan,
+                        "new_files_all": display_new_files,
+                        "old_tree": [],
+                        "new_tree": new_tree,
+                        "plan_tree": plan_tree,
+                    }
             
         return {"status": res.status, "message": "未发现冲突，可直接归档", "coexist_pairs": []}
     except Exception as e:

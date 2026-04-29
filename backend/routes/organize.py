@@ -687,6 +687,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
         # 整理替换场景：种子子目录可能干扰分类（如电影目录被判为 collection）
         # 当 category_hint 明确时，优先使用 category_hint
         if category_hint in ("movie", "tv") and folder_type not in ("movie", "tv", "season"):
+            logger.info(f"[organize_full] folder_type 覆盖: {folder_type} -> {category_hint}（category_hint 优先）")
             folder_type = category_hint
         result["folder_type"] = folder_type
         result["analyze"] = {
