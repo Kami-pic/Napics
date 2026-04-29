@@ -538,8 +538,13 @@ def get_library_tree():
                     node["clean_name_cn"] = video["clean_name_cn"]
                 v_en = video.get("clean_name_en", "")
                 if v_en and (not node["clean_name_en"] or (len(v_en) > _folder_en_len + 3)):
-                    node["clean_name_en"] = v_en
-                    _folder_en_len = len(v_en)
+                    # 冒泡前做垃圾英文名检测：纯数字、太短的不冒泡
+                    import re as _re_bubble
+                    _v_en_stripped = _re_bubble.sub(r'[sS]\s*\d+', '', v_en).strip()
+                    _v_en_stripped = _re_bubble.sub(r'\d+', '', _v_en_stripped).strip()
+                    if len(_v_en_stripped) > 3:
+                        node["clean_name_en"] = v_en
+                        _folder_en_len = len(v_en)
                 if not node["clean_name_original"] and video.get("clean_name_original"):
                     node["clean_name_original"] = video["clean_name_original"]
                 if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
@@ -639,7 +644,7 @@ def get_library_tree():
                 child["clean_name_original"] = folder_result.original
 
         # 视频的 clean_name：用新系统，继承父文件夹的结构化名称
-        if node.get("folder_type") in ("tv", "season") and node.get("videos"):
+        if node.get("folder_type") in ("tv", "season", "movie") and node.get("videos"):
             for v in node["videos"]:
                 # 尊重已有的高优先级 clean_name（manual/nfo/tmdb 不覆盖）
                 existing_source = v.get("clean_name_source", "")

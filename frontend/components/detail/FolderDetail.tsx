@@ -314,7 +314,12 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           enName = enMatch ? enMatch.map(s => s.trim()).filter(Boolean).join(" ") : "";
           if (cnName === enName) enName = "";
         }
-        if (!cnName) cnName = node.clean_name || node.name;
+        if (!cnName) {
+          // 过滤一级分类目录名，避免搜索词变成"电影白"
+          const raw = node.clean_name || node.name;
+          const categoryNames = ["电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"];
+          cnName = categoryNames.includes(raw) ? "" : raw;
+        }
         const ft = node.folder_type || "";
         // 季号：从 node.name 中提取（支持阿拉伯数字和中文数字）
         const CN_NUM: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10 };

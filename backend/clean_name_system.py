@@ -116,6 +116,15 @@ def strip_noise(filename: str) -> str:
     # 0. + 替换为空格
     name = re.sub(r'\+', ' ', name)
 
+    # 0a. 去除季范围尾缀（用户手动标注的"已下载哪几季"，不是作品名）
+    # 匹配：S1-S3、S0-S2、1-8季、1-6季 等
+    name = re.sub(r'\s*S\d+\s*-\s*S\d+\s*$', '', name, flags=re.I)
+    name = re.sub(r'\s*\d+-\d+季\s*$', '', name)
+    # 去除尾部独立季号标记（如 "守望尘世S1"、"猎魔人S"、"XX 16季"）
+    # 注意：不去除作品名中的数字（如 "白2023"、"1984"）
+    name = re.sub(r'(?<=[\u4e00-\u9fff])\s*S\d*\s*$', '', name, flags=re.I)
+    name = re.sub(r'(?<=[\u4e00-\u9fff])\s*\d{1,2}季\s*$', '', name)
+
     # 0b. 点号分隔符转空格（保护小数点如 5.1、版本号如 v2.0）
     # 先处理分隔符，再去广告，避免 "电影天堂www.dytt.com.盗梦空间" 这种粘连
     name = re.sub(r'(?<!\d)\.(?!\d)', ' ', name)
@@ -156,9 +165,9 @@ def strip_noise(filename: str) -> str:
     name = re.sub(r'(?i)\bAAC\d?\.\d\b', '', name)
     name = re.sub(r'(?<!\d)\d\s*\.\s*1(?!\d)', '', name)
 
-    # 7. 去独立出现的媒体形式标签（不去紧跟中文名的"剧场版"等）
-    name = re.sub(r'(?<=[\s._\-])(?:TV版|电视剧版|OAD|番外篇|总集篇|完结篇)(?=[\s._\-]|$)', '', name)
-    name = re.sub(r'^(?:TV版|电视剧版|OAD|番外篇|总集篇|完结篇)(?=[\s._\-]|$)', '', name)
+    # 7. 去媒体形式标签（TV版/电视剧版等，包括紧跟中文名的情况）
+    name = re.sub(r'(?:TV版|电视剧版|OAD|番外篇|总集篇|完结篇)(?=[\s._\-]|$)', '', name)
+    name = re.sub(r'(?<=[\u4e00-\u9fff])TV版', '', name)
 
     # 8. 去分辨率数字（1920x1080 等）
     name = re.sub(r'\d{3,4}[xX×]\d{3,4}', '', name)
@@ -435,6 +444,10 @@ def clean_from_filename(filename: str, folder_name: str = "",
     en = parent_en or names["en"]
     original = parent_original or names["original"]
     year = names["year"]
+
+    # 纯数字不算有效英文名（如文件名 "02.mkv" 清洗后 en="02"）
+    if en and not parent_en and re.match(r'^\d+$', en):
+        en = ""
 
     # Level 2：提取季集号
     suffix_info = extract_suffix(filename, folder_name)

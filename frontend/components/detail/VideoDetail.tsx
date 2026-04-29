@@ -107,7 +107,12 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
           enName = enMatch ? enMatch.map(s => s.trim()).filter(Boolean).join(" ") : "";
           if (cnName === enName) enName = "";
         }
-        if (!cnName) cnName = v.clean_name || v.folder_name || v.file_name;
+        if (!cnName) {
+          // 过滤一级分类目录名，避免搜索词变成"电影白"
+          const raw = v.clean_name || v.folder_name || v.file_name;
+          const categoryNames = ["电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"];
+          cnName = categoryNames.includes(raw) ? "" : raw;
+        }
         // 从文件名提取季集号
         const seMatch = v.file_name.match(/S(\d+)E(\d+)/i);
         const sNum = seMatch ? parseInt(seMatch[1]) : undefined;

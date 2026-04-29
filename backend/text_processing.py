@@ -166,6 +166,7 @@ def split_by_language(text: str) -> Dict[str, str]:
     """从混合文本中提取中文部分和英文部分
     数字紧邻中文时归入中文（如 "91天" → cn="91天"，"JOJO的奇妙冒险" → cn="JOJO的奇妙冒险"）
     独立的英文单词归入英文（如 "Attack on Titan" → en="Attack on Titan"）
+    S/E+数字 季集号保持完整归入英文（如 "s5" → en="s5"，"S01E03" → en="S01E03"）
     """
     if not text:
         return {"cn": "", "en": ""}
@@ -177,9 +178,18 @@ def split_by_language(text: str) -> Dict[str, str]:
     #   - 英文单词（≥2 个连续字母）→ en
     #   - 数字：如果紧邻 CJK → cn，否则 → en
     #   - 单个字母（如 S、E）→ en
+    # 特殊：S/E+数字 季集号模式作为整体归入 en
 
-    # 用正则拆分为 token 序列，保留位置信息
-    tokens = re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]+|[a-zA-Z]+|[0-9]+|[^\u4e00-\u9fff\u3400-\u4dbfa-zA-Z0-9]+', text)
+    # 用正则拆分为 token 序列
+    # 先提取 S/E+数字 季集号模式（如 S01E03、s5、E03），作为整体 token
+    tokens = re.findall(
+        r'[sSeE]\d+(?:[eE]\d+)?'  # 季集号：S01E03、s5、E03
+        r'|[\u4e00-\u9fff\u3400-\u4dbf]+'  # CJK
+        r'|[a-zA-Z]+'  # 英文
+        r'|[0-9]+'  # 数字
+        r'|[^\u4e00-\u9fff\u3400-\u4dbfa-zA-Z0-9]+',  # 其他
+        text
+    )
 
     cn_parts = []
     en_parts = []
@@ -188,8 +198,12 @@ def split_by_language(text: str) -> Dict[str, str]:
         is_cjk = bool(_CJK_RE.match(tok))
         is_alpha = bool(re.match(r'^[a-zA-Z]+$', tok))
         is_digit = bool(re.match(r'^[0-9]+$', tok))
+        # 季集号模式（S01E03、s5 等）直接归入 en
+        is_season_ep = bool(re.match(r'^[sSeE]\d+(?:[eE]\d+)?$', tok))
 
-        if is_cjk:
+        if is_season_ep:
+            en_parts.append(tok)
+        elif is_cjk:
             cn_parts.append(tok)
         elif is_alpha:
             # 单个字母紧邻 CJK 时归入 cn（如 "JOJO的" 中的 JOJO）

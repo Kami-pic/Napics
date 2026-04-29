@@ -5,6 +5,21 @@
 
 ---
 
+## 2026-04-29 清洗名系统多瑕疵修复
+
+**变更**:
+- **strip_noise 增强**：新增步骤 0a 去除季范围尾缀（`1-8季`/`S1-S3`）和尾部独立季号（`守望尘世S1`→`守望尘世`、`火线16季`→`火线`）；步骤 7 改为也去紧跟中文名的 `TV版`（`方子传TV版`→`方子传`）
+- **split_by_language 季集号保护**：token 化正则增加 `S/E+数字` 整体模式（如 `s5`、`S01E03`），避免被拆分成 `s` + `5`
+- **纯数字英文名过滤**：`clean_from_filename` 中从文件名解析出的纯数字 en 直接清空（如 `02.mkv` 不再产生 `en=02`）；自愈层2 冒泡时增加垃圾英文名检测，纯数字不冒泡到文件夹级
+- **电影文件夹视频清洗名补全**：`post_process` 条件从 `("tv", "season")` 改为 `("tv", "season", "movie")`，电影文件夹下的视频也参与清洗名补全
+- **前端搜索词过滤**：`FolderDetail.tsx` 和 `VideoDetail.tsx` 中 cnName 回退时过滤一级分类目录名（"电影"/"电视剧"等），避免搜索词变成"电影白"
+
+**踩坑**:
+- `split_by_language` 的 token 化顺序很重要：`S/E+数字` 模式必须在英文字母模式之前匹配，否则 `s` 会被先匹配为独立字母 token
+- 电影文件夹下 77 个视频中 19 个完全没有 `clean_name`（连 display 都没有），自愈层1 无法触发（需要有 `clean_name` 才能反向解析），只有 `post_process` 从父文件夹继承才能补全
+
+---
+
 ## 2026-04-28 搜索下载修复 + 清洗名自愈机制 + 分季搜索 + 英文名展示
 
 **变更**:
@@ -445,6 +460,7 @@
 - `frontend/components/detail/FolderDetail.tsx` 在文件夹封面上传 / 删除后也改成只刷新 `/library/tree`
 - 新增 `frontend/__tests__/folder-detail-tree-refresh.test.tsx`，固定“文件夹封面上传回调只触发树刷新”
 - 同一测试文件继续补“文件夹手动候选确认只触发树刷新”
+- 同一测试文件继续补“分类标签 / folder_type 修改只触发树刷新”
 - 更新 `library-home-performance-baseline.md`、`optimization-stabilization-todo.md`、`optimization-stabilization-todo-v2.md`
 **决策**:
 - 本轮只压掉“纯树元数据改动”这一类不必要的双请求刷新
