@@ -708,3 +708,71 @@ def get_library_tree():
 
     return root_node
 
+
+
+@router.get("/library/completeness")
+def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = False):
+    """获取 TV 文件夹的季集完整度（基于 TMDB 数据源）
+    默认读缓存秒返回，refresh=true 时清除 TMDB 缓存后重新请求
+    """
+    from completeness import (
+        collect_local_episodes, get_tmdb_id_from_folder, compute_completeness,
+        get_cached_completeness, save_completeness_to_cache, refresh_completeness_for_path,
+    )
+
+    if not path:
+        raise HTTPException(400, "缺少 path 参数")
+
+    # 非刷新模式：优先读缓存
+    if not refresh:
+        cached = get_cached_completeness(path)
+        if cached and cached.get("status") == "ok":
+            return cached
+
+    # 获取 TMDB ID：参数传入 > NFO 读取
+    tid = tmdb_id
+    if not tid:
+        tid = get_tmdb_id_from_folder(path)
+    if not tid:
+        return {"status": "no_tmdb_id", "message": "未找到 TMDB ID，请先刮削此文件夹"}
+
+    # 获取 TMDB 客户端
+    tc = _tmdb_client()
+    if not tc:
+        return {"status": "no_tmdb_client", "message": "TMDB 未配置"}
+
+    # 刷新模式或无缓存：计算并缓存
+    result = refresh_completeness_for_path(tc, path, clear_tmdb_cache=refresh)
+    if result:
+        return result
+
+    # 兜底：直接计算
+    local_episodes = collect_local_episodes(path)
+    result = compute_completeness(tc, tid, local_episodes)
+    if result.get("status") == "ok":
+        save_completeness_to_cache(path, result)
+    return result
+
+
+@router.post("/library/completeness/refresh-all")
+def refresh_all_completeness():
+    """批量预计算所有 TV 文件夹的完整度（后台运行）"""
+    from completeness import batch_refresh_all
+
+    tc = _tmdb_client()
+    if not tc:
+        return {"status": "error", "message": "TMDB 未配置"}
+
+    nas_paths = config_m.config.nas_paths or ([config_m.config.nas_path] if config_m.config.nas_path else [])
+    category_tags = config_m.config.category_tags or {}
+
+    # 后台线程执行，避免阻塞
+    def _run():
+        try:
+            batch_refresh_all(tc, nas_paths, category_tags)
+        except Exception as e:
+            logger.error(f"[completeness] 批量预计算异常: {e}")
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    return {"status": "started", "message": "批量预计算已启动，请查看后端日志"}

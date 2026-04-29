@@ -207,6 +207,7 @@
 - 多语言搜索词分发 → `skills/multilang-search-dispatch.md`
 - 多源英文名补全 → `skills/multilang-name-enrichment.md`
 - 发现页英文名缓存 → `skills/discover-enrich-cache.md`
+- 季集完整性检测 → `skills/completeness-detection.md`
 - AI 集成设计 → `docs/ai-integration-design.md`
 - AI 集成测试报告 → `docs/_one-off/ai-integration-test-report.md`
 - AI 客户端基础设施 → `skills/ai-client-infra.md`

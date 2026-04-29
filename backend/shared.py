@@ -78,6 +78,54 @@ except Exception as _e:
 # 注册回调：save_library 后自动刷新索引
 config_m._on_library_save_callbacks.append(lambda lib: media_matcher.build_index(lib))
 
+# 注册回调：save_library 后延迟刷新受影响的 TV 文件夹完整度
+_completeness_prev_paths: set = set()
+_completeness_timer = None
+_completeness_lock = threading.Lock()
+
+def _on_library_save_refresh_completeness(library: list):
+    """save_library 回调：对比新旧库数据，找出变更的文件路径，延迟刷新完整度"""
+    global _completeness_prev_paths, _completeness_timer
+
+    current_paths = set(v.get("file_path", "") for v in library if v.get("file_path"))
+    with _completeness_lock:
+        prev = _completeness_prev_paths
+        _completeness_prev_paths = current_paths
+
+    if not prev:
+        return  # 首次加载，不触发刷新
+
+    # 找出变更的路径（新增 + 删除）
+    changed = (current_paths - prev) | (prev - current_paths)
+    if not changed:
+        return
+
+    # 防抖：取消之前的 timer，延迟 3 秒执行
+    with _completeness_lock:
+        if _completeness_timer is not None:
+            _completeness_timer.cancel()
+
+        def _do_refresh():
+            try:
+                from completeness import refresh_affected_folders
+                tc = _tmdb_client()
+                if tc:
+                    refresh_affected_folders(tc, list(changed))
+            except Exception as e:
+                logger.warning(f"[completeness] 自动刷新失败: {e}")
+
+        _completeness_timer = threading.Timer(3.0, _do_refresh)
+        _completeness_timer.daemon = True
+        _completeness_timer.start()
+
+config_m._on_library_save_callbacks.append(_on_library_save_refresh_completeness)
+
+# 初始化完整度的路径快照
+try:
+    _completeness_prev_paths = set(v.get("file_path", "") for v in _init_lib if v.get("file_path"))
+except Exception:
+    pass
+
 _sub_manager: Optional[SubscriptionManager] = None
 _download_manager: Optional[DownloadManager] = None
 _pan_search_service: Optional[PanSearchService] = None

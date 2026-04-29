@@ -46,6 +46,28 @@ export interface FolderNode {
   category_tag?: "movie" | "tv" | "";
 }
 
+// 季集完整度
+export interface SeasonCompleteness {
+  season_number: number;
+  episode_count: number;
+  local_count: number;
+  missing_episodes: { episode: number; title: string; air_date: string; aired: boolean }[];
+  status: "complete" | "partial" | "missing";
+}
+
+export interface CompletenessResult {
+  tmdb_id?: number;
+  title?: string;
+  english_title?: string;
+  total_seasons?: number;
+  seasons?: SeasonCompleteness[];
+  total_episodes?: number;
+  local_total?: number;
+  completeness_pct?: number;
+  status: "ok" | "no_tmdb_id" | "no_tmdb_client" | "tmdb_error";
+  message?: string;
+}
+
 export interface AppConfig {
   prowlarr_url: string;
   prowlarr_api_key: string;

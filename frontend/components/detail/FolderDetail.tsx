@@ -11,6 +11,7 @@ import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge,
 import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
+import { CompletenessBar } from "./CompletenessBar";
 
 export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, currentCategoryTag }: { node: FolderNode; onRefresh: () => void; onTreeRefresh?: () => void; onSearch: (q: string, ctx?: any) => void; currentCategoryTag: string }) {
   const [actionResult, setActionResult] = useState(() => getCached(node.path).actionResult || "");
@@ -293,6 +294,17 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
       )}
       {(folderType === "tv" || folderType === "season") && (
         <ShadowNameSection path={node.path} folderName={node.name} folderShadowName={node.shadow_name} folderCleanName={node.clean_name} cleanNameEn={node.clean_name_en} onRefresh={onRefresh} onTreeRefresh={onTreeRefresh} />
+      )}
+      {/* 季集完整度 */}
+      {(folderType === "tv" || folderType === "season") && (
+        <CompletenessBar
+          path={node.path}
+          folderType={folderType}
+          tmdbId={scrape?.tmdb_id || undefined}
+          onSearch={onSearch}
+          cnName={node.clean_name_cn || node.clean_name || ""}
+          enName={node.clean_name_en || ""}
+        />
       )}
       <div className="grid grid-cols-3 gap-2">
         {[[String(node.video_count), "视频"], [String(node.children?.length || 0), "子目录"], [formatSize(totalSize), "总大小"]].map(([v, l]) => (
