@@ -13,6 +13,8 @@
 - **纯数字英文名过滤**：`clean_from_filename` 中从文件名解析出的纯数字 en 直接清空（如 `02.mkv` 不再产生 `en=02`）；自愈层2 冒泡时增加垃圾英文名检测，纯数字不冒泡到文件夹级
 - **电影文件夹视频清洗名补全**：`post_process` 条件从 `("tv", "season")` 改为 `("tv", "season", "movie")`，电影文件夹下的视频也参与清洗名补全
 - **前端搜索词过滤**：`FolderDetail.tsx` 和 `VideoDetail.tsx` 中 cnName 回退时过滤一级分类目录名（"电影"/"电视剧"等），避免搜索词变成"电影白"
+- **TV文件夹影子名去集号**：shadow_name 冒泡到 TV/season 文件夹时去掉尾部 S01E01 等季集号；split_names 从 en 中去除尾部季集号
+- **英文名可编辑**：ShadowNameSection 清洗名行同行布局（中文名 + 英文名），各自独立编辑热区；后端 `/library/clean-name` 扩展支持 `clean_name_en`
 
 **踩坑**:
 - `split_by_language` 的 token 化顺序很重要：`S/E+数字` 模式必须在英文字母模式之前匹配，否则 `s` 会被先匹配为独立字母 token

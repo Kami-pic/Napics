@@ -21,7 +21,7 @@
 - 清洗名自愈机制（parse_legacy_clean_name 接入 + 四层回退 + 垃圾英文名检测 + 持久化）
 - 前端 ShadowNameSection 展示 clean_name_en
 - 清洗名多瑕疵修复（季范围尾缀/S+数字/TV版/纯数字en/电影文件夹视频补全），详见 `clean-name-fix-todo.md`
-- TV文件夹影子名去集号 + split_names 去 en 尾部季集号 + 英文名可编辑
+- TV文件夹影子名去集号 + split_names 去 en 尾部季集号 + 英文名可编辑（同行布局，独立热区）
 
 ### 阶段判断
 

@@ -141,30 +141,18 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
             onClick={() => { setEditValue(fileName.replace(/\.[^.]+$/, '')); setEditing(true); }} title="点击设置标准名">{fileName}</span>
         )}
       </div>
-      {/* 清洗名 */}
+      {/* 清洗名（中文 + 英文同一行，各自可独立编辑） */}
       <div className="flex items-center gap-2 px-1">
-        <span className="text-[10px] text-slate-600">🧹</span>
-        {cleanName ? (
-          editingClean ? (
-            <div className="flex items-center gap-1.5 flex-1">
-              <input value={cleanEditValue} onChange={e => setCleanEditValue(e.target.value)} autoFocus
-                onKeyDown={e => { if (e.key === "Enter") handleSaveClean(cleanEditValue); if (e.key === "Escape") setEditingClean(false); }}
-                onBlur={() => setTimeout(() => setEditingClean(false), 150)}
-                className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded px-2 py-0.5 text-[11px] text-white outline-none focus:border-blue-500/40 min-w-0" />
-              <button onMouseDown={e => e.preventDefault()} onClick={() => handleSaveClean(cleanEditValue)} className="text-[10px] text-blue-400 flex-shrink-0">保存</button>
-            </div>
-          ) : (
-            <span className="text-[11px] text-slate-600 truncate flex-1 cursor-pointer hover:text-slate-400"
-              onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}</span>
-          )
-        ) : (
-          <span className="text-[11px] text-slate-600 truncate flex-1">未设置</span>
-        )}
-      </div>
-      {/* 英文名 */}
-      <div className="flex items-center gap-2 px-1">
-        <span className="text-[10px] text-slate-600">🔤</span>
-        {editingEn ? (
+        <span className="text-[10px] text-slate-600 flex-shrink-0">🧹</span>
+        {editingClean ? (
+          <div className="flex items-center gap-1.5 flex-1">
+            <input value={cleanEditValue} onChange={e => setCleanEditValue(e.target.value)} autoFocus
+              onKeyDown={e => { if (e.key === "Enter") handleSaveClean(cleanEditValue); if (e.key === "Escape") setEditingClean(false); }}
+              onBlur={() => setTimeout(() => setEditingClean(false), 150)}
+              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded px-2 py-0.5 text-[11px] text-white outline-none focus:border-blue-500/40 min-w-0" />
+            <button onMouseDown={e => e.preventDefault()} onClick={() => handleSaveClean(cleanEditValue)} className="text-[10px] text-blue-400 flex-shrink-0">保存</button>
+          </div>
+        ) : editingEn ? (
           <div className="flex items-center gap-1.5 flex-1">
             <input value={enEditValue} onChange={e => setEnEditValue(e.target.value)} autoFocus
               onKeyDown={e => { if (e.key === "Enter") handleSaveEn(enEditValue); if (e.key === "Escape") setEditingEn(false); }}
@@ -174,8 +162,18 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
             <button onMouseDown={e => e.preventDefault()} onClick={() => handleSaveEn(enEditValue)} className="text-[10px] text-blue-400 flex-shrink-0">保存</button>
           </div>
         ) : (
-          <span className="text-[11px] text-slate-700 truncate flex-1 cursor-pointer hover:text-slate-400"
-            onClick={() => { setEnEditValue(enName); setEditingEn(true); }} title="点击编辑英文名">{enName || "英文名 —"}</span>
+          <span className="text-[11px] truncate flex-1">
+            {cleanName ? (
+              <span className="text-slate-600 cursor-pointer hover:text-slate-400" onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}</span>
+            ) : (
+              <span className="text-slate-600">未设置</span>
+            )}
+            {enName && !cleanName.includes(enName) ? (
+              <span className="text-slate-700 ml-1 cursor-pointer hover:text-slate-400" onClick={() => { setEnEditValue(enName); setEditingEn(true); }} title="点击编辑英文名">{enName}</span>
+            ) : !enName ? (
+              <span className="text-slate-800 ml-1 cursor-pointer hover:text-slate-500" onClick={() => { setEnEditValue(""); setEditingEn(true); }} title="点击添加英文名">+ en</span>
+            ) : null}
+          </span>
         )}
       </div>
     </div>
