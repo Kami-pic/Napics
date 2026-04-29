@@ -684,6 +684,10 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
         # Step 2：分析判定（只读）
         report = analyzer.analyze_folder(path, library, category_hint=category_hint)
         folder_type = report.get("folder_type", "")
+        # 整理替换场景：种子子目录可能干扰分类（如电影目录被判为 collection）
+        # 当 category_hint 明确时，优先使用 category_hint
+        if category_hint in ("movie", "tv") and folder_type not in ("movie", "tv", "season"):
+            folder_type = category_hint
         result["folder_type"] = folder_type
         result["analyze"] = {
             "structure_ops": len(report.get("structure_ops", [])),
