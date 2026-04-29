@@ -434,3 +434,15 @@
 **决策**:
 - 当前先停在“基线 + 下一步候选”，不直接扩成首页重构
 - 下一轮若仍要压首页体感，优先看 `useLibrary.refreshLibrary()` 的双请求刷新成本
+
+## 2026-04-29 媒体库首页性能专项（树刷新收窄）
+**变更**:
+- `frontend/hooks/useLibrary.ts` 新增 `refreshTree()`，把树刷新从全量刷新里拆出来
+- `frontend/components/detail/FolderDetail.tsx` 的 `分类标签 / folder_type` 保存后改成只刷新 `/library/tree`
+- 新增 `frontend/__tests__/use-library-refresh.test.tsx`，固定“树刷新不会重复拉全量 `/library`”
+- 更新 `library-home-performance-baseline.md`、`optimization-stabilization-todo.md`、`optimization-stabilization-todo-v2.md`
+**决策**:
+- 本轮只压掉“纯树元数据改动”这一类不必要的双请求刷新
+- 重命名、批量管理、刮削、结构整理等仍保留全量刷新，避免过早把刷新策略改复杂
+**踩坑**:
+- 首页详情侧很多动作都会同时影响目录树和视频列表，不能把 `onRefresh` 一把全替成树刷新；必须按入口逐个收窄

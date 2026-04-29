@@ -202,7 +202,8 @@
   - 原因：搜索 / 命名 / 刮削三条基线都已补到“有入口快照、可继续观察”的程度
   - 当前入口文档：[search-naming-scrape-baseline-snapshot.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/search-naming-scrape-baseline-snapshot.md)
   - 当前专项入口文档：[library-home-performance-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/library-home-performance-baseline.md)
-  - 当前已补首页树结构快照测试，后续若继续压性能，优先围绕 `useLibrary` 双请求刷新成本展开
+  - 当前已补首页树结构快照测试；本轮继续补了一条低风险前端优化：`分类标签 / folder_type` 修改后只刷新 `/library/tree`
+  - 其余更重的刷新入口暂不混改；后续若继续压性能，仍优先围绕 `useLibrary` 双请求刷新成本展开
 
 ---
 

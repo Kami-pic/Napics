@@ -75,7 +75,7 @@ export default function Home() {
     viewMode, setViewMode,
     selectedPaths, stats, filteredVideos, groupedVideos,
     startScan, stopScan, toggleSelect, toggleFolderSelect, clearSelection, invertSelect,
-    batchAction, saveConfig, refreshLibrary,
+    batchAction, saveConfig, refreshLibrary, refreshTree,
     detailTarget, detailOpen, openFolderDetail, openVideoDetail, closeDetail, handleRenamed,
     batchMode, toggleBatchMode, refreshKey, currentCategoryTag,
   } = useLibrary();
@@ -297,7 +297,7 @@ export default function Home() {
       </div>
 
       <DetailDrawer target={detailTarget} open={detailOpen} onClose={closeDetail}
-        onPlay={handlePlay} onSearch={handleOpenSearch} onRefresh={refreshLibrary} onRenamed={handleRenamed}
+        onPlay={handlePlay} onSearch={handleOpenSearch} onRefresh={refreshLibrary} onTreeRefresh={refreshTree} onRenamed={handleRenamed}
         batchMode={batchMode} selectedPaths={selectedPaths} batchAction={batchAction} onClearSelection={clearSelection}
         currentVideos={currentFolder?.videos}
         onSelectAll={() => {

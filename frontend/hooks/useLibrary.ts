@@ -43,73 +43,76 @@ export function useLibrary() {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const applyTreeData = useCallback((tData: FolderNode, vData?: VideoInfo[]) => {
+    setFileTree(tData);
+    setCurrentFolder(prev => {
+      if (!prev || prev.path === "") return tData;
+      const exact = findNode(tData, prev.path);
+      if (exact) return exact;
+      const sep = prev.path.includes("/") ? "/" : "\\";
+      const parentPath = prev.path.substring(0, prev.path.lastIndexOf(sep));
+      if (parentPath) {
+        const parent = findNode(tData, parentPath);
+        if (parent) {
+          if (parent.children?.length === 1) return parent.children[0];
+          return parent;
+        }
+      }
+      return tData;
+    });
+    setDetailTarget(prev => {
+      if (!prev) return prev;
+      if (prev.type === "folder") {
+        const updated = findNode(tData, prev.node.path);
+        if (updated) return { type: "folder", node: updated };
+        const sep = prev.node.path.includes("/") ? "/" : "\\";
+        const parentPath = prev.node.path.substring(0, prev.node.path.lastIndexOf(sep));
+        if (parentPath) {
+          const parent = findNode(tData, parentPath);
+          if (parent?.children?.length === 1) return { type: "folder", node: parent.children[0] };
+          if (parent) return { type: "folder", node: parent };
+        }
+        return prev;
+      }
+      if (prev.type === "video" && vData) {
+        const updated = vData.find(v => v.file_path === prev.video.file_path);
+        if (updated) return { type: "video", video: updated };
+        const oldFolder = prev.video.folder_name;
+        const sameFolder = vData.filter(v => v.folder_name === oldFolder);
+        if (sameFolder.length > 0) {
+          const oldBase = prev.video.file_name.replace(/\.[^.]+$/, "").substring(0, 10);
+          const match = sameFolder.find(v => v.file_name.includes(oldBase));
+          if (match) return { type: "video", video: match };
+        }
+      }
+      return prev;
+    });
+  }, [findNode]);
+
   const refreshLibrary = useCallback(async () => {
     setRefreshKey(k => k + 1);
     try {
       setLoading(true);
       const [vData, tData] = await Promise.all([api.getLibrary(), api.getLibraryTree()]);
       if (vData) setVideos(vData);
-      if (tData) {
-        setFileTree(tData);
-        setCurrentFolder(prev => {
-          if (!prev || prev.path === "") return tData;
-          // 先精确匹配
-          const exact = findNode(tData, prev.path);
-          if (exact) return exact;
-          // 重命名后路径变了，尝试找父目录
-          const sep = prev.path.includes("/") ? "/" : "\\";
-          const parentPath = prev.path.substring(0, prev.path.lastIndexOf(sep));
-          if (parentPath) {
-            const parent = findNode(tData, parentPath);
-            if (parent) {
-              // 在父目录的子节点中找名字最接近的（重命名后的新节点）
-              if (parent.children?.length === 1) return parent.children[0];
-              return parent;
-            }
-          }
-          return tData;
-        });
-        // 同步更新 detailTarget
-        setDetailTarget(prev => {
-          if (!prev) return prev;
-          if (prev.type === "folder") {
-            const updated = findNode(tData, prev.node.path);
-            if (updated) return { type: "folder", node: updated };
-            // 重命名后找父目录下的新节点
-            const sep = prev.node.path.includes("/") ? "/" : "\\";
-            const parentPath = prev.node.path.substring(0, prev.node.path.lastIndexOf(sep));
-            if (parentPath) {
-              const parent = findNode(tData, parentPath);
-              if (parent?.children?.length === 1) return { type: "folder", node: parent.children[0] };
-              if (parent) return { type: "folder", node: parent };
-            }
-            return prev;
-          }
-          if (prev.type === "video" && vData) {
-            const updated = vData.find(v => v.file_path === prev.video.file_path);
-            if (updated) return { type: "video", video: updated };
-            // 重命名后路径变了，在同一文件夹下找最新的匹配
-            const oldFolder = prev.video.folder_name;
-            const sameFolder = vData.filter(v => v.folder_name === oldFolder);
-            if (sameFolder.length > 0) {
-              // 找文件名包含旧文件名关键词的
-              const oldBase = prev.video.file_name.replace(/\.[^.]+$/, '').substring(0, 10);
-              const match = sameFolder.find(v => v.file_name.includes(oldBase));
-              if (match) return { type: "video", video: match };
-            }
-            // 实在找不到，保持当前详情不变（不跳到父文件夹）
-            return prev;
-          }
-          return prev;
-        });
-      }
+      if (tData) applyTreeData(tData, vData);
       setRefreshKey(k => k + 1);
     } catch {
       setRefreshKey(k => k + 1);
     } finally {
       setLoading(false);
     }
-  }, [findNode]);
+  }, [applyTreeData]);
+
+  const refreshTree = useCallback(async () => {
+    setRefreshKey(k => k + 1);
+    try {
+      const tData = await api.getLibraryTree();
+      if (tData) applyTreeData(tData);
+    } finally {
+      setRefreshKey(k => k + 1);
+    }
+  }, [applyTreeData]);
 
   useEffect(() => {
     api.getConfig().then(data => {
@@ -347,7 +350,7 @@ export function useLibrary() {
     viewMode, setViewMode, filterType, setFilterType,
     selectedPaths, expandedFolders, stats, filteredVideos, groupedVideos,
     startScan, stopScan, toggleSelect, toggleFolderSelect, clearSelection, invertSelect,
-    toggleFolder, batchAction, saveConfig, refreshLibrary,
+    toggleFolder, batchAction, saveConfig, refreshLibrary, refreshTree,
     detailTarget, detailOpen, openFolderDetail, openVideoDetail, closeDetail, handleRenamed,
     batchMode, toggleBatchMode, refreshKey, currentCategoryTag,
   };

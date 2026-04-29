@@ -12,7 +12,7 @@ import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
 
-export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: { node: FolderNode; onRefresh: () => void; onSearch: (q: string, ctx?: any) => void; currentCategoryTag: string }) {
+export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, currentCategoryTag }: { node: FolderNode; onRefresh: () => void; onTreeRefresh?: () => void; onSearch: (q: string, ctx?: any) => void; currentCategoryTag: string }) {
   const [actionResult, setActionResult] = useState(() => getCached(node.path).actionResult || "");
   const [actionLoading, setActionLoading] = useState(() => getCached(node.path).actionLoading || false);
   const [lastSnapshotId, setLastSnapshotId] = useState<number | null>(null);
@@ -245,7 +245,7 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, tag: newTag})
               });
-              await onRefresh();
+              await (onTreeRefresh || onRefresh)();
             } catch {}
           }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#1a1a1a] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
             {[
@@ -267,7 +267,7 @@ export function FolderDetail({ node, onRefresh, onSearch, currentCategoryTag }: 
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, folder_type: newType})
               });
-              await onRefresh();
+              await (onTreeRefresh || onRefresh)();
             } catch {}
           }} className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#1a1a1a] text-slate-400 border border-white/[0.08] outline-none cursor-pointer">
             {(parentCategoryTag === "tv"

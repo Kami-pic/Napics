@@ -13,6 +13,7 @@ interface DetailDrawerProps {
   onPlay: (path: string) => void;
   onSearch: (query: string, ctx?: any) => void;
   onRefresh: () => void;
+  onTreeRefresh: () => void;
   onRenamed: () => void;
   batchMode: boolean;
   selectedPaths: Set<string>;
@@ -24,7 +25,7 @@ interface DetailDrawerProps {
   currentCategoryTag?: string;
 }
 
-export default function DetailDrawer({ target, open, onClose, onPlay, onSearch, onRefresh, onRenamed,
+export default function DetailDrawer({ target, open, onClose, onPlay, onSearch, onRefresh, onTreeRefresh, onRenamed,
   batchMode, selectedPaths, batchAction, onClearSelection, currentVideos, onSelectAll, onInvertSelect, currentCategoryTag }: DetailDrawerProps) {
   if (!open) return null;
   if (batchMode && selectedPaths.size > 0) {
@@ -52,7 +53,7 @@ export default function DetailDrawer({ target, open, onClose, onPlay, onSearch, 
       </div>
       <div className="flex-1 overflow-y-auto">
         {target.type === "folder" ? (
-          <FolderDetail key={target.node.path} node={target.node} onRefresh={onRefresh} onSearch={onSearch} currentCategoryTag={currentCategoryTag || ""} />
+          <FolderDetail key={target.node.path} node={target.node} onRefresh={onRefresh} onTreeRefresh={onTreeRefresh} onSearch={onSearch} currentCategoryTag={currentCategoryTag || ""} />
         ) : (
           <VideoDetail key={target.video.file_path} video={target.video} onPlay={onPlay} onSearch={onSearch} onRefresh={onRefresh} />
         )}
