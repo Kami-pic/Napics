@@ -500,3 +500,23 @@
 - `_scrape_movie` 完全不支持 `dry_run`，不生成 `plan`，导致整理替换链路拿到空 plan 后报告"无需归档"
 **踩坑**:
 - 执行模式中原来无条件走 TV 逻辑（`get_tv_detail` + `write_tvshow_nfo`），电影会被错误地写成 tvshow.nfo
+
+## 2026-04-29 电影整理替换链路修复 + 无冲突场景支持
+
+**变更**:
+- `backend/routes/organize.py`：推演阶段 category_hint 优先覆盖 classify_folder 结果，避免种子子目录干扰分类
+- `backend/routes/relocate.py`：无冲突但有整理计划时也返回 awaiting_confirm + plan/tree 数据
+- `backend/routes/organize.py`：执行模式根据 folder_type 区分 movie（write_movie_nfo）和 tv（write_tvshow_nfo + write_episode_nfo）
+**根因**:
+- 电影目录被 classify_folder 误判为 collection（种子子目录干扰）
+- _scrape_movie 不支持 dry_run/plan → 空 plan → "无需归档"
+- 无冲突时 dry-run 端点不返回 plan → 前端无法展示预览
+
+## 2026-04-29 下载管理面板 UI 改进
+
+**变更**:
+- 去掉"待整理" tab（awaiting_confirm 不再作为独立筛选项）
+- 名称过长截断：media_name 限制 320px，save_path 限制 240px，hover 显示全名
+- 已完成任务增加"归档"按钮，直接将 completed 转为 archived
+- 后端新增 `/download-manager/archive` 端点
+- 按钮区域 shrink-0 + whitespace-nowrap 防止被名称挤压变形

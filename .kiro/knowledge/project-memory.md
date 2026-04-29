@@ -103,6 +103,14 @@
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
 - Alist 双阶段：cloud_download → local_sync → completed
 - 归位替换：file_relocator.py（relocate → confirm_replace / archive_both / cancel_replace）
+- 整理替换附属文件规则（详见 knowledge/download-replace-pipeline.md）：
+  - 字幕文件：扁平化到 Season 目录，通过集号匹配用视频标准名重命名
+  - 非字幕文件（字体包/SPs/CDs/OAD）：提升到剧集根目录，不进入 Season
+  - 空种子目录壳自动清理
+- 季目录检测：save_path 本身是季目录时（如"第三季"），不再嵌套 Season XX
+- 电影整理替换：_scrape_movie 支持 dry_run + plan 生成，执行时写 movie.nfo（不是 tvshow.nfo）
+- 无冲突但有整理计划时（如纯新下载），也返回 awaiting_confirm + plan 供前端展示
+- 分类覆盖：推演阶段 category_hint（movie/tv）优先于 classify_folder 结果，避免种子子目录干扰分类
 
 ### 整理流水线
 - 三段式架构，详见 knowledge/organize-pipeline-v3.md
