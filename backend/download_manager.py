@@ -163,7 +163,7 @@ class DownloadManager:
             # 传 save_path 给 qB（用户指定的目标路径，不是沙盒）
             ok = self.qb.add_torrent(url, task.save_path or "")
             if not ok:
-                return False, f"qBittorrent 推送失败（URL: {url[:80]}）"
+                return False, f"qBittorrent 推送失败（登录状态: {self.qb._logged_in}，URL: {url[:80]}）"
 
             # 等待 qB 处理（最多 5 秒）
             for _ in range(10):

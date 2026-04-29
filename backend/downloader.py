@@ -280,22 +280,31 @@ class QBittorrentClient:
 
     def add_torrent(self, torrent_url: str, save_path: str) -> bool:
         """推送到 qBittorrent 下载"""
-        try:
-            if not self._login():
-                logger.error("[qB] login failed")
+        for attempt in range(2):
+            try:
+                if not self._login():
+                    logger.error("[qB] login failed")
+                    return False
+                data = {"urls": torrent_url}
+                if save_path:
+                    data["savepath"] = save_path
+                r = self.session.post(f"{self.url}/api/v2/torrents/add", data=data, timeout=10)
+                if r.status_code == 403 and attempt == 0:
+                    # session 过期，清除登录状态重试
+                    logger.warning("[qB] session expired (403), re-login")
+                    self._logged_in = False
+                    continue
+                if r.status_code != 200:
+                    logger.error(f"[qB] add_torrent failed: status={r.status_code}, body={r.text[:200]}")
+                    return False
+                return True
+            except Exception as e:
+                logger.error(f"qBittorrent error: {e}")
+                if attempt == 0:
+                    self._logged_in = False
+                    continue
                 return False
-            data = {"urls": torrent_url}
-            if save_path:
-                data["savepath"] = save_path
-            r = self.session.post(f"{self.url}/api/v2/torrents/add", data=data, timeout=10)
-            if r.status_code != 200:
-                logger.error(f"[qB] add_torrent failed: status={r.status_code}, body={r.text[:200]}")
-                return False
-            # qB 返回 "Ok." 或 "Fails." — 两种都视为成功（qB 有时返回 Fails 但实际已添加）
-            return True
-        except Exception as e:
-            logger.error(f"qBittorrent error: {e}")
-            return False
+        return False
 
     def get_torrent_files(self, hash: str) -> List[dict]:
         """获取种子内所有文件的信息（相对路径 + 大小）。
