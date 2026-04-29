@@ -770,18 +770,37 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
             # 执行 scrape（写 NFO）
             tmdb_id = tmdb_match.get("tmdb_id", 0)
             if tmdb_id and client:
-                # 写 tvshow.nfo
-                tv_detail = client.get_tv_detail(tmdb_id)
-                if tv_detail and tv_detail.tmdb_id:
-                    proxy = getattr(client, 'proxy', '') or ''
-                    for old in ["movie.nfo", "tvshow.nfo"]:
-                        p = os.path.join(path, old)
-                        if os.path.exists(p):
-                            try: os.remove(p)
-                            except: pass
-                    scraper.write_tvshow_nfo(path, tv_detail)
-                    if tv_detail.poster_url:
-                        scraper.download_poster(path, tv_detail.poster_url, proxy=proxy)
+                proxy = getattr(client, 'proxy', '') or ''
+                is_movie = folder_type == "movie"
+
+                if is_movie:
+                    # 电影：写 movie.nfo
+                    movie_result = client.scrape_by_filename(
+                        tmdb_match.get("title", ""), tmdb_id=tmdb_id
+                    )
+                    if movie_result and movie_result.tmdb_id:
+                        for old in ["movie.nfo", "tvshow.nfo"]:
+                            p = os.path.join(path, old)
+                            if os.path.exists(p):
+                                try: os.remove(p)
+                                except: pass
+                        scraper.write_movie_nfo(path, movie_result)
+                        if movie_result.poster_url:
+                            scraper.download_poster(path, movie_result.poster_url, proxy=proxy)
+                        if movie_result.backdrop_url:
+                            scraper.download_poster(path, movie_result.backdrop_url, "fanart.jpg", proxy=proxy)
+                else:
+                    # TV：写 tvshow.nfo
+                    tv_detail = client.get_tv_detail(tmdb_id)
+                    if tv_detail and tv_detail.tmdb_id:
+                        for old in ["movie.nfo", "tvshow.nfo"]:
+                            p = os.path.join(path, old)
+                            if os.path.exists(p):
+                                try: os.remove(p)
+                                except: pass
+                        scraper.write_tvshow_nfo(path, tv_detail)
+                        if tv_detail.poster_url:
+                            scraper.download_poster(path, tv_detail.poster_url, proxy=proxy)
 
                 plan_move_ops = _apply_action_plan_moves(
                     plan_items,
@@ -792,28 +811,32 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
                     _sync_library_paths(plan_move_ops)
                 result["steps"]["structure"] = {"moved": len(plan_move_ops)}
 
-                # 写 episode.nfo
-                nfo_written = 0
-                showtitle = tv_detail.title if tv_detail else ""
-                for item in plan_items:
-                    if "write_episode_nfo" not in item.get("actions", []):
-                        continue
-                    mapped = item.get("mapped")
-                    if not mapped:
-                        continue
-                    s, e = mapped["season"], mapped["episode"]
-                    vpath = item.get("target_path") or item["original_path"]
-                    if not os.path.exists(vpath):
-                        continue
-                    ep_scrape = tmdb_client.ScrapeResult(
-                        tmdb_id=tmdb_id, media_type="episode",
-                        title=item.get("episode_title") or showtitle,
-                        episode_title=item.get("episode_title", ""),
-                        season_number=s, episode_number=e,
-                    )
-                    scraper.write_episode_nfo(vpath, ep_scrape, showtitle=showtitle)
-                    nfo_written += 1
-                result["steps"]["scrape"] = {"nfo_written": nfo_written}
+                if is_movie:
+                    # 电影不需要写 episode.nfo
+                    result["steps"]["scrape"] = {"nfo_written": 1 if tmdb_id else 0}
+                else:
+                    # 写 episode.nfo
+                    nfo_written = 0
+                    showtitle = tv_detail.title if tv_detail else ""
+                    for item in plan_items:
+                        if "write_episode_nfo" not in item.get("actions", []):
+                            continue
+                        mapped = item.get("mapped")
+                        if not mapped:
+                            continue
+                        s, e = mapped["season"], mapped["episode"]
+                        vpath = item.get("target_path") or item["original_path"]
+                        if not os.path.exists(vpath):
+                            continue
+                        ep_scrape = tmdb_client.ScrapeResult(
+                            tmdb_id=tmdb_id, media_type="episode",
+                            title=item.get("episode_title") or showtitle,
+                            episode_title=item.get("episode_title", ""),
+                            season_number=s, episode_number=e,
+                        )
+                        scraper.write_episode_nfo(vpath, ep_scrape, showtitle=showtitle)
+                        nfo_written += 1
+                    result["steps"]["scrape"] = {"nfo_written": nfo_written}
 
             # Reload library
             library = config_m.load_library()

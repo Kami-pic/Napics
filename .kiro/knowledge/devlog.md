@@ -486,3 +486,13 @@
 **踩坑**:
 - Windows 上 `os.path.normcase` 会把路径转小写，导致 plan_tree 合并时 "Season 01" 和 "season 01" 不匹配，需要大小写不敏感比较
 - `_resolve_extra_target_path` 对同目录文件和子目录文件的处理路径不同：同目录文件直接映射到 Season 下，子目录文件保留相对路径。两种情况都需要处理
+
+## 2026-04-29 电影类型整理替换支持
+
+**变更**:
+- `backend/scraper.py`：`_scrape_movie` 新增 `dry_run` 参数和 plan 生成逻辑，电影 plan 包含视频重命名为标准名
+- `backend/routes/organize.py`：执行模式根据 `folder_type` 区分 movie（写 movie.nfo）和 tv（写 tvshow.nfo + episode.nfo）
+**根因**:
+- `_scrape_movie` 完全不支持 `dry_run`，不生成 `plan`，导致整理替换链路拿到空 plan 后报告"无需归档"
+**踩坑**:
+- 执行模式中原来无条件走 TV 逻辑（`get_tv_detail` + `write_tvshow_nfo`），电影会被错误地写成 tvshow.nfo

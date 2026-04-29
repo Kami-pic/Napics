@@ -78,11 +78,13 @@ def scrape_folder(folder_path: str, tmdb_client_instance, force: bool = False,
                              dry_run=dry_run, use_ai=use_ai, whitelist=whitelist)
     elif folder_type == "movie":
         return _scrape_movie(folder_path, folder_name, video_files,
-                             tmdb_client_instance, force, proxy, results, whitelist=whitelist)
+                             tmdb_client_instance, force, proxy, results,
+                             whitelist=whitelist, dry_run=dry_run)
     else:
         if video_files:
             return _scrape_movie(folder_path, folder_name, video_files,
-                                 tmdb_client_instance, force, proxy, results, whitelist=whitelist)
+                                 tmdb_client_instance, force, proxy, results,
+                                 whitelist=whitelist, dry_run=dry_run)
         results["self"] = {"status": "empty", "data": None}
         return results
 
@@ -740,13 +742,24 @@ def _scrape_tv(folder_path, folder_name, subdirs, video_files,
 
 
 def _scrape_movie(folder_path, folder_name, video_files,
-                  tmdb_client_instance, force, proxy, results, whitelist=None):
-    """单部电影：写 movie.nfo + poster。"""
-    if not force:
+                  tmdb_client_instance, force, proxy, results, whitelist=None,
+                  dry_run=False):
+    """单部电影：写 movie.nfo + poster。
+    dry_run=True 时只计算 plan 不落盘。
+    """
+    from tmdb_client import parse_filename as _pf
+
+    plan = []
+    tmdb_match_info = {"tmdb_id": 0, "title": "", "english_title": "",
+                       "total_seasons": 0, "match_source": "none"}
+
+    if not force and not dry_run:
         existing = read_nfo(folder_path)
         if existing and existing.get("title"):
             # 旧刮削有效（title 非空），跳过
             results["self"] = {"status": "exists", "data": existing}
+            results["plan"] = plan
+            results["tmdb_match"] = tmdb_match_info
             return results
     
     result = _search_tmdb(folder_name, tmdb_client_instance)
@@ -774,21 +787,124 @@ def _scrape_movie(folder_path, folder_name, video_files,
     
     if not result.tmdb_id:
         results["self"] = {"status": "not_found", "data": None}
+        results["plan"] = plan
+        results["tmdb_match"] = tmdb_match_info
         return results
-    
-    for old in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
-        p = os.path.join(folder_path, old)
-        if os.path.exists(p):
-            try: os.remove(p)
-            except: pass
-    
-    write_movie_nfo(folder_path, result)
-    if result.poster_url:
-        download_poster(folder_path, result.poster_url, proxy=proxy)
-    if result.backdrop_url:
-        download_poster(folder_path, result.backdrop_url, "fanart.jpg", proxy=proxy)
+
+    tmdb_match_info = {
+        "tmdb_id": result.tmdb_id,
+        "title": result.title,
+        "english_title": getattr(result, "english_title", ""),
+        "total_seasons": 0,
+        "match_source": "search",
+    }
+
+    # 构建电影标准名
+    movie_title = result.title or folder_name
+    year = getattr(result, "year", None) or ""
+    if year:
+        std_base = f"{movie_title} ({year})"
+    else:
+        std_base = movie_title
+    # 清理文件名中不合法的字符
+    std_base = "".join(c for c in std_base if c not in r'\/:*?"<>|').strip()
+
+    # 构建 plan：为白名单中的视频文件生成重命名计划
+    video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
+    w_set = None
+    w_basenames = set()
+    if whitelist:
+        folder_base_norm = os.path.normpath(folder_path).lower()
+        folder_last = os.path.basename(folder_base_norm)
+        w_set = set()
+        for p in whitelist:
+            p_sep = p.replace("/", os.sep).replace("\\", os.sep)
+            p_norm = os.path.normpath(p_sep)
+            w_basenames.add(os.path.basename(p_norm).lower())
+            if os.path.isabs(p_norm):
+                abs_p = p_norm
+            else:
+                parts = p_norm.split(os.sep)
+                if len(parts) > 1 and parts[0].lower() == folder_last:
+                    abs_p = os.path.join(folder_path, *parts[1:])
+                else:
+                    abs_p = os.path.join(folder_path, p_norm)
+            w_set.add(os.path.normpath(abs_p).lower())
+
+    # 收集所有视频（含子目录）
+    all_videos = []
+    for root_dir, dirs, files in os.walk(folder_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for f in sorted(files):
+            if os.path.splitext(f)[1].lower() in video_exts:
+                all_videos.append(os.path.join(root_dir, f))
+
+    # 白名单过滤
+    if w_set:
+        filtered = []
+        for v in all_videos:
+            v_norm = os.path.normpath(v).lower()
+            v_base = os.path.basename(v_norm)
+            if v_norm in w_set or v_base in w_basenames:
+                filtered.append(v)
+        all_videos = filtered
+
+    for vpath in all_videos:
+        vname = os.path.basename(vpath)
+        ext = os.path.splitext(vname)[1]
+        std_name = f"{std_base}{ext}"
+
+        item = {
+            "original_path": vpath,
+            "original_filename": vname,
+            "parsed": {"method": "movie"},
+            "mapped": None,
+            "scraped_title": movie_title,
+            "episode_title": "",
+            "target_season_dir": None,
+            "target_filename": std_name,
+            "target_path": os.path.join(folder_path, std_name),
+            "target_shadow_name": None,
+            "actions": [],
+            "skip_reason": None,
+        }
+
+        # 判断是否需要移动/重命名
+        norm_original = os.path.normcase(os.path.normpath(vpath))
+        norm_target = os.path.normcase(os.path.normpath(item["target_path"]))
+        actions = []
+        if norm_original != norm_target:
+            actions.append("move_to_season")  # 复用 action 名，实际是重命名/移动
+        actions.append("write_movie_nfo")
+        item["actions"] = actions
+        plan.append(item)
+
+    if not dry_run:
+        # 落盘：写 NFO + 海报
+        for old in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
+            p = os.path.join(folder_path, old)
+            if os.path.exists(p):
+                try: os.remove(p)
+                except: pass
+        
+        write_movie_nfo(folder_path, result)
+        if result.poster_url:
+            download_poster(folder_path, result.poster_url, proxy=proxy)
+        if result.backdrop_url:
+            download_poster(folder_path, result.backdrop_url, "fanart.jpg", proxy=proxy)
     
     results["self"] = {"status": "ok", "data": result.dict()}
+    results["plan"] = plan
+    results["tmdb_match"] = tmdb_match_info
+    results["summary"] = {
+        "total_videos": len(all_videos),
+        "will_process": len([i for i in plan if not i.get("skip_reason")]),
+        "will_skip": 0,
+        "seasons_to_create": [],
+        "nfo_to_write": 1 if result.tmdb_id else 0,
+        "files_to_move": len([i for i in plan if "move_to_season" in i.get("actions", [])]),
+        "shadows_to_fill": 0,
+    }
     return results
 
 
