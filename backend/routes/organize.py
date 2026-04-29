@@ -779,9 +779,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
 
                 if is_movie:
                     # 电影：写 movie.nfo
-                    movie_result = client.scrape_by_filename(
-                        tmdb_match.get("title", ""), tmdb_id=tmdb_id
-                    )
+                    movie_result = client.get_movie_detail(tmdb_id)
                     if movie_result and movie_result.tmdb_id:
                         for old in ["movie.nfo", "tvshow.nfo"]:
                             p = os.path.join(path, old)
