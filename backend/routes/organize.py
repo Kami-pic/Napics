@@ -83,6 +83,26 @@ def _find_duplicate_logical_targets(plan_items: list) -> list[str]:
     )
 
 
+def _cleanup_empty_dirs(base_path: str):
+    """自底向上清理 base_path 下的空目录（种子文件夹壳）。
+    
+    不删除 base_path 本身，也不删除 Season 开头的目录（刚创建的季目录）。
+    """
+    for root, dirs, files in os.walk(base_path, topdown=False):
+        if os.path.normcase(os.path.normpath(root)) == os.path.normcase(os.path.normpath(base_path)):
+            continue
+        dir_name = os.path.basename(root)
+        # 保留 Season 目录（即使暂时为空，后续还要写 NFO）
+        if dir_name.lower().startswith("season"):
+            continue
+        try:
+            if not os.listdir(root):
+                os.rmdir(root)
+                logger.info(f"[ActionPlan] 清理空目录: {root}")
+        except OSError:
+            pass
+
+
 def _resolve_plan_whitelist_path(raw_path: str, base_path: str) -> str:
     """将 qB/file_relocator 白名单路径解析为当前工作区中的绝对路径。"""
     if not raw_path:
@@ -248,6 +268,16 @@ def _apply_action_plan_moves(plan_items: list, base_path: str = "", whitelist: L
 
             return ""
 
+        # 构建集号→目标文件名映射，用于字幕文件重命名
+        episode_target_map = {}  # {(season, episode): target_base_name}
+        for item in plan_items or []:
+            mapped = item.get("mapped") or {}
+            s, e = mapped.get("season"), mapped.get("episode")
+            tp = item.get("target_path") or ""
+            if s is not None and e is not None and tp:
+                t_base = os.path.splitext(os.path.basename(tp))[0]
+                episode_target_map[(s, e)] = t_base
+
         for raw_path in whitelist:
             abs_path = os.path.abspath(_resolve_plan_whitelist_path(raw_path, base_path))
             norm_abs_path = os.path.normcase(os.path.normpath(abs_path))
@@ -258,6 +288,76 @@ def _apply_action_plan_moves(plan_items: list, base_path: str = "", whitelist: L
             target_path = _resolve_extra_target_path(abs_path)
             if not target_path:
                 continue
+
+            # 字幕文件扁平化：如果字幕被放到了子目录中（如 Season 01/Subs/xxx.ass），
+            # 将其提升到和视频同级，并尝试用视频的标准名作为前缀
+            file_ext = os.path.splitext(abs_path)[1].lower()
+            if file_ext in _PLAN_SUBTITLE_EXTS:
+                target_dir_resolved = os.path.dirname(target_path)
+                # 检查目标路径是否在某个 plan target_dir 的子目录中
+                for ctx in plan_contexts:
+                    ctx_target = ctx["target_dir"]
+                    if (os.path.normcase(target_dir_resolved) != os.path.normcase(ctx_target)
+                            and os.path.normcase(target_dir_resolved).startswith(
+                                os.path.normcase(ctx_target) + os.sep)):
+                        # 字幕在子目录中，需要扁平化到 ctx_target
+                        sub_basename = os.path.basename(abs_path)
+                        # 尝试从字幕文件名解析集号，匹配到对应视频的标准名
+                        # 多重扩展名处理（如 xxx.chs.ass → lang_suffix=".chs.ass"）
+                        lang_suffix = ""
+                        temp_name = sub_basename
+                        while True:
+                            base_part, ext_part = os.path.splitext(temp_name)
+                            if ext_part.lower() in _PLAN_SUBTITLE_EXTS:
+                                lang_suffix = ext_part + lang_suffix
+                                temp_name = base_part
+                            elif ext_part.lower() in {".chs", ".cht", ".sc", ".tc", ".zh",
+                                                      ".en", ".jp", ".ja", ".ko",
+                                                      ".chi", ".eng", ".jpn", ".kor",
+                                                      ".zh-hans", ".zh-hant",
+                                                      ".simplified", ".traditional",
+                                                      ".chinese", ".japanese", ".english",
+                                                      ".chn"}:
+                                lang_suffix = ext_part + lang_suffix
+                                temp_name = base_part
+                            else:
+                                break
+                        # 用去掉语言标签后的核心名解析集号（parse_filename 不认识 .chs.ass）
+                        parsed_sub = parse_filename(temp_name)
+                        sub_season = parsed_sub.get("season")
+                        sub_episode = parsed_sub.get("episode")
+
+                        matched_target_base = None
+                        if sub_episode is not None:
+                            # 有集号：精确匹配
+                            lookup_season = sub_season if sub_season is not None else (ctx.get("season") or 1)
+                            matched_target_base = episode_target_map.get((lookup_season, sub_episode))
+                        if matched_target_base and lang_suffix:
+                            target_path = os.path.join(ctx_target, matched_target_base + lang_suffix)
+                        else:
+                            # 无法匹配集号，直接扁平化文件名
+                            target_path = os.path.join(ctx_target, sub_basename)
+                        break
+            else:
+                # 非字幕文件（字体包、OAD 等）：不应跟随视频进入 Season 目录
+                # 如果目标路径在 Season 目录下（直接或子目录），提升到剧集根目录
+                target_dir_resolved = os.path.dirname(target_path)
+                for ctx in plan_contexts:
+                    ctx_target = ctx["target_dir"]
+                    ctx_target_norm = os.path.normcase(ctx_target)
+                    target_dir_norm = os.path.normcase(target_dir_resolved)
+                    if (target_dir_norm == ctx_target_norm
+                            or target_dir_norm.startswith(ctx_target_norm + os.sep)):
+                        # 文件被放到了 Season 目录下，提升到 base_path 下
+                        if target_dir_norm == ctx_target_norm:
+                            # 直接在 Season 下：提升到 base_path
+                            target_path = os.path.join(os.path.abspath(base_path), os.path.basename(abs_path))
+                        else:
+                            # 在 Season 的子目录中：保留子目录结构，提升到 base_path
+                            rel_in_season = os.path.relpath(target_path, ctx_target)
+                            target_path = os.path.join(os.path.abspath(base_path), rel_in_season)
+                        break
+
             ops.append({
                 "action": "move",
                 "old": abs_path,
@@ -271,6 +371,10 @@ def _apply_action_plan_moves(plan_items: list, base_path: str = "", whitelist: L
             os.makedirs(op["mkdir"], exist_ok=True)
         if os.path.exists(op["old"]) and not os.path.exists(op["new"]):
             shutil.move(op["old"], op["new"])
+
+    # 清理空的种子目录壳：所有文件移走后，种子文件夹可能残留空子目录
+    if base_path and os.path.isdir(base_path):
+        _cleanup_empty_dirs(base_path)
 
     return ops
 

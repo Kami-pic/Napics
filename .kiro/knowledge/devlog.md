@@ -451,3 +451,22 @@
 - 重命名、批量管理、刮削、结构整理等仍保留全量刷新，避免过早把刷新策略改复杂
 **踩坑**:
 - 首页详情侧很多动作都会同时影响目录树和视频列表，不能把 `onRefresh` 一把全替成树刷新；必须按入口逐个收窄
+
+## 2026-04-29 整理替换附属文件处理修复
+
+**变更**:
+- `backend/routes/organize.py`：`_apply_action_plan_moves` 白名单处理阶段新增三类文件分流逻辑
+  - 字幕文件（Subs/ 子目录中）：扁平化到 Season 目录，通过集号匹配用视频标准名重命名
+  - 非字幕文件（字体包/SPs/CDs/OAD 等）：提升到剧集根目录（base_path），不跟随视频进入 Season
+  - 新增 `_cleanup_empty_dirs`：移动完成后自底向上清理空的种子目录壳
+- `backend/routes/relocate.py`：`_build_plan_tree` 预览逻辑与执行逻辑对齐，字幕展示在 Season 下，附属文件展示在根级
+- `backend/scraper.py`：`_scrape_tv_v3` 新增季目录检测，当 save_path 本身是季目录（如"第三季"）时不再嵌套 Season XX
+- 新增测试：`test_subtitle_flatten.py`（8 个）、`test_plan_tree_preview.py`（3 个）、`test_season_dir_no_nest.py`（2 个）
+- 更新 `knowledge/download-replace-pipeline.md`：补充附属文件规则和季目录检测说明
+**决策**:
+- 字幕扁平化时先剥离多重扩展名（.chs.ass）再用 parse_filename 解析集号，因为 parse_filename 不认识语言标签
+- 非字幕文件统一提升到根目录，不区分文件类型（视频/音频/压缩包），避免规则过于复杂
+- 季目录检测复用已有的 `_is_season_dir`，支持 Season XX / 第X季 / SXX 等格式
+**踩坑**:
+- Windows 上 `os.path.normcase` 会把路径转小写，导致 plan_tree 合并时 "Season 01" 和 "season 01" 不匹配，需要大小写不敏感比较
+- `_resolve_extra_target_path` 对同目录文件和子目录文件的处理路径不同：同目录文件直接映射到 Season 下，子目录文件保留相对路径。两种情况都需要处理

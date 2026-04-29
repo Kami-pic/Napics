@@ -210,7 +210,11 @@ def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "", new_f
         tree.append(ri)
     
     # 新种子中不在 plan 里的附属文件（字幕、SPs、CDs 等）
+    # 模拟 _apply_action_plan_moves 的逻辑，计算每个附属文件的实际目标位置
     if new_files_all:
+        from routes.organize import _PLAN_SUBTITLE_EXTS, _PLAN_POSTER_SUFFIXES
+        from tmdb_client import parse_filename
+
         def _classify_ext(name):
             ext = os.path.splitext(name)[1].lower()
             if ext in {".mp4",".mkv",".avi",".mov",".wmv",".rmvb",".rm",".flv",".ts",".m4v"}:
@@ -218,58 +222,195 @@ def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "", new_f
             if ext in {".ass",".srt",".ssa",".sub",".idx",".sup"}:
                 return "subtitle"
             return "other"
-        
-        # 构建嵌套字典，只收集不在 plan 中的文件
-        extra_root = {}
+
+        # 构建 plan 中视频的源→目标映射，用于匹配同名字幕
+        video_source_bases = {}  # {source_base_lower: (source_dir, target_dir, target_base)}
+        episode_target_map = {}  # {(season, episode): target_base}
+        plan_source_dirs = set()
+        plan_target_dirs = set()
+        plan_target_dirs_original = {}  # {normcase_path: original_path}
+        for item in (plan_items or []):
+            if item is None:
+                continue
+            original_path = item.get("original_path") or ""
+            target_path = item.get("target_path") or ""
+            if not original_path or not target_path:
+                continue
+            s_dir = os.path.dirname(original_path)
+            t_dir = os.path.dirname(target_path)
+            s_base = os.path.splitext(os.path.basename(original_path))[0]
+            t_base = os.path.splitext(os.path.basename(target_path))[0]
+            video_source_bases[s_base.lower()] = (s_dir, t_dir, t_base)
+            plan_source_dirs.add(os.path.normcase(os.path.abspath(s_dir)))
+            norm_t_dir = os.path.normcase(os.path.abspath(t_dir))
+            plan_target_dirs.add(norm_t_dir)
+            plan_target_dirs_original[norm_t_dir] = os.path.abspath(t_dir)
+            mapped = item.get("mapped") or {}
+            s, e = mapped.get("season"), mapped.get("episode")
+            if s is not None and e is not None:
+                episode_target_map[(s, e)] = t_base
+
+        # 计算每个附属文件的目标位置
+        # 结果：{相对于 save_path 的目标路径: {name, type, action, ...}}
+        planned_extras = []  # [(target_rel_path, node)]
         for f in new_files_all:
             name = f.get("name", "")
             size = f.get("size_bytes", f.get("size", 0))
             parts = name.replace("/", os.sep).replace("\\", os.sep).split(os.sep)
-            # 取文件名（最后一个 part）
             fname = parts[-1] if parts else name
             if fname.lower() in plan_filenames:
-                continue  # 已在 plan 中处理过
-            
-            current = extra_root
-            for i, part in enumerate(parts):
-                if i == len(parts) - 1:
-                    if "__files__" not in current:
-                        current["__files__"] = []
-                    current["__files__"].append({"name": part, "size_bytes": size})
-                else:
-                    if part not in current:
-                        current[part] = {}
-                    current = current[part]
-        
-        def _dict_to_nodes(d) -> list:
-            nodes = []
-            for key, val in sorted(d.items()):
-                if key == "__files__":
+                continue
+
+            ft = _classify_ext(fname)
+            file_ext = os.path.splitext(fname)[1].lower()
+            abs_path = os.path.join(save_path, name) if save_path else name
+            file_dir = os.path.dirname(abs_path)
+            file_dir_norm = os.path.normcase(os.path.abspath(file_dir))
+
+            # 第一阶段：同目录同名字幕/海报（跟随视频）
+            handled = False
+            if file_dir_norm in plan_source_dirs:
+                f_base_lower = os.path.splitext(fname)[0].lower()
+                # 检查海报后缀
+                for suffix in _PLAN_POSTER_SUFFIXES:
+                    check_base = fname[:len(fname)-len(suffix)].lower() if fname.lower().endswith(suffix) else None
+                    if check_base and check_base in video_source_bases:
+                        _, t_dir, t_base = video_source_bases[check_base]
+                        target_name = t_base + suffix
+                        target_rel = os.path.relpath(os.path.join(t_dir, target_name), save_path) if save_path else target_name
+                        planned_extras.append((target_rel, {
+                            "name": target_name, "type": "other", "action": "move",
+                            "original_name": fname, "size_bytes": size,
+                        }))
+                        handled = True
+                        break
+                if not handled:
+                    # 检查同名字幕
+                    for src_base_lower, (s_dir, t_dir, t_base) in video_source_bases.items():
+                        if f_base_lower.startswith(src_base_lower + ".") and file_ext in _PLAN_SUBTITLE_EXTS:
+                            suffix = fname[len(src_base_lower):]
+                            target_name = t_base + suffix
+                            target_rel = os.path.relpath(os.path.join(t_dir, target_name), save_path) if save_path else target_name
+                            planned_extras.append((target_rel, {
+                                "name": target_name, "type": "subtitle", "action": "move",
+                                "original_name": fname, "size_bytes": size,
+                            }))
+                            handled = True
+                            break
+
+            if handled:
+                continue
+
+            # 第二阶段：子目录中的文件
+            if file_ext in _PLAN_SUBTITLE_EXTS:
+                # 字幕文件：扁平化到 Season 目录，尝试用视频标准名
+                target_dir_norm = next(iter(plan_target_dirs), None)
+                target_dir_orig = plan_target_dirs_original.get(target_dir_norm, target_dir_norm) if target_dir_norm else None
+                if target_dir_orig:
+                    # 剥离语言标签解析集号
+                    lang_suffix = ""
+                    temp_name = fname
+                    while True:
+                        base_part, ext_part = os.path.splitext(temp_name)
+                        if ext_part.lower() in _PLAN_SUBTITLE_EXTS:
+                            lang_suffix = ext_part + lang_suffix
+                            temp_name = base_part
+                        elif ext_part.lower() in {".chs",".cht",".sc",".tc",".zh",
+                                                  ".en",".jp",".ja",".ko",
+                                                  ".chi",".eng",".jpn",".kor",
+                                                  ".zh-hans",".zh-hant",
+                                                  ".simplified",".traditional",
+                                                  ".chinese",".japanese",".english",
+                                                  ".chn"}:
+                            lang_suffix = ext_part + lang_suffix
+                            temp_name = base_part
+                        else:
+                            break
+                    parsed_sub = parse_filename(temp_name)
+                    sub_ep = parsed_sub.get("episode")
+                    sub_s = parsed_sub.get("season")
+                    matched_base = None
+                    if sub_ep is not None:
+                        lookup_s = sub_s if sub_s is not None else 1
+                        matched_base = episode_target_map.get((lookup_s, sub_ep))
+                    if matched_base and lang_suffix:
+                        target_name = matched_base + lang_suffix
+                    else:
+                        target_name = fname
+                    target_rel = os.path.relpath(
+                        os.path.join(os.path.normpath(target_dir_orig), target_name), save_path
+                    ) if save_path else target_name
+                    planned_extras.append((target_rel, {
+                        "name": target_name, "type": "subtitle", "action": "move",
+                        "original_name": fname, "size_bytes": size,
+                    }))
                     continue
-                children = _dict_to_nodes(val)
-                nodes.append({
-                    "name": key,
-                    "type": "dir",
-                    "action": "keep",
-                    "skip_reason": "附属文件夹",
-                    "children": children,
-                })
-            for ff in sorted(d.get("__files__", []), key=lambda x: x["name"]):
-                ft = _classify_ext(ff["name"])
-                nodes.append({
-                    "name": ff["name"],
-                    "type": ft,
-                    "action": "keep",
-                    "size_bytes": ff["size_bytes"],
-                })
-            return nodes
-        
-        extra_nodes = _dict_to_nodes(extra_root)
-        # 跳过第一层种子目录壳（如果只有一个顶层目录）
-        if len(extra_nodes) == 1 and extra_nodes[0].get("type") == "dir":
-            tree.extend(extra_nodes[0].get("children", []))
-        else:
-            tree.extend(extra_nodes)
+
+            # 非字幕文件（SPs/CDs 等）：提升到剧集根目录
+            # 从种子子目录结构中提取相对路径
+            if len(parts) > 1:
+                # 跳过种子目录名（第一层），保留后续子目录结构
+                rel_parts = parts[1:] if len(parts) > 1 else parts
+                target_rel = os.path.join(*rel_parts)
+            else:
+                target_rel = fname
+            planned_extras.append((target_rel, {
+                "name": fname, "type": ft, "action": "keep",
+                "size_bytes": size,
+            }))
+
+        # 将附属文件按目标路径组织到树中
+        extra_by_dir = {}  # {dir_rel: [nodes]}
+        for target_rel, node in planned_extras:
+            dir_rel = os.path.dirname(target_rel)
+            if not dir_rel:
+                tree.append(node)
+            else:
+                extra_by_dir.setdefault(dir_rel, []).append(node)
+
+        # 将附属文件合并到已有的季目录节点中，或创建新的目录节点
+        for dir_rel, nodes in sorted(extra_by_dir.items()):
+            dir_parts = dir_rel.replace("\\", "/").split("/")
+            top_dir = dir_parts[0] if dir_parts else dir_rel
+
+            # 尝试合并到已有的季目录节点（大小写不敏感比较）
+            merged = False
+            for t_node in tree:
+                if t_node.get("type") == "dir" and t_node.get("name", "").lower() == top_dir.lower():
+                    if len(dir_parts) == 1:
+                        t_node.setdefault("children", []).extend(nodes)
+                    else:
+                        # 需要在季目录下创建子路径
+                        sub_path = os.path.join(*dir_parts[1:]) if len(dir_parts) > 1 else ""
+                        if sub_path:
+                            sub_node = {
+                                "name": sub_path, "type": "dir", "action": "keep",
+                                "children": nodes,
+                            }
+                            t_node.setdefault("children", []).append(sub_node)
+                        else:
+                            t_node.setdefault("children", []).extend(nodes)
+                    merged = True
+                    break
+
+            if not merged:
+                # 创建新的目录节点
+                if len(dir_parts) == 1:
+                    tree.append({
+                        "name": top_dir, "type": "dir", "action": "keep",
+                        "skip_reason": "附属文件夹",
+                        "children": nodes,
+                    })
+                else:
+                    # 多层嵌套
+                    inner = nodes
+                    for p in reversed(dir_parts[1:]):
+                        inner = [{"name": p, "type": "dir", "action": "keep", "children": inner}]
+                    tree.append({
+                        "name": top_dir, "type": "dir", "action": "keep",
+                        "skip_reason": "附属文件夹",
+                        "children": inner,
+                    })
     
     # 旧资源：标记删除或保留
     if coexist_pairs:

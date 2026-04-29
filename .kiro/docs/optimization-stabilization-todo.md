@@ -183,6 +183,11 @@
   - 当前：影子副本 `青春之旅` 已先暴露“同一集数被多份源文件同时命中”的执行前冲突；工作区代码补完 `target_path` + 逻辑目标双重前置拦截后，会在离线路由直调与独立 HTTP 端到端验证中于写盘前直接 `400`
 - [x] 补齐 `action_plan` 对字幕 / 字体等附属文件的落盘归位
   - 当前：执行层已不再只搬“同 basename sidecar”；现在会结合 `whitelist + mapped season + 源季目录上下文` 一并搬运 `Subs/Fonts` 等附属文件。单季默认归入 `Season 01`，多季按源季目录分别落到 `Season XX`
+  - 最新补充（2026-04-29）：进一步修复三个问题：
+    1. 字幕文件在子目录（Subs/）中时扁平化到 Season 目录，通过集号匹配用视频标准名重命名
+    2. 非字幕附属文件（字体包/SPs/CDs/OAD）提升到剧集根目录，不跟随视频进入 Season
+    3. save_path 本身是季目录时不再嵌套 Season XX
+  - plan_tree 预览与执行逻辑已对齐；新增 13 个测试覆盖上述场景
 - [x] 按 [download-relocate-shadow-verify-plan.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-shadow-verify-plan.md) 准备影子副本验证，不再直接写正式 NAS
   - 当前：已用 `d673d8fc / 四月是你的谎言` 打通过一次重副本链路；但重视频副本会明显推高工作区体积，当前已清理旧 `shadow-verify`，并将后续策略切换为“真实文件名/目录结构/NFO + 占位视频文件”的轻量副本模式
 - [ ] 若继续推进下载→归位闭环，当前已切到“场景 C：真实下载器异常小样本”

@@ -213,6 +213,11 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
     import re as _re
 
     plan = []
+
+    # 检测 folder_path 是否已经是季目录（如"爱、死亡与机器人第三季"）
+    # 如果是，视频直接放在 folder_path 下，不再嵌套 Season XX
+    folder_is_season = _is_season_dir(folder_name)
+    folder_season_num = _extract_season_number(folder_name) if folder_is_season else None
     tmdb_match_info = {"tmdb_id": 0, "title": "", "english_title": "",
                        "total_seasons": 0, "match_source": "none"}
 
@@ -461,6 +466,17 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             std_name = vname  # 无法标准化，保留原名
 
         # 构建 plan item
+        # 如果 folder_path 本身就是季目录，视频直接放在 folder_path 下
+        if folder_is_season:
+            _target_dir = folder_path
+            _target_season_dir = None  # 不需要新建季目录
+        elif mapped_season is not None:
+            _target_dir = os.path.join(folder_path, f"Season {mapped_season:02d}")
+            _target_season_dir = f"Season {mapped_season:02d}"
+        else:
+            _target_dir = None
+            _target_season_dir = None
+
         item = {
             "original_path": vpath,
             "original_filename": vname,
@@ -473,9 +489,9 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             "mapped": {"season": mapped_season, "episode": mapped_episode} if mapped_season is not None else None,
             "scraped_title": showtitle,
             "episode_title": "",
-            "target_season_dir": f"Season {mapped_season:02d}" if mapped_season is not None else None,
+            "target_season_dir": _target_season_dir,
             "target_filename": std_name,
-            "target_path": os.path.join(folder_path, f"Season {mapped_season:02d}", std_name) if mapped_season is not None else vpath,
+            "target_path": os.path.join(_target_dir, std_name) if _target_dir else vpath,
             "target_shadow_name": None,
             "actions": [],
             "skip_reason": skip_reason,
@@ -492,7 +508,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                     # 清理文件名中不合法的字符
                     std_name = "".join(c for c in std_name if c not in r'\/:*?"<>|').strip()
                     item["target_filename"] = std_name
-                    item["target_path"] = os.path.join(folder_path, f"Season {mapped_season:02d}", std_name)
+                    item["target_path"] = os.path.join(_target_dir, std_name) if _target_dir else vpath
             except Exception:
                 pass  # 404 等错误 → 简化 NFO
 
@@ -564,7 +580,10 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
                 if item.get("mapped") and item["mapped"].get("season"):
                     season_nums.add(item["mapped"]["season"])
             for sn in sorted(season_nums):
-                season_dir = os.path.join(folder_path, f"Season {sn:02d}")
+                if folder_is_season:
+                    season_dir = folder_path  # folder_path 本身就是季目录
+                else:
+                    season_dir = os.path.join(folder_path, f"Season {sn:02d}")
                 if not os.path.isdir(season_dir):
                     continue  # 季目录还没建（Step 4 才建），跳过
                 if not force and os.path.exists(os.path.join(season_dir, "season.nfo")):
