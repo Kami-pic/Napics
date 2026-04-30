@@ -24,7 +24,7 @@ _EP_PATTERNS = [
 ]
 # 只有集号（季号从父目录推断）
 _EP_ONLY_PATTERNS = [
-    re.compile(r'[Ee][Pp]?(\d+)'),                         # E02, EP02
+    re.compile(r'(?<![0-9A-Fa-f])[Ee][Pp]?(\d{1,3})(?!\d)'),  # E02, EP12（排除 CRC32 中的 E+数字）
     re.compile(r'第(\d+)[集话話]'),                          # 第2集
     re.compile(r'(\d{2,3})[集话話]'),                        # 02集, 03话
     re.compile(r'[-]\s*(\d{2,3})(?:[\s\.\[]|$)'),          # Unnatural-02, Name-03.mp4
