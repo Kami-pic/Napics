@@ -212,6 +212,27 @@ def compute_completeness(tmdb_client, tmdb_id: int, local_episodes: Dict[int, Li
     if not tv_detail or not tv_detail.tmdb_id:
         return {"status": "tmdb_error", "message": "无法获取 TMDB 剧集信息"}
 
+    # 绝对集数检测：如果本地集号全在 S1 且最大集号超过 S1 的集数，
+    # 说明用户用的是绝对编号（如十二国记 45 集平铺），需要重映射到各季
+    if tv_detail.seasons_info and len(local_episodes) == 1 and 1 in local_episodes:
+        non_special_seasons = [s for s in tv_detail.seasons_info if s["season_number"] > 0]
+        if len(non_special_seasons) > 1:
+            s1_count = next((s["episode_count"] for s in non_special_seasons if s["season_number"] == 1), 0)
+            local_max = max(local_episodes[1]) if local_episodes[1] else 0
+            if local_max > s1_count:
+                # 绝对编号 → 按季重映射
+                from tmdb_client import build_absolute_episode_map
+                abs_map = build_absolute_episode_map(tv_detail.seasons_info)
+                remapped: Dict[int, List[int]] = {}
+                for abs_ep in local_episodes[1]:
+                    if abs_ep in abs_map:
+                        s_num, e_num = abs_map[abs_ep]
+                        remapped.setdefault(s_num, []).append(e_num)
+                    # 超出映射范围的集号忽略（可能是 SP/OVA）
+                if remapped:
+                    local_episodes = {s: sorted(eps) for s, eps in remapped.items()}
+                    logger.info(f"[completeness] 绝对集数重映射: {local_max} 集 → {len(remapped)} 季")
+
     today = datetime.now().strftime("%Y-%m-%d")
     seasons_result = []
     total_episodes = 0
