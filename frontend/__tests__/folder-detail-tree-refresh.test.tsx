@@ -33,6 +33,10 @@ vi.mock("@/components/detail/ShadowNameSection", () => ({
   ShadowNameSection: () => <div>shadow-name</div>,
 }));
 
+vi.mock("@/components/detail/CompletenessBar", () => ({
+  CompletenessBar: () => <div>completeness</div>,
+}));
+
 vi.mock("@/components/detail/DetailComponents", () => ({
   Poster: () => <div>poster</div>,
   InfoRow: ({ label, value }: { label: string; value: string }) => <div>{label}:{value}</div>,
