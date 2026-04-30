@@ -28,6 +28,7 @@ backend/*_report.txt
 # 数据库/缓存文件（运行时生成，不入库）
 backend/scrape_cache/
 backend/download_tasks.json
+backend/completeness_cache.json
 backend/download_tasks.json.tmp
 backend/analysis_cache.json
 backend/media_library.json
