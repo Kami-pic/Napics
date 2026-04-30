@@ -51,7 +51,11 @@ export default function Toolbar({
           try {
             const data = JSON.parse(part.replace("data: ", ""));
             if (data.type === "status") setSyncMsg(data.message);
-            else if (data.type === "progress") setSyncMsg(`${data.current}/${data.total}`);
+            else if (data.type === "progress") {
+              const fileName = data.file || "";
+              const truncName = fileName.length > 30 ? fileName.slice(0, 12) + "..." + fileName.slice(-12) : fileName;
+              setSyncMsg(`${data.current}/${data.total}${truncName ? " " + truncName : ""}`);
+            }
             else if (data.type === "done") {
               setSyncMsg(`+${data.added} -${data.removed}`);
               lastDone = true;

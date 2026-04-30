@@ -138,6 +138,10 @@ def collect_local_episodes(folder_path: str) -> Dict[int, List[int]]:
         if nfo_data and nfo_data.get("episode_number"):
             season_num = nfo_data.get("season_number", 0)
             episode_num = nfo_data["episode_number"]
+            # 如果目录名有明确季号且 NFO 季号不一致，优先用目录名的
+            # （NFO 可能因刮削错误导致季号不对）
+            if dir_season is not None and season_num != dir_season:
+                season_num = dir_season
         else:
             # 回退到文件名提取
             se = _extract_season_episode_from_filename(entry)

@@ -33,7 +33,7 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
     setData(null);
     setExpanded(null);
     fetchData();
-  }, [path, folderType, tmdbId, seasonFilter]);
+  }, [path, folderType, tmdbId ?? 0, seasonFilter ?? -1]);
 
   if (folderType !== "tv" && folderType !== "season") return null;
   if (loading) return (
