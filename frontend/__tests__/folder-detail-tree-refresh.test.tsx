@@ -57,6 +57,8 @@ describe("FolderDetail tree refresh", () => {
   beforeEach(() => {
     mockApi.getNoScrape.mockReset();
     mockApi.getNoScrape.mockResolvedValue([]);
+    vi.restoreAllMocks();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
   });
 
   it("文件夹封面上传后只触发树刷新", async () => {
@@ -115,6 +117,72 @@ describe("FolderDetail tree refresh", () => {
     );
 
     fireEvent.click(screen.getByText("mock-candidate-picker"));
+
+    await waitFor(() => {
+      expect(onTreeRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("分类标签修改后只触发树刷新", async () => {
+    const onRefresh = vi.fn();
+    const onTreeRefresh = vi.fn();
+
+    render(
+      <FolderDetail
+        node={{
+          name: "军火女王",
+          path: "\\\\NAS\\视频\\动画番\\军火女王",
+          folder_type: "tv",
+          category_tag: "tv",
+          videos: [],
+          children: [],
+          video_count: 0,
+          has_cover: true,
+        }}
+        onRefresh={onRefresh}
+        onTreeRefresh={onTreeRefresh}
+        onSearch={vi.fn()}
+        currentCategoryTag="tv"
+      />,
+    );
+
+    const selects = screen.getAllByRole("combobox");
+    fireEvent.change(selects[0], { target: { value: "movie" } });
+
+    await waitFor(() => {
+      expect(onTreeRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("文件夹类型修改后只触发树刷新", async () => {
+    const onRefresh = vi.fn();
+    const onTreeRefresh = vi.fn();
+
+    render(
+      <FolderDetail
+        node={{
+          name: "军火女王",
+          path: "\\\\NAS\\视频\\动画番\\军火女王",
+          folder_type: "tv",
+          category_tag: "tv",
+          videos: [],
+          children: [],
+          video_count: 0,
+          has_cover: true,
+        }}
+        onRefresh={onRefresh}
+        onTreeRefresh={onTreeRefresh}
+        onSearch={vi.fn()}
+        currentCategoryTag="tv"
+      />,
+    );
+
+    const selects = screen.getAllByRole("combobox");
+    fireEvent.change(selects[1], { target: { value: "season" } });
 
     await waitFor(() => {
       expect(onTreeRefresh).toHaveBeenCalledTimes(1);

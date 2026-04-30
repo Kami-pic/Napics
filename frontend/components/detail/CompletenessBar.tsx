@@ -11,9 +11,10 @@ interface CompletenessBarProps {
   onSearch: (q: string, ctx?: any) => void;
   cnName?: string;
   enName?: string;
+  seasonFilter?: number;  // 只显示指定季的完整度（season 节点用）
 }
 
-export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, enName }: CompletenessBarProps) {
+export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, enName, seasonFilter }: CompletenessBarProps) {
   const [data, setData] = useState<CompletenessResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -32,7 +33,7 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
     setData(null);
     setExpanded(null);
     fetchData();
-  }, [path, folderType, tmdbId]);
+  }, [path, folderType, tmdbId, seasonFilter]);
 
   if (folderType !== "tv" && folderType !== "season") return null;
   if (loading) return (
@@ -43,10 +44,16 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
   );
   if (!data || !data.seasons) return null;
 
-  const pct = data.completeness_pct ?? 0;
-  const allComplete = data.seasons.every(s => s.status === "complete");
+  // 如果指定了 seasonFilter，只显示该季
+  const filteredSeasons = seasonFilter != null
+    ? data.seasons.filter(s => s.season_number === seasonFilter)
+    : data.seasons;
+  const filteredTotal = filteredSeasons.reduce((sum, s) => sum + s.episode_count, 0);
+  const filteredLocal = filteredSeasons.reduce((sum, s) => sum + s.local_count, 0);
+  const pct = filteredTotal > 0 ? Math.round(filteredLocal / filteredTotal * 1000) / 10 : 0;
+  const allComplete = filteredSeasons.every(s => s.status === "complete");
   // 本地无任何集数据时（可能路径不可达或未刮削），只显示 TMDB 总集数
-  const noLocalData = (data.local_total === 0 && (data.total_episodes ?? 0) > 0);
+  const noLocalData = (filteredLocal === 0 && filteredTotal > 0);
 
   const handleSearchMissing = (season: SeasonCompleteness, ep?: { episode: number }) => {
     const name = cnName || enName || "";
@@ -68,7 +75,7 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
       {/* 总进度条 */}
       <div className="flex items-center gap-2">
         {noLocalData ? (
-          <span className="text-[11px] text-slate-500 flex-1">TMDB {data.total_episodes} 集 · 本地数据待同步</span>
+          <span className="text-[11px] text-slate-500 flex-1">TMDB {filteredTotal} 集 · 本地数据待同步</span>
         ) : (
           <>
             <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
@@ -78,7 +85,7 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
               />
             </div>
             <span className={`text-[11px] font-medium ${allComplete ? "text-emerald-400" : "text-slate-400"}`}>
-              {allComplete ? "✓ 完整" : `${data.local_total}/${data.total_episodes} 集 (${pct}%)`}
+              {allComplete ? "✓ 完整" : `${filteredLocal}/${filteredTotal} 集 (${pct}%)`}
             </span>
           </>
         )}
@@ -98,7 +105,7 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
       {/* 季列表 */}
       {!allComplete && !noLocalData && (
         <div className="flex flex-wrap gap-1.5">
-          {data.seasons.map(s => (
+          {filteredSeasons.map(s => (
             <button
               key={s.season_number}
               onClick={() => {
@@ -126,7 +133,7 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
 
       {/* 展开的集列表 */}
       {expanded !== null && (() => {
-        const season = data.seasons.find(s => s.season_number === expanded);
+        const season = filteredSeasons.find(s => s.season_number === expanded);
         if (!season || season.status === "complete") return null;
         return (
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2.5 space-y-1.5">

@@ -723,10 +723,13 @@ def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = F
     if not path:
         raise HTTPException(400, "缺少 path 参数")
 
+    logger.info(f"[completeness] API 请求: path={path}, refresh={refresh}, tmdb_id={tmdb_id}")
+
     # 非刷新模式：优先读缓存
     if not refresh:
         cached = get_cached_completeness(path)
         if cached and cached.get("status") == "ok":
+            logger.info(f"[completeness] 返回缓存: {cached.get('completeness_pct')}%")
             return cached
 
     # 获取 TMDB ID：参数传入 > NFO 读取
@@ -734,6 +737,7 @@ def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = F
     if not tid:
         tid = get_tmdb_id_from_folder(path)
     if not tid:
+        logger.warning(f"[completeness] 无 TMDB ID: {path}")
         return {"status": "no_tmdb_id", "message": "未找到 TMDB ID，请先刮削此文件夹"}
 
     # 获取 TMDB 客户端
@@ -742,11 +746,14 @@ def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = F
         return {"status": "no_tmdb_client", "message": "TMDB 未配置"}
 
     # 刷新模式或无缓存：计算并缓存
+    logger.info(f"[completeness] 重新计算: tmdb_id={tid}, refresh={refresh}")
     result = refresh_completeness_for_path(tc, path, clear_tmdb_cache=refresh)
     if result:
+        logger.info(f"[completeness] 计算完成: {result.get('completeness_pct')}%, local={result.get('local_total')}")
         return result
 
     # 兜底：直接计算
+    logger.info(f"[completeness] 兜底计算")
     local_episodes = collect_local_episodes(path)
     result = compute_completeness(tc, tid, local_episodes)
     if result.get("status") == "ok":

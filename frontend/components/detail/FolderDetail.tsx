@@ -298,12 +298,26 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
       {/* 季集完整度 */}
       {(folderType === "tv" || folderType === "season") && (
         <CompletenessBar
-          path={node.path}
-          folderType={folderType}
+          path={folderType === "season" ? (node.path.substring(0, node.path.lastIndexOf('\\')) || node.path.substring(0, node.path.lastIndexOf('/'))) : node.path}
+          folderType="tv"
           tmdbId={scrape?.tmdb_id || undefined}
           onSearch={onSearch}
           cnName={node.clean_name_cn || node.clean_name || ""}
           enName={node.clean_name_en || ""}
+          seasonFilter={folderType === "season" ? (() => {
+            const CN_NUM: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10 };
+            const sMatch = node.name.match(/(?:Season|S)\s*(\d+)/i) || node.name.match(/第(\d+)季/);
+            if (sMatch) return parseInt(sMatch[1]);
+            const cnMatch = node.name.match(/第([一二三四五六七八九十]+)季/);
+            if (cnMatch) {
+              const s = cnMatch[1];
+              if (s.length === 1) return CN_NUM[s];
+              if (s === "十") return 10;
+              if (s.startsWith("十")) return 10 + (CN_NUM[s[1]] || 0);
+              if (s.endsWith("十")) return (CN_NUM[s[0]] || 0) * 10;
+            }
+            return undefined;
+          })() : undefined}
         />
       )}
       <div className="grid grid-cols-3 gap-2">
