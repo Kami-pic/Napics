@@ -16,6 +16,17 @@
 
 ### 本轮完成
 
+- 多项 bug 修复与功能优化（2026-04-30 对话）：
+  - 删除操作：电影封装文件夹检测 + 空壳目录清理 + 一级分类目录保护
+  - 下载管理：已删除 hash 黑名单防止 sync_from_qb 复活已删任务
+  - 刮削：写入 try-except + 海报 Cache-Control 改 no-cache + 单点自愈
+  - 整理后自动对账：清理已不存在的记录 + 重算质量分
+  - 质量检测：refresh-quality API（单文件跑 ffprobe / 全局重算）+ 前端按钮
+  - ffprobe 去掉 shell=True 修复中文 UNC 路径乱码（244 个"未知"分辨率修复）
+  - 蜜柑加入无做种数信息源集合（后端+前端三处）
+  - get_library_tree 自愈层3 从全量 NFO 读取改为单点触发（首屏 >10s → <1s）
+  - EpisodeList 自然排序 + 排序按钮
+  - CompletenessBar useEffect 依赖数组修复
 - Prowlarr 下载链接修复（infoHash 构造磁力 + 代理链接预处理）
 - 搜索弹窗固定高度、分季搜索中文数字支持、移除重启后端组件
 - 清洗名名称污染防护（finalize 冒泡限制 + 一级分类目录不传播）
