@@ -40,14 +40,13 @@ def get_video_metadata(file_path: str) -> Optional[VideoInfo]:
             file_path
         ]
         
-        # 使用 shell=True 可能会对 UNC 路径有更好的支持
+        # 不用 shell=True，避免 cmd.exe 的代码页把中文 UNC 路径搞乱
         result = subprocess.run(
             cmd, 
             capture_output=True, 
             text=True, 
             encoding='utf-8', 
             errors='ignore',
-            shell=True,
             timeout=15  # 15 秒超时，防止 ffprobe 卡在 rm/rmvb 等老格式上
         )
         

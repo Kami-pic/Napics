@@ -77,9 +77,11 @@ def compute_junk_flags(d: dict) -> dict:
     if match_score == 0 and has_multilang:
         reasons.append("unmatched")
 
-    # 规则 4: 死种
+    # 规则 4: 死种（排除磁力链接源和无做种数信息源）
     is_magnet_only = seeders == 0 and size_gb == 0
-    if seeders == 0 and not is_magnet_only:
+    _no_seeder_info = {"acgrip", "bangumi_moe", "dmhy", "mikan"}
+    source = d.get("_source", "") or d.get("indexer", "")
+    if seeders == 0 and not is_magnet_only and source not in _no_seeder_info:
         reasons.append("dead_seed")
 
     # 规则 5: 标题占比过低（业务层，基于 L2 评分 + BT 标题特征）

@@ -177,7 +177,10 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
         for old_nfo in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
             old_p = os.path.join(path, old_nfo)
             if os.path.exists(old_p):
-                os.remove(old_p)
+                try:
+                    os.remove(old_p)
+                except OSError:
+                    pass
         scraper.write_movie_nfo(path, result)
         if result.poster_url:
             scraper.download_poster(path, result.poster_url)

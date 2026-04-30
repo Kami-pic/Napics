@@ -26,6 +26,7 @@ from downloader import QBittorrentClient, AlistManager
 
 logger = logging.getLogger(__name__)
 TASK_FILE = "download_tasks.json"
+DELETED_HASHES_FILE = "download_deleted_hashes.json"
 SANDBOX_ROOT = "downloads"
 
 # 落盘防抖间隔（秒）— 高频进度更新时最多这么久写一次磁盘
@@ -73,10 +74,12 @@ class DownloadManager:
         self.alist = alist_client
         self.base_path = base_path
         self.tasks: List[DownloadTask] = []
+        self._deleted_hashes: set = set()  # 已删除任务的 hash 黑名单，防止 sync_from_qb 重新导入
         self._lock = threading.Lock()
         self._last_save_time: float = 0
         self._dirty = False  # 是否有未落盘的进度变更
         self._load()
+        self._load_deleted_hashes()
 
     # ── 沙盒管理 ──
 
@@ -632,22 +635,35 @@ class DownloadManager:
 
     def delete_task(self, task_id: str) -> bool:
         """删除任务记录（仅删除记录，不影响已下载文件）。"""
+        removed_hash = ""
         with self._lock:
             before = len(self.tasks)
+            for t in self.tasks:
+                if t.id == task_id and t.downloader_hash:
+                    removed_hash = t.downloader_hash
+                    break
             self.tasks = [t for t in self.tasks if t.id != task_id]
             removed = len(self.tasks) < before
         if removed:
+            if removed_hash:
+                self._add_deleted_hash(removed_hash)
             self._save_now()
         return removed
 
     def delete_tasks(self, task_ids: List[str]) -> int:
         """批量删除任务记录。"""
         id_set = set(task_ids)
+        removed_hashes = []
         with self._lock:
             before = len(self.tasks)
+            for t in self.tasks:
+                if t.id in id_set and t.downloader_hash:
+                    removed_hashes.append(t.downloader_hash)
             self.tasks = [t for t in self.tasks if t.id not in id_set]
             removed = before - len(self.tasks)
         if removed:
+            for h in removed_hashes:
+                self._add_deleted_hash(h)
             self._save_now()
         return removed
 
@@ -807,3 +823,32 @@ class DownloadManager:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"[DownloadManager] 保存任务队列失败: {e}")
+
+    # ── 已删除 hash 黑名单 ──
+
+    def _load_deleted_hashes(self):
+        """加载已删除任务的 hash 黑名单。"""
+        path = os.path.join(self.base_path, DELETED_HASHES_FILE)
+        if not os.path.exists(path):
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                self._deleted_hashes = set(json.load(f))
+        except Exception as e:
+            logger.error(f"[DownloadManager] 加载已删除 hash 黑名单失败: {e}")
+
+    def _save_deleted_hashes(self):
+        """保存已删除任务的 hash 黑名单。"""
+        path = os.path.join(self.base_path, DELETED_HASHES_FILE)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(list(self._deleted_hashes), f, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"[DownloadManager] 保存已删除 hash 黑名单失败: {e}")
+
+    def _add_deleted_hash(self, h: str):
+        """将 hash 加入黑名单并持久化。"""
+        if not h:
+            return
+        self._deleted_hashes.add(h)
+        self._save_deleted_hashes()

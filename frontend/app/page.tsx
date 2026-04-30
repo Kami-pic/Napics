@@ -237,7 +237,8 @@ export default function Home() {
             scanning={scanning} onStartScan={handleStartScan} onStopScan={stopScan}
             onNavigateHome={() => { navigateTo(null as any); if (fileTree) navigateTo(fileTree); }}
             onOpenDownloads={() => setShowDownloadManager(true)}
-            syncMsg={syncMsg} syncing={syncing} />
+            syncMsg={syncMsg} syncing={syncing}
+            onRefresh={refreshLibrary} />
 
           {/* 第二排：面包屑 | 撤回操作、快速同步、批处理、视图切换 */}
           <div className="flex items-center justify-between mt-2 mb-5">

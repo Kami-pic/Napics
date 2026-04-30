@@ -223,25 +223,10 @@ def scrape_by_name(name: str, path: str = "", enhanced: bool = False):
     result = client.scrape_by_filename(name)
     return {"status": "ok" if result.tmdb_id else "not_found", "data": result.dict()}
 
-@router.post("/scrape/select")
-def scrape_select(path: str, tmdb_id: int, media_type: str):
-    """用户选择候选后，用指定 TMDB ID 执行刮削"""
-    api_key = config_m.config.tmdb_api_key
-    if not api_key:
-        raise HTTPException(status_code=400, detail="TMDB API Key not configured")
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
-    
-    if media_type == "movie":
-        result = client.get_movie_detail(tmdb_id)
-    elif media_type in ("tv", "tvshow"):
-        result = client.get_tv_detail(tmdb_id)
-    else:
-        raise HTTPException(status_code=400, detail="Invalid media_type")
-    
-    if not result.tmdb_id:
-        raise HTTPException(status_code=404, detail="TMDB detail not found")
-    
-    # 写入 NFO + 海报（先清理旧的标准 NFO 避免冲突）
+def _write_scrape_result(path: str, result):
+    """将刮削结果写入 NFO + 海报，供 scrape_select / douban_select / bangumi_select 共用。"""
+    proxy = getattr(config_m.config, 'http_proxy', '') or ''
+
     if os.path.isdir(path):
         for old_nfo in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
             old_p = os.path.join(path, old_nfo)
@@ -251,12 +236,11 @@ def scrape_select(path: str, tmdb_id: int, media_type: str):
             scraper.write_movie_nfo(path, result)
         else:
             scraper.write_tvshow_nfo(path, result)
-        proxy = getattr(config_m.config, 'http_proxy', '') or ''
         if result.poster_url:
             scraper.download_poster(path, result.poster_url, proxy=proxy)
-        if result.backdrop_url:
+        if getattr(result, 'backdrop_url', None):
             scraper.download_poster(path, result.backdrop_url, "fanart.jpg", proxy=proxy)
-        
+
         # 单视频文件夹：同步影子名到 media_library.json
         video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
         try:
@@ -266,17 +250,15 @@ def scrape_select(path: str, tmdb_id: int, media_type: str):
             if len(videos) == 1 and len(subdirs) == 0:
                 vf = videos[0]
                 vp = os.path.join(path, vf)
-                # 写视频同名 NFO（给 Kodi/Emby 用）
                 old_vnfo = os.path.splitext(vp)[0] + ".nfo"
                 if os.path.exists(old_vnfo):
                     os.remove(old_vnfo)
                 if result.media_type == "movie":
                     scraper._write_movie_nfo_for_video(vp, result)
-                # 同步影子名
                 library = config_m.load_library()
                 for v in library:
                     if v.get("file_path") == vp:
-                        en = result.english_title or ""
+                        en = getattr(result, 'english_title', '') or ""
                         orig = result.original_title or ""
                         if not en and orig and orig != result.title:
                             latin = sum(1 for c in orig if c.isascii() and c.isalpha())
@@ -305,44 +287,56 @@ def scrape_select(path: str, tmdb_id: int, media_type: str):
             is_single_video_folder = len(vids) <= 1 and len(subs) == 0
         except OSError:
             is_single_video_folder = False
-        
+
         if is_single_video_folder:
-            # 清理历史 NFO 和封面
             for old_nfo in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
                 old_p = os.path.join(folder, old_nfo)
                 if os.path.exists(old_p): os.remove(old_p)
             for old_poster in ["poster.jpg", "poster.png", "fanart.jpg", "folder.jpg", "cover.jpg"]:
                 old_p = os.path.join(folder, old_poster)
                 if os.path.exists(old_p): os.remove(old_p)
-            
             if result.media_type == "movie":
                 scraper.write_movie_nfo(folder, result)
             else:
                 scraper.write_tvshow_nfo(folder, result)
-            
-            proxy = getattr(config_m.config, 'http_proxy', '') or ''
             if result.poster_url:
                 scraper.download_poster(folder, result.poster_url, proxy=proxy)
-            
-            # 同步数据库影子名
-            library = config_m.load_library()
-            for v in library.get("videos", []):
-                if v.get("path") == path:
-                    v["shadow_name"] = result.title + (f" ({result.year})" if result.year else "")
-                    v["shadow_tmdb_id"] = result.tmdb_id
-                    config_m.save_library(library)
-                    break 
         else:
             if result.media_type == "movie":
                 scraper._write_movie_nfo_for_video(path, result)
             else:
                 scraper.write_episode_nfo(path, result)
             base = os.path.splitext(os.path.basename(path))[0]
-            proxy = getattr(config_m.config, 'http_proxy', '') or ''
             if result.poster_url:
                 scraper.download_poster(folder, result.poster_url, base + "-poster.jpg", proxy=proxy)
-            if result.backdrop_url:
+            if getattr(result, 'backdrop_url', None):
                 scraper.download_poster(folder, result.backdrop_url, base + "-fanart.jpg", proxy=proxy)
+
+
+@router.post("/scrape/select")
+def scrape_select(path: str, tmdb_id: int, media_type: str):
+    """用户选择候选后，用指定 TMDB ID 执行刮削"""
+    api_key = config_m.config.tmdb_api_key
+    if not api_key:
+        raise HTTPException(status_code=400, detail="TMDB API Key not configured")
+    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
+    
+    if media_type == "movie":
+        result = client.get_movie_detail(tmdb_id)
+    elif media_type in ("tv", "tvshow"):
+        result = client.get_tv_detail(tmdb_id)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid media_type")
+    
+    if not result.tmdb_id:
+        raise HTTPException(status_code=404, detail="TMDB detail not found")
+    
+    # 写入 NFO + 海报（先清理旧的标准 NFO 避免冲突）
+    try:
+        _write_scrape_result(path, result)
+    except Exception as e:
+        logger.error(f"[scrape_select] 写入失败: path={path}, error={e}")
+        raise HTTPException(status_code=500, detail=f"写入失败: {e}")
     
     return {"status": "ok", "data": result.dict()}
 
@@ -375,6 +369,36 @@ def read_scrape_data(path: str, no_fallback: bool = False):
             data = scraper.read_nfo(folder)
     
     if data:
+        # 单点自愈：读到 NFO 数据时，检查媒体库中对应文件夹/视频是否缺少 clean_name，缺则补全
+        try:
+            title = data.get("title", "")
+            if title:
+                from clean_name_system import clean_from_scrape, safe_update_clean_name
+                library = config_m.load_library()
+                changed = False
+                norm_path = os.path.normpath(path)
+                video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
+                for v in library:
+                    fp = v.get("file_path", "")
+                    fp_dir = os.path.normpath(os.path.dirname(fp))
+                    if fp == path or fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
+                        if os.path.splitext(fp)[1].lower() not in video_exts:
+                            continue
+                        if not v.get("clean_name_cn") and not v.get("clean_name_en"):
+                            result = clean_from_scrape(
+                                title=title,
+                                original_title=data.get("original_title", ""),
+                                english_title=data.get("english_title", ""),
+                                year=data.get("year", ""),
+                                filename=v.get("file_name", ""),
+                                source="nfo",
+                            )
+                            if safe_update_clean_name(v, result):
+                                changed = True
+                if changed:
+                    config_m.save_library(library)
+        except Exception:
+            pass
         return {"status": "ok", "data": data}
     return {"status": "not_found", "data": None}
 

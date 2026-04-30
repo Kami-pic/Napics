@@ -1,7 +1,9 @@
 // 顶部栏：标题+统计 | 下载管理、扫描、表单管理、设置
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import type { LibraryStats } from "@/types";
+import { api } from "@/lib/api";
 
 interface HeaderProps {
   stats: LibraryStats;
@@ -15,9 +17,19 @@ interface HeaderProps {
   subscriptionCount?: number;
   syncMsg?: string;
   syncing?: boolean;
+  onRefresh?: () => void;
 }
 
-export default function Header({ stats, onOpenSettings, scanning, onStartScan, onStopScan, onNavigateHome, onOpenDownloads, onOpenSubscriptions, subscriptionCount = 0, syncMsg, syncing }: HeaderProps) {
+export default function Header({ stats, onOpenSettings, scanning, onStartScan, onStopScan, onNavigateHome, onOpenDownloads, onOpenSubscriptions, subscriptionCount = 0, syncMsg, syncing, onRefresh }: HeaderProps) {
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefreshQuality = async () => {
+    setRefreshing(true);
+    try {
+      const res = await api.refreshQuality();
+      if (onRefresh && res.updated > 0) onRefresh();
+    } catch {}
+    setRefreshing(false);
+  };
   return (
     <header className="flex justify-between items-center py-5 px-1">
       <div>
@@ -32,7 +44,14 @@ export default function Header({ stats, onOpenSettings, scanning, onStartScan, o
           )}
           {scanning && !syncing && <span className="flex items-center gap-1.5 text-xs text-blue-400"><span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />扫描中...</span>}
           {stats.total > 0 && !scanning && !syncing && (
-            <span className="text-xs text-slate-500">{stats.total} 个资源 · {stats.lowRes} 待升级 · {stats.missingSub} 缺字幕</span>
+            <span className="text-xs text-slate-500">
+              {stats.total} 个资源 · {stats.lowRes} 待升级 · {stats.missingSub} 缺字幕
+              <button onClick={handleRefreshQuality} disabled={refreshing}
+                className="ml-2 text-slate-600 hover:text-blue-400 transition-colors disabled:opacity-50"
+                title="全局重新检测质量分">
+                {refreshing ? "检测中..." : "检测质量"}
+              </button>
+            </span>
           )}
         </div>
       </div>

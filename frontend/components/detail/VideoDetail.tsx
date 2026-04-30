@@ -173,8 +173,20 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
       )}
       {/* 文件信息 */}
       <div>
-        <h5 className="text-sm font-medium text-slate-300 mb-2">文件信息</h5>
-        {[["分辨率", v.resolution, false], ["视频编码", v.video_codec || "—", false], ["音频编码", v.audio_codec || "—", false], ["HDR", v.hdr_type, false], ["大小", formatSize(v.size_gb), false], ["时长", formatDuration(v.duration), false], ["字幕", v.subtitle_count > 0 ? v.subtitle_count + " 条" : "无", false], ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res], ["路径", v.file_path, false]].map(([label, value, warn]) => (
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="text-sm font-medium text-slate-300">文件信息</h5>
+          <button
+            onClick={async () => {
+              try {
+                await api.refreshQuality([v.file_path]);
+                onRefresh();
+              } catch {}
+            }}
+            className="text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
+            title="重新检测质量分"
+          >检测质量</button>
+        </div>
+        {[["分辨率", v.resolution, false], ["视频编码", v.video_codec || "—", false], ["音频编码", v.audio_codec || "—", false], ["HDR", v.hdr_type, false], ["质量分", String(v.quality_score || 0), false], ["大小", formatSize(v.size_gb), false], ["时长", formatDuration(v.duration), false], ["字幕", v.subtitle_count > 0 ? v.subtitle_count + " 条" : "无", false], ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res], ["路径", v.file_path, false]].map(([label, value, warn]) => (
           <InfoRow key={label as string} label={label as string} value={value as string} warn={warn as boolean} />
         ))}
       </div>

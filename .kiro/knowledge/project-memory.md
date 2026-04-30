@@ -116,6 +116,16 @@
 ### 整理流水线
 - 三段式架构，详见 knowledge/organize-pipeline-v3.md
 - 分类体系：movie/tv/collection/series/season/mixed（一级标签只有 movie/tv）
+
+### 季集完整性检测
+- 核心模块：`completeness.py`，从 TMDB 获取完整季/集结构，与本地文件做差集
+- 本地集号提取：NFO 优先（目录名季号覆盖 NFO 季号）→ 文件名正则回退
+- 正则防误匹配：E/EP 限 3 位数字排除 CRC32 校验码；中文字符后数字（`铳墓02`）
+- 绝对集数重映射：全集平铺场景自动检测并用 `build_absolute_episode_map` 重映射
+- 持久化缓存：`completeness_cache.json`，API 默认读缓存，刷新按钮清除 TMDB 缓存
+- 自动刷新：挂钩 `save_library` 回调（`shared.py`），3 秒防抖，后台线程刷新受影响文件夹
+- 前端：`CompletenessBar.tsx`，tv/season 类型自动显示；season 节点用 `seasonFilter` 只显示单季
+- 技能文档：`skills/completeness-detection.md`
 - 文件夹类型手动覆盖：`backend/folder_types.json`
 - 一级分类标签：`config.json` 的 `category_tags`
 

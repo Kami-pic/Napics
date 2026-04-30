@@ -248,6 +248,57 @@ def get_library():
     """获取本地缓存的媒体库"""
     return config_m.load_library()
 
+@router.post("/library/refresh-quality")
+def refresh_quality_score(paths: List[str] = None):
+    """刷新质量分数。
+    paths 非空：单文件/少量文件检测，重新跑 ffprobe 获取真实元数据后重算。
+    paths 为空：全局检测，只根据现有数据重算质量分（不跑 ffprobe）。
+    """
+    from quality_parser import compute_quality_score_from_video
+    library = config_m.load_library()
+    updated = 0
+    path_set = set(paths) if paths else None
+
+    if path_set:
+        # 单文件检测：重新跑 ffprobe 更新元数据
+        lib_map = {v.get("file_path", ""): v for v in library}
+        for fp in path_set:
+            v = lib_map.get(fp)
+            if not v or not os.path.exists(fp):
+                continue
+            try:
+                info = scanner.get_video_metadata(fp)
+                if info and info.height > 0:
+                    v["resolution"] = info.resolution
+                    v["height"] = info.height
+                    v["width"] = info.width
+                    v["video_codec"] = info.codec
+                    v["audio_codec"] = info.audio_codec
+                    v["subtitle_count"] = info.subtitle_count
+                    v["hdr_type"] = info.hdr_type
+                    v["duration"] = info.duration_min
+                    v["bitrate_kbps"] = info.bitrate_kbps
+                    v["size_gb"] = info.size_gb
+                    v["is_low_res"] = info.is_low_res
+            except Exception as e:
+                logger.error(f"[refresh-quality] ffprobe 失败: {fp} — {e}")
+            new_score = compute_quality_score_from_video(v)
+            if new_score != v.get("quality_score", 0):
+                v["quality_score"] = new_score
+                updated += 1
+    else:
+        # 全局检测：只根据现有数据重算质量分
+        for v in library:
+            old_score = v.get("quality_score", 0)
+            new_score = compute_quality_score_from_video(v)
+            if new_score != old_score:
+                v["quality_score"] = new_score
+                updated += 1
+
+    if updated:
+        config_m.save_library(library)
+    return {"status": "ok", "updated": updated, "total": len(library)}
+
 @router.post("/library/folder-type")
 def set_folder_type(req: dict):
     """手动设置文件夹类型（覆盖自动判定）"""
@@ -572,28 +623,8 @@ def get_library_tree():
                 if node["clean_name_cn"] and node["clean_name_en"] and node["clean_name_original"]:
                     break
 
-            # ── 自愈层3：从 NFO 补全（文件夹名和视频都解析不出时的兜底）──
-            if node.get("folder_type") in ("tv", "season", "movie") and (not node["clean_name_en"] or not node["clean_name_cn"]):
-                try:
-                    from nfo_handler import read_nfo
-                    from clean_name_system import clean_from_scrape
-                    _nfo = read_nfo(node["path"], no_fallback=True)
-                    if _nfo and _nfo.get("title"):
-                        _scrape_result = clean_from_scrape(
-                            title=_nfo["title"],
-                            original_title=_nfo.get("original_title", ""),
-                            english_title=_nfo.get("english_title", ""),
-                            year=_nfo.get("year", ""),
-                            source="nfo",
-                        )
-                        if not node["clean_name_cn"] and _scrape_result.cn:
-                            node["clean_name_cn"] = _scrape_result.cn
-                        if not node["clean_name_en"] and _scrape_result.en:
-                            node["clean_name_en"] = _scrape_result.en
-                        if not node["clean_name_original"] and _scrape_result.original:
-                            node["clean_name_original"] = _scrape_result.original
-                except Exception:
-                    pass
+            # ── 自愈层3：跳过（首屏不读 NAS 上的 NFO，避免 SMB 超时阻塞树构建）──
+            # NFO 补全在用户点击文件夹详情时按需执行
 
             # ── 自愈层4：从子树冒泡（仅 tv/season，同一部剧的不同季）──
             if node.get("folder_type") in ("tv", "season"):

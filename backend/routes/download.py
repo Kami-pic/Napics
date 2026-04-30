@@ -305,8 +305,13 @@ def sync_from_qb():
                 "moving": "downloading", "unknown": "unknown",
             }
 
+            # 已删除 hash 黑名单：用户手动删除过的任务不再重新导入
+            deleted_hashes = dm._deleted_hashes
+
             for qb_hash, qt in qb_hash_map.items():
                 if qb_hash in existing_hashes:
+                    continue
+                if qb_hash in deleted_hashes:
                     continue
                 qb_state = qt.get("state", "unknown")
                 our_status = QB_STATE_MAP.get(qb_state, "downloading")

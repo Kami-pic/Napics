@@ -1,5 +1,6 @@
 // 展开面板 — 从 CardGrid.tsx 拆分
 "use client";
+import { useState } from "react";
 import type { VideoInfo, FolderNode } from "@/types";
 import { formatSize } from "@/lib/utils";
 import CardPoster from "./CardPoster";
@@ -12,6 +13,14 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
   selectedPaths: Set<string>; onToggleSelect: (p: string) => void; onToggleFolderSelect: (items: VideoInfo[]) => void;
   onPlay: (p: string) => void; onSearch: (q: string) => void; onVideoDetail: (v: VideoInfo) => void; onFolderDetail: (n: FolderNode) => void; onClose: () => void; batchMode?: boolean; refreshKey?: number;
 }) {
+  const [sortAsc, setSortAsc] = useState(true);
+  const sortBtn = (
+    <button onClick={() => setSortAsc(p => !p)}
+      className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+      title={sortAsc ? "名称升序" : "名称降序"}>
+      排序 {sortAsc ? "↑" : "↓"}
+    </button>
+  );
   if (item.type === "folder") {
     const folder = item.data;
     return (
@@ -19,11 +28,12 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
         <div className="flex justify-between items-center mb-4">
           <span className="text-[15px] font-medium text-slate-200">{folder.name}</span>
           <div className="flex items-center gap-3">
+            {sortBtn}
             {batchMode && <button onClick={() => onToggleFolderSelect(folder.videos)} className="text-xs text-blue-400 hover:text-blue-300">全选</button>}
             <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
           </div>
         </div>
-        <EpisodeList videos={folder.videos} selectedPaths={selectedPaths} onToggleSelect={onToggleSelect} onPlay={onPlay} onSearch={onSearch} onVideoDetail={onVideoDetail} batchMode={batchMode} />
+        <EpisodeList videos={folder.videos} selectedPaths={selectedPaths} onToggleSelect={onToggleSelect} onPlay={onPlay} onSearch={onSearch} onVideoDetail={onVideoDetail} batchMode={batchMode} sortAsc={sortAsc} />
       </>
     );
   }
@@ -40,6 +50,7 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
         <div className="flex items-center justify-between mb-4">
           <span className="text-[15px] font-medium text-slate-200">{item.parentNode?.name || item.seriesName}</span>
           <div className="flex items-center gap-3">
+            {sortBtn}
             {batchMode && <button onClick={() => onToggleFolderSelect(displayVideos.length ? displayVideos : allVideos)} className="text-xs text-blue-400 hover:text-blue-300">全选</button>}
             <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
           </div>
@@ -63,7 +74,7 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
           </div>
         )}
         {/* 集列表：直接展开模式 或 选中了某个季 */}
-        {(directExpand || activeSeason) && <EpisodeList videos={displayVideos} selectedPaths={selectedPaths} onToggleSelect={onToggleSelect} onPlay={onPlay} onSearch={onSearch} onVideoDetail={onVideoDetail} batchMode={batchMode} />}
+        {(directExpand || activeSeason) && <EpisodeList videos={displayVideos} selectedPaths={selectedPaths} onToggleSelect={onToggleSelect} onPlay={onPlay} onSearch={onSearch} onVideoDetail={onVideoDetail} batchMode={batchMode} sortAsc={sortAsc} />}
       </>
     );
   }

@@ -52,9 +52,11 @@ def get_local_poster(path: str, cover: bool = False):
             content = f.read()
         ext = os.path.splitext(file_path)[1].lower()
         mt = "image/png" if ext == ".png" else "image/jpeg"
-        # 允许浏览器缓存海报 1 小时，前端通过 _t= 参数做缓存失效
+        # no-cache：浏览器每次都向服务器验证，前端通过 _t= 参数做缓存失效
+        mtime = os.path.getmtime(file_path)
+        etag = f'"{int(mtime)}-{len(content)}"'
         return Response(content=content, media_type=mt,
-                        headers={"Cache-Control": "public, max-age=3600"})
+                        headers={"Cache-Control": "no-cache", "ETag": etag})
 
     # 1. 聚合容器模式
     if cover:

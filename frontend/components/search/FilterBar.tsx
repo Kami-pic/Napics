@@ -84,7 +84,7 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
 // ── 无做种数筛选的源（磁力链接源，做种数无意义）──
 const NO_SEEDER_FILTER_SOURCES = new Set(["cilixiong", "xl720"]);
 // ── 无做种数信息的源（ACG.RIP/Bangumi Moe seeders=0 但 size>0）──
-const NO_SEEDER_INFO_SOURCES = new Set(["acgrip", "bangumi_moe", "dmhy"]);
+const NO_SEEDER_INFO_SOURCES = new Set(["acgrip", "bangumi_moe", "dmhy", "mikan"]);
 
 // ── 通用多选下拉 ──
 export function MultiSelect({ label, selected, options, onChange, variant = "blue" }: {

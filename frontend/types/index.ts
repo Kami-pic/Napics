@@ -25,6 +25,7 @@ export interface VideoInfo {
   clean_name_en?: string; // 英文清洗名
   clean_name_original?: string; // 原始语言清洗名（日文/韩文等）
   clean_name_source?: string; // 清洗名来源
+  quality_score?: number; // 100 分制综合质量评分
 }
 
 export interface FolderNode {
