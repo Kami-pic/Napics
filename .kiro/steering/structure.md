@@ -16,6 +16,8 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   ├── media_info.py   # /scrape/candidates /scrape/douban /scrape/bangumi /media/info（候选搜索+详情多源）
 │   │   ├── poster.py       # /scrape/poster /proxy/image /scrape/upload-poster /scrape/poster-url /scrape/delete-poster
 │   │   ├── organize.py     # /organize/rename /organize/full /organize/rollback（整理+重命名+历史）
+│   │   ├── rename.py       # /rename（手动重命名，从 organize.py 拆分）
+│   │   ├── organize_stream.py # /organize/full-stream（SSE 流式整理，从 organize.py 拆分）
 │   │   ├── relocate.py     # /organize/dry-run /organize/execute /organize/archive-both /organize/purge-old（归位替换）
 │   │   ├── analyze.py      # /analyze/folder /analyze/library /organize/classify（分析诊断）
 │   │   ├── search.py       # /api/search /search/* /alist/*
@@ -26,10 +28,12 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   └── tools.py        # /batch_manage /ai/* /play
 │   ├── config_manager.py   # 配置管理（AppConfig）
 │   ├── discover_enrich.py  # 发现推荐业务层（enrich_cache + 清洗名注入 + 本地状态注入）
+│   ├── organize_executor.py # Action Plan 执行器（文件操作+路径计算，从 routes/organize.py 拆分）
 │   ├── organizer.py        # 文件夹分类判定核心（~550 行）+ re-export renamer/structure_organizer
 │   ├── renamer.py          # 重命名 + 影子名生成（从 organizer.py 拆分）
 │   ├── structure_organizer.py # 季目录整理 + 结构归位 + 归档清理（从 organizer.py 拆分）
-│   ├── scraper.py          # 递归刮削主逻辑 + re-export nfo_handler/poster_downloader
+│   ├── scraper.py          # 递归刮削入口 + 电影刮削 + 单文件/批量刮削 + re-export
+│   ├── scraper_tv.py       # TV 系列刮削（_scrape_tv_v3/_scrape_tv/_scrape_collection，从 scraper.py 拆分）
 │   ├── nfo_handler.py      # NFO 读写（从 scraper.py 拆分）
 │   ├── poster_downloader.py # 海报下载（从 scraper.py 拆分）
 │   ├── analyzer.py         # 独立分析层（纯读取诊断）
@@ -49,11 +53,11 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 ├── frontend/               # Next.js 前端
 │   ├── app/                # 页面路由（page.tsx、layout.tsx、manage/）
 │   ├── components/         # UI 组件（ai/detail/download/layout/manage/media/search/settings）
-│   │   ├── media/          # CardGrid + CardPoster + EpisodeList + ExpandPanel + DiscoverPage 等
-│   │   ├── search/         # SearchModal + EpisodeTable + PanFilterBar + PanResultsView + FilterBar + BatchUpgradePanel
+│   │   ├── media/          # CardGrid + CardPoster + EpisodeList + ExpandPanel + DiscoverPage（瘦壳）+ useDiscoverState + useDiscoverSubscribe 等
+│   │   ├── search/         # SearchModal（瘦壳）+ useSearchState + SearchHeader + EpisodeTable + PanFilterBar + PanResultsView + FilterBar + BatchUpgradePanel
 │   │   └── detail/         # DetailDrawer（瘦壳）+ 11 个独立子组件
 │   ├── hooks/              # 自定义 hooks（useLibrary.ts）
-│   ├── lib/                # 工具函数（api.ts、folderTypes.ts、utils.ts、mediaColors.ts）
+│   ├── lib/                # 工具函数（api/（按领域拆分的 API 子模块）、folderTypes.ts、utils.ts、mediaColors.ts）
 │   ├── types/              # 类型定义（index.ts）
 │   └── __tests__/          # vitest 测试（split-components.test.tsx）
 ├── .kiro/                  # AI 协作配置（见 project-structure.md）
@@ -69,7 +73,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
               ↓
 路由层        routes/*（参数校验 + 调用业务层，不写业务逻辑）
               ↓
-业务逻辑层    organizer.py（分类判定）/ renamer.py（重命名+影子名）/ structure_organizer.py（结构整理+归档）/ analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py / discover_enrich.py（发现推荐 enrich）
+业务逻辑层    organizer.py（分类判定）/ renamer.py（重命名+影子名）/ structure_organizer.py（结构整理+归档）/ organize_executor.py（Action Plan 执行）/ analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py / discover_enrich.py（发现推荐 enrich）
               ↓
 数据获取层    tmdb_client.py / douban_client.py / douban_api_v2.py / bangumi_client.py / searcher.py / scraper.py / nfo_handler.py / poster_downloader.py
               ↓

@@ -527,7 +527,7 @@ export function useSearchState({
       list = list.filter(r => !(r as any).is_junk);
     }
     // 排序：有做种 > 无做种 > 磁力链接，同层内按 quality_score > match_score > seeders > size
-    const NO_SEEDER_INFO = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe", "dmhy"]);
+    const NO_SEEDER_INFO = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe", "dmhy", "mikan"]);
     list = [...list].sort((a, b) => {
       const tier = (r: EnhancedSearchResult) => {
         if (r.seeders === 0 && r.size_gb === 0) return 2;

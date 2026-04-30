@@ -531,3 +531,20 @@
 - 搜索竞态：旧 SSE 的 onmessage 回调在新搜索启动后仍可能写入 state
 - 电影分类：种子子目录（正在下载或已下载）导致 `_classify_movie_category` 把 movie 误判为 collection，影响媒体库树展示和整理替换
 - 种子目录残留：整理后种子目录里可能还有 txt/nfo/jpg 等垃圾文件，旧的 `_cleanup_empty_dirs` 只清理空目录
+
+## 2026-04-30 大文件拆分 P1-P5（纯重构）
+
+**变更**:
+- **P1 SearchModal.tsx** (849→163行)：提取 `useSearchState.ts`(602行) 搜索状态+SSE+缓存+排序，`SearchHeader.tsx`(242行) 顶栏 UI
+- **P2 api.ts** (484→10个子模块)：按领域拆分到 `lib/api/` 目录（search/scrape/organize/download/discover/subscribe/config/system/ai），`index.ts` 聚合导出，调用方零改动
+- **P3 routes/organize.py** (1238→602行)：下沉 `organize_executor.py`(399行) Action Plan 执行器，独立 `routes/rename.py`(159行) 手动重命名路由，独立 `routes/organize_stream.py`(122行) SSE 流式整理路由
+- **P4 DiscoverPage.tsx** (597→195行)：提取 `useDiscoverState.ts`(366行) Tab+搜索+展开面板，`useDiscoverSubscribe.ts`(132行) 订阅逻辑
+- **P5 scraper.py** (1124→472行)：提取 `scraper_tv.py`(688行) TV 刮削逻辑（_scrape_tv_v3/_scrape_tv/_scrape_collection/_search_tmdb/_episode_nfo_matches_target）
+- **附带**：ai-rules 补充文件写入防 aborted 规则（fsWrite 失败禁止同参数重试），structure.md 同步新文件
+- **验证**：前端构建通过，后端 208 项测试全绿，零循环依赖，拆分导致的新问题 0 个
+- **拆分计划文档**：`.kiro/docs/code-split-todo.md`，含 32 个文件的完整审计（5 拆/7 观望/20 不拆）
+
+**踩坑**:
+- fsWrite 新建大文件（>50行）会触发 aborted，必须用 fsWrite 建头部 + fsAppend 分段追加
+- scraper_tv.py 中 _scrape_collection 和 _scrape_tv 调用了 scraper.py 的 scrape_folder/scrape_video，通过延迟导入（函数内 `from scraper import ...`）解决循环依赖
+- api.ts 拆分后 Next.js 自动解析 `api/index.ts`，所有 `import { api } from "@/lib/api"` 无需改动

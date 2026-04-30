@@ -28,6 +28,8 @@ from routes.discover import router as discover_router
 from routes.download import router as download_router
 from routes.library import router as library_router
 from routes.organize import router as organize_router
+from routes.rename import router as rename_router
+from routes.organize_stream import router as organize_stream_router
 from routes.relocate import router as relocate_router
 from routes.analyze import router as analyze_router
 from routes.scrape import router as scrape_router
@@ -54,6 +56,8 @@ app.include_router(discover_router)
 app.include_router(download_router)
 app.include_router(library_router)
 app.include_router(organize_router)
+app.include_router(rename_router)
+app.include_router(organize_stream_router)
 app.include_router(relocate_router)
 app.include_router(analyze_router)
 app.include_router(scrape_router)

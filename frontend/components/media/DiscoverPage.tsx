@@ -1,11 +1,7 @@
-// 发现页：多榜单推荐 + 探索筛选 + 搜索（主组件，状态管理+布局编排）
+// 发现页：多榜单推荐 + 探索筛选 + 搜索（瘦壳组件，编排两个 hook + 渲染布局）
 // 核心优化：已加载的 tab 内容保持在 DOM 中（display:none），切 tab 时图片不重新加载
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
 import type { DoubanHotItem } from "@/types";
-import { api } from "@/lib/api";
-import { normalizeItem, getCachedDetail, setCachedDetail, deleteCachedDetail, RECOMMEND_TABS, EXPLORE_TABS } from "./discoverUtils";
-import type { MediaDetail, PrimaryTab } from "./discoverUtils";
 import DiscoverCard from "./DiscoverCard";
 import SkeletonGrid from "./SkeletonGrid";
 import ExpandDetail from "./ExpandDetail";
@@ -13,10 +9,10 @@ import DiscoverHeader from "./DiscoverHeader";
 import ExplorePage from "./ExplorePage";
 import RecommendTabContent from "./RecommendTabContent";
 import SubscribeInline from "./SubscribeInline";
-import { useSubscriptions } from "@/hooks/useSubscriptions";
 import SearchModal from "@/components/search/SearchModal";
 import SubscribeConfigModal from "./SubscribeConfigModal";
-import type { SubscribeConfig } from "./SubscribeConfigModal";
+import { useDiscoverState } from "./useDiscoverState";
+import { useDiscoverSubscribe } from "./useDiscoverSubscribe";
 
 interface DiscoverPageProps {
   onSelectMedia: (item: DoubanHotItem) => void;
@@ -26,430 +22,32 @@ interface DiscoverPageProps {
   defaultSavePath?: string;
 }
 
-// 每个 tab 的独立状态
-interface TabState {
-  items: DoubanHotItem[];
-  loading: boolean;
-  error: boolean;
-  hasMore: boolean;
-  page: number;
-  // 周榜专用
-  weeklyChineseItems?: DoubanHotItem[];
-  weeklyGlobalItems?: DoubanHotItem[];
-}
-
-const EMPTY_TAB: TabState = { items: [], loading: false, error: false, hasMore: true, page: 0 };
-
 export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible = true, scrollContainerRef, defaultSavePath = "" }: DiscoverPageProps) {
-  const [primaryTab, setPrimaryTab] = useState<PrimaryTab>("recommend");
-  const [activeTab, setActiveTab] = useState(RECOMMEND_TABS[0].key);
-  const [exploreTab, setExploreTab] = useState(EXPLORE_TABS[0].key);
-  // 探索刷新
-  const [exploreRefreshTrigger, setExploreRefreshTrigger] = useState(0);
-  const [exploreRefreshing, setExploreRefreshing] = useState(false);
-  const [subscribeView, setSubscribeView] = useState("list");
-  const [subscribeFilter, setSubscribeFilter] = useState("all");
-  // 按 tab 存储数据，已加载的 tab 保持在 DOM 中
-  const [tabDataMap, setTabDataMap] = useState<Record<string, TabState>>({});
-  // 记录哪些 tab 曾经加载过（用于保持 DOM 不销毁）
-  const [renderedTabs, setRenderedTabs] = useState<Set<string>>(new Set());
+  const state = useDiscoverState({ visible, scrollContainerRef });
+  const sub = useDiscoverSubscribe({ activeTabConfig: state.activeTabConfig });
 
-  // 搜索
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchItems, setSearchItems] = useState<DoubanHotItem[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const {
+    primaryTab, setPrimaryTab, activeTab, setActiveTab,
+    exploreTab, setExploreTab, exploreRefreshTrigger, setExploreRefreshTrigger,
+    exploreRefreshing, setExploreRefreshing,
+    subscribeView, setSubscribeView, subscribeFilter, setSubscribeFilter,
+    tabDataMap, renderedTabs,
+    searchQuery, setSearchQuery, searchItems, searching, isSearchMode,
+    doSearch, exitSearch,
+    expandedIndex, detail, detailLoading,
+    closeExpand, handleCardClick, handleRetry, handleRefreshWithSource,
+    refreshing, handleRefresh, loadingMore, loadMore,
+    colCount, gridRef, stickyHeaderRef,
+    activeTabConfig, displayItems, rowEndIndex,
+    searchModalOpen, setSearchModalOpen, searchModalItem, setSearchModalItem, searchModalDetail, setSearchModalDetail,
+    openSearchModal, scrollToDiscover, handleRetryTab,
+  } = state;
 
-  // 展开面板
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const [expandPos, setExpandPos] = useState<{ afterIndex: number } | null>(null);
-  const [detail, setDetail] = useState<MediaDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const pendingClickRef = useRef<string>("");
-
-  // 刷新
-  const [refreshing, setRefreshing] = useState(false);
-  // 加载中（用于骨骼屏）
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  // ── 搜索资源弹窗（SearchModal）──
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [searchModalItem, setSearchModalItem] = useState<DoubanHotItem | null>(null);
-  const [searchModalDetail, setSearchModalDetail] = useState<MediaDetail | null>(null);
-
-  // ── 订阅配置弹窗 ──
-  const [subConfigOpen, setSubConfigOpen] = useState(false);
-  const [subConfigItem, setSubConfigItem] = useState<DoubanHotItem | null>(null);
-  const [subConfigDetail, setSubConfigDetail] = useState<MediaDetail | null>(null);
-
-  const openSearchModal = useCallback((item: DoubanHotItem, d: MediaDetail | null) => {
-    setSearchModalItem(item);
-    setSearchModalDetail(d);
-    setSearchModalOpen(true);
-  }, []);
-
-  // ── 响应式列数 ──
-  const [colCount, setColCount] = useState(5);
-  const colCountRef = useRef(colCount);
-  colCountRef.current = colCount;
-
-  useEffect(() => {
-    const calc = () => {
-      const w = window.innerWidth;
-      if (w >= 1536) setColCount(6);
-      else if (w >= 1280) setColCount(5);
-      else if (w >= 1024) setColCount(4);
-      else if (w >= 640) setColCount(3);
-      else setColCount(2);
-    };
-    calc();
-    window.addEventListener("resize", calc);
-    return () => window.removeEventListener("resize", calc);
-  }, []);
-
-  const scrollToDiscover = useCallback((instant?: boolean) => {
-    if (!stickyHeaderRef.current || !scrollContainerRef?.current) return;
-    const headerTop = stickyHeaderRef.current.offsetTop;
-    scrollContainerRef.current.scrollTo({ top: headerTop, behavior: instant ? "instant" as ScrollBehavior : "smooth" });
-  }, [scrollContainerRef]);
-
-  const loadIdRef = useRef(0);
-  const tabDataMapRef = useRef(tabDataMap);
-  tabDataMapRef.current = tabDataMap;
-
-  const closeExpand = useCallback(() => {
-    setExpandedIndex(null); setExpandPos(null); setDetail(null); setDetailLoading(false);
-    pendingClickRef.current = "";
-  }, []);
-
-  // ── 更新单个 tab 的状态 ──
-  const updateTab = useCallback((tabKey: string, patch: Partial<TabState>) => {
-    setTabDataMap(prev => ({ ...prev, [tabKey]: { ...(prev[tabKey] || EMPTY_TAB), ...patch } }));
-  }, []);
-
-  // ── 数据加载 ──
-  const loadTab = useCallback(async (tabKey: string, pageNum = 0, append = false, loadId?: number) => {
-    const cc = colCountRef.current;
-    const reqSize = Math.max(cc * 4, 30);
-    const maxShow = cc * 4;
-    const isStale = () => loadId !== undefined && loadId !== loadIdRef.current;
-
-    // 标记此 tab 已渲染过
-    setRenderedTabs(prev => { if (prev.has(tabKey)) return prev; const n = new Set(prev); n.add(tabKey); return n; });
-
-    if (tabKey === "weekly_combined") {
-      const existing = tabDataMapRef.current[tabKey];
-      if (existing?.weeklyChineseItems && existing?.weeklyGlobalItems && pageNum === 0 && !append) {
-        return;
-      }
-      updateTab(tabKey, { loading: true, error: false });
-      try {
-        const [cnData, glData] = await Promise.all([
-          api.discoverRecommend("douban_weekly_chinese", 0, 20),
-          api.discoverRecommend("douban_weekly_global", 0, 20),
-        ]);
-        if (isStale()) return;
-        const cn = (cnData.items || []).map(normalizeItem);
-        const gl = (glData.items || []).map(normalizeItem);
-        updateTab(tabKey, { weeklyChineseItems: cn, weeklyGlobalItems: gl, items: [], hasMore: false, loading: false });
-      } catch { if (!isStale()) updateTab(tabKey, { error: true, loading: false }); }
-      return;
-    }
-
-    // 非周榜：检查是否已有数据
-    if (pageNum === 0 && !append) {
-      const existing = tabDataMapRef.current[tabKey];
-      if (existing?.items && existing.items.length > 0) {
-        return;
-      }
-    }
-
-    if (pageNum === 0) { updateTab(tabKey, { loading: true, error: false }); } else setLoadingMore(true);
-    try {
-      const data = await api.discoverRecommend(tabKey, pageNum * reqSize, reqSize);
-      if (isStale()) return;
-      const normalized = (data.items || []).map(normalizeItem);
-      const cc = colCountRef.current;
-      const trimmed = normalized.slice(0, Math.floor(Math.min(normalized.length, maxShow) / cc) * cc);
-      if (append) {
-        setTabDataMap(prev => {
-          const old = prev[tabKey] || EMPTY_TAB;
-          const existingIds = new Set(old.items.map((i: DoubanHotItem) => i.douban_id || i.title));
-          const unique = trimmed.filter((i: DoubanHotItem) => !existingIds.has(i.douban_id || i.title));
-          const merged = [...old.items, ...unique];
-          // 截断到整行
-          const rowAligned = merged.slice(0, Math.floor(merged.length / cc) * cc);
-          const more = unique.length > 0 && normalized.length >= reqSize * 0.5;
-          return { ...prev, [tabKey]: { ...old, items: rowAligned, hasMore: more, page: pageNum } };
-        });
-      } else {
-        const more = normalized.length >= reqSize * 0.5;
-        updateTab(tabKey, { items: trimmed, hasMore: more, loading: false, page: 0 });
-      }
-    } catch {
-      if (!isStale() && !append) updateTab(tabKey, { error: true, items: [], loading: false });
-    } finally { if (!isStale()) setLoadingMore(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [updateTab]);
-
-  const loadMore = useCallback(() => {
-    const cur = tabDataMapRef.current[activeTab] || EMPTY_TAB;
-    const p = cur.page + 1;
-    loadTab(activeTab, p, true, loadIdRef.current);
-  }, [activeTab, loadTab]);
-
-  const doSearch = useCallback(async (q: string) => {
-    if (!q.trim()) return;
-    setSearching(true); setIsSearchMode(true); setSearchItems([]); closeExpand();
-    try {
-      const data = await api.doubanSearch(q);
-      setSearchItems((data.candidates || data.items || []).map((c: any) => normalizeItem(c)));
-    } catch { setSearchItems([]); } finally { setSearching(false); }
-  }, [closeExpand]);
-
-  const exitSearch = () => { setIsSearchMode(false); setSearchQuery(""); setSearchItems([]); closeExpand(); };
-  const activeTabConfig = RECOMMEND_TABS.find(t => t.key === activeTab) || RECOMMEND_TABS[0];
-  const curTabData = tabDataMap[activeTab] || EMPTY_TAB;
-  const displayItems = isSearchMode ? searchItems
-    : activeTab === "weekly_combined" ? [...(curTabData.weeklyChineseItems || []), ...(curTabData.weeklyGlobalItems || [])]
-    : curTabData.items;
-
-  // ── 订阅状态 ──
-  const { isSubscribed: _isSubscribed, subscribe: doSubscribe, unsubscribe: doUnsubscribe, subscriptions, refresh: refreshSubs } = useSubscriptions();
-  const [subscribing, setSubscribing] = useState(false);
-  const [justSubscribed, setJustSubscribed] = useState<Set<string>>(new Set());
-
-  // 包装 isSubscribed：加入"刚订阅"的临时标记
-  const isSubscribed = useCallback((tmdbId?: number, title?: string, year?: string, season?: number): boolean => {
-    if (title && justSubscribed.has(`${title}|${year || ""}`)) return true;
-    return _isSubscribed(tmdbId, title, year, season);
-  }, [_isSubscribed, justSubscribed]);
-
-  const handleSubscribe = useCallback(async (item: DoubanHotItem, d: MediaDetail | null) => {
-    // 打开配置弹窗而非直接订阅
-    setSubConfigItem(item);
-    setSubConfigDetail(d);
-    setSubConfigOpen(true);
-  }, []);
-
-  // 取消订阅：根据 title+year 找到订阅 ID 后删除
-  const handleUnsubscribe = useCallback(async (item: DoubanHotItem) => {
-    const sub = subscriptions.find(s =>
-      s.title === item.title && s.year === (item.year || "") && s.state !== "completed"
-    );
-    if (!sub) return;
-    await doUnsubscribe(sub.id);
-    setJustSubscribed(prev => {
-      const next = new Set(prev);
-      next.delete(`${item.title}|${item.year || ""}`);
-      return next;
-    });
-  }, [subscriptions, doUnsubscribe]);
-
-  const handleSubscribeConfirm = useCallback(async (config: SubscribeConfig) => {
-    if (!subConfigItem) return;
-    setSubscribing(true);
-    setSubConfigOpen(false);
-    const item = subConfigItem;
-    const d = subConfigDetail;
-    try {
-      // type 优先从 item.media_type 取（卡片级别），回退到 detail，最后用 tab 级别
-      const mediaType = item.media_type || (d as any)?.media_type || (activeTabConfig.mediaType === "tv" ? "tv" : "movie");
-
-      // 清洗名：优先 detail，回退 item
-      const cnName = (d as any)?.clean_name_cn || item.clean_name_cn || item.title;
-      const enName = (d as any)?.clean_name_en || item.clean_name_en || (d as any)?.english_title || item._tmdb_original_title || "";
-      const originalName = (d as any)?.clean_name_original || item.clean_name_original || "";
-
-      // 季号：从标题中提取（"第二季" → 2, "S02" → 2）
-      let season: number | undefined;
-      const seasonMatch = item.title.match(/第([一二三四五六七八九十\d]+)季|S(\d{1,2})/i);
-      if (seasonMatch) {
-        const cnNum = seasonMatch[1];
-        const enNum = seasonMatch[2];
-        if (enNum) {
-          season = parseInt(enNum);
-        } else if (cnNum) {
-          const cnMap: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10 };
-          season = cnMap[cnNum] || parseInt(cnNum) || undefined;
-        }
-      }
-
-      const result = await doSubscribe({
-        title: item.title,
-        year: item.year || d?.year || "",
-        type: mediaType,
-        season,
-        // 各平台 ID：从详情数据中尽可能获取
-        tmdb_id: d?.tmdb_id || (d as any)?.external_ids?.tmdb_id || undefined,
-        imdb_id: (d as any)?.external_ids?.imdb_id || "",
-        douban_id: item.douban_id || undefined,
-        poster: item.cover_url || d?.poster_url || "",
-        // 订阅配置
-        quality: config.quality,
-        target_quality: config.target_quality,
-        include: config.include,
-        exclude: config.exclude,
-        mode: config.mode,
-        best_version: config.best_version,
-        save_path: config.save_path,
-        search_keyword: config.search_keyword,
-        sources: config.sources,
-        purpose: config.purpose,
-        // 清洗名（后端用于构造 aliases 和搜索词）
-        clean_name_cn: cnName,
-        clean_name_en: enName,
-        clean_name_original: originalName,
-      });
-      if (result.status === "ok") {
-        setJustSubscribed(prev => new Set(prev).add(`${item.title}|${item.year || d?.year || ""}`));
-      }
-    } catch (e) {
-      console.error("[Subscribe] 异常:", e);
-    } finally {
-      setSubscribing(false);
-      setSubConfigItem(null);
-      setSubConfigDetail(null);
-    }
-  }, [doSubscribe, activeTabConfig, subConfigItem, subConfigDetail]);
-
-  // ── 首次可见或切 tab 时加载（仅未加载过的 tab 才发请求）──
-  useEffect(() => {
-    if (!visible) return;
-    closeExpand();
-    const id = ++loadIdRef.current;
-    loadTab(activeTab, 0, false, id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, visible]);
-
-  // colCount 变化时清空所有缓存重新加载
-  const prevColCount = useRef(colCount);
-  useEffect(() => {
-    if (prevColCount.current !== colCount) {
-      prevColCount.current = colCount;
-      setTabDataMap({}); setRenderedTabs(new Set());
-      const id = ++loadIdRef.current;
-      loadTab(activeTab, 0, false, id);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colCount]);
-
-  // ── 手动刷新 ──
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      if (activeTab === "weekly_combined") {
-        await Promise.all([api.discoverRefresh("douban_weekly_chinese"), api.discoverRefresh("douban_weekly_global")]);
-      } else {
-        await api.discoverRefresh(activeTab);
-      }
-    } catch {}
-    // 清除该 tab 的缓存数据，强制重新加载
-    setTabDataMap(prev => { const n = { ...prev }; delete n[activeTab]; return n; });
-    closeExpand();
-    const id = ++loadIdRef.current;
-    // 延迟一帧让 state 更新后再加载
-    requestAnimationFrame(() => loadTab(activeTab, 0, false, id));
-    setRefreshing(false);
-  }, [activeTab, loadTab, closeExpand]);
-
-  // ── 展开面板逻辑 ──
-  const getRowEndIndex = useCallback((clickIndex: number): number => {
-    if (!gridRef.current) return clickIndex;
-    const cards = gridRef.current.querySelectorAll<HTMLElement>("[data-discover-card]");
-    if (!cards[clickIndex]) return clickIndex;
-    const clickTop = cards[clickIndex].offsetTop;
-    let lastInRow = clickIndex;
-    for (let i = clickIndex + 1; i < cards.length; i++) {
-      if (cards[i].offsetTop === clickTop) lastInRow = i; else break;
-    }
-    return lastInRow;
-  }, []);
-
-  const handleCardClick = useCallback(async (index: number) => {
-    if (expandedIndex === index) { closeExpand(); return; }
-    scrollToDiscover();
-    setExpandedIndex(index); setExpandPos({ afterIndex: index });
-    const item = displayItems[index];
-    if (!item) return;
-    const detailSource = activeTabConfig.ratingSource || "tmdb";
-    const cacheKey = `${item.title}_${item.year}_${detailSource}`;
-    pendingClickRef.current = cacheKey as any;
-    const cached = getCachedDetail(cacheKey);
-    if (cached) { setDetail(cached); setDetailLoading(false); return; }
-    setDetail(null); setDetailLoading(true);
-    try {
-      const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
-      const itemId = item.douban_id || "";
-      const d = await api.mediaInfo(item.title, item.year, tmdbType, item.subtitle || "", detailSource, itemId);
-      if (pendingClickRef.current !== cacheKey) return;
-      if (d.found) setCachedDetail(cacheKey, d);
-      setDetail(d);
-    } catch {
-      if (pendingClickRef.current === cacheKey) setDetail({ found: false });
-    } finally {
-      if (pendingClickRef.current === cacheKey) setDetailLoading(false);
-    }
-  }, [expandedIndex, displayItems, activeTab, activeTabConfig, closeExpand, scrollToDiscover]);
-
-  const handleRetry = useCallback(() => {
-    if (expandedIndex === null) return;
-    const retryItem = displayItems[expandedIndex];
-    const detailSource = activeTabConfig.ratingSource || "tmdb";
-    const cacheKey = `${retryItem.title}_${retryItem.year}_${detailSource}`;
-    pendingClickRef.current = cacheKey;
-    setDetail(null); setDetailLoading(true);
-    const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
-    const itemId = retryItem.douban_id || "";
-    api.mediaInfo(retryItem.title, retryItem.year, tmdbType as any, retryItem.subtitle || "", detailSource, itemId)
-      .then(d => { if (pendingClickRef.current !== cacheKey) return; if (d.found) setCachedDetail(cacheKey, d); setDetail(d); })
-      .catch(() => { if (pendingClickRef.current === cacheKey) setDetail({ found: false }); })
-      .finally(() => { if (pendingClickRef.current === cacheKey) setDetailLoading(false); });
-  }, [expandedIndex, displayItems, activeTab, activeTabConfig]);
-
-  // 切换数据源刷新（清缓存 + 用指定源重新请求）
-  const handleRefreshWithSource = useCallback((source: string) => {
-    if (expandedIndex === null) return;
-    const item = displayItems[expandedIndex];
-    if (!item) return;
-    // 清除所有源的缓存
-    for (const src of ["douban", "tmdb", "bangumi"]) {
-      deleteCachedDetail(`${item.title}_${item.year}_${src}`);
-    }
-    const cacheKey = `${item.title}_${item.year}_${source}`;
-    pendingClickRef.current = cacheKey;
-    setDetail(null); setDetailLoading(true);
-    const tmdbType = activeTabConfig.mediaType === "tv" ? "tv" : "movie";
-    const itemId = item.douban_id || "";
-    api.mediaInfo(item.title, item.year, tmdbType as any, item.subtitle || "", source, itemId)
-      .then(d => { if (pendingClickRef.current !== cacheKey) return; if (d.found) setCachedDetail(cacheKey, d); setDetail(d); })
-      .catch(() => { if (pendingClickRef.current === cacheKey) setDetail({ found: false }); })
-      .finally(() => { if (pendingClickRef.current === cacheKey) setDetailLoading(false); });
-  }, [expandedIndex, displayItems, activeTab, activeTabConfig]);
-
-  // 全局点击关闭
-  useEffect(() => {
-    if (expandedIndex === null) return;
-    const handler = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (t.closest("[data-discover-card]") || t.closest("[data-expand-panel]") ||
-          t.closest("button") || t.closest("a") || t.closest("input") || t.closest("textarea")) return;
-      closeExpand();
-    };
-    const timer = setTimeout(() => document.addEventListener("click", handler), 100);
-    return () => { clearTimeout(timer); document.removeEventListener("click", handler); };
-  }, [expandedIndex, closeExpand]);
-
-  const rowEndIndex = expandPos ? getRowEndIndex(expandPos.afterIndex) : -1;
-
-  // 重试 tab 加载
-  const handleRetryTab = useCallback((tabKey: string) => {
-    const id = ++loadIdRef.current;
-    setTabDataMap(prev => { const n = { ...prev }; delete n[tabKey]; return n; });
-    loadTab(tabKey, 0, false, id);
-  }, [loadTab]);
+  const {
+    subscriptions, refreshSubs, justSubscribed, setJustSubscribed, _isSubscribed,
+    isSubscribed, handleSubscribe, handleUnsubscribe, handleSubscribeConfirm,
+    subConfigOpen, setSubConfigOpen, subConfigItem, setSubConfigItem, subConfigDetail, setSubConfigDetail,
+  } = sub;
 
   return (
     <div className="mt-8" style={{ minHeight: "100vh" }}>

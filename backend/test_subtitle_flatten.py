@@ -7,7 +7,7 @@ import shutil
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from routes.organize import _apply_action_plan_moves, _PLAN_SUBTITLE_EXTS
+from organize_executor import _apply_action_plan_moves, _PLAN_SUBTITLE_EXTS
 
 
 def _make_tree(base, structure: dict):

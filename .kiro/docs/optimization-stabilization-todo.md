@@ -11,6 +11,7 @@
 ### 当前主线
 
 - 当前正在处理：搜索下载修复 + 清洗名自愈机制 + 前端英文名展示
+- 并行完成：大文件拆分 P1-P5（纯重构，详见 `code-split-todo.md`）
 - 上一条主线（下载→归位闭环）已暂停，详见 [download-relocate-worklog.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/download-relocate-worklog.md)
 
 ### 本轮完成
