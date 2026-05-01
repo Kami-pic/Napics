@@ -103,6 +103,7 @@
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
 - Alist 双阶段：cloud_download → local_sync → completed
 - 归位替换：file_relocator.py（relocate → confirm_replace / archive_both / cancel_replace）
+- 回收站默认跟随旧文件所属媒体库根落盘（如 `<媒体库根>/#recycle_bin`），backend 只集中保存 `recycle_bin.json` 元数据；只有显式配置 `recycle_bin_path` 时才使用固定目录
 - 整理替换附属文件规则（详见 knowledge/download-replace-pipeline.md）：
   - 字幕文件：扁平化到 Season 目录，通过集号匹配用视频标准名重命名
   - 非字幕文件（字体包/SPs/CDs/OAD）：提升到剧集根目录，不进入 Season

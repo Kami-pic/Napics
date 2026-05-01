@@ -181,6 +181,7 @@ def test_recycle_old_files_moves_files_into_real_recycle_bin_and_persists_metada
         show_dir = tmp_dir / "Show"
         season_dir = show_dir / "Season 01"
         recycle_dir = tmp_dir / ".recycle"
+        meta_path = tmp_dir / "backend-meta" / "recycle_bin.json"
         old_video = season_dir / "Show.S01E01.1080p.mkv"
         sidecar_nfo = season_dir / "Show.S01E01.1080p.nfo"
         season_nfo = season_dir / "season.nfo"
@@ -188,7 +189,7 @@ def test_recycle_old_files_moves_files_into_real_recycle_bin_and_persists_metada
         for path in [old_video, sidecar_nfo, season_nfo]:
             _touch(path)
 
-        recycle_bin = RecycleBin(str(recycle_dir), retention_days=7)
+        recycle_bin = RecycleBin(str(recycle_dir), retention_days=7, meta_path=str(meta_path))
         relocator = FileRelocator(recycle_bin=recycle_bin)
 
         result = relocator._recycle_old_files(
@@ -204,7 +205,7 @@ def test_recycle_old_files_moves_files_into_real_recycle_bin_and_persists_metada
         assert not sidecar_nfo.exists()
         assert not season_nfo.exists()
 
-        reloaded = RecycleBin(str(recycle_dir), retention_days=7)
+        reloaded = RecycleBin(str(recycle_dir), retention_days=7, meta_path=str(meta_path))
         entries = {entry.original_path: entry for entry in reloaded.list_entries()}
 
         assert set(entries) == {str(old_video), str(sidecar_nfo), str(season_nfo)}
@@ -215,9 +216,56 @@ def test_recycle_old_files_moves_files_into_real_recycle_bin_and_persists_metada
             assert Path(entry.recycle_path).name.endswith(Path(original_path).name)
             assert entry.task_id == "task-1"
 
-        assert (recycle_dir / "recycle_bin.json").exists()
+        assert meta_path.exists()
 
     _with_temp_dir("relocator_real_recycle_bin", run)
+
+
+def test_recycle_old_files_defaults_to_same_library_root_instead_of_backend_local_dir():
+    def run(tmp_dir):
+        media_root = tmp_dir / "media-root"
+        show_dir = media_root / "Show"
+        season_dir = show_dir / "Season 01"
+        meta_path = tmp_dir / "backend-meta" / "recycle_bin.json"
+        old_video = season_dir / "Show.S01E01.1080p.mkv"
+        sidecar_nfo = season_dir / "Show.S01E01.1080p.nfo"
+        season_nfo = season_dir / "season.nfo"
+
+        for path in [old_video, sidecar_nfo, season_nfo]:
+            _touch(path)
+
+        recycle_bin = RecycleBin(
+            retention_days=7,
+            library_roots=[str(media_root)],
+            meta_path=str(meta_path),
+        )
+        relocator = FileRelocator(recycle_bin=recycle_bin)
+
+        result = relocator._recycle_old_files(
+            CoexistPair(
+                new_file=str(show_dir / "Season 01" / "Show.S01E02.2160p.mkv"),
+                old_file=str(old_video),
+            ),
+            task_id="task-1",
+        )
+
+        recycle_dir = media_root / "#recycle_bin"
+        reloaded = RecycleBin(
+            retention_days=7,
+            library_roots=[str(media_root)],
+            meta_path=str(meta_path),
+        )
+        entries = {entry.original_path: entry for entry in reloaded.list_entries()}
+
+        assert result is True
+        assert recycle_dir.exists()
+        assert set(entries) == {str(old_video), str(sidecar_nfo), str(season_nfo)}
+        for entry in entries.values():
+            assert Path(entry.recycle_path).parent == recycle_dir
+        assert not (tmp_dir / "backend" / "recycle_bin").exists()
+        assert meta_path.exists()
+
+    _with_temp_dir("relocator_recycle_same_library_root", run)
 
 
 def test_confirm_replace_falls_back_to_disk_scanned_whitelist_when_plan_missing_it():

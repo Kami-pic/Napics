@@ -182,10 +182,14 @@ def _get_recycle_bin() -> RecycleBin:
     global _recycle_bin
     if _recycle_bin is None:
         conf = config_m.config
-        recycle_dir = conf.recycle_bin_path or os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "recycle_bin"
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        recycle_dir = (conf.recycle_bin_path or "").strip()
+        _recycle_bin = RecycleBin(
+            recycle_dir=recycle_dir,
+            retention_days=conf.recycle_bin_retention_days,
+            library_roots=conf.nas_paths,
+            meta_path=os.path.join(backend_dir, "recycle_bin.json"),
         )
-        _recycle_bin = RecycleBin(recycle_dir, conf.recycle_bin_retention_days)
     return _recycle_bin
 
 
