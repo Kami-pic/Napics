@@ -41,7 +41,7 @@
 - [x] 自动归位 / confirm / execute
   - `1a607cf1`、`5ad5b6f9` 两个真实样本已证明 `dry-run -> execute -> archived`
   - `action_plan` 目标落盘与 `Subs/Fonts` 等附属资源跟随归位已补隔离回归
-  - `recycle_bin` 默认回收位置已修正为“跟随旧文件所属媒体库根”，不再在空配置时静默回落到本地 `backend/recycle_bin`
+  - `recycle_bin` 默认回收位置已修正为“媒体库同卷同级隐藏回收站”，不再在空配置时静默回落到本地 `backend/recycle_bin`
 - [x] 前端主入口回归
   - `archived` tab、查看入口、绝对 NAS 路径命中、首页媒体库树性能回归已收口
 

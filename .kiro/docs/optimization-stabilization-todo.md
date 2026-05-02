@@ -116,7 +116,7 @@
     - 路由闭环
     - `file_relocator` 冲突探测 / 回收 / confirm / execute
     - `download_manager` 完成触发链 / 下载器状态 / 持久化 / 局部刷新 / 线程观测
-    - 回收站默认落盘侧修正：旧资源默认回收到所属媒体库根的 `#recycle_bin`，backend 仅保留集中元数据
+    - 回收站默认落盘侧修正：旧资源默认回收到媒体库同卷同级的隐藏目录 `.recycle_bins/<媒体库名>`，backend 仅保留集中元数据
 - 当前未证明：
     - 真实 NAS execute
     - 真实线程交叠时序

@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 RECYCLE_META_FILE = "recycle_bin.json"
-DEFAULT_RECYCLE_DIR_NAME = "#recycle_bin"
+DEFAULT_RECYCLE_PARENT_DIR_NAME = ".recycle_bins"
 
 
 class RecycleBinEntry(BaseModel):
@@ -174,10 +174,10 @@ class RecycleBin:
 
         matched_root = self._match_library_root(file_path)
         if matched_root:
-            return os.path.join(matched_root, DEFAULT_RECYCLE_DIR_NAME)
+            return self._build_default_recycle_dir_from_root(matched_root)
 
         parent_dir = os.path.dirname(os.path.abspath(file_path))
-        return os.path.join(parent_dir, DEFAULT_RECYCLE_DIR_NAME) if parent_dir else ""
+        return os.path.join(parent_dir, DEFAULT_RECYCLE_PARENT_DIR_NAME) if parent_dir else ""
 
     def _match_library_root(self, file_path: str) -> str:
         abs_path = os.path.abspath(file_path)
@@ -192,6 +192,17 @@ class RecycleBin:
             if len(root) > len(best_match):
                 best_match = root
         return best_match
+
+    def _build_default_recycle_dir_from_root(self, library_root: str) -> str:
+        normalized_root = os.path.normpath(library_root)
+        root_name = os.path.basename(normalized_root.rstrip("\\/"))
+        parent_dir = os.path.dirname(normalized_root.rstrip("\\/"))
+
+        if parent_dir and os.path.normcase(parent_dir) != os.path.normcase(normalized_root.rstrip("\\/")):
+            recycle_parent = os.path.join(parent_dir, DEFAULT_RECYCLE_PARENT_DIR_NAME)
+            return os.path.join(recycle_parent, root_name) if root_name else recycle_parent
+
+        return os.path.join(normalized_root, DEFAULT_RECYCLE_PARENT_DIR_NAME)
 
     def _load(self):
         path = self.meta_path

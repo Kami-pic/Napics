@@ -249,7 +249,7 @@ def test_recycle_old_files_defaults_to_same_library_root_instead_of_backend_loca
             task_id="task-1",
         )
 
-        recycle_dir = media_root / "#recycle_bin"
+        recycle_dir = tmp_dir / ".recycle_bins" / "media-root"
         reloaded = RecycleBin(
             retention_days=7,
             library_roots=[str(media_root)],

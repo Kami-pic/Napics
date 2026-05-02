@@ -35,13 +35,36 @@ def test_move_to_bin_falls_back_to_source_parent_when_path_is_outside_library_ro
         )
         entry = recycle_bin.move_to_bin(str(file_path), task_id="task-1")
 
-        expected_dir = download_dir / "#recycle_bin"
+        expected_dir = download_dir / ".recycle_bins"
         assert entry is not None
         assert expected_dir.exists()
         assert Path(entry.recycle_path).parent == expected_dir
         assert meta_path.exists()
 
     _with_temp_dir("recycle_bin_parent_fallback", run)
+
+
+def test_move_to_bin_uses_hidden_sibling_recycle_dir_for_library_root():
+    def run(tmp_dir):
+        media_root = tmp_dir / "TV"
+        file_path = media_root / "Show" / "Season 01" / "Show.S01E01.mkv"
+        meta_path = tmp_dir / "backend-meta" / "recycle_bin.json"
+        _touch(file_path)
+
+        recycle_bin = RecycleBin(
+            retention_days=7,
+            library_roots=[str(media_root)],
+            meta_path=str(meta_path),
+        )
+        entry = recycle_bin.move_to_bin(str(file_path), task_id="task-1")
+
+        expected_dir = tmp_dir / ".recycle_bins" / "TV"
+        assert entry is not None
+        assert expected_dir.exists()
+        assert Path(entry.recycle_path).parent == expected_dir
+        assert meta_path.exists()
+
+    _with_temp_dir("recycle_bin_hidden_sibling_root", run)
 
 
 def test_cleanup_expired_removes_recycled_directory_entries():

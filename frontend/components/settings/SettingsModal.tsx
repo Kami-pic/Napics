@@ -48,6 +48,35 @@ const FIELD_GROUPS: { group: string; fields: { label: string; key: string; desc:
   { group: "AI 辅助", fields: [] },
 ];
 
+function normalizePathLike(path: string): string {
+  return path.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+}
+
+function getDefaultRecycleBinPlaceholder(paths: string[]): string {
+  const firstPath = normalizePathLike(paths.find((path) => path.trim()) || "");
+  if (!firstPath) {
+    return "默认：媒体库同级隐藏目录，如 \\\\DS218play\\share\\.recycle_bins\\Movies";
+  }
+
+  const parts = firstPath.split("\\").filter(Boolean);
+  if (firstPath.startsWith("\\\\")) {
+    if (parts.length >= 3) {
+      const libraryName = parts[parts.length - 1];
+      const parent = `\\\\${parts.slice(0, -1).join("\\")}`;
+      return `默认：${parent}\\.recycle_bins\\${libraryName}`;
+    }
+    return `默认：${firstPath}\\.recycle_bins`;
+  }
+
+  if (parts.length >= 2) {
+    const libraryName = parts[parts.length - 1];
+    const parent = parts.slice(0, -1).join("\\");
+    return `默认：${parent}\\.recycle_bins\\${libraryName}`;
+  }
+
+  return `默认：${firstPath}\\.recycle_bins`;
+}
+
 export default function SettingsModal({ open, onClose, config, onSave, setConfig, paths, setPaths }: SettingsModalProps) {
   const [cacheInfo, setCacheInfo] = useState<{ size_mb: number; file_count: number } | null>(null);
   const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -67,6 +96,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
 
   if (!open) return null;
   const updatePath = (i: number, v: string) => { const n = [...paths]; n[i] = v; setPaths(n); };
+  const recycleBinPlaceholder = getDefaultRecycleBinPlaceholder(paths);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-8 z-50"
@@ -284,8 +314,9 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
             <div className="mt-2 space-y-2">
               <div>
                 <label className="text-[10px] text-slate-500 mb-1 block">路径（留空使用默认）</label>
+                <p className="text-[10px] text-slate-600 mb-1.5">默认放到媒体库同卷同级的隐藏回收站目录，避免被播放器直接扫到。</p>
                 <input value={config.recycle_bin_path || ""} onChange={(e) => setConfig({ ...config, recycle_bin_path: e.target.value })}
-                  placeholder="如 \\\\DS218play\\share\\回收站"
+                  placeholder={recycleBinPlaceholder}
                   className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
               </div>
               <div className="flex items-center gap-3">
