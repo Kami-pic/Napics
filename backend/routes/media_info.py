@@ -120,17 +120,34 @@ def scrape_douban_candidates(name: str):
 
 
 @router.post("/scrape/douban-select")
-def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str = "", poster_url: str = "", subtitle: str = ""):
+def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str = "", poster_url: str = "", subtitle: str = "", media_type: str = ""):
     """用户选择豆瓣候选后，用搜索结果数据写入 NFO + 海报"""
     from tmdb_client import ScrapeResult
     
+    # 自动判断 media_type：优先用前端传入，否则先尝试 tv 再 movie
+    detected_type = media_type or ""
+    
     # 优先 API v2 拉取详情
     result = None
-    v2_detail = douban_api_v2.get_detail(douban_id, media_type="movie")
+    v2_detail = None
+    
+    if detected_type == "tv" or not detected_type:
+        # 先尝试 tv
+        v2_detail = douban_api_v2.get_detail(douban_id, media_type="tv")
+        if v2_detail and v2_detail.get("title"):
+            detected_type = "tv"
+    
+    if not v2_detail or not v2_detail.get("title"):
+        # 再尝试 movie
+        v2_detail = douban_api_v2.get_detail(douban_id, media_type="movie")
+        if v2_detail and v2_detail.get("title"):
+            if not detected_type:
+                detected_type = "movie"
+    
     if v2_detail and v2_detail.get("title"):
         result = ScrapeResult(
             tmdb_id=int(douban_id),
-            media_type="movie",
+            media_type=detected_type or "movie",
             title=v2_detail.get("title", "") or title,
             original_title=v2_detail.get("original_title", "") or subtitle,
             year=v2_detail.get("year", "") or year,
@@ -149,7 +166,7 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
         if detail and detail.get("title"):
             result = ScrapeResult(
                 tmdb_id=int(douban_id),
-                media_type="movie",
+                media_type=detected_type or "movie",
                 title=detail.get("title", "") or title,
                 original_title=detail.get("original_title", "") or subtitle,
                 year=detail.get("year", "") or year,
@@ -166,7 +183,7 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
     if not result:
         result = ScrapeResult(
             tmdb_id=int(douban_id),
-            media_type="movie",
+            media_type=detected_type or "movie",
             title=title,
             original_title=subtitle,
             year=year,
@@ -181,7 +198,11 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
                     os.remove(old_p)
                 except OSError:
                     pass
-        scraper.write_movie_nfo(path, result)
+        # 根据 media_type 写入对应类型的 NFO
+        if result.media_type == "tv":
+            scraper.write_tvshow_nfo(path, result)
+        else:
+            scraper.write_movie_nfo(path, result)
         if result.poster_url:
             scraper.download_poster(path, result.poster_url)
     elif os.path.isfile(path):
