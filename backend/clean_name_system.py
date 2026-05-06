@@ -165,9 +165,16 @@ def strip_noise(filename: str) -> str:
     name = re.sub(r'(?i)\bAAC\d?\.\d\b', '', name)
     name = re.sub(r'(?<!\d)\d\s*\.\s*1(?!\d)', '', name)
 
-    # 7. 去媒体形式标签（TV版/电视剧版等，包括紧跟中文名的情况）
+    # 6b. 去独立的语言/音轨标签（RUS/JAP/ENG/FRE/GER/ITA/SPA/KOR/CHI 等 ISO 语言缩写）
+    name = re.sub(r'(?i)\b(?:RUS|JAP|JPN|ENG|FRE|FRA|GER|DEU|ITA|SPA|KOR|CHI|CHS|CHT|ARA|POR|THA|VIE|IND|TUR|POL|NLD|DUT|SWE|NOR|DAN|FIN|CZE|HUN|RUM|ROM|HEB|GRE|UKR|BUL|HRV|SRP|SLK|SLV|EST|LAT|LIT)\b', '', name)
+    # 去独立的发布者/字幕组名（常见的非作品名英文标识，通常在尾部）
+    name = re.sub(r'(?i)\b(?:Deadmauvlad|LostFilm|NovaFilm|BaibaKo|Kuraj|Bambey|AlexFilm|NewStudio|RG\s*Paravozik|DVO|AVO|MVO|VO)\b', '', name)
+
+    # 7. 去媒体形式标签（TV版/电视剧版/OVA/OAD等，包括紧跟中文名的情况）
     name = re.sub(r'(?:TV版|电视剧版|OAD|番外篇|总集篇|完结篇)(?=[\s._\-]|$)', '', name)
     name = re.sub(r'(?<=[\u4e00-\u9fff])TV版', '', name)
+    # 去独立的 OVA/OAD/ONA/SP 标签（不在作品名中间的）
+    name = re.sub(r'(?<![a-zA-Z])(?:OVA|OAD|ONA)(?![a-zA-Z])', '', name)
 
     # 8. 去分辨率数字（1920x1080 等）
     name = re.sub(r'\d{3,4}[xX×]\d{3,4}', '', name)

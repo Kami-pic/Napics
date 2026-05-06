@@ -16,6 +16,14 @@
 
 ### 本轮完成
 
+- 6 个用户反馈 bug 修复 + 9 个历史遗留测试修复（2026-05-06）：
+  - 清洗名去噪增强：去除 ISO 语言缩写(RUS/JAP/ENG 等)、OVA/ONA 独立标签、发布者名(Deadmauvlad 等)
+  - 英文名保存：前端传 is_folder 标记，后端支持文件夹模式按路径前缀匹配更新子视频
+  - 多季排序：新增 compareSeasons 函数，季号相同时 fallback 到 localeCompare 自然排序
+  - 搜索标签：增加 GB/BIG5/Chi_Eng 检测模式，标题含中文字符自动标记 has_chinese_sub
+  - 展开面板收起：用 useRef 记录 path，只在 path 真正变化时折叠，刷新不触发
+  - 回收站路径：batch_manage 删除改用 recycle_bin.move_to_bin，不触发 NAS 系统回收站
+  - 前端测试修复：PanFilterBar 接口对齐、订阅按钮行为对齐、emoji 前缀匹配
 - 多项 bug 修复与功能优化（2026-04-30 对话）：
   - 删除操作：电影封装文件夹检测 + 空壳目录清理 + 一级分类目录保护
   - 下载管理：已删除 hash 黑名单防止 sync_from_qb 复活已删任务

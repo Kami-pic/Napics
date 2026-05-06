@@ -337,14 +337,53 @@ def set_clean_name(req: dict):
     """手动修改清洗名（manual 来源，最高优先级）
     
     支持字段：clean_name（display/cn）、clean_name_en（英文名）
+    支持 is_folder=true 时按文件夹路径匹配其下所有视频
     """
     file_path = req.get("file_path", "")
     clean_name = req.get("clean_name", "")
     clean_name_en = req.get("clean_name_en")  # None 表示不修改，"" 表示清空
+    is_folder = req.get("is_folder", False)
     if not file_path:
         return {"status": "error", "message": "file_path required"}
     
     library = config_m.load_library()
+    
+    if is_folder:
+        # 文件夹模式：更新该文件夹下所有视频的 clean_name_en
+        # 规范化路径用于前缀匹配
+        folder_norm = file_path.replace("\\", "/").rstrip("/") + "/"
+        updated = 0
+        for v in library:
+            v_folder = v.get("file_path", "").replace("\\", "/")
+            # 视频在该文件夹下（直接子文件或更深层）
+            if v_folder.startswith(folder_norm) or os.path.dirname(v_folder).replace("\\", "/") + "/" == folder_norm:
+                if clean_name_en is not None:
+                    v["clean_name_en"] = clean_name_en
+                    if not v.get("clean_name_source"):
+                        v["clean_name_source"] = "manual"
+                    updated += 1
+                if clean_name:
+                    v["clean_name"] = clean_name
+                    v["clean_name_source"] = "manual"
+                    updated += 1
+        if updated > 0:
+            config_m.save_library(library)
+            return {"status": "ok", "updated": updated}
+        # 文件夹下没有视频，尝试直接匹配（兼容旧逻辑）
+        for v in library:
+            if v.get("file_path") == file_path:
+                if clean_name:
+                    v["clean_name"] = clean_name
+                    v["clean_name_source"] = "manual"
+                if clean_name_en is not None:
+                    v["clean_name_en"] = clean_name_en
+                    if not v.get("clean_name_source"):
+                        v["clean_name_source"] = "manual"
+                config_m.save_library(library)
+                return {"status": "ok"}
+        return {"status": "ok", "updated": 0}
+    
+    # 视频模式：精确匹配 file_path
     for v in library:
         if v.get("file_path") == file_path:
             if clean_name is not None:

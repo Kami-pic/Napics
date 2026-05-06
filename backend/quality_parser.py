@@ -96,8 +96,13 @@ def parse_quality(title: str) -> QualityTag:
         r"CHS", r"CHT", r"中字", r"中文字幕", r"简繁", r"简体", r"繁体",
         r"内封", r"外挂", r"内嵌", r"双语", r"国语", r"粤语",
         r"简中", r"繁中", r"中英",
+        r"GB", r"BIG5",
+        r"Chi[_ ]?Jap", r"Jap[_ ]?Chi", r"Chi[_ ]?Eng", r"Eng[_ ]?Chi",
     ]
     has_chinese_sub = any(re.search(p, title, re.IGNORECASE) for p in chinese_sub_patterns)
+    # 标题本身包含中文字符（说明是中文字幕组发布或中文资源）
+    if not has_chinese_sub and re.search(r'[\u4e00-\u9fff]', title):
+        has_chinese_sub = True
 
     # --- 发布组提取 ---
     # 常见格式：标题末尾 -GroupName 或 @GroupName

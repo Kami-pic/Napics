@@ -75,7 +75,9 @@ describe("PanFilterBar 筛选逻辑", () => {
       makePanResult({ source: "pansou" }),
       makePanResult({ source: "github" }),
     ];
-    const filtered = applyPanFilters(results, { panType: "", source: "pansearch", resolution: "", completeOnly: false });
+    // 新接口：通过 disabledSources 排除不需要的源
+    const disabledSources = new Set(["pansou", "github"]);
+    const filtered = applyPanFilters(results, { panType: [], resolution: [], chineseSubOnly: false, completeOnly: false }, disabledSources);
     expect(filtered).toHaveLength(1);
     expect(filtered[0].source).toBe("pansearch");
   });
@@ -131,10 +133,11 @@ describe("PanFilterBar 筛选逻辑", () => {
     expect(mod.SOURCE_LABELS.github).toBe("GitHub仓库");
   });
 
-  it("渲染筛选栏 — 显示来源状态", async () => {
+  it("渲染筛选栏 — 显示 MultiSelect 下拉按钮", async () => {
     const { default: PanFilterBar, DEFAULT_PAN_FILTERS } = await import("@/components/search/PanFilterBar");
     render(
       <PanFilterBar
+        activeSource="all"
         filters={DEFAULT_PAN_FILTERS}
         onChange={vi.fn()}
         groups={{ quark: [makePanResult()], aliyun: [makePanResult({ pan_type: "aliyun" })] }}
@@ -142,10 +145,17 @@ describe("PanFilterBar 筛选逻辑", () => {
           { name: "pansearch", status: "success", count: 5, error: "" },
           { name: "pansou", status: "failed", count: 0, error: "timeout" },
         ]}
+        panSources={[
+          { name: "pansearch", label: "PanSearch", enabled: true },
+          { name: "pansou", label: "PanSou", enabled: true },
+        ]}
+        disabledSources={new Set()}
+        onToggleSource={vi.fn()}
       />
     );
-    expect(screen.getByText(/PanSearch ✓5/)).toBeInTheDocument();
-    expect(screen.getByText(/PanSou ✗/)).toBeInTheDocument();
+    expect(screen.getByText("网盘")).toBeInTheDocument();
+    expect(screen.getByText("分辨率")).toBeInTheDocument();
+    expect(screen.getByText("特征")).toBeInTheDocument();
   });
 
   it("清除按钮在有筛选时显示", async () => {
@@ -153,16 +163,20 @@ describe("PanFilterBar 筛选逻辑", () => {
     const onChange = vi.fn();
     render(
       <PanFilterBar
-        filters={{ panType: "quark", source: "", resolution: "", completeOnly: false }}
+        activeSource="all"
+        filters={{ panType: ["quark"], resolution: [], chineseSubOnly: false, completeOnly: false }}
         onChange={onChange}
         groups={{ quark: [makePanResult()] }}
         sourceStatuses={[]}
+        panSources={[]}
+        disabledSources={new Set()}
+        onToggleSource={vi.fn()}
       />
     );
     const clearBtn = screen.getByText("清除");
     expect(clearBtn).toBeInTheDocument();
     fireEvent.click(clearBtn);
-    expect(onChange).toHaveBeenCalledWith({ panType: "", source: "", resolution: "", completeOnly: false });
+    expect(onChange).toHaveBeenCalledWith({ panType: [], resolution: [], chineseSubOnly: false, completeOnly: false });
   });
 });
 

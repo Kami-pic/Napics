@@ -291,22 +291,24 @@ describe("ExpandDetail 边界情况", () => {
     expect(onSubscribe).toHaveBeenCalledOnce();
   });
 
-  it("已订阅状态下点击按钮不触发 onSubscribe（disabled 属性）", async () => {
+  it("已订阅状态下点击按钮触发 onUnsubscribe（可点击取消订阅）", async () => {
     const { default: ExpandDetail } = await import("@/components/media/ExpandDetail");
     const onSubscribe = vi.fn();
+    const onUnsubscribe = vi.fn();
     render(
       <ExpandDetail
         item={makeItem()}
         detail={{ found: true, title: "流浪地球3", year: "2027", overview: "测试", source: "tmdb" } as any}
         loading={false}
         onSearch={vi.fn()} onClose={vi.fn()} onRetry={vi.fn()}
-        onSubscribe={onSubscribe} isSubscribed={true}
+        onSubscribe={onSubscribe} onUnsubscribe={onUnsubscribe} isSubscribed={true}
       />
     );
     const btn = screen.getByText("📌 已订阅");
-    expect(btn).toBeDisabled();
+    expect(btn).not.toBeDisabled();
     fireEvent.click(btn);
     expect(onSubscribe).not.toHaveBeenCalled();
+    expect(onUnsubscribe).toHaveBeenCalledOnce();
   });
 });
 

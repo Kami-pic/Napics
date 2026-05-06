@@ -31,6 +31,13 @@ function getSeasonNum(name: string): number {
   const m = name.match(/(?:S(\d+)|第(\d+)季|Season\s*(\d+))/i);
   return m ? parseInt(m[1] || m[2] || m[3]) : 0;
 }
+function compareSeasons(a: FolderNode, b: FolderNode): number {
+  const numA = getSeasonNum(a.name);
+  const numB = getSeasonNum(b.name);
+  if (numA !== numB) return numA - numB;
+  // 都无法提取季号时按名字自然排序
+  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+}
 function getSeriesPrefix(name: string): string | null {
   const m = name.match(/^(.+?)[\s._-]*(?:S\d+|第\d+季|Season\s*\d+)$/i);
   return m ? m[1].trim() : null;
@@ -61,7 +68,15 @@ export default function CardGrid({
     else { setExpandedId(id); setSeasonTab(-1); setExpandPos({ afterIndex: index }); }
   }, [expandedId]);
 
-  useEffect(() => { setExpandedId(null); setExpandPos(null); }, [currentFolder]);
+  // 只在 currentFolder 的 path 真正变化时才折叠展开面板（刷新不折叠）
+  const prevFolderPath = useRef(currentFolder?.path ?? "");
+  useEffect(() => {
+    const curPath = currentFolder?.path ?? "";
+    if (curPath !== prevFolderPath.current) {
+      setExpandedId(null); setExpandPos(null);
+      prevFolderPath.current = curPath;
+    }
+  }, [currentFolder]);
 
   // 全局点击：点击展开面板、卡片、详情面板、按钮以外的区域 → 折叠展开面板
   useEffect(() => {
@@ -100,7 +115,7 @@ export default function CardGrid({
       // tv 类型 → 展开（有子目录显示季卡片，无子目录直接显示集列表）
       if (ft === "tv") {
         if (node.children.length > 0) {
-          const seasons = [...node.children].sort((a, b) => getSeasonNum(a.name) - getSeasonNum(b.name));
+          const seasons = [...node.children].sort(compareSeasons);
           results.push({ type: "tv", seriesName: node.name, seasons, id: `ms-${node.path}`, parentNode: node });
         } else {
           // 扁平 tv（无季目录，直接有视频）→ 当作只有一个虚拟季的 tv
@@ -117,7 +132,7 @@ export default function CardGrid({
     });
     Object.entries(seriesGroups).forEach(([name, nodes]) => {
       if (nodes.length > 1) {
-        nodes.sort((a, b) => getSeasonNum(a.name) - getSeasonNum(b.name));
+        nodes.sort(compareSeasons);
         results.push({ type: "tv", seriesName: name, seasons: nodes, id: `ms-${name}` });
       } else { standalone.push(nodes[0]); }
     });

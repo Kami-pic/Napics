@@ -47,9 +47,10 @@ describe("ExpandDetail 订阅按钮", () => {
     expect(btn).not.toBeDisabled();
   });
 
-  it("已订阅时显示'📌 已订阅'且禁用", async () => {
+  it("已订阅时显示'📌 已订阅'且可点击取消订阅", async () => {
     const { default: ExpandDetail } = await import("@/components/media/ExpandDetail");
     const item = makeItem();
+    const onUnsubscribe = vi.fn();
     render(
       <ExpandDetail
         item={item}
@@ -59,12 +60,14 @@ describe("ExpandDetail 订阅按钮", () => {
         onClose={vi.fn()}
         onRetry={vi.fn()}
         onSubscribe={vi.fn()}
+        onUnsubscribe={onUnsubscribe}
         isSubscribed={true}
       />
     );
     const btn = screen.getByText("📌 已订阅");
     expect(btn).toBeInTheDocument();
-    expect(btn).toBeDisabled();
+    expect(btn).not.toBeDisabled();
+    expect(btn).toHaveAttribute("title", "点击取消订阅");
   });
 
   it("点击订阅按钮触发 onSubscribe 回调", async () => {

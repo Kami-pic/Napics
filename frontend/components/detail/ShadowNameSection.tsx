@@ -99,7 +99,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/clean-name`, {
         method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({file_path: filePath, clean_name_en: newEn.trim()})
+        body: JSON.stringify({file_path: filePath, clean_name_en: newEn.trim(), is_folder: isFolder})
       });
       setEditingEn(false);
       if (isFolder) { onTreeRefresh?.(); } else { onRefresh?.(); }

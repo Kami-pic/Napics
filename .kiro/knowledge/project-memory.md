@@ -21,7 +21,7 @@
 - **清洗名系统**（`clean_name_system.py`）：统一入口，所有清洗逻辑集中在此
   - `CleanNameResult` 结构化输出：cn（中文）/ en（英文）/ original（日/韩/法等原始语言）/ display（展示名）/ suffix（季集号）
   - 三层清洗：strip_noise（去噪）→ split_names（语言分离）→ compose_display（组装展示名）
-  - strip_noise 去噪规则：方括号/广告/URL/质量标签/字幕组 + 季范围尾缀（1-8季/S1-S3）+ 尾部独立季号（S1/16季/S）+ 紧跟中文的TV版
+  - strip_noise 去噪规则：方括号/广告/URL/质量标签/字幕组 + 季范围尾缀（1-8季/S1-S3）+ 尾部独立季号（S1/16季/S）+ 紧跟中文的TV版 + ISO语言缩写（RUS/JAP/ENG等）+ OVA/ONA独立标签 + 常见发布者名
   - split_by_language 季集号保护：S/E+数字（如 s5、S01E03）作为整体 token 归入 en，不被拆分
   - 三个业务入口：`clean_from_filename`（文件名解析）/ `clean_from_scrape`（刮削结果）/ `clean_for_folder`（文件夹）
   - 搜索词构造：`clean_for_season_search` / `clean_for_episode_search`（对接多语言搜索）
@@ -104,6 +104,7 @@
 - Alist 双阶段：cloud_download → local_sync → completed
 - 归位替换：file_relocator.py（relocate → confirm_replace / archive_both / cancel_replace）
 - 回收站默认跟随旧文件所属媒体库根落在“同卷同级隐藏目录”（如 `<媒体库根上级>/.recycle_bins/<媒体库名>`），backend 只集中保存 `recycle_bin.json` 元数据；只有显式配置 `recycle_bin_path` 时才使用固定目录
+- 批量删除（batch_manage）也走 recycle_bin.move_to_bin，不直接 os.remove/shutil.rmtree，避免触发 NAS 系统回收站（#recycle_bin）
 - 整理替换附属文件规则（详见 knowledge/download-replace-pipeline.md）：
   - 字幕文件：扁平化到 Season 目录，通过集号匹配用视频标准名重命名
   - 非字幕文件（字体包/SPs/CDs/OAD）：提升到剧集根目录，不进入 Season

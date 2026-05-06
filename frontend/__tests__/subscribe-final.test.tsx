@@ -49,7 +49,7 @@ describe("SubscribeCalendar 组件", () => {
     const { default: SubscribeCalendar } = await import("@/components/media/SubscribeCalendar");
     render(<SubscribeCalendar />);
     await waitFor(() => {
-      expect(screen.getByText("暂无剧集播出计划")).toBeInTheDocument();
+      expect(screen.getByText(/暂无剧集播出计划/)).toBeInTheDocument();
     });
   });
 });
@@ -68,31 +68,24 @@ describe("SubscribeInline 列表/日历切换", () => {
   it("默认显示'列表'视图", async () => {
     const { default: SubscribeInline } = await import("@/components/media/SubscribeInline");
     render(<SubscribeInline subscriptions={[]} onRefresh={vi.fn()} />);
-    // "列表" 按钮应该是激活状态（bg-white/10）
-    const listBtn = screen.getByText("列表");
-    expect(listBtn).toBeInTheDocument();
-    expect(listBtn.className).toContain("text-white");
+    // 空订阅时列表视图显示"暂无订阅"
+    expect(screen.getByText("暂无订阅")).toBeInTheDocument();
   });
 
-  it("点击'日历'按钮切换到日历视图", async () => {
+  it("view='calendar' 时切换到日历视图", async () => {
     const { default: SubscribeInline } = await import("@/components/media/SubscribeInline");
-    render(<SubscribeInline subscriptions={[]} onRefresh={vi.fn()} />);
-
-    const calendarBtn = screen.getByText("日历");
-    fireEvent.click(calendarBtn);
-
-    // 日历按钮应该变为激活状态
-    expect(calendarBtn.className).toContain("text-white");
+    render(<SubscribeInline subscriptions={[]} onRefresh={vi.fn()} view="calendar" />);
+    // 日历视图下显示日历组件（加载后显示空数据提示）
+    await waitFor(() => {
+      expect(screen.getByText(/暂无剧集播出计划/)).toBeInTheDocument();
+    });
   });
 
   it("日历视图下不显示筛选按钮（全部/活跃等）", async () => {
     const { default: SubscribeInline } = await import("@/components/media/SubscribeInline");
-    render(<SubscribeInline subscriptions={[]} onRefresh={vi.fn()} />);
+    render(<SubscribeInline subscriptions={[]} onRefresh={vi.fn()} view="calendar" />);
 
-    // 切换到日历视图
-    fireEvent.click(screen.getByText("日历"));
-
-    // 筛选按钮不应该出现
+    // 筛选按钮不应该出现（日历视图不渲染列表内容）
     expect(screen.queryByText(/全部/)).not.toBeInTheDocument();
     expect(screen.queryByText("活跃")).not.toBeInTheDocument();
     expect(screen.queryByText("已暂停")).not.toBeInTheDocument();
