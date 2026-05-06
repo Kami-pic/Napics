@@ -115,9 +115,9 @@
   - 范围：候选选择、TV 确权、分集映射、NFO 输出字段
   - 当前：未形成完整基线
 
-- [ ] organize dry-run / execute 基线
+- [x] organize dry-run / execute 基线
   - 范围：wrap、archive、rename、reorganize seasons
-  - 当前：dry-run / 路由注册 smoke 有覆盖；真实 execute 与真实 NAS 未补
+  - 当前：已补独立基线摘要 [organize-dry-run-execute-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/organize-dry-run-execute-baseline.md)；真实 `dry-run -> execute -> archived` 证据沿用 `1a607cf1`、`5ad5b6f9` 两笔样本；路由返回结构、`action_plan` 执行、`plan_tree` 预览、字幕/附属文件、季目录不嵌套均已有隔离测试保护
 
 - [x] 下载 → 归位闭环基线（隔离层）
   - 当前已覆盖：

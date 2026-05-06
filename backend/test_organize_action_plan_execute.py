@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-from routes.organize import (
+from organize_executor import (
     _apply_action_plan_moves,
     _find_duplicate_logical_targets,
     _find_duplicate_target_paths,
@@ -89,8 +89,8 @@ def test_apply_action_plan_moves_moves_single_season_extra_dirs_from_whitelist_i
 
         moved_targets = {Path(op["new"]) for op in ops}
         assert target in moved_targets
-        assert (save_path / "Season 01" / "Subs" / "[Group] Show - 01.zh.ass").exists()
-        assert (save_path / "Season 01" / "Fonts" / "font.ttf").exists()
+        assert (save_path / "Season 01" / "Show - S01E01.zh.ass").exists()
+        assert (save_path / "Fonts" / "font.ttf").exists()
         assert not subtitle.exists()
         assert not font.exists()
 
@@ -133,10 +133,10 @@ def test_apply_action_plan_moves_routes_multi_season_extra_dirs_by_source_season
         )
 
         moved_targets = {Path(op["new"]) for op in ops}
-        assert (save_path / "Season 01" / "Subs" / "Show - 01.zh.ass") in moved_targets
-        assert (save_path / "Season 02" / "Fonts" / "font.ttf") in moved_targets
-        assert (save_path / "Season 01" / "Subs" / "Show - 01.zh.ass").exists()
-        assert (save_path / "Season 02" / "Fonts" / "font.ttf").exists()
+        assert (save_path / "Season 01" / "Show - S01E01.zh.ass") in moved_targets
+        assert (save_path / "Fonts" / "font.ttf") in moved_targets
+        assert (save_path / "Season 01" / "Show - S01E01.zh.ass").exists()
+        assert (save_path / "Fonts" / "font.ttf").exists()
 
     _with_temp_dir("organize_action_plan_multi_season_extras", run)
 

@@ -212,7 +212,7 @@ def _build_plan_tree(action_plan, coexist_pairs=None, save_path: str = "", new_f
     # 新种子中不在 plan 里的附属文件（字幕、SPs、CDs 等）
     # 模拟 _apply_action_plan_moves 的逻辑，计算每个附属文件的实际目标位置
     if new_files_all:
-        from routes.organize import _PLAN_SUBTITLE_EXTS, _PLAN_POSTER_SUFFIXES
+        from organize_executor import _PLAN_SUBTITLE_EXTS, _PLAN_POSTER_SUFFIXES
         from tmdb_client import parse_filename
 
         def _classify_ext(name):

@@ -116,11 +116,14 @@
       - 样本结论：`tmdb_match.match_source=existing_nfo`、`summary.will_process=0`
   - 在 `v2` 的定位：当前入口快照已建立；后续只在 TV 长尾样本出现时再扩覆盖
 
-- [ ] organize dry-run / execute 基线
+- [x] organize dry-run / execute 基线
   - 来源：`v1`
   - 范围：wrap、archive、rename、reorganize seasons
-  - 当前：`dry-run` / 路由注册 smoke 有覆盖；真实 execute 与真实 NAS 未补成独立“基线快照”
-  - 在 `v2` 的定位：未完成，但与下载→归位 execute 主链已有交叉开证；后续需要补一份独立基线摘要
+  - 当前：
+    - 已补独立基线摘要：[organize-dry-run-execute-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/organize-dry-run-execute-baseline.md)
+    - 真实 `dry-run -> execute -> archived` 证据沿用 `1a607cf1`、`5ad5b6f9` 两笔真实样本
+    - 路由返回结构、`action_plan` 执行、`plan_tree` 预览、字幕/附属文件、季目录不嵌套均已有隔离测试保护
+  - 在 `v2` 的定位：当前小闭环已收口；剩余真实交叠时序继续作为观察项
 
 - [ ] 只从低风险重复点里挑下一轮候选
   - 来源：`v1`
@@ -212,6 +215,11 @@
     - 首页全量刷新时 `/library/tree` 先返回即可先更新目录树，避免首屏树渲染继续等待 `/library` 全量视频列表
   - 上述入口已补成组件级回归测试，避免后续回退成全量双拉
   - 其余更重的刷新入口暂不混改；后续若继续压性能，仍优先围绕 `useLibrary` 双请求刷新成本展开
+
+- 候选 3：organize dry-run / execute 独立基线
+  - 当前已完成
+  - 入口文档：[organize-dry-run-execute-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/organize-dry-run-execute-baseline.md)
+  - 结论：V1 长期挂起的 organize 基线已从下载主线中拆出并收口；后续只观察复杂真实交叠时序
 
 ---
 
