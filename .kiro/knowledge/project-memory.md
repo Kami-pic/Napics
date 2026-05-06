@@ -99,6 +99,12 @@
 - discoverUtils.ts 的 normalizeItem 是所有推荐/探索/搜索数据的统一入口，新增字段必须在此传递
 - 前端详情缓存 key 按数据源（douban/tmdb/bangumi）共享，不按 tab 区分。同一部作品在综合推荐和热门电影 tab 共享缓存
 
+### 刮削配置
+- 默认刮削源：config.default_scrape_source（tmdb/douban），设置页可切换
+- 豆瓣刮削：douban_api_v2.get_detail 自动检测 tv/movie 类型，不再硬编码
+- 豆瓣选择端点：scrape_douban_select 支持 media_type 参数，电视剧写 tvshow.nfo
+- 一键刮削（execute_scrape）：根据 default_scrape_source 选择 TMDB 或豆瓣流程
+
 ### 下载管理
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
 - Alist 双阶段：cloud_download → local_sync → completed

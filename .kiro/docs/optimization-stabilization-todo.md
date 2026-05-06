@@ -20,9 +20,11 @@
   - 清洗名去噪增强：去除 ISO 语言缩写(RUS/JAP/ENG 等)、OVA/ONA 独立标签、发布者名(Deadmauvlad 等)
   - 英文名保存：前端传 is_folder 标记，后端支持文件夹模式按路径前缀匹配更新子视频
   - 多季排序：新增 compareSeasons + getSeasonNum 支持中文数字（第一季~第二十季）
-  - 搜索标签增强：中文字幕(GB/BIG5/标题含中文)、分辨率(像素WxH推断)、音频5.1(方括号/紧跟编码)
+  - 搜索标签增强：中文字幕(GB/BIG5/标题含中文)、分辨率(像素WxH推断1912x1048等)、音频5.1([5 1]/5.1/AAC5.1等)
   - 展开面板收起：用 useRef 记录 path，只在 path 真正变化时折叠，刷新不触发
   - 回收站：统一用 recycle_bin.move_to_bin 移入 share/#recycle，保留相对路径结构
+  - 豆瓣刮削修复：get_detail 不再硬编码 movie，自动检测 tv/movie；电视剧写 tvshow.nfo
+  - 新增默认刮削源设置：config.default_scrape_source（tmdb/douban），前端设置页可切换
   - 前端测试修复：PanFilterBar 接口对齐、订阅按钮行为对齐、emoji 前缀匹配
 - 多项 bug 修复与功能优化（2026-04-30 对话）：
   - 删除操作：电影封装文件夹检测 + 空壳目录清理 + 一级分类目录保护
