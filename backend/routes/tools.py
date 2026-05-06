@@ -44,19 +44,19 @@ def batch_manage(req: BatchRequest):
     failed = []
     
     if req.action == "delete":
-        from send2trash import send2trash as _send2trash
+        recycle = _get_recycle_bin()
         for p in req.paths:
             try:
                 if os.path.isdir(p):
-                    # 文件夹删除：收集内部所有视频路径用于同步媒体库
                     for root, _, files in os.walk(p):
                         for f in files:
                             success.append(os.path.join(root, f))
-                    # 移入系统回收站（NAS 的 #recycle_bin 或 Windows 回收站）
-                    _send2trash(p)
-                    success.append(p)
+                    entry = recycle.move_to_bin(p, "batch_delete")
+                    if entry:
+                        success.append(p)
+                    else:
+                        failed.append({"path": p, "error": "移入回收站失败"})
                 elif os.path.isfile(p):
-                    # 检查是否在封装文件夹中（单视频+关联文件）
                     parent_dir = os.path.dirname(p)
                     parent_name = os.path.basename(parent_dir)
                     video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
@@ -71,16 +71,21 @@ def batch_manage(req: BatchRequest):
                     is_wrapped = len(sibling_videos) == 1 and len(sibling_dirs) == 0 and parent_name not in _TOP_CATS
 
                     if is_wrapped:
-                        # 封装文件夹：整个文件夹移入系统回收站
                         for root, _, files in os.walk(parent_dir):
                             for f in files:
                                 success.append(os.path.join(root, f))
-                        _send2trash(parent_dir)
-                        success.append(parent_dir)
+                        entry = recycle.move_to_bin(parent_dir, "batch_delete")
+                        if entry:
+                            success.append(parent_dir)
+                        else:
+                            failed.append({"path": parent_dir, "error": "移入回收站失败"})
                         logger.info(f"[batch_manage] 封装文件夹移入回收站: {parent_dir}")
                     else:
-                        _send2trash(p)
-                        success.append(p)
+                        entry = recycle.move_to_bin(p, "batch_delete")
+                        if entry:
+                            success.append(p)
+                        else:
+                            failed.append({"path": p, "error": "移入回收站失败"})
                 else:
                     failed.append({"path": p, "error": "Path not found"})
             except Exception as e:
@@ -90,7 +95,6 @@ def batch_manage(req: BatchRequest):
         _TOP_CATS = {"电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"}
         cleaned_dirs = set()
         for p in req.paths:
-            # 文件 → 从父目录开始检查；文件夹 → 从该目录的父目录开始检查
             check_dir = os.path.dirname(p) if os.path.sep in p or "/" in p else ""
             while check_dir and os.path.basename(check_dir) not in _TOP_CATS:
                 if not os.path.isdir(check_dir):
@@ -99,17 +103,15 @@ def batch_manage(req: BatchRequest):
                     break
                 try:
                     remaining = os.listdir(check_dir)
-                    # 过滤掉隐藏文件（.开头）
                     remaining = [f for f in remaining if not f.startswith('.')]
                     if not remaining:
-                        # 完全空目录 → 移入系统回收站
-                        _send2trash(check_dir)
-                        success.append(check_dir)
-                        cleaned_dirs.add(check_dir)
-                        logger.info(f"[batch_manage] 清理空目录: {check_dir}")
+                        entry = recycle.move_to_bin(check_dir, "batch_delete_cleanup")
+                        if entry:
+                            success.append(check_dir)
+                            cleaned_dirs.add(check_dir)
+                            logger.info(f"[batch_manage] 清理空目录: {check_dir}")
                         check_dir = os.path.dirname(check_dir)
                         continue
-                    # 只剩非视频文件（NFO/海报/字幕等） → 也移入系统回收站
                     video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
                     has_video = any(
                         os.path.splitext(f)[1].lower() in video_exts
@@ -119,7 +121,6 @@ def batch_manage(req: BatchRequest):
                     for f in remaining:
                         sub = os.path.join(check_dir, f)
                         if os.path.isdir(sub):
-                            # 子目录中有视频 → 不能删
                             for _, _, files in os.walk(sub):
                                 if any(os.path.splitext(ff)[1].lower() in video_exts for ff in files):
                                     has_subdir_with_video = True
@@ -130,10 +131,11 @@ def batch_manage(req: BatchRequest):
                         for root, _, files in os.walk(check_dir):
                             for f in files:
                                 success.append(os.path.join(root, f))
-                        _send2trash(check_dir)
-                        success.append(check_dir)
-                        cleaned_dirs.add(check_dir)
-                        logger.info(f"[batch_manage] 清理无视频残留目录: {check_dir}")
+                        entry = recycle.move_to_bin(check_dir, "batch_delete_cleanup")
+                        if entry:
+                            success.append(check_dir)
+                            cleaned_dirs.add(check_dir)
+                            logger.info(f"[batch_manage] 清理无视频残留目录: {check_dir}")
                         check_dir = os.path.dirname(check_dir)
                         continue
                 except OSError:

@@ -102,14 +102,14 @@ def parse_quality(title: str) -> QualityTag:
         is_surround = True  # AC3 通常是 5.1
     elif "AAC" in upper:
         audio_codec = "AAC"
-    # 额外检测：标题中直接出现 5.1 / 7.1 / 6CH / 8CH（含方括号包裹和紧跟编码的格式）
-    if not is_surround and re.search(r"[5-9]\.[01]|7\.1|[6-8]CH", upper):
+    # 额外检测：标题中直接出现 5.1 / 7.1 / 6CH / 8CH（含方括号包裹、空格分隔和紧跟编码的格式）
+    if not is_surround and re.search(r"[5-9][\s.]?[01]|7[\s.]?1|[6-8]CH", upper):
         is_surround = True
         # 如果还没有 audio_codec，从 5.1 上下文推断
         if not audio_codec:
-            if re.search(r"AAC\s*5\.\d|AAC\s*7\.\d", upper):
+            if re.search(r"AAC\s*5[\s.]?\d|AAC\s*7[\s.]?\d", upper):
                 audio_codec = "AAC"
-            elif re.search(r"DD[P+]?\s*5\.\d", upper):
+            elif re.search(r"DD[P+]?\s*5[\s.]?\d", upper):
                 audio_codec = "DD5.1"
 
     # --- 中文字幕标记 ---

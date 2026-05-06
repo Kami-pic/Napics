@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 RECYCLE_META_FILE = "recycle_bin.json"
-DEFAULT_RECYCLE_PARENT_DIR_NAME = ".recycle_bins"
+DEFAULT_RECYCLE_PARENT_DIR_NAME = "#recycle"
 
 
 class RecycleBinEntry(BaseModel):
@@ -194,13 +194,14 @@ class RecycleBin:
         return best_match
 
     def _build_default_recycle_dir_from_root(self, library_root: str) -> str:
+        r"""回收站放在媒体库根的上级目录（共享文件夹根）下的 #recycle。
+        如 媒体库 \\DS218play\share\视频 → 回收站 \\DS218play\share\#recycle
+        """
         normalized_root = os.path.normpath(library_root)
-        root_name = os.path.basename(normalized_root.rstrip("\\/"))
         parent_dir = os.path.dirname(normalized_root.rstrip("\\/"))
 
         if parent_dir and os.path.normcase(parent_dir) != os.path.normcase(normalized_root.rstrip("\\/")):
-            recycle_parent = os.path.join(parent_dir, DEFAULT_RECYCLE_PARENT_DIR_NAME)
-            return os.path.join(recycle_parent, root_name) if root_name else recycle_parent
+            return os.path.join(parent_dir, DEFAULT_RECYCLE_PARENT_DIR_NAME)
 
         return os.path.join(normalized_root, DEFAULT_RECYCLE_PARENT_DIR_NAME)
 
