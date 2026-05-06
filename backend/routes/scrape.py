@@ -11,7 +11,7 @@ from shared import (
     config_m, shadow_m, indexer_m,
     _get_category_from_path, _sync_library_paths, _update_clean_names_after_scrape,
 )
-import tmdb_client, scraper, organizer
+import tmdb_client, scraper, organizer, douban_api_v2
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -411,10 +411,18 @@ def execute_scrape(path: str, force: bool = True):
     if path in no_scrape:
         return {"self": {"status": "no_scrape", "data": None}}
     
-    api_key = config_m.config.tmdb_api_key
+    conf = config_m.config
+    default_source = conf.default_scrape_source or "tmdb"
+    
+    # 豆瓣源：用豆瓣搜索+详情刮削
+    if default_source == "douban":
+        return _execute_scrape_douban(path, force)
+    
+    # TMDB 源（默认）
+    api_key = conf.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
+    client = tmdb_client.TMDBClient(api_key, proxy=getattr(conf, 'http_proxy', '') or '')
     
     if os.path.isdir(path):
         category_hint = _get_category_from_path(path)
@@ -449,6 +457,84 @@ def execute_scrape(path: str, force: bool = True):
         return scraper.scrape_video(path, client, force=force)
     else:
         raise HTTPException(status_code=404, detail="Path not found")
+
+
+def _execute_scrape_douban(path: str, force: bool = True):
+    """豆瓣源刮削：搜索 → 取第一个候选 → 拉详情 → 写 NFO"""
+    from tmdb_client import ScrapeResult, parse_filename
+    from clean_name_system import strip_noise, split_names
+    
+    # 确定搜索名
+    if os.path.isdir(path):
+        folder_name = os.path.basename(path)
+        cleaned = strip_noise(folder_name + ".tmp")
+        names = split_names(cleaned)
+        search_name = names.get("cn") or names.get("en") or folder_name
+    else:
+        file_name = os.path.basename(path)
+        parsed = parse_filename(file_name)
+        search_name = parsed.get("clean_name") or file_name
+    
+    # 搜索豆瓣
+    candidates = douban_api_v2.search(search_name, count=5)
+    if not candidates:
+        return {"self": {"status": "not_found", "data": None}}
+    
+    # 取第一个候选
+    best = candidates[0]
+    douban_id = best.get("douban_id", "")
+    if not douban_id:
+        return {"self": {"status": "not_found", "data": None}}
+    
+    # 拉详情（先 tv 后 movie）
+    v2_detail = douban_api_v2.get_detail(douban_id, media_type="tv")
+    detected_type = "tv"
+    if not v2_detail or not v2_detail.get("overview"):
+        v2_detail = douban_api_v2.get_detail(douban_id, media_type="movie")
+        detected_type = "movie"
+    
+    if not v2_detail or not v2_detail.get("title"):
+        return {"self": {"status": "not_found", "data": None}}
+    
+    result = ScrapeResult(
+        tmdb_id=int(douban_id),
+        media_type=detected_type,
+        title=v2_detail.get("title", ""),
+        original_title=v2_detail.get("original_title", ""),
+        year=v2_detail.get("year", ""),
+        overview=v2_detail.get("overview", ""),
+        rating=v2_detail.get("rating", 0),
+        genres=v2_detail.get("genres", []),
+        director=v2_detail.get("directors", [""])[0] if v2_detail.get("directors") else "",
+        cast=v2_detail.get("actors", []),
+        runtime=v2_detail.get("runtime", 0),
+        poster_url=v2_detail.get("poster_url", ""),
+    )
+    
+    # 写入 NFO
+    if os.path.isdir(path):
+        for old_nfo in ["movie.nfo", "tvshow.nfo", "season.nfo"]:
+            old_p = os.path.join(path, old_nfo)
+            if os.path.exists(old_p):
+                try:
+                    os.remove(old_p)
+                except OSError:
+                    pass
+        if result.media_type == "tv":
+            scraper.write_tvshow_nfo(path, result)
+        else:
+            scraper.write_movie_nfo(path, result)
+        if result.poster_url:
+            scraper.download_poster(path, result.poster_url)
+    elif os.path.isfile(path):
+        scraper._write_movie_nfo_for_video(path, result)
+        folder = os.path.dirname(path)
+        if result.poster_url:
+            base = os.path.splitext(os.path.basename(path))[0]
+            scraper.download_poster(folder, result.poster_url, base + "-poster.jpg")
+    
+    _update_clean_names_after_scrape(path, {"self": {"status": "ok", "data": result.dict()}})
+    return {"self": {"status": "ok", "data": result.dict(), "confidence": {"level": "medium", "reason": "豆瓣自动匹配"}}}
 
 @router.post("/scrape/batch")
 def batch_scrape_api(paths: List[str]):

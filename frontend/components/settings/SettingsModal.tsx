@@ -269,6 +269,18 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 );
               })
               )}
+              {/* 影视数据组额外：默认刮削源选择 */}
+              {g.group === "影视数据" && (
+                <div className="mb-3">
+                  <label className="text-sm font-medium text-slate-300">默认刮削源</label>
+                  <p className="text-xs text-slate-600 mt-0.5 mb-1.5">一键刮削时优先使用的数据源</p>
+                  <select value={config.default_scrape_source || "tmdb"} onChange={e => setConfig({ ...config, default_scrape_source: e.target.value })}
+                    className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30">
+                    <option value="tmdb">TMDB（英文元数据为主，需代理）</option>
+                    <option value="douban">豆瓣（中文元数据为主，无需代理）</option>
+                  </select>
+                </div>
+              )}
             </div>
           ))}
 

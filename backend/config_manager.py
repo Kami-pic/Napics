@@ -71,6 +71,8 @@ class AppConfig(BaseModel):
     # 搜索源开关
     bt_search_sources: dict = {}                  # BT 源开关 {"bitsearch": true, "cilixiong": true, ...}
     pan_search_sources: dict = {}                 # 网盘源开关 {"pansearch": true, "rrdynb": true, ...}
+    # 刮削配置
+    default_scrape_source: str = "tmdb"           # 默认刮削源 "tmdb" | "douban"
 
 class ConfigManager:
     def __init__(self, config_path: str = None):

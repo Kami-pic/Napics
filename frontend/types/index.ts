@@ -97,6 +97,7 @@ export interface AppConfig {
   download_channel_auto?: boolean;
   recycle_bin_path?: string;
   recycle_bin_retention_days?: number;
+  default_scrape_source?: string;
 }
 
 export interface SearchFilterConfig {
