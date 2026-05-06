@@ -22,7 +22,7 @@ from typing import List, Optional, Dict
 from urllib.parse import parse_qs, unquote_plus, urlparse
 from pydantic import BaseModel
 
-from downloader import QBittorrentClient, AlistManager
+from downloader import QBittorrentClient, AlistManager, DuplicateTorrentError
 
 logger = logging.getLogger(__name__)
 TASK_FILE = "download_tasks.json"
@@ -164,7 +164,10 @@ class DownloadManager:
             before_hashes = self._get_qb_hashes()
 
             # 传 save_path 给 qB（用户指定的目标路径，不是沙盒）
-            ok = self.qb.add_torrent(url, task.save_path or "")
+            try:
+                ok = self.qb.add_torrent(url, task.save_path or "")
+            except DuplicateTorrentError:
+                return False, "该种子已在下载队列中，无需重复添加"
             if not ok:
                 return False, f"qBittorrent 推送失败（登录状态: {self.qb._logged_in}，URL: {url[:80]}）"
 

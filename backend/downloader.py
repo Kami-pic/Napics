@@ -258,6 +258,12 @@ class AlistManager:
                 return str(item["id"]).strip()
         return ""
 
+
+class DuplicateTorrentError(Exception):
+    """种子已存在于下载队列中"""
+    pass
+
+
 class QBittorrentClient:
     def __init__(self, url: str, username: str = "admin", password: str = ""):
         self.url = url.rstrip("/")
@@ -295,6 +301,9 @@ class QBittorrentClient:
                     logger.warning("[qB] session expired (403), re-login")
                     self._logged_in = False
                     continue
+                if r.status_code == 409:
+                    logger.info(f"[qB] torrent already exists (409 Conflict)")
+                    raise DuplicateTorrentError("该种子已在下载队列中")
                 if r.status_code not in (200, 202):
                     logger.error(f"[qB] add_torrent failed: status={r.status_code}, body={r.text[:200]}")
                     return False
