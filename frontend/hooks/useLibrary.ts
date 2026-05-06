@@ -93,9 +93,20 @@ export function useLibrary() {
     setRefreshKey(k => k + 1);
     try {
       setLoading(true);
-      const [vData, tData] = await Promise.all([api.getLibrary(), api.getLibraryTree()]);
-      if (vData) setVideos(vData);
-      if (tData) applyTreeData(tData, vData);
+      let vData: VideoInfo[] | undefined;
+      let tData: FolderNode | undefined;
+
+      const treeRequest = api.getLibraryTree().then(data => {
+        tData = data;
+        if (data) applyTreeData(data);
+      });
+      const libraryRequest = api.getLibrary().then(data => {
+        vData = data;
+        if (data) setVideos(data);
+      });
+
+      await Promise.allSettled([treeRequest, libraryRequest]);
+      if (tData && vData) applyTreeData(tData, vData);
       setRefreshKey(k => k + 1);
     } catch {
       setRefreshKey(k => k + 1);

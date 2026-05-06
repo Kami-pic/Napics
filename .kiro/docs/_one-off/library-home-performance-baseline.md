@@ -158,3 +158,20 @@
   - 文件夹封面上传 / 删除
   - 文件夹一键刮削
   - 文件夹手动候选确认
+
+## 8. 2026-05-06 小步继续：首页树先行渲染
+
+- 本轮只动前端 `useLibrary.refreshLibrary()` 的落状态顺序，不改接口：
+  - 仍然并行请求 `GET /library` 和 `GET /library/tree`
+  - `/library/tree` 先返回时立即更新 `fileTree/currentFolder/detailTarget`
+  - `/library` 返回后再补 `videos/stats`，并用同一份树同步一次视频详情
+- 首页加载条件同步调整：
+  - 只有 `loading && stats.total === 0 && !fileTree` 时显示全屏加载
+  - 树已返回时允许先显示目录树，不再被全量视频列表阻塞
+- 目的：
+  - 降低首页首屏被 `/library` 全量列表拖住的体感风险
+  - 不改变数据结构，不扩大到缓存策略或后端重构
+- 验证：
+  - `frontend/__tests__/use-library-refresh.test.tsx` 新增“全量刷新时目录树先返回即可先更新首页树”
+  - 相关专项测试：`use-library-refresh` / `folder-detail-tree-refresh` / `shadow-name-section` 通过
+  - `frontend` 构建通过

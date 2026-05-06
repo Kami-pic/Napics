@@ -209,6 +209,7 @@
     - `tv/season` 文件夹英文名保存后只刷新 `/library/tree`
     - `FolderDetail` 文件夹封面上传 / 删除后只刷新 `/library/tree`
     - `FolderDetail` 手动候选确认后只刷新 `/library/tree`
+    - 首页全量刷新时 `/library/tree` 先返回即可先更新目录树，避免首屏树渲染继续等待 `/library` 全量视频列表
   - 上述入口已补成组件级回归测试，避免后续回退成全量双拉
   - 其余更重的刷新入口暂不混改；后续若继续压性能，仍优先围绕 `useLibrary` 双请求刷新成本展开
 

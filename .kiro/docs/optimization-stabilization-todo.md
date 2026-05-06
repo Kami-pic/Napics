@@ -234,6 +234,7 @@
 - [x] 补媒体库首页性能专项入口基线
   - 当前：已新增 [library-home-performance-baseline.md](/C:/Users/shenq/nas-video-upgrader/.kiro/docs/_one-off/library-home-performance-baseline.md)，记录 `/library` 与 `/library/tree` 的本机粗测、当前链路判断，以及 `/library/tree` 返回结构快照测试入口
   - 最新补充（2026-04-29）：已先压掉五类低风险前端刷新成本；`分类标签 / folder_type` 修改后、`tv/season` 文件夹标准名保存后、`tv/season` 文件夹英文名保存后、文件夹封面上传 / 删除后、以及手动候选确认后，都不再全量双拉 `/library + /library/tree`，而是只刷新目录树；对应组件级测试也已补齐
+  - 最新补充（2026-05-06）：首页全量刷新仍并行请求 `/library` 与 `/library/tree`，但现在 `/library/tree` 先返回即可先更新目录树，避免首屏树渲染继续等待全量视频列表；已补异步顺序测试并通过前端专项测试 / 构建
 
 ### 暂停项
 

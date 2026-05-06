@@ -254,12 +254,12 @@ export default function Home() {
           </div>
 
           <div ref={libraryContentRef}>
-            {loading && stats.total === 0 ? (
+            {loading && stats.total === 0 && !fileTree ? (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <div className="w-10 h-10 border-3 border-slate-700 border-t-blue-500 rounded-full animate-spin mb-4" />
                 <p className="text-slate-500 text-sm">加载媒体库...</p>
               </div>
-            ) : stats.total === 0 && !scanning ? (
+            ) : stats.total === 0 && !scanning && !fileTree ? (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <span className="text-6xl mb-5 opacity-20">📂</span>
                 <p className="text-base font-medium text-slate-400 mb-2">媒体库为空</p>
