@@ -273,7 +273,8 @@ class QBittorrentClient:
             r = self.session.post(f"{self.url}/api/v2/auth/login", data={
                 "username": self.username, "password": self.password
             }, timeout=5)
-            self._logged_in = r.status_code == 200 and r.text == "Ok."
+            # qB 旧版返回 200 + "Ok."，新版返回 200 + "Ok." 或 204 No Content
+            self._logged_in = (r.status_code == 200 and "ok" in r.text.lower()) or r.status_code == 204
             return self._logged_in
         except:
             return False
