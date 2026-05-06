@@ -38,6 +38,21 @@ def parse_quality(title: str) -> QualityTag:
     elif re.search(r"720[piPI]", title):
         resolution = "720p"
 
+    # 从像素分辨率推断标准分辨率（如 1920x1080、1912x1048、3840x2160、1280x720）
+    if not resolution:
+        px_match = re.search(r"(\d{3,4})\s*[xX×]\s*(\d{3,4})", title)
+        if px_match:
+            w, h = int(px_match.group(1)), int(px_match.group(2))
+            # 宽高取较大值作为判断依据（有些是 WxH，有些是 HxW）
+            long_side = max(w, h)
+            short_side = min(w, h)
+            if long_side >= 3200 or short_side >= 1800:
+                resolution = "2160p"
+            elif long_side >= 1800 or short_side >= 900:
+                resolution = "1080p"
+            elif long_side >= 1100 or short_side >= 600:
+                resolution = "720p"
+
     # --- 来源（优先级：Remux > Bluray > WEB-DL > HDTV）---
     source = ""
     if "REMUX" in upper:
@@ -87,9 +102,15 @@ def parse_quality(title: str) -> QualityTag:
         is_surround = True  # AC3 通常是 5.1
     elif "AAC" in upper:
         audio_codec = "AAC"
-    # 额外检测：标题中直接出现 5.1 / 7.1 / 6CH / 8CH
-    if not is_surround and re.search(r"\b[5-9]\.[01]\b|7\.1|\b[6-8]CH\b", upper):
+    # 额外检测：标题中直接出现 5.1 / 7.1 / 6CH / 8CH（含方括号包裹和紧跟编码的格式）
+    if not is_surround and re.search(r"[5-9]\.[01]|7\.1|[6-8]CH", upper):
         is_surround = True
+        # 如果还没有 audio_codec，从 5.1 上下文推断
+        if not audio_codec:
+            if re.search(r"AAC\s*5\.\d|AAC\s*7\.\d", upper):
+                audio_codec = "AAC"
+            elif re.search(r"DD[P+]?\s*5\.\d", upper):
+                audio_codec = "DD5.1"
 
     # --- 中文字幕标记 ---
     chinese_sub_patterns = [
