@@ -295,7 +295,7 @@ class QBittorrentClient:
                     logger.warning("[qB] session expired (403), re-login")
                     self._logged_in = False
                     continue
-                if r.status_code != 200:
+                if r.status_code not in (200, 202):
                     logger.error(f"[qB] add_torrent failed: status={r.status_code}, body={r.text[:200]}")
                     return False
                 return True
