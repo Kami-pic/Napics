@@ -42,11 +42,14 @@
 - PR / 合并 / 发布 / 高风险配置修改：必须用户确认后才能执行
 - 多 agent 并行时：只 `git add / commit / 总结` 当前对话中由自己直接修改并验证过的文件
 - 其他 agent 或用户正在处理的改动默认视为外部范围：不混入自己的提交，不在自己的总结里打包汇总
+- 默认禁止使用 `git add .` / `git add -A` / `git commit -a`。除非用户明确要求全量提交，否则必须逐文件暂存本轮文件
+- 提交前必须执行并核对 `git diff --cached --name-only`，确认 staged 文件只包含本轮自己直接修改且已验证过的文件
+- 若工作区已有其他改动，只记录为“外部未提交改动”，不要代为暂存、提交或总结为本轮成果
 
 ## 收尾清单
 
 - task 收尾默认检查：
-  - 当前 TODO 已更新
+  - 已更新本轮任务对应的 TODO / 设计文档；不要为了过 hook 固定修改 stabilization TODO
   - 临时过程记录已写入 `docs/_one-off/`，或本轮已判定无需新增
   - 若本轮已到阶段收口时点，已更新 `knowledge/devlog.md`
   - 已判断是否需要更新 `project-memory.md` / 对应 knowledge
@@ -58,7 +61,7 @@
 
 ## 机械约束
 
-- 改 `backend/` 或 `frontend/` 业务代码时，提交里必须同时包含 TODO 更新
+- 改 `backend/` 或 `frontend/` 业务代码时，提交里必须同时包含本轮相关的 TODO / 设计文档 / `_one-off` 记录 / knowledge 之一；不要求固定更新 `optimization-stabilization-todo*.md`
 - 改主链路或跨模块规则时，提交里必须同时包含 knowledge 或 `_one-off/` 记录更新
 - hook 统一放在 `.kiro/hooks/`
 - 检查脚本统一放在 `scripts/`

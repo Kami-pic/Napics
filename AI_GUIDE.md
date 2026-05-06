@@ -1,4 +1,4 @@
-<!-- 本文件是 .kiro/ 配置的精简摘要，适用于任何 AI 编码工具。完整规则见 .kiro/steering/。上次同步：2026-04-24 -->
+<!-- 本文件是 .kiro/ 配置的精简摘要，适用于任何 AI 编码工具。完整规则见 .kiro/steering/。上次同步：2026-05-06 -->
 
 # AI_GUIDE.md
 
@@ -68,9 +68,12 @@ NAS 视频媒体管理系统。Python FastAPI 后端 + Next.js 前端，管理�
 
 ## 提交规范
 
-- 里程碑完成后提交，提交前更新 TODO + 相关 knowledge 文件 + devlog.md
+- 里程碑完成后提交，提交前更新本轮任务对应的 TODO / 设计文档 / `_one-off` 记录 / knowledge
 - commit message 中文多行：第一行 `类型: 描述`，body 写变更要点和踩坑
 - 严禁提交 node_modules/venv/dist/__pycache__
+- 默认禁止 `git add .` / `git add -A` / `git commit -a`；除非用户明确要求全量提交，否则逐文件暂存
+- 提交前必须核对 `git diff --cached --name-only`，只提交当前对话中直接修改并验证过的文件
+- 文档检查只要求更新本轮相关文档，不要为了过 hook 固定修改 stabilization TODO
 
 ## 记忆写入纪律
 

@@ -6,7 +6,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TODO_PATH = ".kiro/docs/optimization-stabilization-todo.md"
+DOC_PREFIXES = (
+    ".kiro/docs/",
+    ".kiro/knowledge/",
+)
+RUNTIME_DOC_PREFIXES = (
+    ".kiro/docs/_archived/",
+)
 
 
 def git_diff_cached() -> list[str]:
@@ -25,11 +31,9 @@ def is_code_change(path: str) -> bool:
 
 
 def is_doc_change(path: str) -> bool:
-    return (
-        path == TODO_PATH
-        or path.startswith(".kiro/knowledge/")
-        or path.startswith(".kiro/docs/_one-off/")
-    )
+    if any(path.startswith(prefix) for prefix in RUNTIME_DOC_PREFIXES):
+        return False
+    return any(path.startswith(prefix) for prefix in DOC_PREFIXES)
 
 
 def main() -> int:
@@ -39,14 +43,11 @@ def main() -> int:
         print("阶段文档检查跳过：本次提交没有 backend/frontend 代码变更。")
         return 0
 
-    if TODO_PATH not in staged:
-        print(f"阶段文档检查失败：检测到代码变更，但未同时更新 `{TODO_PATH}`。")
-        return 1
-
-    doc_changes = [path for path in staged if is_doc_change(path) and path != TODO_PATH]
+    doc_changes = [path for path in staged if is_doc_change(path)]
     if not doc_changes:
-        print("阶段文档检查失败：检测到代码变更，但未同时更新 knowledge 或 worklog。")
-        print("至少补一个：`.kiro/knowledge/*.md` 或 `.kiro/docs/_one-off/*.md`。")
+        print("阶段文档检查失败：检测到 backend/frontend 代码变更，但未同时更新相关项目文档。")
+        print("至少补一个相关文档：`.kiro/docs/*.md`、`.kiro/docs/_one-off/*.md` 或 `.kiro/knowledge/*.md`。")
+        print("不要为了通过检查固定修改 stabilization TODO；应更新本轮任务对应的文档。")
         return 1
 
     print("阶段文档检查通过。")
