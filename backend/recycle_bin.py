@@ -63,26 +63,36 @@ class RecycleBin:
             os.makedirs(meta_parent, exist_ok=True)
 
     def move_to_bin(self, file_path: str, task_id: str = "") -> Optional[RecycleBinEntry]:
-        """将文件或目录移入回收站。"""
+        """将文件或目录移入回收站，保留相对路径结构。"""
         if not os.path.exists(file_path):
             return None
 
         recycle_dir = self._resolve_recycle_dir(file_path)
         if not recycle_dir:
             return None
-        os.makedirs(recycle_dir, exist_ok=True)
+
+        # 计算相对路径：从共享文件夹根（recycle_dir 的父目录）到文件的相对路径
+        # recycle_dir = share/#recycle，share_root = share/
+        share_root = os.path.dirname(recycle_dir)
+        norm_file = os.path.normpath(file_path)
+        norm_share = os.path.normpath(share_root)
+        try:
+            rel_path = os.path.relpath(norm_file, norm_share)
+        except ValueError:
+            # 跨盘时 relpath 会报错，fallback 到只用文件名
+            rel_path = os.path.basename(file_path.rstrip("\\/"))
+
+        recycle_path = os.path.join(recycle_dir, rel_path)
+        recycle_parent = os.path.dirname(recycle_path)
+        os.makedirs(recycle_parent, exist_ok=True)
+
+        # 同名冲突处理
+        if os.path.exists(recycle_path):
+            base, ext = os.path.splitext(recycle_path)
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            recycle_path = f"{base}_{ts}{ext}" if ext else f"{recycle_path}_{ts}"
 
         entry_id = str(uuid.uuid4())[:8]
-        original_name = os.path.basename(file_path.rstrip("\\/"))
-        prefix = f"{task_id}_" if task_id else f"{entry_id}_"
-        recycle_name = f"{prefix}{original_name}"
-        recycle_path = os.path.join(recycle_dir, recycle_name)
-
-        if os.path.exists(recycle_path):
-            ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            recycle_name = f"{prefix}{ts}_{original_name}"
-            recycle_path = os.path.join(recycle_dir, recycle_name)
-
         try:
             size_gb = self._calculate_size_gb(file_path)
             shutil.move(file_path, recycle_path)

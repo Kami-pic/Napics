@@ -22,7 +22,7 @@
   - 多季排序：新增 compareSeasons 函数，季号相同时 fallback 到 localeCompare 自然排序
   - 搜索标签增强：中文字幕(GB/BIG5/标题含中文)、分辨率(像素WxH推断)、音频5.1(方括号/紧跟编码)
   - 展开面板收起：用 useRef 记录 path，只在 path 真正变化时折叠，刷新不触发
-  - 回收站：统一用 recycle_bin.move_to_bin 移入共享文件夹根下 #recycle 目录
+  - 回收站：统一用 recycle_bin.move_to_bin 移入 share/#recycle，保留相对路径结构
   - 前端测试修复：PanFilterBar 接口对齐、订阅按钮行为对齐、emoji 前缀匹配
 - 多项 bug 修复与功能优化（2026-04-30 对话）：
   - 删除操作：电影封装文件夹检测 + 空壳目录清理 + 一级分类目录保护
