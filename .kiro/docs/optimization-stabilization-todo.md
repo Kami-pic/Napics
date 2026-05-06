@@ -19,7 +19,7 @@
 - 6 个用户反馈 bug 修复 + 9 个历史遗留测试修复 + 标签增强（2026-05-06）：
   - 清洗名去噪增强：去除 ISO 语言缩写(RUS/JAP/ENG 等)、OVA/ONA 独立标签、发布者名(Deadmauvlad 等)
   - 英文名保存：前端传 is_folder 标记，后端支持文件夹模式按路径前缀匹配更新子视频
-  - 多季排序：新增 compareSeasons 函数，季号相同时 fallback 到 localeCompare 自然排序
+  - 多季排序：新增 compareSeasons + getSeasonNum 支持中文数字（第一季~第二十季）
   - 搜索标签增强：中文字幕(GB/BIG5/标题含中文)、分辨率(像素WxH推断)、音频5.1(方括号/紧跟编码)
   - 展开面板收起：用 useRef 记录 path，只在 path 真正变化时折叠，刷新不触发
   - 回收站：统一用 recycle_bin.move_to_bin 移入 share/#recycle，保留相对路径结构

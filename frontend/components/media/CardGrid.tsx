@@ -28,8 +28,15 @@ export function getSeasonLabel(name: string): string {
   return name;
 }
 function getSeasonNum(name: string): number {
+  // 阿拉伯数字格式：S01、第3季、Season 2
   const m = name.match(/(?:S(\d+)|第(\d+)季|Season\s*(\d+))/i);
-  return m ? parseInt(m[1] || m[2] || m[3]) : 0;
+  if (m) return parseInt(m[1] || m[2] || m[3]);
+  // 中文数字格式：第一季、第二季...
+  const cnMap: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+    "十一": 11, "十二": 12, "十三": 13, "十四": 14, "十五": 15, "十六": 16, "十七": 17, "十八": 18, "十九": 19, "二十": 20 };
+  const cnMatch = name.match(/第([一二三四五六七八九十]+)季/);
+  if (cnMatch) return cnMap[cnMatch[1]] || 0;
+  return 0;
 }
 function compareSeasons(a: FolderNode, b: FolderNode): number {
   const numA = getSeasonNum(a.name);
