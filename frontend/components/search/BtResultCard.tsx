@@ -6,6 +6,9 @@ import { INDEXER_TAG_STYLE, INDEXER_DOT_COLOR } from "./FilterBar";
 // 已知直搜源名称
 const DIRECT_SOURCE_NAMES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe", "eztv", "dmhy", "1337x"]);
 
+// 无做种数信息的源：seeders=0 不代表死种，不显示做种数
+const NO_SEEDER_INFO_SOURCES = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe", "dmhy", "mikan"]);
+
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 
 function isSeasonPack(title: string) {
@@ -98,7 +101,9 @@ export default function BtResultCard({ res, index, currentResolution, qbConfigur
             <p className="text-[11px] text-slate-500">
               {res.seeders === 0 && res.size_gb === 0
                 ? <span className="text-slate-500">磁力</span>
-                : <>做种 <span className={res.seeders > 10 ? "text-green-400" : res.seeders > 0 ? "text-yellow-400" : "text-red-400"}>{res.seeders}</span></>
+                : NO_SEEDER_INFO_SOURCES.has((res as any)._source || "")
+                  ? <span className="text-slate-500">—</span>
+                  : <>做种 <span className={res.seeders > 10 ? "text-green-400" : res.seeders > 0 ? "text-yellow-400" : "text-red-400"}>{res.seeders}</span></>
               }
             </p>
           </div>

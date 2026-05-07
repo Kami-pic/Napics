@@ -24,6 +24,14 @@ backend/sandbox_real/
 backend/posters/
 backend/*_report.txt
 *.log
+pytest-cache-files-*/
+tmp*/
+backend/.pytest_cache/
+backend/pytest-cache-files-*/
+backend/pytest-of-*/
+backend/tmp*/
+backend/relocator_conflict_*/
+screenshot/
 
 # 数据库/缓存文件（运行时生成，不入库）
 backend/scrape_cache/
