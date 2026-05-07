@@ -77,22 +77,35 @@
 
 ### 分类规则
 
-- [ ] 正式测试：`test_*.py`
+- [x] 正式测试：`test_*.py`
   - 目标：修到可稳定执行
   - 不允许用跳过真实失败替代修复
   - 验证：能列出失败项、归因、处理方式
 
-- [ ] 调试脚本：`_test_*.py` / `_check_*.py` / `_debug_*.py` / `_fix_*.py` / `_verify_*.py` / `_batch_*.py`
+- [x] 调试脚本：`_test_*.py` / `_check_*.py` / `_debug_*.py` / `_fix_*.py` / `_verify_*.py` / `_batch_*.py`
   - 目标：避免被 `pytest .` 误收集或误执行
-  - 优先方案：通过 pytest ignore 规则排除
-  - 备选方案：经用户确认后移动到 `scripts/_archived/`
+  - 优先方案：经用户确认后，将所有 `backend/_*.py` 批量归档到 `backend/scripts/_archived/`
+  - 备选方案：如果暂不移动文件，则在 `backend/conftest.py` 加 `collect_ignore_glob = ["_*.py"]`
   - 验证：`pytest .` 不再因历史脚本导入阶段 `sys.exit(...)` 中断
+
+### 2026-05-07 分类结果
+
+- 正式测试数量：`backend/test_*.py` 共 86 个。
+- 历史调试脚本数量：`backend/_*.py` 共 98 个。
+- 当前 `pytest . --collect-only` 第一阻断点：`test_bt_expand.py` 在模块导入阶段直接执行自定义测试并 `sys.exit(0)`，导致 pytest collection `INTERNALERROR`。
+- 忽略 `test_bt_expand.py` 后的下一类阻断点：`test_code_split.py` 在模块导入阶段重包 `sys.stdout` / `sys.stderr`，导致 pytest capture 收尾时报 `ValueError: I/O operation on closed file`。
+- 正式测试中存在 `sys.exit` 的文件：`test_bt_expand.py`、`test_detail_drawer_split.py`、`test_detail_e2e.py`、`test_detail_operations.py`、`test_discover_api.py`、`test_enrich_integration.py`、`test_final_features.py`、`test_move_wrapped.py`、`test_name_trust_audit.py`、`test_organize_pipeline.py`、`test_phase_c_e2e.py`、`test_phase4_e2e.py`、`test_rename_organize.py`、`test_rss_e2e.py`、`test_subscribe_api.py`、`test_subscribe_e2e.py`、`test_todo_completion.py`。
+- 正式测试中存在顶层 stdout/stderr 重包风险的文件：`test_code_split.py`、`test_final_features.py`、`test_local_match_e2e.py`、`test_local_media_matcher.py`、`test_phase_c_e2e.py`、`test_phase4_e2e.py`、`test_rss_e2e.py`。
+- 处理方式建议：阶段 3 先做 pytest 收集治理，不移动历史脚本时用 `backend/conftest.py` 排除 `backend/_*.py`；正式 `test_*.py` 的脚本化文件不能简单跳过，需要逐个改成 pytest 可收集函数或登记为独立脚本专项。
+- 验证命令已执行：
+  - `cd backend && python -X utf8 -m pytest . --collect-only`
+  - `cd backend && python -X utf8 -m pytest . --collect-only --ignore=test_bt_expand.py`
 
 ### 明确不做
 
 - 不花时间修一次性调试脚本
 - 不删除历史脚本
-- 不批量移动文件，除非用户明确确认
+- 不批量移动文件，除非用户明确确认；归档路径固定为 `backend/scripts/_archived/`
 - 不把测试治理和业务修复混在同一轮提交
 
 ---
@@ -102,9 +115,9 @@
 > 只有阶段 1 / 2 盘点完成后才进入。
 
 - [ ] 后端 pytest 收集治理
-  - 方案 A：新增或更新 `backend/conftest.py` 的 `collect_ignore`
-  - 方案 B：新增 pytest 配置忽略调试脚本
-  - 推荐：优先方案 A，改动小、可回滚、不移动文件
+  - 方案 A：经用户确认后批量移动 `backend/_*.py` 到 `backend/scripts/_archived/`
+  - 方案 B：新增或更新 `backend/conftest.py`，配置 `collect_ignore_glob = ["_*.py"]`
+  - 推荐：优先方案 A，目录更干净，减少 AI 误判；方案 B 更保守，不移动文件
   - 验证：`cd backend && python -X utf8 -m pytest . --collect-only` 不被调试脚本打断
 
 - [ ] 正式测试失败归类
