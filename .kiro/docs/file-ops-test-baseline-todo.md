@@ -1,17 +1,17 @@
 # [TODO] 文件操作盘点 + 测试噪声治理
 
 > 目标：先把高风险文件副作用链路和测试基建噪声收清楚，再决定是否进入文件事务层或目录分层实现。
-> 当前阶段只做基线，不做业务迁移。
+> 当前阶段已完成：文件副作用盘点、测试噪声治理、关键入口副作用基线、第一轮最小 sidecar helper 抽取。
 
 ---
 
 ## 当前 task
 
-- 本轮目标：进入阶段 4 前置判断，先补手动重命名入口的文件副作用基线测试
-- 本轮只做：`rename_item` 副作用测试基线 + TODO 状态更新
+- 本轮目标：收口文件操作盘点 + 测试噪声治理专项
+- 本轮只做：`batch_manage(remove/copy)` 副作用基线补齐 + TODO 完成状态更新
 - 本轮不碰：
   - 不改任何业务逻辑
-  - 不新增功能
+  - 不新增用户功能
   - 不做目录重组，不移动 backend 业务文件
   - 不碰前端体验优化
   - 不清理 / 删除 / 移动历史脚本
@@ -60,16 +60,18 @@
 
 ### 建议重点入口
 
-- [ ] `renamer.py`
-- [ ] `organizer.py`
-- [ ] `structure_organizer.py`
-- [ ] `organize_executor.py`
-- [ ] `file_relocator.py`
-- [ ] `recycle_bin.py`
-- [ ] `routes/organize.py`
-- [ ] `routes/relocate.py`
-- [ ] `routes/library.py`
-- [ ] `download_manager.py`
+- [x] `renamer.py`
+- [x] `organizer.py`
+- [x] `structure_organizer.py`
+- [x] `organize_executor.py`
+- [x] `file_relocator.py`
+- [x] `recycle_bin.py`
+- [x] `routes/organize.py`
+- [x] `routes/relocate.py`
+- [x] `routes/library.py`
+- [x] `download_manager.py`
+
+> 注：以上入口已在阶段 1 审计矩阵覆盖；不是逐个迁移或逐个补测试完成。
 
 ---
 
@@ -149,7 +151,7 @@
 - [x] 高风险入口已有测试或已明确补测试计划
   - 已补：`routes/rename.py::rename_item` 单文件重命名、单视频电影文件夹重命名副作用基线
   - 已补：`routes/tools.py::batch_manage(move/delete)` 散装视频移动/删除副作用基线
-  - 待补：`routes/tools.py::batch_manage(remove/copy)` 副作用矩阵测试
+  - 已补：`routes/tools.py::batch_manage(remove/copy)` 副作用基线
 - [x] `pytest` 收集噪声已治理
   - `_*.py` 历史脚本已通过 `backend/conftest.py` 排除
   - 正式 `test_*.py` 中脚本式测试仍需独立治理，不作为 `_*.py` 噪声处理
@@ -181,6 +183,8 @@
 - 覆盖场景：
   - 散装视频批量移动后，同步同名前缀 `.nfo`、`-poster.jpg` 和 `media_library` 的 `file_path` / `file_name` / `folder_name`
   - 散装视频批量删除后，调用回收站 `move_to_bin`，文件从原路径移出，并从 `media_library` 移除
+  - 从媒体库移除时，只更新 `media_library` 和 `excluded_paths`，不删除磁盘文件
+  - 散装视频复制时，只复制视频本体，不复制同名 sidecar，不更新 `media_library`
 - 验证：`cd backend && python -X utf8 -m pytest test_batch_manage_side_effects.py -p no:cacheprovider`
 
 ### 2026-05-08 第一轮最小实现
@@ -230,8 +234,21 @@
 
 ## 完成标准
 
-- 文件操作入口和副作用链路可被审阅
-- 高风险入口的测试缺口清楚
-- pytest 噪声治理方案明确，且不误修调试脚本
-- 是否值得进入 C2 文件事务层有证据支撑
-- 没有业务行为改动
+- [x] 文件操作入口和副作用链路可被审阅
+- [x] 高风险入口的测试缺口清楚
+- [x] pytest 噪声治理方案明确，且不误修调试脚本
+- [x] 是否值得进入 C2 文件事务层有证据支撑
+- [x] 没有业务行为改动
+
+## 收口结论
+
+- 本专项已完成。
+- 当前已允许的后续方向：只围绕已有基线保护的小范围重复点继续抽 helper。
+- 当前仍不允许：
+  - 全量文件事务层
+  - 批量迁移所有文件操作
+  - 同时重构下载 / 整理 / 刮削主链路
+- 独立后续专项：
+  - 正式 `test_*.py` 脚本化治理（`test_bt_expand.py`、`test_code_split.py` 等）
+  - `batch_manage(copy)` 是否应复制 sidecar 的产品行为确认
+  - `recycle_bin.restore` 是否应同步 `media_library` 的产品行为确认

@@ -12,6 +12,7 @@ class FakeConfigManager:
     def __init__(self, library, nas_root):
         self.library = library
         self.saved_library = None
+        self.excluded_paths = None
         self.config = SimpleNamespace(nas_paths=[str(nas_root)])
 
     def load_library(self):
@@ -19,6 +20,9 @@ class FakeConfigManager:
 
     def save_library(self, data):
         self.saved_library = data
+
+    def add_excluded_paths(self, paths):
+        self.excluded_paths = paths
 
 
 class FakeRecycleBin:
@@ -119,5 +123,67 @@ def test_batch_delete_loose_video_uses_recycle_bin_and_removes_library(monkeypat
             }
         ]
         assert fake_config.saved_library == [library[1]]
+    finally:
+        shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def test_batch_remove_only_updates_library_and_excluded_paths(monkeypatch):
+    temp_root = make_temp_root()
+    try:
+        source_dir = temp_root / "电影"
+        source_dir.mkdir()
+        video = source_dir / "Remove Only.mkv"
+        video.write_text("video", encoding="utf-8")
+
+        library = [
+            {"file_path": str(video), "file_name": video.name, "folder_name": "电影"},
+            {"file_path": str(source_dir / "Keep Me.mkv"), "file_name": "Keep Me.mkv", "folder_name": "电影"},
+        ]
+        fake_config = FakeConfigManager(library, temp_root)
+        monkeypatch.setattr(tools_route, "config_m", fake_config)
+
+        result = tools_route.batch_manage(
+            tools_route.BatchRequest(action="remove", paths=[str(video)])
+        )
+
+        assert result["failed"] == []
+        assert result["success"] == [str(video)]
+        assert video.exists()
+        assert fake_config.saved_library == [library[1]]
+        assert set(fake_config.excluded_paths) == {str(video), str(source_dir)}
+    finally:
+        shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def test_batch_copy_loose_video_copies_file_only_and_keeps_library(monkeypatch):
+    temp_root = make_temp_root()
+    try:
+        source_dir = temp_root / "电影"
+        target_dir = temp_root / "目标"
+        source_dir.mkdir()
+        video = source_dir / "Copy Me.mkv"
+        nfo = source_dir / "Copy Me.nfo"
+        poster = source_dir / "Copy Me-poster.jpg"
+        video.write_text("video", encoding="utf-8")
+        nfo.write_text("nfo", encoding="utf-8")
+        poster.write_bytes(b"poster")
+
+        library = [{"file_path": str(video), "file_name": video.name, "folder_name": "电影"}]
+        fake_config = FakeConfigManager(library, temp_root)
+        monkeypatch.setattr(tools_route, "config_m", fake_config)
+
+        result = tools_route.batch_manage(
+            tools_route.BatchRequest(action="copy", paths=[str(video)], target_dir=str(target_dir))
+        )
+
+        assert result["failed"] == []
+        assert result["success"] == [str(video)]
+        assert video.exists()
+        assert nfo.exists()
+        assert poster.exists()
+        assert (target_dir / "Copy Me.mkv").exists()
+        assert not (target_dir / "Copy Me.nfo").exists()
+        assert not (target_dir / "Copy Me-poster.jpg").exists()
+        assert fake_config.saved_library is None
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)
