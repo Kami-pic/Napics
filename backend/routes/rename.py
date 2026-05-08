@@ -5,6 +5,7 @@ import os
 import logging
 from fastapi import APIRouter, HTTPException
 
+from core.file_ops.sidecars import move_sidecars
 from shared import config_m
 
 logger = logging.getLogger(__name__)
@@ -78,16 +79,7 @@ def rename_item(old_path: str, new_name: str):
                                         v["file_name"] = new_video
                                         changed = True
                                 # 重命名关联文件（NFO、poster 等）
-                                old_base = os.path.splitext(old_vp)[0]
-                                new_base = os.path.splitext(new_vp)[0]
-                                for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
-                                    old_f = old_base + suffix
-                                    new_f = new_base + suffix
-                                    if os.path.exists(old_f):
-                                        try:
-                                            os.rename(old_f, new_f)
-                                        except Exception:
-                                            pass
+                                move_sidecars(old_vp, new_vp, os.rename)
             except OSError:
                 pass
         else:
@@ -100,16 +92,7 @@ def rename_item(old_path: str, new_name: str):
                     break
             
             # 同时重命名对应的 .nfo / -poster.jpg 等关联文件
-            old_base = os.path.splitext(old_path)[0]
-            new_base = os.path.splitext(new_path)[0]
-            for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
-                old_f = old_base + suffix
-                new_f = new_base + suffix
-                if os.path.exists(old_f):
-                    try:
-                        os.rename(old_f, new_f)
-                    except Exception:
-                        pass
+            move_sidecars(old_path, new_path, os.rename)
             
             # 单视频文件夹（仅 movie 类型）：同步重命名父文件夹
             # TV 类型绝不联动改文件夹名（多集共用一个文件夹）

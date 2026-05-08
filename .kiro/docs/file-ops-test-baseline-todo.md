@@ -183,6 +183,19 @@
   - 散装视频批量删除后，调用回收站 `move_to_bin`，文件从原路径移出，并从 `media_library` 移除
 - 验证：`cd backend && python -X utf8 -m pytest test_batch_manage_side_effects.py -p no:cacheprovider`
 
+### 2026-05-08 第一轮最小实现
+
+- 新增 `backend/core/file_ops/sidecars.py`
+- 只抽取同名前缀 sidecar 移动/重命名 helper：`.nfo`、`-poster.jpg`、`-poster.png`、`-fanart.jpg`、`-clearlogo.png`、`-thumb.jpg`
+- 已接入入口：
+  - `routes/rename.py::rename_item`
+  - `routes/tools.py::batch_manage(move)` 的散装文件分支
+- 行为保持：
+  - 只处理存在的 sidecar
+  - 单个 sidecar 失败时吞掉异常，不阻断主视频/文件夹操作
+  - 不改变任何 HTTP 接口和返回结构
+- 验证：`cd backend && python -X utf8 -m pytest test_rename_side_effects.py test_batch_manage_side_effects.py -p no:cacheprovider`
+
 ### 允许的下一步
 
 - 局部新增 `backend/core/file_ops/` 的小入口

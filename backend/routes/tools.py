@@ -17,6 +17,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse, FileResponse, Response
 from pydantic import BaseModel
 
+from core.file_ops.sidecars import move_sidecars
 from shared import (
     config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
@@ -194,14 +195,11 @@ def batch_manage(req: BatchRequest):
                         logger.info(f"[batch_manage] 封装文件夹移动: {parent_dir} → {new_dir}")
                     else:
                         # 散装文件：移动视频 + 同名关联文件
-                        old_base = os.path.splitext(p)[0]
-                        for suffix in [".nfo", "-poster.jpg", "-poster.png", "-fanart.jpg", "-clearlogo.png", "-thumb.jpg"]:
-                            old_f = old_base + suffix
-                            if os.path.exists(old_f):
-                                try:
-                                    shutil.move(old_f, os.path.join(req.target_dir, os.path.basename(old_f)))
-                                except Exception:
-                                    pass
+                        move_sidecars(
+                            p,
+                            os.path.join(req.target_dir, os.path.basename(p)),
+                            shutil.move,
+                        )
                         shutil.move(p, new_path)
                         path_map[p] = new_path
                         success.append(p)
