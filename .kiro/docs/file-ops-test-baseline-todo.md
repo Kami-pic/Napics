@@ -114,20 +114,30 @@
 
 > 只有阶段 1 / 2 盘点完成后才进入。
 
-- [ ] 后端 pytest 收集治理
+- [x] 后端 pytest 收集治理
   - 方案 A：经用户确认后批量移动 `backend/_*.py` 到 `backend/scripts/_archived/`
   - 方案 B：新增或更新 `backend/conftest.py`，配置 `collect_ignore_glob = ["_*.py"]`
   - 推荐：优先方案 A，目录更干净，减少 AI 误判；方案 B 更保守，不移动文件
-  - 验证：`cd backend && python -X utf8 -m pytest . --collect-only` 不被调试脚本打断
+  - 本轮处理：未获批批量移动脚本，已采用方案 B，新增 `backend/conftest.py`
+  - 验证：`cd backend && python -X utf8 -m pytest . --collect-only` 当前仍被正式测试 `test_bt_expand.py` 的导入期 `sys.exit(0)` 打断，不是 `_*.py` 历史脚本打断
 
-- [ ] 正式测试失败归类
+- [x] 正式测试失败归类
   - 只处理 `test_*.py` 中真实失败
   - 如果失败属于当前无关业务缺陷，记录到本 TODO 的“后续技术债”区，不混改业务逻辑
-  - 验证：相关测试命令输出可复现
+  - 当前归类：
+    - `test_bt_expand.py`：顶层执行自定义测试并 `sys.exit(0)`，导致 pytest collection `INTERNALERROR`
+    - `test_code_split.py`：顶层重包 `sys.stdout` / `sys.stderr`，在忽略 `test_bt_expand.py` 后导致 pytest capture 收尾 `ValueError`
+  - 处理方式：不在本轮混改脚本式正式测试；后续应逐个改成 pytest 原生函数，或从正式测试集中移出并登记为独立脚本专项
+  - 验证：
+    - `cd backend && python -X utf8 -m pytest . --collect-only`
+    - `cd backend && python -X utf8 -m pytest . --collect-only --ignore=test_bt_expand.py`
 
-- [ ] 前端历史失败只做归类，不在本专项修体验
+- [x] 前端历史失败只做归类，不在本专项修体验
   - 范围：`split-components` / `subscribe-*` 等历史失败
-  - 验证：列出失败测试名、失败原因类型、是否需要单独 UI / 数据流专项
+  - 当前结果：`frontend` 下 `npm run test` 为 10 个测试文件、116 条测试全通过
+  - 残留风险：`subscribe-final.test.tsx` 存在 `vi.mock("@/lib/api")` 非顶层 warning，当前不是失败，但 Vitest 后续版本会把它升级为错误
+  - 处理方式：不在本专项修前端体验；如后续升级 Vitest 或该 warning 变红，再开前端测试基建专项
+  - 验证：`cd frontend && npm run test`
 
 ---
 
