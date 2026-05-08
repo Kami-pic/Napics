@@ -148,7 +148,8 @@
 - [x] “入口 × 副作用”矩阵已完成
 - [x] 高风险入口已有测试或已明确补测试计划
   - 已补：`routes/rename.py::rename_item` 单文件重命名、单视频电影文件夹重命名副作用基线
-  - 待补：`routes/tools.py::batch_manage(move/delete/remove/copy)` 副作用矩阵测试
+  - 已补：`routes/tools.py::batch_manage(move/delete)` 散装视频移动/删除副作用基线
+  - 待补：`routes/tools.py::batch_manage(remove/copy)` 副作用矩阵测试
 - [x] `pytest` 收集噪声已治理
   - `_*.py` 历史脚本已通过 `backend/conftest.py` 排除
   - 正式 `test_*.py` 中脚本式测试仍需独立治理，不作为 `_*.py` 噪声处理
@@ -170,8 +171,17 @@
 
 ### 下一步建议
 
-- 优先补 `routes/tools.py::batch_manage(move/delete)` 副作用测试，不碰 copy。
-- 等 `rename_item` + `batch_manage(move/delete)` 都有测试保护后，再考虑只抽一个极小的文件 sidecar helper；仍不做全量文件事务层。
+- `rename_item` + `batch_manage(move/delete)` 已有测试保护，可以开始评估只抽一个极小的 sidecar helper。
+- `batch_manage(copy/remove)` 仍未补，不应作为第一轮事务层迁移目标。
+- 第一轮实现仍应保持外部接口和行为不变，只迁移一个低风险重复点，不做全量文件事务层。
+
+### 2026-05-08 补充基线
+
+- 新增 `backend/test_batch_manage_side_effects.py`
+- 覆盖场景：
+  - 散装视频批量移动后，同步同名前缀 `.nfo`、`-poster.jpg` 和 `media_library` 的 `file_path` / `file_name` / `folder_name`
+  - 散装视频批量删除后，调用回收站 `move_to_bin`，文件从原路径移出，并从 `media_library` 移除
+- 验证：`cd backend && python -X utf8 -m pytest test_batch_manage_side_effects.py -p no:cacheprovider`
 
 ### 允许的下一步
 
