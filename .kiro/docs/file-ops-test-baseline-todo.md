@@ -7,8 +7,8 @@
 
 ## 当前 task
 
-- 本轮目标：建立“文件操作事务统一”前置 TODO，明确盘点产出、测试噪声治理边界和后续准入条件
-- 本轮只做：文档计划
+- 本轮目标：进入阶段 4 前置判断，先补手动重命名入口的文件副作用基线测试
+- 本轮只做：`rename_item` 副作用测试基线 + TODO 状态更新
 - 本轮不碰：
   - 不改任何业务逻辑
   - 不新增功能
@@ -145,11 +145,33 @@
 
 只有满足以下条件，才允许新开实现任务：
 
-- [ ] “入口 × 副作用”矩阵已完成
-- [ ] 高风险入口已有测试或已明确补测试计划
-- [ ] `pytest` 收集噪声已治理
-- [ ] 已识别最危险的 1-2 个入口，不做全量重构
-- [ ] 用户确认进入实现阶段
+- [x] “入口 × 副作用”矩阵已完成
+- [x] 高风险入口已有测试或已明确补测试计划
+  - 已补：`routes/rename.py::rename_item` 单文件重命名、单视频电影文件夹重命名副作用基线
+  - 待补：`routes/tools.py::batch_manage(move/delete/remove/copy)` 副作用矩阵测试
+- [x] `pytest` 收集噪声已治理
+  - `_*.py` 历史脚本已通过 `backend/conftest.py` 排除
+  - 正式 `test_*.py` 中脚本式测试仍需独立治理，不作为 `_*.py` 噪声处理
+- [x] 已识别最危险的 1-2 个入口，不做全量重构
+  - 入口 1：`routes/tools.py::batch_manage(move/delete)`，用户可触发、文件副作用最大、覆盖缺口明显
+  - 入口 2：`routes/rename.py::rename_item`，高频入口，涉及视频/文件夹/sidecar/library 联动
+- [x] 用户确认进入实现阶段
+  - 2026-05-08 用户回复“继续”
+
+### 2026-05-08 阶段 4 判断
+
+- 当前不直接进入 `backend/core/file_ops/` 事务层实现。
+- 理由：`batch_manage` 仍缺少副作用测试矩阵；正式 `test_*.py` 还有脚本式收集阻断，直接迁移文件操作无法证明等价。
+- 本轮选择：先冻结 `rename_item` 行为，新增 `backend/test_rename_side_effects.py`。
+- 覆盖场景：
+  - 单视频文件重命名后，同步 `.nfo`、`-poster.jpg` 和 `media_library` 的 `file_path` / `file_name`
+  - 单视频电影文件夹重命名后，同步文件夹名、视频名、`.nfo`、`-poster.jpg` 和 `media_library` 的 `file_path` / `file_name` / `folder_name`
+- 验证：`cd backend && python -X utf8 -m pytest test_rename_side_effects.py -p no:cacheprovider`
+
+### 下一步建议
+
+- 优先补 `routes/tools.py::batch_manage(move/delete)` 副作用测试，不碰 copy。
+- 等 `rename_item` + `batch_manage(move/delete)` 都有测试保护后，再考虑只抽一个极小的文件 sidecar helper；仍不做全量文件事务层。
 
 ### 允许的下一步
 
