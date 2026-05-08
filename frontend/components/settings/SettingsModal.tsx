@@ -42,8 +42,8 @@ const FIELD_GROUPS: { group: string; fields: { label: string; key: string; desc:
     { label: "qBittorrent 密码", key: "qb_password", desc: "Web UI 登录密码", type: "password" },
   ]},
   { group: "网盘转存", fields: [
-    { label: "Alist 地址", key: "alist_url", desc: "网盘转存", link: true },
-    { label: "Alist Token", key: "alist_token", desc: "管理后台 → 生成 Token" },
+    { label: "OpenList 地址", key: "alist_url", desc: "网盘转存", link: true },
+    { label: "OpenList Token", key: "alist_token", desc: "管理后台 → 生成 Token" },
   ]},
   { group: "AI 辅助", fields: [] },
 ];

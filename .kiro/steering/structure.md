@@ -45,6 +45,11 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── search_service.py    # 搜索服务（统一搜索逻辑，SSE/订阅/单源共用）
 │   ├── search_helpers.py    # 搜索辅助（enrich/junk标记/直搜源合并）
 │   ├── search_keyword_mapper.py # 多语言搜索词映射 + 回退链
+│   ├── search_query_builder.py  # 搜索词构造（cn/en/original 多策略）
+│   ├── completeness.py     # 季集完整性检测（TMDB 差集 + 缓存）
+│   ├── recycle_bin.py      # 回收站管理（move_to_bin + 恢复 + 清理）
+│   ├── core/
+│   │   └── constants.py    # 统一规则中心（扩展名/白名单/NFO 名等静态规则）
 │   ├── bt_scraper_*.py      # BT 直搜源爬虫（继承 ScraperBase）
 │   ├── pan_scraper_*.py     # 网盘爬虫（继承 ScraperBase）
 │   ├── rss_source_*.py      # RSS 源（继承 RSSSourceBase，订阅系统用）
@@ -73,11 +78,11 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
               ↓
 路由层        routes/*（参数校验 + 调用业务层，不写业务逻辑）
               ↓
-业务逻辑层    organizer.py（分类判定）/ renamer.py（重命名+影子名）/ structure_organizer.py（结构整理+归档）/ organize_executor.py（Action Plan 执行）/ analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py / discover_enrich.py（发现推荐 enrich）
+业务逻辑层    organizer.py（分类判定）/ renamer.py（重命名+影子名）/ structure_organizer.py（结构整理+归档）/ organize_executor.py（Action Plan 执行）/ analyzer.py / file_relocator.py / download_manager.py / ai_organizer.py / discover_enrich.py（发现推荐 enrich）/ completeness.py（季集完整性）
               ↓
 数据获取层    tmdb_client.py / douban_client.py / douban_api_v2.py / bangumi_client.py / searcher.py / scraper.py / nfo_handler.py / poster_downloader.py
               ↓
-基础设施层    config_manager.py / downloader.py / scraper_base.py / quality_parser.py
+基础设施层    config_manager.py / downloader.py / scraper_base.py / quality_parser.py / core/constants.py / recycle_bin.py
               ↓
 共享层        shared.py（单例初始化 + 辅助函数，所有层的依赖注入源）
 ```

@@ -57,7 +57,7 @@ export const systemApi = {
 
   restartSystem: () => request<any>(`${BASE_URL}/api/system/restart`, { method: "POST" }),
 
-  // ── Alist ──
+  // ── OpenList ──
   alistTransfer: (shareUrl: string, panType: string, savePath: string = "") =>
     request<any>(`${BASE_URL}/alist/transfer`, {
       method: "POST",

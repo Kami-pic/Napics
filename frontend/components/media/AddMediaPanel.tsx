@@ -178,7 +178,7 @@ export default function AddMediaPanel({
             <button onClick={() => setDownloadChannel("alist")} disabled={!alistConfigured}
               className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
                 downloadChannel === "alist" && alistConfigured ? "bg-emerald-600 text-white" : alistConfigured ? "bg-white/[0.06] text-slate-400 hover:bg-white/10" : "bg-white/[0.04] text-slate-600 cursor-not-allowed"
-              }`}>Alist</button>
+              }`}>OpenList</button>
           </div>
         </div>
       </div>

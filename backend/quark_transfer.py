@@ -1,7 +1,7 @@
 """夸克网盘转存模块 — 将分享链接的文件保存到自己的夸克网盘。
 
 流程：
-1. 从 Alist 配置中自动提取夸克 Cookie
+1. 从 OpenList 配置中自动提取夸克 Cookie
 2. 解析分享链接获取 stoken
 3. 获取分享文件列表
 4. 调用转存接口保存到指定目录
@@ -39,7 +39,7 @@ class QuarkTransfer:
 
     @classmethod
     def from_alist(cls, alist_url: str, alist_token: str) -> Optional["QuarkTransfer"]:
-        """从 Alist 存储配置中自动提取夸克 Cookie 并创建实例。"""
+        """从 OpenList 存储配置中自动提取夸克 Cookie 并创建实例。"""
         try:
             headers = {"Authorization": alist_token}
             r = requests.get(
@@ -60,10 +60,10 @@ class QuarkTransfer:
                             add_data = json.loads(addition)
                             cookie = add_data.get("cookie", "")
                             if cookie:
-                                logger.info("[QuarkTransfer] 从 Alist 提取夸克 Cookie 成功")
+                                logger.info("[QuarkTransfer] 从 OpenList 提取夸克 Cookie 成功")
                                 return cls(cookie=cookie)
         except Exception as e:
-            logger.error("[QuarkTransfer] 从 Alist 提取 Cookie 失败: %s", str(e))
+            logger.error("[QuarkTransfer] 从 OpenList 提取 Cookie 失败: %s", str(e))
         return None
 
     def _ts(self) -> str:

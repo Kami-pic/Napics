@@ -575,3 +575,28 @@
 - fsWrite 新建大文件（>50行）会触发 aborted，必须用 fsWrite 建头部 + fsAppend 分段追加
 - scraper_tv.py 中 _scrape_collection 和 _scrape_tv 调用了 scraper.py 的 scrape_folder/scrape_video，通过延迟导入（函数内 `from scraper import ...`）解决循环依赖
 - api.ts 拆分后 Next.js 自动解析 `api/index.ts`，所有 `import { api } from "@/lib/api"` 无需改动
+
+## 2026-05-08 Alist → OpenList 迁移
+
+**变更**:
+- 全项目从 Alist 切换到 OpenList（Alist 社区兼容分支），指向 NAS 上持续运行的实例
+- `config_manager.py`：默认端口保持 5244（OpenList 标准端口）
+- `config.json`：实际地址改为 `http://192.168.100.135:5244`（NAS 上的 OpenList）
+- `downloader.py`：所有日志和 docstring 中 "Alist" → "OpenList"
+- `download_manager.py`：注释和错误信息更新
+- `routes/search.py`：路由端点注释和错误提示更新
+- `pan_search_service.py`：注释更新
+- `quark_transfer.py`：注释和日志更新（从 OpenList 提取夸克 Cookie）
+- 前端 `SettingsModal.tsx`：标签 "Alist 地址/Token" → "OpenList 地址/Token"
+- 前端 `SearchModal.tsx`：错误提示 "Alist 服务不可达" → "OpenList 服务不可达"
+- 前端 `AddMediaPanel.tsx` / `BatchUpgradePanel.tsx`：按钮文字 "Alist" → "OpenList"
+- 前端 `lib/api/system.ts`：注释更新
+- `tech.md`：外部服务描述更新
+- `project-memory.md`：下载管理描述更新
+
+**保持不变**:
+- 内部字段名 `alist_url`/`alist_token`/`channel: "alist"` 不改（避免破坏已有数据和 API 路径）
+- API 路径 `/alist/transfer`、`/alist/mounts` 不改（前后端对齐，改了没有实际收益）
+- 类名 `AlistManager` 不改（OpenList API 完全兼容 Alist）
+
+**验证**: OpenList v4.2.1 在 NAS 正常响应，前端构建通过，后端模块导入正常

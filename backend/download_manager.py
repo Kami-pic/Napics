@@ -2,7 +2,7 @@
 
 核心设计：
 - 状态机：pending → downloading → completed → relocating → archived | failed | lost
-- Alist 双阶段：downloading(cloud_download) → downloading(local_sync) → completed
+- OpenList 双阶段：downloading(cloud_download) → downloading(local_sync) → completed
 - 持久化策略：核心状态变更立刻落盘，高频进度只在内存更新（防抖落盘）
 - 沙盒隔离：每个任务在 downloads/{task_id}/ 独立目录
 - 启动恢复：加载 JSON 后对 downloading 任务向下载器对账
@@ -42,13 +42,13 @@ class DownloadTask(BaseModel):
     save_path: str = ""            # 最终目标路径（媒体库中的位置）
     download_dir: str = ""         # 隔离沙盒路径 downloads/{task_id}/
     channel: str = "qb"           # "qb" | "alist"
-    downloader_hash: str = ""     # qB torrent hash 或 Alist task ID
+    downloader_hash: str = ""     # qB torrent hash 或 OpenList task ID
     category_hint: str = ""       # "movie" | "tv"
     status: str = "pending"       # 核心状态（落盘）
     progress: float = 0.0         # 0.0-1.0（内存高频更新）
     speed: str = ""               # "12.5 MB/s"（内存）
     eta: str = ""                 # "00:15:30"（内存）
-    phase: str = ""               # Alist: "cloud_download" | "local_sync"
+    phase: str = ""               # OpenList: "cloud_download" | "local_sync"
     error: str = ""
     is_season_pack: bool = False
     season_number: int = 0
@@ -199,7 +199,7 @@ class DownloadManager:
         return set()
 
     def _push_to_alist(self, task: DownloadTask) -> tuple:
-        """推送到 Alist，返回 (success, task_id_or_error)。"""
+        """推送到 OpenList，返回 (success, task_id_or_error)。"""
         try:
             result = self.alist.transfer_link(task.download_url, task.download_dir)
             if isinstance(result, tuple):
@@ -208,7 +208,7 @@ class DownloadManager:
                 ok, task_id = bool(result), ""
             if ok:
                 return True, task_id or f"alist_{task.id}"
-            return False, "Alist 所有工具均失败"
+            return False, "OpenList 所有工具均失败"
         except Exception as e:
             return False, str(e)
 

@@ -144,7 +144,7 @@ export default function SearchModal({
                       name_conflict: "同名文件已存在",
                       link_expired: "分享链接已失效",
                       wrong_password: "提取码错误",
-                      alist_unavailable: "Alist 服务不可达",
+                      alist_unavailable: "OpenList 服务不可达",
                     };
                     s.setToast({ msg: errMap[result.error_code] || result.error_message || "转存失败", ok: false });
                   }

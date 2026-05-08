@@ -107,7 +107,7 @@
 
 ### 下载管理
 - qB：直接传 save_path，旧沙盒任务完成后自动转移
-- Alist 双阶段：cloud_download → local_sync → completed
+- OpenList 双阶段：cloud_download → local_sync → completed
 - 归位替换：file_relocator.py（relocate → confirm_replace / archive_both / cancel_replace）
 - 回收站默认跟随旧文件所属媒体库根落在“同卷同级隐藏目录”（如 `<媒体库根上级>/.recycle_bins/<媒体库名>`），backend 只集中保存 `recycle_bin.json` 元数据；只有显式配置 `recycle_bin_path` 时才使用固定目录
 - 批量删除（batch_manage）走 recycle_bin.move_to_bin，移入共享文件夹根下 #recycle 并保留相对路径（如 share/#recycle/视频/电影/xxx）

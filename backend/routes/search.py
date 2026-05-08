@@ -243,12 +243,12 @@ def search_pan(keyword: str, media_type: str = ""):
 
 @router.get("/alist/mounts")
 def get_alist_mounts():
-    """获取 Alist 已挂载网盘列表。"""
+    """获取 OpenList 已挂载网盘列表。"""
     try:
         clients = get_clients()
         alist = clients.get("alist")
         if not alist:
-            return {"mounts": [], "error": "Alist 未配置"}
+            return {"mounts": [], "error": "OpenList 未配置"}
         mounts = alist.get_mounts_list()
         return {"mounts": [m.dict() for m in mounts]}
     except Exception as e:
@@ -274,7 +274,7 @@ def transfer_pan_resource(req: dict):
             conf = config_m.config
             qt = QuarkTransfer.from_alist(conf.alist_url, conf.alist_token)
             if not qt:
-                return {"success": False, "error_code": "no_cookie", "error_message": "无法获取夸克 Cookie，请检查 Alist 夸克存储配置"}
+                return {"success": False, "error_code": "no_cookie", "error_message": "无法获取夸克 Cookie，请检查 OpenList 夸克存储配置"}
             result = qt.transfer(share_url, passcode)
             return result
 

@@ -428,7 +428,7 @@ export default function BatchUpgradePanel({
                 正在推送下载任务 ({confirmedCount} 个)...
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                通道：{downloadChannel === "qb" ? "qBittorrent" : "Alist"}
+                通道：{downloadChannel === "qb" ? "qBittorrent" : "OpenList"}
               </p>
             </div>
           )}
@@ -479,7 +479,7 @@ export default function BatchUpgradePanel({
               <button
                 onClick={() => setDownloadChannel("alist")}
                 disabled={!alistConfigured}
-                title={alistConfigured ? "Alist" : "Alist 未配置"}
+                title={alistConfigured ? "OpenList" : "OpenList 未配置"}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   downloadChannel === "alist" && alistConfigured
                     ? "bg-emerald-600 text-white"
@@ -488,7 +488,7 @@ export default function BatchUpgradePanel({
                     : "bg-slate-700 text-slate-500 cursor-not-allowed"
                 }`}
               >
-                Alist
+                OpenList
               </button>
             </div>
 

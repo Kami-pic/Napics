@@ -1,7 +1,7 @@
 """网盘搜索聚合服务。
 
 并发调用多个网盘搜索源，聚合去重、敏感词过滤、质量过滤、
-按网盘类型分组、标记 Alist 挂载状态，返回统一响应。
+按网盘类型分组、标记 OpenList 挂载状态，返回统一响应。
 """
 
 import logging
@@ -43,7 +43,7 @@ class PanSearchService:
         pan_type_priority: List[str] = None,
         sensitive_words: List[str] = None,
         scraper_proxy: str = "",
-        alist_manager=None,  # AlistManager 实例（可选，用于挂载状态标记）
+        alist_manager=None,  # OpenList 管理器实例（可选，用于挂载状态标记）
     ):
         self.pan_type_priority = pan_type_priority or DEFAULT_PAN_PRIORITY
         self.content_filter = ContentFilter(sensitive_words or [])
@@ -237,7 +237,7 @@ class PanSearchService:
         return final
 
     def _mark_mount_status(self, results: List[PanResult]) -> None:
-        """标记各结果的 Alist 挂载状态。"""
+        """标记各结果的 OpenList 挂载状态。"""
         if not self.alist_manager:
             return
         for r in results:

@@ -6,7 +6,7 @@ from typing import List, Dict, Optional
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
-# pan_type → Alist 驱动关键词（用于反向匹配）
+# pan_type → OpenList 驱动关键词（用于反向匹配）
 _PAN_TYPE_KEYWORDS = {
     "quark": ["quark", "夸克"],
     "aliyun": ["aliyun", "阿里"],
@@ -40,7 +40,7 @@ class AlistManager:
     # ── 挂载状态管理 ──
 
     def get_mount_status(self) -> Dict[str, MountInfo]:
-        """查询并缓存 Alist 已挂载存储列表，动态构建 pan_type→驱动映射。"""
+        """查询并缓存 OpenList 已挂载存储列表，动态构建 pan_type→驱动映射。"""
         now = time.time()
         if self._mount_cache and (now - self._mount_cache_time) < self._mount_cache_ttl:
             return self._mount_cache
@@ -73,11 +73,11 @@ class AlistManager:
 
             self._mount_cache = cache
             self._mount_cache_time = now
-            logger.info("[Alist] 挂载缓存刷新: %s", list(cache.keys()))
+            logger.info("[OpenList] 挂载缓存刷新: %s", list(cache.keys()))
             return cache
 
         except Exception as e:
-            logger.error("[Alist] 获取挂载状态失败: %s", str(e))
+            logger.error("[OpenList] 获取挂载状态失败: %s", str(e))
             return self._mount_cache
 
     def _match_pan_type(self, driver: str, mount_path: str) -> Optional[str]:
@@ -108,17 +108,17 @@ class AlistManager:
 
     def transfer_pan_share(self, share_url: str, pan_type: str,
                            save_path: str = "") -> Dict:
-        """网盘分享链接转存到 Alist。
+        """网盘分享链接转存到 OpenList。
 
-        通过 Alist 的离线下载接口，将网盘分享链接拉取到指定路径。
-        Alist 会自动处理同盘转存（秒传）和跨盘离线。
+        通过 OpenList 的离线下载接口，将网盘分享链接拉取到指定路径。
+        OpenList 会自动处理同盘转存（秒传）和跨盘离线。
 
         返回: {"success": bool, "error_code": str, "error_message": str}
         """
-        # 检查 Alist 可达
+        # 检查 OpenList 可达
         if not self._check_alive():
             return {"success": False, "error_code": "alist_unavailable",
-                    "error_message": "Alist 服务不可达"}
+                    "error_message": "OpenList 服务不可达"}
 
         # 确定保存路径
         if not save_path:
@@ -143,20 +143,20 @@ class AlistManager:
             data = resp.json()
 
             if data.get("code") == 200:
-                logger.info("[Alist] 转存成功: %s -> %s (tool=%s)", share_url[:50], save_path, tool)
+                logger.info("[OpenList] 转存成功: %s -> %s (tool=%s)", share_url[:50], save_path, tool)
                 return {"success": True, "error_code": "", "error_message": ""}
             else:
                 error_msg = data.get("message", "未知错误")
                 error_code = self._map_error(error_msg)
-                logger.warning("[Alist] 转存失败: %s — %s", share_url[:50], error_msg)
+                logger.warning("[OpenList] 转存失败: %s — %s", share_url[:50], error_msg)
                 return {"success": False, "error_code": error_code, "error_message": error_msg}
 
         except Exception as e:
-            logger.error("[Alist] 转存异常: %s", str(e))
+            logger.error("[OpenList] 转存异常: %s", str(e))
             return {"success": False, "error_code": "alist_error", "error_message": str(e)}
 
     def _select_tool(self, pan_type: str) -> str:
-        """根据网盘类型选择 Alist 离线下载工具。"""
+        """根据网盘类型选择 OpenList 离线下载工具。"""
         tool_map = {
             "quark": "SimpleHttp",
             "aliyun": "SimpleHttp",
@@ -167,7 +167,7 @@ class AlistManager:
         return tool_map.get(pan_type, "SimpleHttp")
 
     def _map_error(self, error_msg: str) -> str:
-        """Alist 错误信息映射为标准错误码。"""
+        """OpenList 错误信息映射为标准错误码。"""
         msg = error_msg.lower()
         if "space" in msg or "空间" in msg or "quota" in msg:
             return "disk_full"
@@ -180,7 +180,7 @@ class AlistManager:
         return "alist_error"
 
     def _check_alive(self) -> bool:
-        """检查 Alist 服务是否可达。"""
+        """检查 OpenList 服务是否可达。"""
         try:
             resp = requests.get(f"{self.api_url}/api/public/settings", timeout=3)
             return resp.status_code == 200
@@ -208,11 +208,11 @@ class AlistManager:
                 ))
             return accounts
         except Exception as e:
-            logger.error(f"Alist error: {e}")
+            logger.error(f"[OpenList] error: {e}")
             return []
 
     def transfer_link(self, download_url: str, remote_path: str):
-        """将下载链接推送到 Alist 进行离线下载，返回 (success, task_id)。"""
+        """将下载链接推送到 OpenList 进行离线下载，返回 (success, task_id)。"""
         # 尝试的工具和路径列表（优先夸克）
         tools = [
             ("SimpleHttp", "/Quark"),
@@ -232,12 +232,12 @@ class AlistManager:
                 data = response.json()
                 if data.get("code") == 200:
                     task_id = self._extract_offline_task_id(data)
-                    logger.info(f"[Alist] offline download via {tool} -> {save_path}")
+                    logger.info(f"[OpenList] offline download via {tool} -> {save_path}")
                     return True, task_id
             except Exception as e:
-                logger.error(f"[Alist] {tool} error: {e}")
+                logger.error(f"[OpenList] {tool} error: {e}")
                 continue
-        logger.error("[Alist] all tools failed")
+        logger.error("[OpenList] all tools failed")
         return False, ""
 
     @staticmethod

@@ -19,7 +19,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js,json}"
 - TMDB API — 影视元数据（需代理 http://127.0.0.1:7897）
 - Prowlarr (localhost:9696) — BT 索引器聚合搜索
 - qBittorrent (localhost:8080) — BT 下载
-- Alist (localhost:5244) — 网盘挂载管理（夸克/阿里/百度/115/PikPak）
+- OpenList (localhost:5245) — 网盘挂载管理（夸克/阿里/百度/115/PikPak），Alist 兼容分支
 - 豆瓣/Bangumi — 补充刮削源
 
 ## 依赖管理
