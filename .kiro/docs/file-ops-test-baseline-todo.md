@@ -273,3 +273,25 @@
   - 已越过上述 3 个文件，当前可收集到 467 items
   - 仍未完全收口；下一类阻断是其它正式 `test_*.py` 的 stdout/stderr 重包或导入期 `sys.exit`
   - 当前残留文件包括：`test_final_features.py`、`test_local_match_e2e.py`、`test_local_media_matcher.py`、`test_phase_c_e2e.py`、`test_phase4_e2e.py`、`test_rss_e2e.py` 以及若干脚本式 `sys.exit` 文件
+
+### 2026-05-09 正式测试脚本化治理进展
+
+- 已处理 stdout/stderr 重包类文件：
+  - `backend/test_final_features.py`
+  - `backend/test_local_match_e2e.py`
+  - `backend/test_local_media_matcher.py`
+  - `backend/test_phase_c_e2e.py`
+  - `backend/test_phase4_e2e.py`
+  - `backend/test_rss_e2e.py`
+- 已处理后续 collect 暴露的导入期长流程/真实 NAS 访问：
+  - `backend/test_pan_match.py`：将导入期网盘搜索与链接检测包进 pytest 测试函数
+  - `backend/test_rename_organize.py`：将导入期整理预览 API 调用改为 pytest 参数化测试
+  - `backend/test_move_wrapped.py`：将导入期真实 NAS 移动/复制流程改为 pytest 测试函数
+- 已更新 `backend/conftest.py`
+  - 继续排除 `backend/_*.py`
+  - 追加排除 pytest 临时目录：`pytest-cache-files-*`、`tmp*`
+- 验证：
+  - `cd backend && python -X utf8 -m pytest test_final_features.py test_local_match_e2e.py test_local_media_matcher.py test_phase_c_e2e.py test_phase4_e2e.py test_rss_e2e.py --collect-only -p no:cacheprovider`，44 collected
+  - `cd backend && python -X utf8 -m pytest test_pan_full_report.py test_pan_match.py test_pan_search.py test_pan_sources.py --collect-only -p no:cacheprovider`，9 collected
+  - `cd backend && python -X utf8 -m pytest test_move_wrapped.py --collect-only -p no:cacheprovider`，3 collected
+  - `cd backend && python -X utf8 -m pytest . --collect-only -p no:cacheprovider`，1062 collected

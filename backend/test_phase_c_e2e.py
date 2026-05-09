@@ -4,12 +4,7 @@
 测试数据统一用 "C阶段测试_" 前缀，结束后自动清理。
 """
 
-import sys, io
-if sys.platform == "win32":
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-    except: pass
+import sys
 
 import time
 import requests

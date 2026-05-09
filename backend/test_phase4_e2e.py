@@ -11,19 +11,10 @@
 
 import os
 import sys
-import io
 import json
 import time
 import requests
 from typing import List, Dict, Any, Optional
-
-# Windows stdout 编码修复
-if sys.platform == "win32":
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-    except Exception:
-        pass
 
 # 确保 backend/ 在 sys.path 中
 _dir = os.path.dirname(os.path.abspath(__file__))

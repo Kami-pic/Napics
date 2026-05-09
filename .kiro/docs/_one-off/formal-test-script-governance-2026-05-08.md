@@ -29,3 +29,19 @@
 - 当前结果：已收集到 467 items 后仍失败。
 - 当前残留阻断：其它正式 `test_*.py` 中仍存在 stdout/stderr 重包或导入期 `sys.exit`。
 - 下一轮建议：按 collect 暴露顺序继续处理 stdout/stderr 重包类文件，再处理导入期 `sys.exit` 类文件。
+
+## 2026-05-09 追加治理
+
+- 移除以下文件的导入期 stdout/stderr 重包：
+  - `test_final_features.py`
+  - `test_local_match_e2e.py`
+  - `test_local_media_matcher.py`
+  - `test_phase_c_e2e.py`
+  - `test_phase4_e2e.py`
+  - `test_rss_e2e.py`
+- 将后续暴露的导入期长流程改为 pytest 函数：
+  - `test_pan_match.py`
+  - `test_rename_organize.py`
+  - `test_move_wrapped.py`
+- 更新 `conftest.py`，排除 pytest 临时目录 `pytest-cache-files-*` 和 `tmp*`。
+- 全量验证：`python -X utf8 -m pytest . --collect-only -p no:cacheprovider`，1062 collected。
