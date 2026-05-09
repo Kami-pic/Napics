@@ -349,7 +349,7 @@ def set_clean_name(req: dict):
     library = config_m.load_library()
     
     if is_folder:
-        # 文件夹模式：更新该文件夹下所有视频的 clean_name_en
+        # 文件夹模式：更新该文件夹下所有视频的 clean_name/clean_name_en
         # 规范化路径用于前缀匹配
         folder_norm = file_path.replace("\\", "/").rstrip("/") + "/"
         updated = 0
@@ -359,12 +359,16 @@ def set_clean_name(req: dict):
             if v_folder.startswith(folder_norm) or os.path.dirname(v_folder).replace("\\", "/") + "/" == folder_norm:
                 if clean_name_en is not None:
                     v["clean_name_en"] = clean_name_en
-                    if not v.get("clean_name_source"):
-                        v["clean_name_source"] = "manual"
+                    v["clean_name_source"] = "manual"
                     updated += 1
                 if clean_name:
                     v["clean_name"] = clean_name
                     v["clean_name_source"] = "manual"
+                    # 同步更新 clean_name_cn（从 display 中提取中文部分）
+                    import re
+                    cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
+                    if cn_parts:
+                        v["clean_name_cn"] = "".join(cn_parts)
                     updated += 1
         if updated > 0:
             config_m.save_library(library)
@@ -375,10 +379,13 @@ def set_clean_name(req: dict):
                 if clean_name:
                     v["clean_name"] = clean_name
                     v["clean_name_source"] = "manual"
+                    import re
+                    cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
+                    if cn_parts:
+                        v["clean_name_cn"] = "".join(cn_parts)
                 if clean_name_en is not None:
                     v["clean_name_en"] = clean_name_en
-                    if not v.get("clean_name_source"):
-                        v["clean_name_source"] = "manual"
+                    v["clean_name_source"] = "manual"
                 config_m.save_library(library)
                 return {"status": "ok"}
         return {"status": "ok", "updated": 0}
@@ -389,10 +396,15 @@ def set_clean_name(req: dict):
             if clean_name is not None:
                 v["clean_name"] = clean_name
                 v["clean_name_source"] = "manual" if clean_name else ""
+                # 同步更新 clean_name_cn
+                if clean_name:
+                    import re
+                    cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
+                    if cn_parts:
+                        v["clean_name_cn"] = "".join(cn_parts)
             if clean_name_en is not None:
                 v["clean_name_en"] = clean_name_en
-                if not v.get("clean_name_source"):
-                    v["clean_name_source"] = "manual"
+                v["clean_name_source"] = "manual"
             config_m.save_library(library)
             return {"status": "ok"}
     return {"status": "not_found"}
@@ -617,9 +629,25 @@ def get_library_tree():
             node["clean_name_en"] = _folder_result.en
             node["clean_name_original"] = _folder_result.original
 
+            # ── 手动覆盖：视频条目有 manual 来源时，用手动值覆盖文件夹计算值 ──
+            for video in node.get("videos", []):
+                if video.get("clean_name_source") == "manual":
+                    if video.get("clean_name"):
+                        node["clean_name"] = video["clean_name"]
+                        # 从 display 中拆分 cn（取中文部分）
+                        import re as _re_manual
+                        _cn_parts = _re_manual.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', video["clean_name"])
+                        if _cn_parts:
+                            node["clean_name_cn"] = "".join(_cn_parts)
+                    if video.get("clean_name_en"):
+                        node["clean_name_en"] = video["clean_name_en"]
+                    break
+
             # 垃圾英文名检测：季号碎片、纯数字、太短的、常见非作品名不算有效英文名
+            # 手动设置的英文名不做垃圾检测（用户明确指定的值应尊重）
+            _has_manual = any(v.get("clean_name_source") == "manual" and v.get("clean_name_en") for v in node.get("videos", []))
             _en = node["clean_name_en"]
-            if _en and node.get("folder_type") in ("tv", "season", "movie", "mixed", ""):
+            if _en and not _has_manual and node.get("folder_type") in ("tv", "season", "movie", "mixed", ""):
                 import re as _re_en
                 _JUNK_EN = {"season", "seasons", "sps", "sp", "extra", "extras", "ncop", "nced",
                             "pv", "menu", "tv", "ova", "oad", "bonus", "specials"}
@@ -720,6 +748,11 @@ def get_library_tree():
             for child in node.get("children", []):
                 if child.get("folder_type") != "mixed":
                     child["folder_type"] = "season"
+                # 检查 season 子目录下是否有手动设置的清洗名
+                _child_has_manual = any(v.get("clean_name_source") == "manual" for v in child.get("videos", []))
+                if _child_has_manual:
+                    # 手动值已在 finalize 中设置，不覆盖
+                    continue
                 # 季文件夹 clean_name：用新系统，传入父级剧名
                 season_num = _extract_season_number(child["name"])
                 folder_result = clean_for_folder(

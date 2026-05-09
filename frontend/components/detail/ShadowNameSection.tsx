@@ -82,14 +82,15 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
   };
 
   const handleSaveClean = async (newClean: string) => {
-    if (!newClean.trim() || !video?.file_path) { setEditingClean(false); return; }
+    const filePath = video?.file_path || path;
+    if (!newClean.trim() || !filePath) { setEditingClean(false); return; }
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/clean-name`, {
         method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({file_path: video.file_path, clean_name: newClean.trim()})
+        body: JSON.stringify({file_path: filePath, clean_name: newClean.trim(), is_folder: isFolder})
       });
       setEditingClean(false);
-      onRefresh?.();
+      if (isFolder) { onTreeRefresh?.(); } else { onRefresh?.(); }
     } catch { alert("保存失败"); }
   };
 

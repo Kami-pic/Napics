@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-05-09 清洗名手动编辑不生效 + 环绕声筛选误匹配
+
+**变更**:
+- **清洗名中文编辑修复（前端）**：`ShadowNameSection.tsx` 的 `handleSaveClean` 在文件夹模式下因 `!video?.file_path` 直接 return，请求根本没发出去。改为用 `video?.file_path || path`，并传 `is_folder` 参数
+- **清洗名英文编辑修复（后端）**：`get_library_tree` 的 `finalize` 每次从 `clean_for_folder()` 重新计算文件夹清洗名，完全忽略手动保存的值。新增手动覆盖逻辑：检查视频条目是否有 `clean_name_source == "manual"`，有则用手动值覆盖计算值
+- **post_process season 保护**：season 子目录有 manual 来源时跳过 `clean_for_folder` 重新计算
+- **垃圾英文名检测豁免**：手动设置的英文名不做垃圾检测（用户明确指定的值应尊重）
+- **set_clean_name 增强**：文件夹模式下英文名保存强制设 `clean_name_source = "manual"`（原来只在 source 为空时才设）；中文名保存时同步写入 `clean_name_cn` 字段
+- **环绕声筛选修复**：`quality_parser.py` 额外环绕声检测正则从 `[5-9][\s.]?[01]` 改回 `[5-9][\s.][01]`，分隔符必须存在，避免 `51`/`50` 等纯数字（集数/年份）被误判为环绕声
+
+**踩坑**:
+- 文件夹没有独立的持久化字段存储手动清洗名，只能通过视频条目的 `clean_name_source` 间接标记。`finalize` 中需要先计算再检查手动覆盖
+- `post_process` 对 season 子目录也会重新计算 `clean_name`，必须同时加保护，否则 `finalize` 中设置的手动值会被二次覆盖
+- 环绕声正则 `?` 让分隔符可选后，`Episode.51` 中的 `51` 被匹配为 `5.1`，导致大量非环绕声结果被标记为环绕声
+
+---
+
 ## 2026-04-30 季集完整性检测（基于 TMDB 的缺失分析）
 
 **变更**:
