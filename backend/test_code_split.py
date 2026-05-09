@@ -6,44 +6,9 @@
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
-# Windows 编码修复
-if sys.platform == "win32":
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 import tempfile
 import shutil
-
-passed = 0
-failed = 0
-
-def ok(name):
-    global passed
-    passed += 1
-    print(f"  ✓ {name}")
-
-def fail(name, err):
-    global failed
-    failed += 1
-    print(f"  ✗ {name}: {err}")
-
-def test(name, fn):
-    try:
-        fn()
-        ok(name)
-    except Exception as e:
-        fail(name, e)
-
-
-print("=" * 60)
-print("后端拆分回归测试")
-print("=" * 60)
-
-# ══════════════════════════════════════════
-# 1. nfo_handler — NFO 读写
-# ══════════════════════════════════════════
-print("\n── nfo_handler ──")
 
 def test_nfo_handler_import():
     from nfo_handler import (
@@ -51,8 +16,6 @@ def test_nfo_handler_import():
         write_season_nfo, write_episode_nfo, _text, _add, _write_xml,
         _is_category_folder, write_movie_nfo_for_video,
     )
-test("导入所有函数", test_nfo_handler_import)
-
 def test_nfo_write_read():
     """写入 movie.nfo 再读回来，验证数据一致"""
     from nfo_handler import write_movie_nfo, read_nfo
@@ -75,8 +38,6 @@ def test_nfo_write_read():
         assert "剧情" in data["genres"]
     finally:
         shutil.rmtree(tmp)
-test("写入 movie.nfo 再读回", test_nfo_write_read)
-
 def test_nfo_tvshow_write_read():
     """写入 tvshow.nfo 再读回来"""
     from nfo_handler import write_tvshow_nfo, read_nfo
@@ -96,8 +57,6 @@ def test_nfo_tvshow_write_read():
         assert data["media_type"] == "tvshow"
     finally:
         shutil.rmtree(tmp)
-test("写入 tvshow.nfo 再读回", test_nfo_tvshow_write_read)
-
 def test_nfo_episode_write_read():
     """写入 episode.nfo 再读回来"""
     from nfo_handler import write_episode_nfo, read_video_nfo
@@ -121,8 +80,6 @@ def test_nfo_episode_write_read():
         assert data["episode_number"] == 1
     finally:
         shutil.rmtree(tmp)
-test("写入 episode.nfo 再读回", test_nfo_episode_write_read)
-
 def test_is_category_folder():
     """分类目录判定"""
     from nfo_handler import _is_category_folder
@@ -130,49 +87,24 @@ def test_is_category_folder():
     assert _is_category_folder("动画", ["a.mkv", "b.mkv", "c.mkv"]) == True
     assert _is_category_folder("切尔诺贝利", ["E01.mkv", "E02.mkv", "E03.mkv"]) == False
     assert _is_category_folder("test", ["single.mkv"]) == False
-test("分类目录判定", test_is_category_folder)
-
-# ══════════════════════════════════════════
-# 2. poster_downloader — 海报下载
-# ══════════════════════════════════════════
-print("\n── poster_downloader ──")
-
 def test_poster_downloader_import():
     from poster_downloader import download_poster
-test("导入 download_poster", test_poster_downloader_import)
-
 def test_poster_download_empty_url():
     from poster_downloader import download_poster
     assert download_poster("/tmp", "") == False
     assert download_poster("/tmp", None) == False
-test("空 URL 返回 False", test_poster_download_empty_url)
-
-# ══════════════════════════════════════════
-# 3. scraper re-export 兼容性
-# ══════════════════════════════════════════
-print("\n── scraper re-export ──")
-
 def test_scraper_reexport():
     from scraper import (
         read_nfo, read_video_nfo, write_movie_nfo, write_tvshow_nfo,
         write_season_nfo, write_episode_nfo, download_poster,
         _is_category_folder, scrape_folder, scrape_video, batch_scrape,
     )
-test("scraper re-export 全部可用", test_scraper_reexport)
-
-# ══════════════════════════════════════════
-# 4. renamer — 重命名 + 影子名
-# ══════════════════════════════════════════
-print("\n── renamer ──")
-
 def test_renamer_import():
     from renamer import (
         generate_standard_name, _is_mostly_latin, _extract_english_from_filename,
         rename_videos_in_folder, generate_shadow_name_from_nfo,
         generate_folder_shadow_name, NAMING_RULES,
     )
-test("导入所有函数", test_renamer_import)
-
 def test_generate_standard_name_movie():
     """电影标准命名：中文名 + 英文名 + 年份"""
     from renamer import generate_standard_name
@@ -184,8 +116,6 @@ def test_generate_standard_name_movie():
     assert "Fight Club" in name
     assert "(1999)" in name
     assert name.endswith(".mkv")
-test("电影标准命名", test_generate_standard_name_movie)
-
 def test_generate_standard_name_episode():
     """剧集标准命名：剧名 + SxxExx"""
     from renamer import generate_standard_name
@@ -197,8 +127,6 @@ def test_generate_standard_name_episode():
     assert "切尔诺贝利" in name
     assert "S01E03" in name
     assert name.endswith(".mkv")
-test("剧集标准命名", test_generate_standard_name_episode)
-
 def test_generate_standard_name_collection():
     """电影聚合命名：不按剧集格式"""
     from renamer import generate_standard_name
@@ -210,8 +138,6 @@ def test_generate_standard_name_collection():
     assert "壳中少女" in name
     assert "(2010)" in name
     assert "S0" not in name  # 不应有集号
-test("电影聚合命名", test_generate_standard_name_collection)
-
 def test_generate_standard_name_no_scrape():
     """无刮削数据时从文件名清洗"""
     from renamer import generate_standard_name
@@ -221,8 +147,6 @@ def test_generate_standard_name_no_scrape():
     assert "电影天堂" not in name  # 广告站名应被清除
     assert "www" not in name
     assert name.endswith(".mkv")
-test("无刮削数据清洗命名", test_generate_standard_name_no_scrape)
-
 def test_is_mostly_latin():
     from renamer import _is_mostly_latin
     assert _is_mostly_latin("Fight Club") == True
@@ -230,8 +154,6 @@ def test_is_mostly_latin():
     assert _is_mostly_latin("Fate/stay night") == True
     assert _is_mostly_latin("") == False
     assert _is_mostly_latin("ABC你好") == True  # 拉丁字母占多数
-test("拉丁字母判定", test_is_mostly_latin)
-
 def test_extract_english():
     from renamer import _extract_english_from_filename
     assert _extract_english_from_filename("搏击俱乐部 Fight Club (1999)") == "Fight Club"
@@ -239,8 +161,6 @@ def test_extract_english():
     assert _extract_english_from_filename("") == ""
     # 过滤纯质量标签
     assert _extract_english_from_filename("BluRay") == ""
-test("英文名提取", test_extract_english)
-
 def test_shadow_name_from_nfo():
     """从 NFO 生成影子名"""
     from nfo_handler import write_movie_nfo, write_episode_nfo
@@ -263,13 +183,6 @@ def test_shadow_name_from_nfo():
         assert "(1999)" in shadow
     finally:
         shutil.rmtree(tmp)
-test("电影影子名生成", test_shadow_name_from_nfo)
-
-# ══════════════════════════════════════════
-# 5. organizer re-export 兼容性
-# ══════════════════════════════════════════
-print("\n── organizer re-export ──")
-
 def test_organizer_reexport():
     from organizer import (
         # 分类核心（原生）
@@ -286,8 +199,6 @@ def test_organizer_reexport():
         merge_scattered_seasons, smart_archive_plan,
         smart_archive_recursive, execute_archive_plan,
     )
-test("organizer re-export 全部可用", test_organizer_reexport)
-
 def test_classify_folder_movie():
     """电影文件夹分类"""
     from organizer import classify_folder
@@ -298,8 +209,6 @@ def test_classify_folder_movie():
         assert result["type"] == "movie"
     finally:
         shutil.rmtree(tmp)
-test("电影文件夹分类", test_classify_folder_movie)
-
 def test_classify_folder_tv():
     """TV 文件夹分类（有季目录）"""
     from organizer import classify_folder
@@ -311,8 +220,6 @@ def test_classify_folder_tv():
         assert result["type"] == "tv"
     finally:
         shutil.rmtree(tmp)
-test("TV 文件夹分类", test_classify_folder_tv)
-
 def test_is_season_dir():
     from organizer import _is_season_dir
     assert _is_season_dir("Season 01") == True
@@ -323,8 +230,6 @@ def test_is_season_dir():
     assert _is_season_dir("剧场版") == True
     assert _is_season_dir("电影") == False
     assert _is_season_dir("字幕") == False
-test("季目录判定", test_is_season_dir)
-
 def test_extract_season_number():
     from organizer import _extract_season_number
     assert _extract_season_number("Season 01") == 1
@@ -332,8 +237,6 @@ def test_extract_season_number():
     assert _extract_season_number("第5季") == 5
     assert _extract_season_number("第一季") == 1
     assert _extract_season_number("OVA") is None
-test("季号提取", test_extract_season_number)
-
 def test_is_ignorable_subdir():
     from organizer import _is_ignorable_subdir
     assert _is_ignorable_subdir("subs") == True
@@ -342,8 +245,6 @@ def test_is_ignorable_subdir():
     assert _is_ignorable_subdir("@eaDir") == True
     assert _is_ignorable_subdir("Season 01") == False
     assert _is_ignorable_subdir("切尔诺贝利") == False
-test("可忽略子目录判定", test_is_ignorable_subdir)
-
 def test_infer_category_tag():
     from organizer import infer_category_tag
     assert infer_category_tag("电影") == "movie"
@@ -353,13 +254,6 @@ def test_infer_category_tag():
     assert infer_category_tag("纪录片") == "tv"
     assert infer_category_tag("动画电影") == "movie"
     assert infer_category_tag("未知分类") == "movie"  # 默认 movie
-test("一级分类标签推断", test_infer_category_tag)
-
-# ══════════════════════════════════════════
-# 6. structure_organizer — 结构整理
-# ══════════════════════════════════════════
-print("\n── structure_organizer ──")
-
 def test_structure_organizer_import():
     from structure_organizer import (
         reorganize_seasons, reorganize_seasons_by_nfo,
@@ -367,8 +261,6 @@ def test_structure_organizer_import():
         merge_scattered_seasons, smart_archive_plan,
         smart_archive_recursive, execute_archive_plan,
     )
-test("导入所有函数", test_structure_organizer_import)
-
 def test_smart_archive_plan_empty():
     """空目录返回空 plan"""
     from structure_organizer import smart_archive_plan
@@ -378,8 +270,6 @@ def test_smart_archive_plan_empty():
         assert plan == []
     finally:
         shutil.rmtree(tmp)
-test("空目录归档 plan 为空", test_smart_archive_plan_empty)
-
 def test_smart_archive_plan_with_orphan():
     """有孤立海报但无有效 NFO → 应产生清理 plan"""
     from structure_organizer import smart_archive_plan
@@ -394,8 +284,6 @@ def test_smart_archive_plan_with_orphan():
         assert plan[0]["action"] == "archive_and_delete"
     finally:
         shutil.rmtree(tmp)
-test("孤立海报产生清理 plan", test_smart_archive_plan_with_orphan)
-
 def test_smart_archive_plan_valid_nfo():
     """有效 NFO 的目录不产生清理 plan"""
     from structure_organizer import smart_archive_plan
@@ -410,8 +298,6 @@ def test_smart_archive_plan_valid_nfo():
         assert plan == []  # 有效 NFO，不清理
     finally:
         shutil.rmtree(tmp)
-test("有效 NFO 不清理", test_smart_archive_plan_valid_nfo)
-
 def test_reorganize_seasons_dry_run():
     """扁平 TV 目录 dry_run → 生成移动操作"""
     from structure_organizer import reorganize_seasons
@@ -429,13 +315,6 @@ def test_reorganize_seasons_dry_run():
                 assert "Season 01" in op["new"]
     finally:
         shutil.rmtree(tmp)
-test("扁平 TV 季化 dry_run", test_reorganize_seasons_dry_run)
-
-# ══════════════════════════════════════════
-# 7. 路由模块导入
-# ══════════════════════════════════════════
-print("\n── 路由模块 ──")
-
 def test_routes_import():
     from routes.media_info import router as r1
     from routes.poster import router as r2
@@ -449,8 +328,6 @@ def test_routes_import():
     assert r4 is not None
     assert r5 is not None
     assert r6 is not None
-test("6 个路由模块全部可导入", test_routes_import)
-
 def test_main_app_routes():
     """验证 main.py 注册了所有关键路由"""
     from main import app
@@ -468,13 +345,6 @@ def test_main_app_routes():
     ]
     missing = [c for c in critical if c not in paths]
     assert not missing, f"缺失路由: {missing}"
-test("23 个关键路由全部注册", test_main_app_routes)
-
-# ══════════════════════════════════════════
-# 8. 跨模块集成测试
-# ══════════════════════════════════════════
-print("\n── 跨模块集成 ──")
-
 def test_full_pipeline_nfo_rename_shadow():
     """完整流水线：写 NFO → 生成标准名 → 生成影子名"""
     from nfo_handler import write_movie_nfo, read_nfo
@@ -508,8 +378,6 @@ def test_full_pipeline_nfo_rename_shadow():
         assert "(2010)" in shadow
     finally:
         shutil.rmtree(tmp)
-test("完整流水线：NFO → 标准名 → 影子名", test_full_pipeline_nfo_rename_shadow)
-
 def test_full_pipeline_tv_episode():
     """TV 流水线：写 tvshow.nfo + episode.nfo → 读回验证"""
     from nfo_handler import write_tvshow_nfo, write_episode_nfo, read_nfo, read_video_nfo
@@ -545,8 +413,6 @@ def test_full_pipeline_tv_episode():
         assert "S01E01" in shadow
     finally:
         shutil.rmtree(tmp)
-test("TV 流水线：tvshow + episode NFO → 影子名", test_full_pipeline_tv_episode)
-
 def test_classify_then_reorganize():
     """分类 → 季化：先判断类型再整理"""
     from organizer import classify_folder
@@ -563,15 +429,3 @@ def test_classify_then_reorganize():
         assert result["count"] == 5  # 5 个视频移到 Season 01
     finally:
         shutil.rmtree(tmp)
-test("分类 → 季化集成", test_classify_then_reorganize)
-
-# ══════════════════════════════════════════
-# 总结
-# ══════════════════════════════════════════
-print("\n" + "=" * 60)
-total = passed + failed
-if failed == 0:
-    print(f"全部通过 ✓ ({passed}/{total})")
-else:
-    print(f"有失败 ✗ ({passed} 通过, {failed} 失败, 共 {total})")
-print("=" * 60)

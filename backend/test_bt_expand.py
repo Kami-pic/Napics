@@ -7,33 +7,6 @@
 4. 搜索路由合并：_merge_bt_extra_sources
 5. 蜜柑 RSS 源：订阅框架注册
 """
-import sys
-import time
-
-passed = 0
-failed = 0
-skipped = 0
-
-
-def test(name, fn):
-    global passed, failed, skipped
-    try:
-        result = fn()
-        if result == "SKIP":
-            print(f"  ⏭ {name} (跳过)")
-            skipped += 1
-        else:
-            print(f"  ✓ {name}")
-            passed += 1
-    except Exception as e:
-        print(f"  ✗ {name}: {e}")
-        failed += 1
-
-
-# ============================================================
-print("\n[1/6] 反爬基础设施")
-# ============================================================
-
 def test_curl_cffi_available():
     from curl_cffi import requests as cf_requests
     s = cf_requests.Session(impersonate="chrome131")
@@ -67,16 +40,6 @@ def test_scraper_base_cache():
     s.set_cached("empty_key", [])
     assert s.get_cached("empty_key") is None
 
-test("curl_cffi 可用", test_curl_cffi_available)
-test("ScraperBase curl_cffi 集成", test_scraper_base_curl_cffi)
-test("ScraperBase CF 拦截检测", test_scraper_base_cf_detection)
-test("ScraperBase 缓存机制", test_scraper_base_cache)
-
-
-# ============================================================
-print("\n[2/6] 网盘源修复")
-# ============================================================
-
 def test_rrdynb_import():
     from pan_scraper_rrdynb import RrdynbScraper
     s = RrdynbScraper()
@@ -103,16 +66,6 @@ def test_ddys_detect_pan_type():
     assert DdysScraper._detect_pan_type("夸克网盘", "") == PanType.QUARK
     assert DdysScraper._detect_pan_type("", "https://pan.baidu.com/s/xxx") == PanType.BAIDU
     assert DdysScraper._detect_pan_type("", "https://example.com") is None
-
-test("rrdynb 爬虫初始化 + curl_cffi", test_rrdynb_import)
-test("ddys 爬虫初始化 + 域名更新", test_ddys_import)
-test("ddys base64 链接解码", test_ddys_decode_link)
-test("ddys 网盘类型识别", test_ddys_detect_pan_type)
-
-
-# ============================================================
-print("\n[3/6] BT 直搜源")
-# ============================================================
 
 def test_bitsearch_import():
     from bt_scraper_bitsearch import BitsearchScraper
@@ -168,20 +121,6 @@ def test_mikan_scraper_import():
     assert s.use_curl_cffi is True
     assert s.SOURCE_NAME == "mikan"
 
-test("Bitsearch 爬虫初始化", test_bitsearch_import)
-test("Bitsearch 结果解析", test_bitsearch_parse)
-test("磁力熊爬虫初始化", test_cilixiong_import)
-test("XL720 爬虫初始化", test_xl720_import)
-test("XL720 迅雷链接解码", test_xl720_thunder_decode)
-test("Nyaa 爬虫初始化", test_nyaa_import)
-test("Nyaa 大小解析", test_nyaa_parse_size)
-test("蜜柑爬虫初始化", test_mikan_scraper_import)
-
-
-# ============================================================
-print("\n[4/6] 蜜柑 RSS 源")
-# ============================================================
-
 def test_mikan_rss_import():
     from rss_source_mikan import MikanRSSSource
     s = MikanRSSSource(proxy="")
@@ -213,15 +152,6 @@ def test_mikan_rss_empty_xml():
     s = MikanRSSSource()
     items = s._parse_rss_xml("<rss><channel></channel></rss>")
     assert items == []
-
-test("蜜柑 RSS 源初始化", test_mikan_rss_import)
-test("蜜柑 RSS XML 解析", test_mikan_rss_parse_xml)
-test("蜜柑 RSS 空 XML", test_mikan_rss_empty_xml)
-
-
-# ============================================================
-print("\n[5/6] 搜索路由合并逻辑")
-# ============================================================
 
 def test_merge_function_exists():
     """验证 _merge_bt_extra_sources 函数存在且可调用"""
@@ -260,15 +190,6 @@ def test_search_result_format():
     assert r.indexer == "bitsearch"
     assert "btih:" in r.download_url
 
-test("合并函数存在", test_merge_function_exists)
-test("shared.py getter 函数", test_shared_getters)
-test("SearchResult 兼容直搜源", test_search_result_format)
-
-
-# ============================================================
-print("\n[6/6] 前端颜色映射")
-# ============================================================
-
 def test_indexer_colors_defined():
     """验证前端颜色映射文件语法正确（通过 import 检查）"""
     # 这里只能检查后端的常量定义，前端 TSX 需要 vitest
@@ -287,12 +208,3 @@ def test_indexer_colors_defined():
     }
     expected = {"bitsearch", "cilixiong", "xl720", "nyaa", "mikan"}
     assert names == expected, f"源名不匹配: {names} != {expected}"
-
-test("直搜源名称一致性", test_indexer_colors_defined)
-
-
-# ============================================================
-print(f"\n{'='*40}")
-print(f"结果: {passed} 通过, {failed} 失败, {skipped} 跳过")
-print(f"{'='*40}")
-sys.exit(1 if failed > 0 else 0)

@@ -1,145 +1,112 @@
 """测试 DetailDrawer 拆分后的功能回归：验证刮削、重命名、整理等 API 链路"""
 import requests
-import json
-import sys
+
 
 BASE = "http://localhost:8000"
-PASS = 0
-FAIL = 0
 
-def check(label, condition, detail=""):
-    global PASS, FAIL
-    if condition:
-        PASS += 1
-        print(f"  ✅ {label}")
+
+def api_request(method, url, params=None, json_body=None):
+    """通用 API 请求 helper；真实失败交给 pytest 断言暴露。"""
+    if method == "GET":
+        response = requests.get(f"{BASE}{url}", params=params, timeout=15)
     else:
-        FAIL += 1
-        print(f"  ❌ {label} {detail}")
+        response = requests.post(f"{BASE}{url}", params=params, json=json_body, timeout=15)
+    return response
 
-def test_api(method, url, params=None, json_body=None, expect_key=None):
-    """通用 API 测试"""
-    try:
-        if method == "GET":
-            r = requests.get(f"{BASE}{url}", params=params, timeout=15)
-        else:
-            r = requests.post(f"{BASE}{url}", params=params, json=json_body, timeout=15)
-        data = r.json()
-        if expect_key:
-            check(f"{url} 返回 {expect_key}", expect_key in data, f"keys={list(data.keys())}")
-        return data
-    except Exception as e:
-        check(f"{url} 请求成功", False, str(e))
-        return None
 
-# ── 测试用例 1：电影文件夹（其他视频/洗版测试） ──
-print("\n" + "=" * 50)
-print("测试 1：电影文件夹 - 刮削 + 读取")
-print("=" * 50)
+def api_json(method, url, params=None, json_body=None):
+    response = api_request(method, url, params=params, json_body=json_body)
+    response.raise_for_status()
+    return response.json()
 
-# 读取刮削数据
-data = test_api("GET", "/scrape/read", {"path": r"\\DS218play\share\视频\其他视频\洗版测试"}, expect_key="status")
-if data and data.get("status") == "ok":
-    check("刮削数据存在", True)
-    d = data.get("data", {})
-    check(f"标题: {d.get('title')}", bool(d.get("title")))
-else:
-    check("刮削数据存在", data and data.get("status") == "ok", f"status={data.get('status') if data else 'N/A'}")
 
-# 读取海报
-try:
-    r = requests.get(f"{BASE}/scrape/poster", params={"path": r"\\DS218play\share\视频\其他视频\洗版测试"}, timeout=10)
-    check(f"海报接口响应 (status={r.status_code})", r.status_code in [200, 404])
-except Exception as e:
-    check("海报接口", False, str(e))
+def test_movie_folder_scrape_read_and_poster():
+    data = api_json(
+        "GET",
+        "/scrape/read",
+        {"path": r"\\DS218play\share\视频\其他视频\洗版测试"},
+    )
+    assert "status" in data
+    assert data.get("status") == "ok", f"status={data.get('status')}"
+    assert data.get("data", {}).get("title")
 
-# ── 测试用例 2：动画文件夹（动画番/测试动画合集） ──
-print("\n" + "=" * 50)
-print("测试 2：动画文件夹 - 刮削 + 读取")
-print("=" * 50)
+    poster = api_request(
+        "GET",
+        "/scrape/poster",
+        {"path": r"\\DS218play\share\视频\其他视频\洗版测试"},
+    )
+    assert poster.status_code in [200, 404]
 
-data = test_api("GET", "/scrape/read", {"path": r"\\DS218play\share\视频\动画番\测试动画合集"}, expect_key="status")
-if data:
-    check(f"状态: {data.get('status')}", data.get("status") in ["ok", "not_found"])
 
-# ── 测试用例 3：电影文件夹（电影/测试文件夹） ──
-print("\n" + "=" * 50)
-print("测试 3：电影文件夹 - 刮削 + 读取")
-print("=" * 50)
+def test_anime_folder_scrape_read_status():
+    data = api_json(
+        "GET",
+        "/scrape/read",
+        {"path": r"\\DS218play\share\视频\动画番\测试动画合集"},
+    )
+    assert "status" in data
+    assert data.get("status") in ["ok", "not_found"]
 
-data = test_api("GET", "/scrape/read", {"path": r"\\DS218play\share\视频\电影\测试文件夹"}, expect_key="status")
-if data:
-    check(f"状态: {data.get('status')}", data.get("status") in ["ok", "not_found"])
 
-# ── 测试用例 4：刮削候选搜索（TMDB/豆瓣/Bangumi） ──
-print("\n" + "=" * 50)
-print("测试 4：刮削候选搜索")
-print("=" * 50)
+def test_movie_test_folder_scrape_read_status():
+    data = api_json(
+        "GET",
+        "/scrape/read",
+        {"path": r"\\DS218play\share\视频\电影\测试文件夹"},
+    )
+    assert "status" in data
+    assert data.get("status") in ["ok", "not_found"]
 
-# TMDB 候选
-data = test_api("GET", "/scrape/candidates", {"name": "盗梦空间"}, expect_key="candidates")
-if data:
-    candidates = data.get("candidates", [])
-    check(f"TMDB 候选数量: {len(candidates)}", len(candidates) > 0)
-    if candidates:
-        c = candidates[0]
-        check(f"候选有评分: {c.get('rating')}", "rating" in c)
 
-# 豆瓣候选
-data = test_api("GET", "/scrape/douban", {"name": "盗梦空间"}, expect_key="candidates")
-if data:
-    candidates = data.get("candidates", [])
-    check(f"豆瓣候选数量: {len(candidates)}", len(candidates) > 0)
-    if candidates:
-        c = candidates[0]
-        check(f"候选有评分: {c.get('rating')}", c.get("rating", 0) > 0)
-        check(f"候选有类型: {c.get('genres')}", bool(c.get("genres")))
+def test_scrape_candidate_sources():
+    tmdb = api_json("GET", "/scrape/candidates", {"name": "盗梦空间"})
+    assert "candidates" in tmdb
+    assert len(tmdb.get("candidates", [])) > 0
+    assert "rating" in tmdb["candidates"][0]
 
-# Bangumi 候选
-data = test_api("GET", "/scrape/bangumi", {"name": "进击的巨人"}, expect_key="candidates")
-if data:
-    candidates = data.get("candidates", [])
-    check(f"Bangumi 候选数量: {len(candidates)}", len(candidates) > 0)
-    if candidates:
-        c = candidates[0]
-        check(f"候选有评分: {c.get('rating')}", c.get("rating", 0) > 0)
+    douban = api_json("GET", "/scrape/douban", {"name": "盗梦空间"})
+    assert "candidates" in douban
+    assert len(douban.get("candidates", [])) > 0
+    assert douban["candidates"][0].get("rating", 0) > 0
+    assert douban["candidates"][0].get("genres")
 
-# ── 测试用例 5：详情多源算法 ──
-print("\n" + "=" * 50)
-print("测试 5：详情多源算法")
-print("=" * 50)
+    bangumi = api_json("GET", "/scrape/bangumi", {"name": "进击的巨人"})
+    assert "candidates" in bangumi
+    assert len(bangumi.get("candidates", [])) > 0
+    assert bangumi["candidates"][0].get("rating", 0) > 0
 
-# 豆瓣优先
-data = test_api("GET", "/media/info", {"title": "霸王别姬", "source": "douban", "type": "movie"})
-if data:
-    check(f"豆瓣优先: found={data.get('found')}, source={data.get('source')}", data.get("found") and data.get("source") == "douban")
 
-# Bangumi 优先
-data = test_api("GET", "/media/info", {"title": "进击的巨人", "source": "bangumi", "type": "tv", "id": "12189"})
-if data:
-    check(f"Bangumi 优先: found={data.get('found')}, source={data.get('source')}", data.get("found") and data.get("source") == "bangumi")
+def test_media_info_multi_source():
+    douban = api_json(
+        "GET",
+        "/media/info",
+        {"title": "霸王别姬", "source": "douban", "type": "movie"},
+    )
+    assert douban.get("found")
+    assert douban.get("source") == "douban"
 
-# TMDB 优先
-data = test_api("GET", "/media/info", {"title": "Inception", "source": "tmdb", "type": "movie"})
-if data:
-    check(f"TMDB 优先: found={data.get('found')}, source={data.get('source')}", data.get("found") and data.get("source") == "tmdb")
+    bangumi = api_json(
+        "GET",
+        "/media/info",
+        {"title": "进击的巨人", "source": "bangumi", "type": "tv", "id": "12189"},
+    )
+    assert bangumi.get("found")
+    assert bangumi.get("source") == "bangumi"
 
-# ── 测试用例 6：影子名 API ──
-print("\n" + "=" * 50)
-print("测试 6：影子名 API")
-print("=" * 50)
+    tmdb = api_json(
+        "GET",
+        "/media/info",
+        {"title": "Inception", "source": "tmdb", "type": "movie"},
+    )
+    assert tmdb.get("found")
+    assert tmdb.get("source") == "tmdb"
 
-data = test_api("GET", "/media/shadow-names", expect_key=None)
-check("影子名接口可用", data is not None)
 
-# ── 测试用例 7：禁止刮削列表 ──
-print("\n" + "=" * 50)
-print("测试 7：禁止刮削列表")
-print("=" * 50)
+def test_shadow_names_api_available():
+    data = api_json("GET", "/media/shadow-names")
+    assert data is not None
 
-data = test_api("GET", "/no-scrape")
-check("禁止刮削接口可用", data is not None)
 
-print(f"\n{'='*50}")
-print(f"结果: {PASS} 通过, {FAIL} 失败")
-if FAIL > 0:
-    sys.exit(1)
+def test_no_scrape_api_available():
+    data = api_json("GET", "/no-scrape")
+    assert data is not None

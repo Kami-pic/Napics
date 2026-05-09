@@ -252,3 +252,24 @@
   - 正式 `test_*.py` 脚本化治理（`test_bt_expand.py`、`test_code_split.py` 等）
   - `batch_manage(copy)` 是否应复制 sidecar 的产品行为确认
   - `recycle_bin.restore` 是否应同步 `media_library` 的产品行为确认
+
+### 2026-05-08 正式测试脚本化治理进展
+
+- 已处理 `backend/test_bt_expand.py`
+  - 去掉导入期自定义计数/执行/`sys.exit`
+  - 保留原有 `test_*` 函数，由 pytest 原生收集与断言失败
+  - 验证：`cd backend && python -X utf8 -m pytest test_bt_expand.py -p no:cacheprovider`，23 passed
+- 已处理 `backend/test_code_split.py`
+  - 去掉导入期 stdout/stderr 重包
+  - 去掉导入期自定义计数/执行/汇总输出
+  - 保留原有 `test_*` 函数，由 pytest 原生收集与断言失败
+  - 验证：`cd backend && python -X utf8 -m pytest test_code_split.py -p no:cacheprovider`，33 passed（需允许写系统临时目录）
+- 追加处理 `backend/test_detail_drawer_split.py`
+  - 去掉导入期 localhost API 执行与 `sys.exit`
+  - 改为 7 个 pytest 原生测试函数，保留原断言含义，不使用 skip
+  - 验证：`cd backend && python -X utf8 -m pytest test_detail_drawer_split.py --collect-only -p no:cacheprovider`，7 collected
+- 全量 collect 当前状态：
+  - 命令：`cd backend && python -X utf8 -m pytest . --collect-only -p no:cacheprovider`
+  - 已越过上述 3 个文件，当前可收集到 467 items
+  - 仍未完全收口；下一类阻断是其它正式 `test_*.py` 的 stdout/stderr 重包或导入期 `sys.exit`
+  - 当前残留文件包括：`test_final_features.py`、`test_local_match_e2e.py`、`test_local_media_matcher.py`、`test_phase_c_e2e.py`、`test_phase4_e2e.py`、`test_rss_e2e.py` 以及若干脚本式 `sys.exit` 文件
