@@ -1,4 +1,4 @@
-# [一次性] PLUGIN_BOUNDARY.md
+# [当前] PLUGIN_BOUNDARY.md
 
 > open-core extraction 审计输出之三。  
 > 范围：建议抽象的 Provider 契约与依赖边界。  
@@ -266,4 +266,3 @@ Provider metadata 建议返回：
 - 新文件不从 `shared.py` import provider 实例。
 - DTO 使用 Pydantic。
 - 前端暂不改也可以，但 API 输出能覆盖现有 `search/sources` 和 `subscribe/sources` 的基础信息。
-

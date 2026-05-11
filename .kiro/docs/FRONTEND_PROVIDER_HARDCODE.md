@@ -1,4 +1,4 @@
-# [一次性] FRONTEND_PROVIDER_HARDCODE.md
+# [当前] FRONTEND_PROVIDER_HARDCODE.md
 
 > open-core extraction 审计输出之四。  
 > 范围：前端硬编码 provider 列表与改造建议。  
@@ -107,4 +107,3 @@
 - “用户自配下载器”
 - “用户自配元数据源”
 - “示例 provider”
-

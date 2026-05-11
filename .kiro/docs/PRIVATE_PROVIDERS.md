@@ -1,4 +1,4 @@
-# [一次性] PRIVATE_PROVIDERS.md
+# [当前] PRIVATE_PROVIDERS.md
 
 > open-core extraction 审计输出之二。  
 > 范围：当前仓库中应保持私有或插件化的 provider 清单。  
@@ -114,4 +114,3 @@
 | `backend/routes/subscribe.py` | 高 | 是 | 路由层直接注册具体 RSS 源。 |
 | `backend/pan_search_service.py` | 高 | 间接是 | 聚合服务直接 import 所有网盘源。 |
 | 前端 provider UI | 中 | 不适用 | 多处写死源名、分类、能力和推荐策略。 |
-

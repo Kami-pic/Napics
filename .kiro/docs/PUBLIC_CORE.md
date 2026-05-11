@@ -1,4 +1,4 @@
-# [一次性] PUBLIC_CORE.md
+# [当前] PUBLIC_CORE.md
 
 > open-core extraction 审计输出之一。  
 > 范围：基于当前仓库静态扫描，判断哪些能力适合进入公开 Core。  
@@ -62,4 +62,3 @@
 2. Core 默认展示媒体库、扫描、整理、刮削、诊断、NFO、海报和本地质量分析。
 3. 外部能力只通过 provider metadata 暴露，前端不直接知道具体站点名称。
 4. `shared.py` 在 Phase 1 后不得继续扩张；Phase 2 起新增 provider 只能通过 `ProviderContext` 获取配置、日志、HTTP、缓存等依赖。
-

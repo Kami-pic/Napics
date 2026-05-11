@@ -1,4 +1,4 @@
-# [一次性] PHASED_MIGRATION_PLAN.md
+# [当前] PHASED_MIGRATION_PLAN.md
 
 > open-core extraction 审计输出之五。  
 > 范围：基于当前仓库的分阶段迁移计划。  
@@ -275,4 +275,3 @@
 ## 本轮后推荐下一步
 
 推荐进入 Phase 2 的最小实现：只建立 `ProviderContext`、DTO、Registry 和 `GET /api/providers` 静态兼容输出。不要在同一轮迁移任何具体 scraper。
-
