@@ -19,11 +19,11 @@
 
 产出：
 
-- `.kiro/docs/_one-off/PUBLIC_CORE.md`
-- `.kiro/docs/_one-off/PRIVATE_PROVIDERS.md`
-- `.kiro/docs/_one-off/PLUGIN_BOUNDARY.md`
-- `.kiro/docs/_one-off/FRONTEND_PROVIDER_HARDCODE.md`
-- `.kiro/docs/_one-off/PHASED_MIGRATION_PLAN.md`
+- `.kiro/docs/PUBLIC_CORE.md`
+- `.kiro/docs/PRIVATE_PROVIDERS.md`
+- `.kiro/docs/PLUGIN_BOUNDARY.md`
+- `.kiro/docs/FRONTEND_PROVIDER_HARDCODE.md`
+- `.kiro/docs/PHASED_MIGRATION_PLAN.md`
 
 验证：
 
