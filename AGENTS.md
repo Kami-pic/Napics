@@ -1,20 +1,48 @@
 # 项目协作入口
 
+## 项目定位
+
+本项目是 **Napics** — 面向 NAS 高阶用户的 AI 媒体资产管理与整理系统（公开版）。
+
+从私有自用版 `nas-video-upgrader` fork 而来，当前阶段目标是**插件化改造**：
+将核心能力与外部服务解耦，形成 Core + Plugin + Private 三层结构。
+
+完整改造计划见：`.kiro/docs/nas-video-upgrader-pluginization-plan-v2.md`
+
 ## 开工入口
 
 - 新对话开始只按这个顺序进入：`AGENTS.md` → `.kiro/steering/ai-rules.md` → `.kiro/steering/project-structure.md` → 当前 TODO
 - 开工前先写清当前 task：
-  - 本轮目标是什么
+  - 本轮目标是什么（对应 V2 方案的哪个 Phase）
   - 本轮只做哪一种改动
   - 本轮明确不碰哪些区域
+  - 预期行为是否等价
+
+## 当前阶段
+
+插件化改造（按 V2 方案 Phase 顺序推进）：
+
+```
+Phase 1: 边界审计 → docs/pluginization-audit.md
+Phase 2: 建立 Provider 契约与 Registry
+Phase 3: 迁移 BT 直搜源
+Phase 4: 迁移 RSS 源
+Phase 5: 迁移 MetadataProvider
+Phase 6: 迁移 Prowlarr
+Phase 7: 迁移 qB / OpenList
+Phase 8: 网盘源私有化
+Phase 9: 前端 Provider 动态感知
+```
+
+每一轮只允许做一种改动。不允许跨 Phase 混合执行。
 
 ## 文档分层
 
 - `.kiro/steering/`：规则主源
 - `.kiro/docs/*-todo.md`：当前总览、可勾选任务、下一步
-- `docs/_one-off/`：临时过程记录 / 一次性阶段记录
-- `knowledge/devlog.md`：阶段归档
-- `project-memory.md` / 领域 knowledge：长期有效的业务规则和跨模块约定
+- `.kiro/docs/_one-off/`：临时过程记录 / 一次性阶段记录
+- `.kiro/knowledge/devlog.md`：阶段归档
+- `.kiro/knowledge/project-memory.md` / 领域 knowledge：长期有效的业务规则和跨模块约定
 
 ## 沟通节奏
 
@@ -28,41 +56,67 @@
 
 ## 常用命令
 
-- 后端启动：`cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000`
 - 后端测试：`cd backend && python -X utf8 -m pytest test_*.py`
-- 前端启动：`cd frontend && npm run dev`（端口 3031）
 - 前端测试：`cd frontend && npm run test`
 - 前端构建：`cd frontend && npm run build`
 - 完整验证：依次执行后端测试 → 前端测试 → 前端构建
+
+## 每轮执行格式
+
+每轮开始前必须写清：
+
+```
+本轮目标：
+本轮对应 Phase：
+本轮涉及文件：
+本轮不碰范围：
+预期行为是否等价：
+验证命令：
+```
+
+每轮完成后必须输出：
+
+```
+变更摘要：
+行为是否变化：
+新增/修改文件：
+测试结果：
+遗留问题：
+下一步建议：
+```
 
 ## Git 策略
 
 - task 完成且验证通过：自动本地 `commit`，commit message 按规范生成（中文，多行）
 - push 必须用户明确指令才执行
-- PR / 合并 / 发布 / 高风险配置修改：必须用户确认后才能执行
-- 多 agent 并行时：只 `git add / commit / 总结` 当前对话中由自己直接修改并验证过的文件
-- 其他 agent 或用户正在处理的改动默认视为外部范围：不混入自己的提交，不在自己的总结里打包汇总
-- 默认禁止使用 `git add .` / `git add -A` / `git commit -a`。除非用户明确要求全量提交，否则必须逐文件暂存本轮文件
-- 提交前必须执行并核对 `git diff --cached --name-only`，确认 staged 文件只包含本轮自己直接修改且已验证过的文件
-- 若工作区已有其他改动，只记录为“外部未提交改动”，不要代为暂存、提交或总结为本轮成果
+- 默认禁止使用 `git add .` / `git add -A` / `git commit -a`，必须逐文件暂存
+- 提交前必须执行并核对 `git diff --cached --name-only`
+- 多 agent 并行时：只提交当前对话中由自己直接修改并验证过的文件
+
+## 插件化阶段禁止事项
+
+1. 边迁移边修改搜索评分逻辑
+2. 边迁移边新增 provider
+3. 边迁移边修复非阻塞 bug
+4. 将 provider 内部逻辑泄漏到 Core
+5. 用裸 dict 替代 DTO
+6. 在 route 中直接调用具体资源站
+7. 在 Core 中出现具体资源站名称
+8. 将网盘搜索源放进公开核心
+9. 为了兼容旧代码继续扩大 `shared.py` 单例污染
+10. 在插件化阶段同时做目录大重组
+11. 在插件化阶段同时做 Docker 化
 
 ## 收尾清单
 
 - task 收尾默认检查：
-  - 已更新本轮任务对应的 TODO / 设计文档；不要为了过 hook 固定修改 stabilization TODO
-  - 临时过程记录已写入 `docs/_one-off/`，或本轮已判定无需新增
+  - 已更新本轮任务对应的 TODO / 设计文档
   - 若本轮已到阶段收口时点，已更新 `knowledge/devlog.md`
-  - 已判断是否需要更新 `project-memory.md` / 对应 knowledge
-  - 已判断是否需要新增规则 / hook / skill（如果本轮有可复用的模式）
-  - 验证通过后：
-    - task 完成 -> 自动本地 `commit`
-    - 阶段完成 -> 自动 `push` 存档分支
-    - 接下来要做什么
+  - 已判断是否需要更新 `project-memory.md`
+  - 验证通过后自动本地 `commit`
 
 ## 机械约束
 
-- 改 `backend/` 或 `frontend/` 业务代码时，提交里必须同时包含本轮相关的 TODO / 设计文档 / `_one-off` 记录 / knowledge 之一；不要求固定更新 `optimization-stabilization-todo*.md`
-- 改主链路或跨模块规则时，提交里必须同时包含 knowledge 或 `_one-off/` 记录更新
+- 改 `backend/` 或 `frontend/` 代码时，提交里必须同时包含本轮相关的 TODO / 设计文档 / knowledge 之一
 - hook 统一放在 `.kiro/hooks/`
 - 检查脚本统一放在 `scripts/`
-- 并行协作时若发现工作区有他人改动，只围绕自己本轮范围做最小暂存；提交前必须再次核对 staged 文件集
