@@ -251,7 +251,7 @@
 - 独立后续专项：
   - 正式 `test_*.py` 脚本化治理（`test_bt_expand.py`、`test_code_split.py` 等）
   - `batch_manage(copy)` 是否应复制 sidecar 的产品行为确认
-  - `recycle_bin.restore` 是否应同步 `media_library` 的产品行为确认
+  - `recycle_bin.restore` 是否应同步 `media_library` 的产品行为确认：已确认不需要。restore 只保证磁盘文件回到原路径，媒体库可见性由用户触发现有扫描/同步链路完成。
 
 ### 2026-05-08 正式测试脚本化治理进展
 
