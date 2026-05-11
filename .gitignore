@@ -54,6 +54,17 @@ backend/subscriptions.json.tmp
 backend/id_mapping_cache.json
 backend/organize_snapshots/
 backend/recycle_bin/
+backend/recycle_bin.json
+backend/download_deleted_hashes.json
+backend/sandbox_name_results.json
+
+# 一次性脚本产出（报告/日志）
+backend/_batch_report.json
+backend/_batch_steps*_report.json
+backend/_batch_log.txt
+
+# 测试沙盒数据（运行时生成）
+backend/test_sandbox/
 
 # 备份文件
 backend/main.py.old
