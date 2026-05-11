@@ -6,14 +6,18 @@
 from fastapi import APIRouter
 
 from provider_models import ProviderCatalog
-from provider_registry import default_provider_registry
+from provider_builtin_metadata import build_builtin_provider_metadata
+from provider_registry import ProviderRegistry, default_provider_registry
 
 
 router = APIRouter(prefix="/api/providers", tags=["providers"])
 
 
 def get_provider_catalog() -> ProviderCatalog:
-    return default_provider_registry.catalog()
+    registry = ProviderRegistry()
+    registry.load_metadata(build_builtin_provider_metadata())
+    registry.load_metadata(default_provider_registry.list())
+    return registry.catalog()
 
 
 @router.get("", response_model=ProviderCatalog)

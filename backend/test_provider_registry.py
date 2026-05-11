@@ -8,7 +8,7 @@ from provider_models import (
     ProviderRiskLevel,
 )
 from provider_registry import ProviderRegistry, ProviderRegistryError
-from providers import get_provider_catalog
+from provider_registry import default_provider_registry
 
 
 class DummySearchProvider:
@@ -86,8 +86,8 @@ def test_registry_can_expose_metadata_without_provider_instance():
     assert registry.list("rss")[0].name == "RSS Example"
 
 
-def test_default_provider_catalog_starts_empty_for_non_migrated_phase():
-    catalog = get_provider_catalog()
+def test_default_registry_starts_empty_for_non_migrated_phase():
+    catalog = default_provider_registry.catalog()
 
     assert catalog.search == []
     assert catalog.metadata == []
