@@ -17,7 +17,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse, FileResponse, Response
 from pydantic import BaseModel
 
-from core.file_ops.sidecars import move_sidecars
+from core.file_ops.sidecars import copy_sidecars, move_sidecars
 from shared import (
     config_m, shadow_m, indexer_m, torrent_bl, analysis_cache,
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
@@ -186,6 +186,8 @@ def batch_manage(req: BatchRequest):
                     _TOP_CATS = {"电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"}
                     is_wrapped = len(sibling_videos) == 1 and len(sibling_dirs) == 0 and parent_name not in _TOP_CATS
 
+                    is_movie_category = _get_category_from_path(p) == "movie"
+
                     if is_wrapped:
                         # 移动整个封装文件夹
                         new_dir = os.path.join(req.target_dir, parent_name)
@@ -193,6 +195,15 @@ def batch_manage(req: BatchRequest):
                         dir_map[parent_dir] = new_dir
                         success.append(p)
                         logger.info(f"[batch_manage] 封装文件夹移动: {parent_dir} → {new_dir}")
+                    elif is_movie_category:
+                        movie_dir = os.path.join(req.target_dir, os.path.splitext(os.path.basename(p))[0])
+                        os.makedirs(movie_dir, exist_ok=True)
+                        movie_path = os.path.join(movie_dir, os.path.basename(p))
+                        move_sidecars(p, movie_path, shutil.move)
+                        shutil.move(p, movie_path)
+                        path_map[p] = movie_path
+                        success.append(p)
+                        logger.info(f"[batch_manage] 散装电影封装移动: {p} → {movie_path}")
                     else:
                         # 散装文件：移动视频 + 同名关联文件
                         move_sidecars(
@@ -257,6 +268,7 @@ def batch_manage(req: BatchRequest):
                         if is_wrapped:
                             shutil.copytree(parent_dir, os.path.join(req.target_dir, parent_name))
                         else:
+                            copy_sidecars(p, dest, shutil.copy2)
                             shutil.copy2(p, dest)
                         success.append(p)
                 else:

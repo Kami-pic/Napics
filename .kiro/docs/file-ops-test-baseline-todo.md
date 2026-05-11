@@ -250,7 +250,7 @@
   - 同时重构下载 / 整理 / 刮削主链路
 - 独立后续专项：
   - 正式 `test_*.py` 脚本化治理（`test_bt_expand.py`、`test_code_split.py` 等）
-  - `batch_manage(copy)` 是否应复制 sidecar 的产品行为确认
+  - `batch_manage(copy)` 是否应复制 sidecar 的产品行为确认：已确认需要。散装视频复制应带同名前缀 sidecar，但不写入 `media_library`。
   - `recycle_bin.restore` 是否应同步 `media_library` 的产品行为确认：已确认不需要。restore 只保证磁盘文件回到原路径，媒体库可见性由用户触发现有扫描/同步链路完成。
 
 ### 2026-05-08 正式测试脚本化治理进展
@@ -295,3 +295,17 @@
   - `cd backend && python -X utf8 -m pytest test_pan_full_report.py test_pan_match.py test_pan_search.py test_pan_sources.py --collect-only -p no:cacheprovider`，9 collected
   - `cd backend && python -X utf8 -m pytest test_move_wrapped.py --collect-only -p no:cacheprovider`，3 collected
   - `cd backend && python -X utf8 -m pytest . --collect-only -p no:cacheprovider`，1062 collected
+
+### 2026-05-11 batch_manage(copy/move) 行为调整
+
+- 已确认并调整散装视频复制行为：
+  - `batch_manage(copy)` 复制视频本体时同步复制同名前缀 sidecar。
+  - 范围复用 `SIDECAR_SUFFIXES`：`.nfo`、`-poster.jpg`、`-poster.png`、`-fanart.jpg`、`-clearlogo.png`、`-thumb.jpg`。
+  - copy 仍不更新 `media_library`，新副本是否入库交给现有扫描/同步链路。
+- 已确认并调整散装电影移动行为：
+  - `batch_manage(move)` 对电影分类下的散装视频自动封装到 `目标目录/视频名不含扩展名/`。
+  - 视频与同名前缀 sidecar 一起移动到封装目录。
+  - 非电影分类（如动画番/电视剧）的散装视频保持平铺移动，避免把单集误封装成电影。
+- 验证：
+  - `cd backend && python -X utf8 -m pytest test_batch_manage_side_effects.py -p no:cacheprovider`，5 passed
+  - `cd backend && python -X utf8 -m pytest test_rename_side_effects.py test_batch_manage_side_effects.py -p no:cacheprovider`，7 passed
