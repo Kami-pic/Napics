@@ -635,3 +635,21 @@
 **验证**:
 - `python -X utf8 -m pytest test_provider_api.py test_provider_contracts.py test_provider_registry.py`
 - `python -X utf8 -m pytest test_code_split.py::test_main_app_routes`
+
+## 2026-05-12 BT 直搜 SearchProvider 适配层 Phase 3 起点
+
+**变更**:
+- 新增 `bt_search_provider_adapter.py`，用通用 adapter 包装已有 BT scraper 的 `search_as_search_results()`
+- adapter 输出标准 `SearchCandidate` DTO，保留现有 `SearchResult` 兼容输出作为输入
+- 新增 metadata + scraper factory 批量构建 provider 对象的 helper，后续 `search_service.py` 可基于它消费 registry/provider 清单
+- 新增 `test_bt_search_provider_adapter.py`
+
+**保持不变**:
+- 未修改任何 `bt_scraper_*` parser
+- 未改 `routes/search.py` 和 `search_service.py` 的现有搜索调用链
+- 未改搜索评分、过滤、排序和多语言搜索词分发
+- adapter 不 import 具体资源站模块，也不读取 `shared.py`
+
+**验证**:
+- `python -X utf8 -m pytest test_bt_search_provider_adapter.py test_provider_contracts.py test_provider_registry.py`
+- `python -X utf8 -m pytest test_search_route_snapshots.py test_searcher.py test_search_keyword_mapper.py`
