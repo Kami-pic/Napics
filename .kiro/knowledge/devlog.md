@@ -617,3 +617,21 @@
 - 类名 `AlistManager` 不改（OpenList API 完全兼容 Alist）
 
 **验证**: OpenList v4.2.1 在 NAS 正常响应，前端构建通过，后端模块导入正常
+
+## 2026-05-12 Provider 契约与 Registry Phase 2
+
+**变更**:
+- 新增 `provider_models.py`、`provider_context.py`、`provider_contracts.py`、`provider_registry.py`，建立 Provider DTO、依赖注入上下文、协议和注册表
+- 新增 `providers.py` 并接入 `main.py`，提供 `/api/providers` 只读 Provider catalog
+- 新增 `provider_builtin_metadata.py`，将现有 BT、网盘、RSS 源清单投影为 provider metadata，不初始化具体 provider
+- `/api/providers` 读取现有搜索/网盘源配置覆盖项，保持 enabled/proxy 与旧源管理开关一致
+- 新增 `test_provider_api.py`、`test_provider_contracts.py`、`test_provider_registry.py`
+
+**保持不变**:
+- 未迁移 `bt_scraper_*`、`pan_scraper_*`、`rss_source_*`
+- 未修改搜索评分、过滤、排序、订阅匹配和下载状态机
+- 默认 `ProviderRegistry` 不注册具体 provider，静态 metadata 仅在 API 兼容输出层聚合
+
+**验证**:
+- `python -X utf8 -m pytest test_provider_api.py test_provider_contracts.py test_provider_registry.py`
+- `python -X utf8 -m pytest test_code_split.py::test_main_app_routes`

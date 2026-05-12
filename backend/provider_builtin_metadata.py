@@ -3,6 +3,8 @@
 本模块只把现有源清单投影为 ProviderMetadata，不初始化或迁移具体实现。
 """
 
+from typing import Any, Mapping
+
 from provider_models import ProviderKind, ProviderMetadata, ProviderRiskLevel
 from search_service import BT_SOURCE_DEFAULTS, PAN_SOURCE_DEFAULTS
 
@@ -19,45 +21,50 @@ RSS_SOURCE_DEFAULTS = {
 }
 
 
-def build_builtin_provider_metadata() -> list[ProviderMetadata]:
+def build_builtin_provider_metadata(
+    bt_overrides: Mapping[str, Any] | None = None,
+    pan_overrides: Mapping[str, Any] | None = None,
+) -> list[ProviderMetadata]:
     providers: list[ProviderMetadata] = []
-    providers.extend(_build_search_metadata())
-    providers.extend(_build_pan_search_metadata())
+    providers.extend(_build_search_metadata(bt_overrides or {}))
+    providers.extend(_build_pan_search_metadata(pan_overrides or {}))
     providers.extend(_build_rss_metadata())
     return providers
 
 
-def _build_search_metadata() -> list[ProviderMetadata]:
+def _build_search_metadata(bt_overrides: Mapping[str, Any]) -> list[ProviderMetadata]:
     result: list[ProviderMetadata] = []
     for provider_id, info in BT_SOURCE_DEFAULTS.items():
-        needs_proxy = bool(info.get("needs_proxy", False))
+        enabled, proxy = _resolve_bt_override(provider_id, info, bt_overrides)
         result.append(
             ProviderMetadata(
                 id=provider_id,
                 name=info["label"],
                 kind=ProviderKind.SEARCH,
                 type=info.get("type", "bt"),
-                enabled=bool(info.get("enabled", False)),
+                enabled=enabled,
                 defaultEnabled=bool(info.get("enabled", False)),
                 capabilities=["search", "magnet", "torrent", "size", "seeders"],
                 riskLevel=ProviderRiskLevel.USER_CONFIGURED if provider_id == "prowlarr" else ProviderRiskLevel.HIGH,
                 requires=["api_url", "api_key"] if provider_id == "prowlarr" else [],
-                supportsProxy=needs_proxy,
+                supportsProxy=proxy,
             )
         )
     return result
 
 
-def _build_pan_search_metadata() -> list[ProviderMetadata]:
+def _build_pan_search_metadata(pan_overrides: Mapping[str, Any]) -> list[ProviderMetadata]:
     result: list[ProviderMetadata] = []
     for provider_id, info in PAN_SOURCE_DEFAULTS.items():
+        override = pan_overrides.get(provider_id)
+        enabled = override if isinstance(override, bool) else bool(info.get("enabled", False))
         result.append(
             ProviderMetadata(
                 id=provider_id,
                 name=info["label"],
                 kind=ProviderKind.PAN_SEARCH,
                 type=info.get("type", "pan"),
-                enabled=bool(info.get("enabled", False)),
+                enabled=enabled,
                 defaultEnabled=bool(info.get("enabled", False)),
                 capabilities=["search", "share_link"],
                 riskLevel=ProviderRiskLevel.PRIVATE,
@@ -65,6 +72,21 @@ def _build_pan_search_metadata() -> list[ProviderMetadata]:
             )
         )
     return result
+
+
+def _resolve_bt_override(
+    provider_id: str,
+    info: Mapping[str, Any],
+    bt_overrides: Mapping[str, Any],
+) -> tuple[bool, bool]:
+    override = bt_overrides.get(provider_id)
+    default_enabled = bool(info.get("enabled", False))
+    default_proxy = bool(info.get("needs_proxy", False))
+    if isinstance(override, dict):
+        return bool(override.get("enabled", default_enabled)), bool(override.get("proxy", default_proxy))
+    if isinstance(override, bool):
+        return override, default_proxy
+    return default_enabled, default_proxy
 
 
 def _build_rss_metadata() -> list[ProviderMetadata]:

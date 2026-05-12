@@ -16,6 +16,7 @@ Phase 2：Provider 契约与 Registry。
 - [x] 接入 `backend/main.py`，注册 `/api/providers` 路由。
 - [x] 新增 Provider 契约、Registry、API 入口测试。
 - [x] 新增 `backend/provider_builtin_metadata.py`，将现有搜索、网盘、RSS 源清单投影为静态 provider metadata。
+- [x] `/api/providers` 的搜索/网盘 metadata 读取现有配置覆盖项，保持与旧源管理开关一致。
 
 ## 不做
 

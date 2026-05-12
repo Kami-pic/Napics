@@ -15,9 +15,18 @@ router = APIRouter(prefix="/api/providers", tags=["providers"])
 
 def get_provider_catalog() -> ProviderCatalog:
     registry = ProviderRegistry()
-    registry.load_metadata(build_builtin_provider_metadata())
+    registry.load_metadata(build_builtin_provider_metadata(*_get_config_overrides()))
     registry.load_metadata(default_provider_registry.list())
     return registry.catalog()
+
+
+def _get_config_overrides() -> tuple[dict, dict]:
+    try:
+        from shared import config_m
+    except Exception:
+        return {}, {}
+    conf = config_m.config
+    return conf.bt_search_sources or {}, conf.pan_search_sources or {}
 
 
 @router.get("", response_model=ProviderCatalog)
