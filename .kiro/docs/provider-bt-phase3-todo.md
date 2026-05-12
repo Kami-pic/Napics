@@ -11,6 +11,7 @@ Phase 3：迁移 BT 直搜源为 `SearchProvider`。
 - [x] 新增 `backend/bt_search_provider_adapter.py`，用通用 adapter 包装已有 `search_as_search_results()`。
 - [x] 新增 `backend/test_bt_search_provider_adapter.py`，验证 adapter 满足 `SearchProvider` 协议并输出 `SearchCandidate`。
 - [x] adapter 支持从 metadata + scraper factory 映射批量构建 provider 对象，不直接依赖具体爬虫或 `shared.py`。
+- [x] 新增 `backend/bt_search_provider_factory.py`，集中现有直搜 scraper getter 映射，作为后续替换 `search_service.py` 的兼容桥。
 
 ## 暂不做
 

@@ -653,3 +653,19 @@
 **验证**:
 - `python -X utf8 -m pytest test_bt_search_provider_adapter.py test_provider_contracts.py test_provider_registry.py`
 - `python -X utf8 -m pytest test_search_route_snapshots.py test_searcher.py test_search_keyword_mapper.py`
+
+## 2026-05-12 BT 直搜 Provider 工厂清单
+
+**变更**:
+- 新增 `bt_search_provider_factory.py`，集中现有 BT 直搜 scraper getter 映射
+- 支持从 `ProviderMetadata` 构建 Direct BT `SearchProvider` adapter 列表，自动跳过 Prowlarr 和缺失 factory 的 metadata
+- 新增 `test_bt_search_provider_factory.py`，校验工厂 key 与旧 `BT_SOURCE_DEFAULTS` 直搜源一致
+
+**保持不变**:
+- 仍未替换 `search_service.py` 和 `routes/search.py` 的执行路径
+- 未改任何 `bt_scraper_*` parser
+- `shared.py` getter 只集中在工厂兼容桥，adapter 和契约层不依赖 `shared.py`
+
+**验证**:
+- `python -X utf8 -m pytest test_bt_search_provider_adapter.py test_bt_search_provider_factory.py test_provider_contracts.py test_provider_registry.py`
+- `python -X utf8 -m pytest test_search_route_snapshots.py test_searcher.py test_search_keyword_mapper.py`
