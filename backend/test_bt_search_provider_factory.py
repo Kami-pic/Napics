@@ -1,5 +1,7 @@
 from bt_search_provider_adapter import build_direct_bt_search_metadata
 from bt_search_provider_factory import (
+    DIRECT_BT_SOURCE_ORDER,
+    LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES,
     build_direct_bt_providers_from_metadata,
     get_direct_bt_scraper_factories,
 )
@@ -36,3 +38,21 @@ def test_factory_keys_match_legacy_direct_bt_sources():
     expected = {name for name in BT_SOURCE_DEFAULTS if name != "prowlarr"}
 
     assert set(get_direct_bt_scraper_factories()) == expected
+
+
+def test_direct_bt_source_order_matches_legacy_defaults():
+    assert DIRECT_BT_SOURCE_ORDER == tuple(name for name in BT_SOURCE_DEFAULTS if name != "prowlarr")
+
+
+def test_skip_filter_source_subset_keeps_legacy_fast_merge_scope():
+    assert LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES == (
+        "bitsearch",
+        "cilixiong",
+        "xl720",
+        "nyaa",
+        "mikan",
+        "yts",
+        "limetorrents",
+        "acgrip",
+        "bangumi_moe",
+    )

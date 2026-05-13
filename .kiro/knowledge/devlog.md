@@ -669,3 +669,21 @@
 **验证**:
 - `python -X utf8 -m pytest test_bt_search_provider_adapter.py test_bt_search_provider_factory.py test_provider_contracts.py test_provider_registry.py`
 - `python -X utf8 -m pytest test_search_route_snapshots.py test_searcher.py test_search_keyword_mapper.py`
+
+## 2026-05-13 搜索路径直搜源清单集中到 Provider 工厂桥
+
+**变更**:
+- `search_service.py::_get_scraper_list()` 改为从 `bt_search_provider_factory.get_direct_bt_scraper_factories()` 获取直搜源 getter，返回结构仍是 `(name, getter)`
+- `routes/search.py` 的单源搜索和裸搜快速合并改用同一个工厂桥，不再直接枚举具体 BT getter
+- `bt_search_provider_factory.py` 新增 `DIRECT_BT_SOURCE_ORDER` 和 `LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES`，集中维护旧顺序和旧裸搜子集
+- 新增 `test_search_service_provider_bridge.py`，验证启用覆盖行为与旧逻辑一致
+
+**保持不变**:
+- `search_service.py` 并发搜索、SSE 输出、结果 enrich、去重逻辑不变
+- `routes/search.py` API 响应结构不变
+- 未修改任何 `bt_scraper_*` parser
+- Prowlarr 仍未迁移，单独留给 Phase 6
+
+**验证**:
+- `python -X utf8 -m pytest test_search_service_provider_bridge.py test_bt_search_provider_factory.py test_search_route_snapshots.py`
+- `python -X utf8 -m pytest test_searcher.py test_search_keyword_mapper.py test_bt_search_provider_adapter.py`

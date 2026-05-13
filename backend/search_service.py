@@ -208,27 +208,10 @@ def search_direct(
 
 def _get_scraper_list() -> List[Tuple[str, Any]]:
     """获取所有直搜源的 (name, getter) 列表。"""
-    from shared import (
-        _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper,
-        _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper,
-        _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper,
-        _get_eztv_scraper, _get_dmhy_scraper,
-        _get_1337x_scraper,
-    )
-    return [
-        ("bitsearch", _get_bitsearch_scraper),
-        ("cilixiong", _get_cilixiong_scraper),
-        ("xl720", _get_xl720_scraper),
-        ("nyaa", _get_nyaa_scraper),
-        ("mikan", _get_mikan_scraper),
-        ("yts", _get_yts_scraper),
-        ("limetorrents", _get_limetorrents_scraper),
-        ("acgrip", _get_acgrip_scraper),
-        ("bangumi_moe", _get_bangumi_moe_scraper),
-        ("eztv", _get_eztv_scraper),
-        ("dmhy", _get_dmhy_scraper),
-        ("1337x", _get_1337x_scraper),
-    ]
+    from bt_search_provider_factory import get_direct_bt_scraper_factories
+
+    factories = get_direct_bt_scraper_factories()
+    return [(name, factory) for name, factory in factories.items()]
 
 
 def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]]]:

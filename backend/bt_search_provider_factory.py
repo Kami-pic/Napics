@@ -13,6 +13,34 @@ from bt_search_provider_adapter import (
 from provider_models import ProviderKind, ProviderMetadata
 
 
+DIRECT_BT_SOURCE_ORDER = (
+    "bitsearch",
+    "cilixiong",
+    "xl720",
+    "nyaa",
+    "mikan",
+    "yts",
+    "limetorrents",
+    "acgrip",
+    "bangumi_moe",
+    "eztv",
+    "dmhy",
+    "1337x",
+)
+
+LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES = (
+    "bitsearch",
+    "cilixiong",
+    "xl720",
+    "nyaa",
+    "mikan",
+    "yts",
+    "limetorrents",
+    "acgrip",
+    "bangumi_moe",
+)
+
+
 def get_direct_bt_scraper_factories() -> Mapping[str, ScraperFactory]:
     from shared import (
         _get_1337x_scraper,
@@ -29,7 +57,7 @@ def get_direct_bt_scraper_factories() -> Mapping[str, ScraperFactory]:
         _get_yts_scraper,
     )
 
-    return {
+    factories = {
         "bitsearch": _get_bitsearch_scraper,
         "cilixiong": _get_cilixiong_scraper,
         "xl720": _get_xl720_scraper,
@@ -43,6 +71,7 @@ def get_direct_bt_scraper_factories() -> Mapping[str, ScraperFactory]:
         "dmhy": _get_dmhy_scraper,
         "1337x": _get_1337x_scraper,
     }
+    return {name: factories[name] for name in DIRECT_BT_SOURCE_ORDER}
 
 
 def build_direct_bt_providers_from_metadata(

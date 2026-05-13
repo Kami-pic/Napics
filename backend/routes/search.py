@@ -10,12 +10,10 @@ from fastapi.responses import StreamingResponse
 from shared import (
     config_m, indexer_m,
     _get_pan_search_service,
-    _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper,
-    _get_mikan_scraper, _get_yts_scraper, _get_limetorrents_scraper, _get_acgrip_scraper,
-    _get_bangumi_moe_scraper, _get_eztv_scraper, _get_dmhy_scraper, _get_1337x_scraper,
     get_clients,
 )
 import searcher, douban_client, bangumi_client
+from bt_search_provider_factory import LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES, get_direct_bt_scraper_factories
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
 from search_service import (
@@ -148,21 +146,7 @@ def search_single_source(
                 kw_list.append(fb)
 
     # 获取源的搜索函数
-    source_getters = {
-        "prowlarr": None,  # 特殊处理
-        "bitsearch": _get_bitsearch_scraper,
-        "cilixiong": _get_cilixiong_scraper,
-        "xl720": _get_xl720_scraper,
-        "nyaa": _get_nyaa_scraper,
-        "mikan": _get_mikan_scraper,
-        "yts": _get_yts_scraper,
-        "limetorrents": _get_limetorrents_scraper,
-        "acgrip": _get_acgrip_scraper,
-        "bangumi_moe": _get_bangumi_moe_scraper,
-        "eztv": _get_eztv_scraper,
-        "dmhy": _get_dmhy_scraper,
-        "1337x": _get_1337x_scraper,
-    }
+    source_getters = {"prowlarr": None, **get_direct_bt_scraper_factories()}
 
     if source not in source_getters:
         return {"error": f"未知源: {source}", "results": [], "search_keywords": [], "hit_keyword": ""}
@@ -326,17 +310,11 @@ def search_single_keyword(
         # 尝试快速合并直搜源（有缓存时秒返回）
         try:
             bt_overrides = config_m.config.bt_search_sources or {}
-            from shared import _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper, _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper, _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper
+            scraper_factories = get_direct_bt_scraper_factories()
             scrapers = [
-                ("bitsearch", _get_bitsearch_scraper),
-                ("cilixiong", _get_cilixiong_scraper),
-                ("xl720", _get_xl720_scraper),
-                ("nyaa", _get_nyaa_scraper),
-                ("mikan", _get_mikan_scraper),
-                ("yts", _get_yts_scraper),
-                ("limetorrents", _get_limetorrents_scraper),
-                ("acgrip", _get_acgrip_scraper),
-                ("bangumi_moe", _get_bangumi_moe_scraper),
+                (name, scraper_factories[name])
+                for name in LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES
+                if name in scraper_factories
             ]
             existing_hashes = set()
             for r in all_results:

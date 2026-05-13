@@ -72,6 +72,46 @@ def test_search_single_source_snapshot_keeps_keyword_chain_shape(monkeypatch):
     assert snapshot.list_lengths["search_keywords"] == 2
 
 
+def test_search_single_direct_source_uses_provider_factory(monkeypatch):
+    class FakeDirectScraper:
+        def __init__(self):
+            self.calls = []
+
+        def search_as_search_results(self, keyword, max_results=40):
+            self.calls.append((keyword, max_results))
+            return [
+                SearchResult(
+                    title="Bitsearch Result S01E01",
+                    size_gb=2.0,
+                    indexer="bitsearch",
+                    seeders=7,
+                    leechers=1,
+                    download_url="magnet:?xt=urn:btih:ABCDEF1234567890ABCDEF1234567890ABCDEF12",
+                    info_url="https://example.com/bitsearch",
+                    quality_tag="WEB-1080p",
+                )
+            ]
+
+    scraper = FakeDirectScraper()
+    monkeypatch.setattr(search_routes, "get_direct_bt_scraper_factories", lambda: {"bitsearch": lambda: scraper})
+    monkeypatch.setattr(
+        search_routes,
+        "_enrich_result",
+        lambda result, query, match_names=None: {
+            "title": result.title,
+            "_source": result.indexer,
+            "match_names": list(match_names or []),
+        },
+    )
+
+    body = search_routes.search_single_source(source="bitsearch", keyword="Attack on Titan")
+
+    assert scraper.calls == [("Attack on Titan", 40)]
+    assert body["source"] == "bitsearch"
+    assert body["count"] == 1
+    assert body["results"][0]["_source"] == "bitsearch"
+
+
 def test_search_stream_snapshot_emits_source_done_event(monkeypatch):
     monkeypatch.setattr(search_routes, "build_keywords", lambda **kwargs: {"query": kwargs["query"]})
     monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": object()})
