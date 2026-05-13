@@ -1,5 +1,6 @@
 import asyncio
 import json
+from types import SimpleNamespace
 
 from fastapi.responses import StreamingResponse
 
@@ -115,6 +116,75 @@ def test_search_single_direct_source_uses_provider_adapter(monkeypatch):
     assert body["source"] == "bitsearch"
     assert body["count"] == 1
     assert body["results"][0]["_source"] == "bitsearch"
+
+
+def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
+    class FakeDirectScraper:
+        def __init__(self):
+            self.calls = []
+
+        def search_as_search_results(self, keyword, max_results=40):
+            self.calls.append((keyword, max_results))
+            return [
+                SearchResult(
+                    title="Bitsearch Extra S01E02",
+                    size_gb=2.5,
+                    indexer="bitsearch",
+                    seeders=9,
+                    leechers=1,
+                    download_url="magnet:?xt=urn:btih:BBBBBB1234567890ABCDEF1234567890ABCDEF12",
+                    info_url="https://example.com/bitsearch-extra",
+                    quality_tag="WEB-1080p",
+                )
+            ]
+
+    client = FakeSearchClient(
+        {
+            "Attack on Titan": [
+                SearchResult(
+                    title="Prowlarr Result S01E01",
+                    size_gb=1.0,
+                    indexer="Prowlarr",
+                    seeders=5,
+                    leechers=1,
+                    download_url="magnet:?xt=urn:btih:AAAAAA1234567890ABCDEF1234567890ABCDEF12",
+                    info_url="https://example.com/prowlarr",
+                    quality_tag="WEB-1080p",
+                )
+            ]
+        }
+    )
+    scraper = FakeDirectScraper()
+    provider = DirectBTSearchProviderAdapter(
+        build_direct_bt_search_metadata("bitsearch", "Bitsearch"),
+        lambda: scraper,
+    )
+    monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": client})
+    monkeypatch.setattr(search_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
+    monkeypatch.setattr(
+        search_routes,
+        "LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES",
+        ("bitsearch",),
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "config_m",
+        SimpleNamespace(config=SimpleNamespace(bt_search_sources={})),
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "_enrich_result",
+        lambda result, query, match_names=None: {
+            "title": result.title,
+            "_source": result.indexer,
+        },
+    )
+
+    body = search_routes.search_single_keyword(keyword="Attack on Titan", skip_filter=True)
+
+    assert scraper.calls == [("Attack on Titan", 20)]
+    assert body["bt_count"] == 2
+    assert [item["_source"] for item in body["bt_results"]] == ["Prowlarr", "bitsearch"]
 
 
 def test_search_stream_snapshot_emits_source_done_event(monkeypatch):

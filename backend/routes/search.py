@@ -16,7 +16,6 @@ import searcher, douban_client, bangumi_client
 from bt_search_provider_factory import (
     LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES,
     get_direct_bt_provider_map,
-    get_direct_bt_scraper_factories,
 )
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
@@ -328,11 +327,11 @@ def search_single_keyword(
         # 尝试快速合并直搜源（有缓存时秒返回）
         try:
             bt_overrides = config_m.config.bt_search_sources or {}
-            scraper_factories = get_direct_bt_scraper_factories()
-            scrapers = [
-                (name, scraper_factories[name])
+            direct_providers = get_direct_bt_provider_map()
+            providers = [
+                (name, direct_providers[name])
                 for name in LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES
-                if name in scraper_factories
+                if name in direct_providers
             ]
             existing_hashes = set()
             for r in all_results:
@@ -341,18 +340,18 @@ def search_single_keyword(
                     existing_hashes.add(h.group(1).upper())
 
             import concurrent.futures
-            def _search_source(name_getter):
-                name, getter = name_getter
+            def _search_source(name_provider):
+                name, provider = name_provider
                 if not bt_overrides.get(name, True):
                     return []
                 try:
-                    scraper = getter()
-                    return scraper.search_as_search_results(keyword, max_results=20)
+                    candidates = provider.search(SearchRequest(query=keyword, limit=20))
+                    return [_candidate_to_search_result(candidate) for candidate in candidates]
                 except:
                     return []
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-                futures = {pool.submit(_search_source, sg): sg[0] for sg in scrapers}
+                futures = {pool.submit(_search_source, sg): sg[0] for sg in providers}
                 for future in concurrent.futures.as_completed(futures, timeout=30):
                     try:
                         results = future.result(timeout=5)
