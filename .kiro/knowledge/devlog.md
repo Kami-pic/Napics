@@ -687,3 +687,25 @@
 **验证**:
 - `python -X utf8 -m pytest test_search_service_provider_bridge.py test_bt_search_provider_factory.py test_search_route_snapshots.py`
 - `python -X utf8 -m pytest test_searcher.py test_search_keyword_mapper.py test_bt_search_provider_adapter.py`
+
+## 2026-05-13 BT 直搜 SearchProvider 迁移 Phase 3 收口
+
+**变更**:
+- `/api/search/source` 的 BT 直搜单源路径改为调用 `DirectBTSearchProviderAdapter.search()`，再转换回旧 `SearchResult` 供原 enrich / 去重逻辑复用
+- `search_service.py` 的 SSE 全源搜索和同步全源搜索直搜路径改为消费 `(name, SearchProvider)`，并保留原 SSE 事件结构
+- `/search/single?skip_filter=true` 的裸搜快速合并直搜路径改为调用 provider adapter
+- `search_helpers.merge_bt_extra_sources()` 改为通过 provider adapter 合并直搜源，不再直接导入 `shared.py` 中具体 scraper getter
+- 新增 `test_search_helpers_provider_bridge.py`，并扩展路由和 search_service 桥接测试
+
+**保持不变**:
+- 未修改任何 `bt_scraper_*` parser
+- 未修改搜索评分、过滤、排序、多语言搜索词分发和 SSE 事件字段
+- Prowlarr 仍保留旧客户端路径，按计划留到 Phase 6 单独迁移
+- `shared.py` getter 仍存在，但只由 `bt_search_provider_factory.py` 作为兼容桥集中引用
+
+**收口结论**:
+- `routes/search.py`、`search_service.py`、`search_helpers.py` 已不再直接 import 具体 BT 直搜 scraper 或 `shared.py` getter
+- 当前 Phase 3 允许具体源名称继续存在于 provider metadata、配置、搜索词分发、旧 scraper 实现和兼容工厂中
+
+**验证**:
+- `python -X utf8 -m pytest test_search_helpers_provider_bridge.py test_search_route_snapshots.py test_search_service_provider_bridge.py test_bt_search_provider_adapter.py test_bt_search_provider_factory.py test_provider_contracts.py test_provider_registry.py test_searcher.py`
