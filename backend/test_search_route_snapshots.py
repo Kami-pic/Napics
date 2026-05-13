@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from routes import search as search_routes
 from searcher import SearchResult
 from test_support.route_response_snapshot import RouteResponseSnapshot
+from bt_search_provider_adapter import DirectBTSearchProviderAdapter, build_direct_bt_search_metadata
 
 
 class FakeSearchClient:
@@ -72,7 +73,7 @@ def test_search_single_source_snapshot_keeps_keyword_chain_shape(monkeypatch):
     assert snapshot.list_lengths["search_keywords"] == 2
 
 
-def test_search_single_direct_source_uses_provider_factory(monkeypatch):
+def test_search_single_direct_source_uses_provider_adapter(monkeypatch):
     class FakeDirectScraper:
         def __init__(self):
             self.calls = []
@@ -93,7 +94,11 @@ def test_search_single_direct_source_uses_provider_factory(monkeypatch):
             ]
 
     scraper = FakeDirectScraper()
-    monkeypatch.setattr(search_routes, "get_direct_bt_scraper_factories", lambda: {"bitsearch": lambda: scraper})
+    provider = DirectBTSearchProviderAdapter(
+        build_direct_bt_search_metadata("bitsearch", "Bitsearch"),
+        lambda: scraper,
+    )
+    monkeypatch.setattr(search_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
     monkeypatch.setattr(
         search_routes,
         "_enrich_result",

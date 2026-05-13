@@ -3,6 +3,7 @@ from bt_search_provider_factory import (
     DIRECT_BT_SOURCE_ORDER,
     LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES,
     build_direct_bt_providers_from_metadata,
+    get_direct_bt_provider_map,
     get_direct_bt_scraper_factories,
 )
 from provider_builtin_metadata import build_builtin_provider_metadata
@@ -32,6 +33,21 @@ def test_builtin_metadata_can_build_all_direct_bt_provider_adapters():
 
     assert {provider.metadata().id for provider in providers} == set(factories)
     assert "prowlarr" not in {provider.metadata().id for provider in providers}
+
+
+def test_get_direct_bt_provider_map_is_keyed_by_provider_id():
+    metadata = [
+        build_direct_bt_search_metadata("prowlarr", "Prowlarr"),
+        build_direct_bt_search_metadata("bitsearch", "Bitsearch"),
+    ]
+
+    providers = get_direct_bt_provider_map(
+        metadata_items=metadata,
+        scraper_factories={"bitsearch": lambda: object()},
+    )
+
+    assert list(providers) == ["bitsearch"]
+    assert providers["bitsearch"].metadata().id == "bitsearch"
 
 
 def test_factory_keys_match_legacy_direct_bt_sources():

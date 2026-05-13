@@ -10,6 +10,7 @@ from bt_search_provider_adapter import (
     ScraperFactory,
     build_direct_bt_search_providers,
 )
+from provider_builtin_metadata import build_builtin_provider_metadata
 from provider_models import ProviderKind, ProviderMetadata
 
 
@@ -85,3 +86,12 @@ def build_direct_bt_providers_from_metadata(
         if metadata.kind == ProviderKind.SEARCH and metadata.type == "bt" and metadata.id != "prowlarr"
     ]
     return build_direct_bt_search_providers(direct_bt_metadata, factories)
+
+
+def get_direct_bt_provider_map(
+    metadata_items: list[ProviderMetadata] | None = None,
+    scraper_factories: Mapping[str, ScraperFactory] | None = None,
+) -> Mapping[str, DirectBTSearchProviderAdapter]:
+    metadata = metadata_items or build_builtin_provider_metadata()
+    providers = build_direct_bt_providers_from_metadata(metadata, scraper_factories=scraper_factories)
+    return {provider.metadata().id: provider for provider in providers}

@@ -13,7 +13,11 @@ from shared import (
     get_clients,
 )
 import searcher, douban_client, bangumi_client
-from bt_search_provider_factory import LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES, get_direct_bt_scraper_factories
+from bt_search_provider_factory import (
+    LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES,
+    get_direct_bt_provider_map,
+    get_direct_bt_scraper_factories,
+)
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
 from search_service import (
@@ -21,9 +25,23 @@ from search_service import (
     BT_SOURCE_DEFAULTS as _BT_SOURCE_DEFAULTS,
     PAN_SOURCE_DEFAULTS as _PAN_SOURCE_DEFAULTS,
 )
+from provider_models import SearchCandidate, SearchRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _candidate_to_search_result(candidate: SearchCandidate) -> searcher.SearchResult:
+    return searcher.SearchResult(
+        title=candidate.title,
+        size_gb=candidate.size_gb,
+        indexer=candidate.indexer or candidate.provider_id,
+        seeders=candidate.seeders,
+        leechers=candidate.leechers,
+        download_url=candidate.download_url,
+        info_url=candidate.info_url,
+        quality_tag=candidate.raw_quality,
+    )
 
 
 @router.get("/api/search")
@@ -146,7 +164,8 @@ def search_single_source(
                 kw_list.append(fb)
 
     # 获取源的搜索函数
-    source_getters = {"prowlarr": None, **get_direct_bt_scraper_factories()}
+    direct_providers = get_direct_bt_provider_map()
+    source_getters = {"prowlarr": None, **direct_providers}
 
     if source not in source_getters:
         return {"error": f"未知源: {source}", "results": [], "search_keywords": [], "hit_keyword": ""}
@@ -171,15 +190,14 @@ def search_single_source(
                             all_results.append(r)
                     break
         else:
-            getter = source_getters[source]
-            s = getter()
+            provider = direct_providers[source]
             for kw in kw_list:
                 searched.append(kw)
-                results = s.search_as_search_results(kw, max_results=40)
-                if results:
+                candidates = provider.search(SearchRequest(query=kw, limit=40))
+                if candidates:
                     if not hit_kw:
                         hit_kw = kw
-                    all_results.extend(results)
+                    all_results.extend(_candidate_to_search_result(candidate) for candidate in candidates)
                     break
     except Exception as e:
         return {
