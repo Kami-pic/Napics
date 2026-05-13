@@ -18,6 +18,8 @@ from typing import List, Dict, Optional, Iterator, Tuple, Any
 from search_keyword_mapper import MultiLangKeywords, get_search_keywords_for_source
 from search_helpers import enrich_result
 from text_processing import split_by_language, normalize as text_normalize
+from provider_models import SearchCandidate, SearchRequest
+from searcher import SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +182,7 @@ def search_prowlarr(
 
 def search_direct(
     name: str,
-    getter,
+    provider,
     keywords: MultiLangKeywords,
 ) -> Tuple[str, list, Optional[str], list, str]:
     """直搜源搜索 + 回退链。
@@ -188,34 +190,46 @@ def search_direct(
     返回: (source_name, results, error, searched_keywords, hit_keyword)
     """
     try:
-        s = getter()
         kw_list = get_search_keywords_for_source(name, keywords)
         searched = []
         hit_kw = ""
         all_results = []
         for kw in kw_list:
             searched.append(kw)
-            results = s.search_as_search_results(kw, max_results=40)
-            if results:
+            candidates = provider.search(SearchRequest(query=kw, limit=40))
+            if candidates:
                 if not hit_kw:
                     hit_kw = kw
-                all_results.extend(results)
+                all_results.extend(_candidate_to_search_result(candidate) for candidate in candidates)
                 break
         return name, all_results, None, searched, hit_kw
     except Exception as e:
         return name, [], str(e), [], ""
 
 
-def _get_scraper_list() -> List[Tuple[str, Any]]:
-    """获取所有直搜源的 (name, getter) 列表。"""
-    from bt_search_provider_factory import get_direct_bt_scraper_factories
+def _candidate_to_search_result(candidate: SearchCandidate) -> SearchResult:
+    return SearchResult(
+        title=candidate.title,
+        size_gb=candidate.size_gb,
+        indexer=candidate.indexer or candidate.provider_id,
+        seeders=candidate.seeders,
+        leechers=candidate.leechers,
+        download_url=candidate.download_url,
+        info_url=candidate.info_url,
+        quality_tag=candidate.raw_quality,
+    )
 
-    factories = get_direct_bt_scraper_factories()
-    return [(name, factory) for name, factory in factories.items()]
+
+def _get_provider_list() -> List[Tuple[str, Any]]:
+    """获取所有直搜源的 (name, SearchProvider) 列表。"""
+    from bt_search_provider_factory import get_direct_bt_provider_map
+
+    providers = get_direct_bt_provider_map()
+    return [(name, provider) for name, provider in providers.items()]
 
 
 def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]]]:
-    """根据配置返回启用的源。返回 (prowlarr_enabled, scrapers_list)。
+    """根据配置返回启用的源。返回 (prowlarr_enabled, providers_list)。
 
     bt_overrides 支持两种格式：
     - 旧格式（布尔）：{"bitsearch": true}
@@ -230,12 +244,12 @@ def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]
         return bool(override)
 
     prowlarr_enabled = _is_enabled("prowlarr")
-    scrapers = _get_scraper_list()
-    enabled_scrapers = []
-    for name, getter in scrapers:
+    providers = _get_provider_list()
+    enabled_providers = []
+    for name, provider in providers:
         if _is_enabled(name):
-            enabled_scrapers.append((name, getter))
-    return prowlarr_enabled, enabled_scrapers
+            enabled_providers.append((name, provider))
+    return prowlarr_enabled, enabled_providers
 
 
 def search_all_sources_iter(
