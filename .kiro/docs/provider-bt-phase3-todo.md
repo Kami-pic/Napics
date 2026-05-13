@@ -17,6 +17,7 @@ Phase 3：迁移 BT 直搜源为 `SearchProvider`。
 - [x] `/api/search/source` 的 BT 直搜单源路径改为通过 `SearchProvider` adapter 调用，响应结构保持兼容。
 - [x] `search_service.py` 的 SSE/同步全源直搜路径改为通过 `SearchProvider` adapter 调用，事件结构保持兼容。
 - [x] `/search/single?skip_filter=true` 的快速合并直搜路径改为通过 `SearchProvider` adapter 调用，响应结构保持兼容。
+- [x] `search_helpers.merge_bt_extra_sources()` 改为通过 `SearchProvider` adapter 合并直搜源，合并与去重规则保持兼容。
 
 ## 暂不做
 

@@ -6,6 +6,8 @@
 import re
 import logging
 from quality_parser import compute_quality_score
+from provider_models import SearchCandidate, SearchRequest
+from searcher import SearchResult
 
 logger = logging.getLogger(__name__)
 # ── BT 标题清洗（专为搜索匹配设计，比 parse_filename 更激进）──
@@ -190,35 +192,29 @@ def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
                 "is_junk": False, "junk_reasons": []}
 
 
+def _candidate_to_search_result(candidate: SearchCandidate) -> SearchResult:
+    return SearchResult(
+        title=candidate.title,
+        size_gb=candidate.size_gb,
+        indexer=candidate.indexer or candidate.provider_id,
+        seeders=candidate.seeders,
+        leechers=candidate.leechers,
+        download_url=candidate.download_url,
+        info_url=candidate.info_url,
+        quality_tag=candidate.raw_quality,
+    )
+
+
 def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
     """合并直搜源结果到已有列表，按 infohash 去重。"""
-    from shared import (
+    from shared import config_m as _cfg
+    from bt_search_provider_factory import get_direct_bt_provider_map
 
-        config_m as _cfg,
-        _get_bitsearch_scraper, _get_cilixiong_scraper, _get_xl720_scraper,
-        _get_nyaa_scraper, _get_mikan_scraper, _get_yts_scraper,
-        _get_limetorrents_scraper, _get_acgrip_scraper, _get_bangumi_moe_scraper,
-        _get_eztv_scraper, _get_dmhy_scraper,
-        _get_1337x_scraper,
-    )
     merged = list(existing_results)
     bt_overrides = _cfg.config.bt_search_sources or {}
-    scrapers = [
-        ("bitsearch", _get_bitsearch_scraper),
-        ("cilixiong", _get_cilixiong_scraper),
-        ("xl720", _get_xl720_scraper),
-        ("nyaa", _get_nyaa_scraper),
-        ("mikan", _get_mikan_scraper),
-        ("yts", _get_yts_scraper),
-        ("limetorrents", _get_limetorrents_scraper),
-        ("acgrip", _get_acgrip_scraper),
-        ("bangumi_moe", _get_bangumi_moe_scraper),
-        ("eztv", _get_eztv_scraper),
-        ("dmhy", _get_dmhy_scraper),
-        ("1337x", _get_1337x_scraper),
-    ]
+    providers = get_direct_bt_provider_map()
 
-    for name, getter in scrapers:
+    for name, provider in providers.items():
         override = bt_overrides.get(name, True)
         # 兼容新格式 {"enabled": true, "proxy": false}
         if isinstance(override, dict):
@@ -227,11 +223,11 @@ def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
         elif not override:
             continue
         try:
-            s = getter()
-            results = s.search_as_search_results(keyword, max_results=40)
+            candidates = provider.search(SearchRequest(query=keyword, limit=40))
             added = 0
             source_hashes = set()
-            for r in results:
+            for candidate in candidates:
+                r = _candidate_to_search_result(candidate)
                 h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                 if h:
                     hash_upper = h.group(1).upper()
