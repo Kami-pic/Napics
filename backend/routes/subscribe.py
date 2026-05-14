@@ -9,7 +9,7 @@ from shared import config_m, media_matcher, _tmdb_client, _get_sub_manager
 from subscriber import SubscriptionManager
 from alias_resolver import AliasResolver
 from rss_engine import RSSSourceManager, SubscriptionScheduler
-from rss_source_prowlarr import ProwlarrRSSSource
+from rss_provider_factory import get_rss_source_factories
 
 logger = logging.getLogger(__name__)
 
@@ -24,67 +24,11 @@ def _get_source_manager() -> RSSSourceManager:
     global _source_manager
     if _source_manager is None:
         _source_manager = RSSSourceManager()
-        # 注册 Prowlarr 源
-        prowlarr_source = ProwlarrRSSSource()
-        conf = config_m.config
-        if conf.prowlarr_url and conf.prowlarr_api_key:
-            from searcher import ProwlarrClient
-            prowlarr_source.set_client(ProwlarrClient(conf.prowlarr_url, conf.prowlarr_api_key))
-        _source_manager.register(prowlarr_source)
-        # 注册蜜柑计划 RSS 源
-        try:
-            from rss_source_mikan import MikanRSSSource
-            proxy = getattr(conf, "http_proxy", "") or ""
-            mikan_source = MikanRSSSource(proxy=proxy)
-            _source_manager.register(mikan_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] 蜜柑 RSS 源注册失败: {e}")
-        # 注册 Nyaa RSS 源
-        try:
-            from rss_source_nyaa import NyaaRSSSource
-            proxy = getattr(conf, "http_proxy", "") or ""
-            nyaa_source = NyaaRSSSource(proxy=proxy)
-            _source_manager.register(nyaa_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] Nyaa RSS 源注册失败: {e}")
-        # 注册 EZTV RSS 源
-        try:
-            from rss_source_eztv import EZTVRSSSource
-            proxy = getattr(conf, "http_proxy", "") or ""
-            eztv_source = EZTVRSSSource(proxy=proxy)
-            _source_manager.register(eztv_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] EZTV RSS 源注册失败: {e}")
-        # 注册动漫花园 RSS 源
-        try:
-            from rss_source_dmhy import DMHYRSSSource
-            proxy = getattr(conf, "http_proxy", "") or ""
-            dmhy_source = DMHYRSSSource(proxy=proxy)
-            _source_manager.register(dmhy_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] 动漫花园 RSS 源注册失败: {e}")
-        # 注册 ACG.RIP RSS 源
-        try:
-            from rss_source_acgrip import ACGRipRSSSource
-            acgrip_source = ACGRipRSSSource()
-            _source_manager.register(acgrip_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] ACG.RIP RSS 源注册失败: {e}")
-        # 注册 Bangumi Moe RSS 源
-        try:
-            from rss_source_bangumi_moe import BangumiMoeRSSSource
-            bgm_source = BangumiMoeRSSSource()
-            _source_manager.register(bgm_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] Bangumi Moe RSS 源注册失败: {e}")
-        # 注册 YTS RSS 源
-        try:
-            from rss_source_yts import YTSRSSSource
-            proxy = getattr(conf, "http_proxy", "") or ""
-            yts_source = YTSRSSSource(proxy=proxy)
-            _source_manager.register(yts_source)
-        except Exception as e:
-            logger.error(f"[Subscribe] YTS RSS 源注册失败: {e}")
+        for name, factory in get_rss_source_factories().items():
+            try:
+                _source_manager.register(factory())
+            except Exception as e:
+                logger.error(f"[Subscribe] RSS 源 {name} 注册失败: {e}")
     return _source_manager
 
 
