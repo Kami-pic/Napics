@@ -695,42 +695,53 @@ class AddMediaRequest(BaseModel):
 def _try_tmdb_detail_by_id(tmdb_id: int, type: str) -> dict:
     """用 tmdb_id 直接拉详情，跳过搜索。type 不准时自动尝试 movie↔tv"""
     try:
-        clients = get_clients()
-        tmdb = clients["tmdb"]
+        provider = get_metadata_provider_map().get("tmdb")
         # 先用指定 type 拉
-        detail = tmdb.get_tv_detail(tmdb_id) if type == "tv" else tmdb.get_movie_detail(tmdb_id)
-        if not detail or not detail.tmdb_id:
+        detail = provider.get_detail(str(tmdb_id), "tv" if type == "tv" else "movie") if provider else None
+        if not detail or not detail.external_id:
             # type 可能不准（如 trending mixed），尝试另一种
             alt_type = "tv" if type == "movie" else "movie"
             logger.info(f"[MediaInfo] TMDB ID {tmdb_id} {type} 失败，尝试 {alt_type}")
-            detail = tmdb.get_tv_detail(tmdb_id) if alt_type == "tv" else tmdb.get_movie_detail(tmdb_id)
-        if not detail or not detail.tmdb_id:
+            detail = provider.get_detail(str(tmdb_id), alt_type) if provider else None
+        if not detail or not detail.external_id:
             return {"found": False}
-        return {
-            "found": True,
-            "tmdb_id": detail.tmdb_id,
-            "title": detail.title,
-            "original_title": detail.original_title,
-            "english_title": detail.english_title,
-            "year": detail.year,
-            "poster_url": detail.poster_url,
-            "backdrop_url": detail.backdrop_url,
-            "overview": detail.overview,
-            "rating": detail.rating,
-            "genres": detail.genres,
-            "director": detail.director,
-            "cast": detail.cast[:6],
-            "runtime": detail.runtime,
-            "imdb_id": detail.imdb_id,
-            "total_seasons": detail.total_seasons,
-            "episode_count": detail.episode_count,
-            "status": detail.status,
-            "countries": detail.countries,
-            "source": "tmdb",
-        }
+        return _format_tmdb_metadata_detail(detail)
     except Exception as e:
         logger.error(f"[MediaInfo] TMDB ID 直接拉取失败: {e}")
         return {"found": False}
+
+
+def _format_tmdb_metadata_detail(detail) -> dict:
+    extra = detail.extra if isinstance(detail.extra, dict) else {}
+    poster_url = ""
+    backdrop_url = ""
+    for artwork in detail.artwork:
+        if artwork.kind == "poster" and not poster_url:
+            poster_url = artwork.url
+        elif artwork.kind == "backdrop" and not backdrop_url:
+            backdrop_url = artwork.url
+    return {
+        "found": True,
+        "tmdb_id": int(detail.external_id) if str(detail.external_id).isdigit() else 0,
+        "title": detail.title,
+        "original_title": detail.original_title,
+        "english_title": detail.aliases.en,
+        "year": str(detail.year or ""),
+        "poster_url": poster_url or extra.get("poster_url"),
+        "backdrop_url": backdrop_url or extra.get("backdrop_url"),
+        "overview": detail.overview,
+        "rating": detail.rating or 0,
+        "genres": extra.get("genres", []),
+        "director": extra.get("director", ""),
+        "cast": (extra.get("cast", []) or [])[:6],
+        "runtime": detail.runtime or 0,
+        "imdb_id": extra.get("imdb_id", ""),
+        "total_seasons": extra.get("total_seasons", 0),
+        "episode_count": extra.get("episode_count", 0),
+        "status": extra.get("status", ""),
+        "countries": extra.get("countries", []),
+        "source": "tmdb",
+    }
 
 
 def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> dict:

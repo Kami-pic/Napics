@@ -86,6 +86,7 @@ def test_metadata_adapter_gets_detail_from_legacy_source():
     assert detail.aliases.en == "Attack on Titan"
     assert detail.episodes[0].episode == 1
     assert detail.artwork[0].kind == "poster"
+    assert detail.extra["title"] == "进击的巨人"
 
 
 def test_metadata_adapter_health_follows_metadata_enabled():

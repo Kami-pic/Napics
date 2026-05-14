@@ -16,6 +16,7 @@ Phase 5：迁移 MetadataProvider。
 - [x] `/scrape/bangumi` 候选搜索改为通过 `MetadataProvider` adapter 调用，响应结构保持兼容。
 - [x] `/scrape/douban` 候选搜索主路径改为通过 `MetadataProvider` adapter 调用，API v2 响应结构和旧网页 fallback 保持兼容。
 - [x] `/scrape/select` 的 TMDB 详情获取改为通过 `MetadataProvider` adapter 调用，NFO 写入链路保持不变。
+- [x] `get_media_info` 的 TMDB ID 直取详情路径改为通过 `MetadataProvider` adapter 调用，movie/tv 互试行为保持兼容。
 
 ## 暂不做
 
@@ -27,9 +28,11 @@ Phase 5：迁移 MetadataProvider。
 - 不改 `/scrape/bangumi-select` 写入 NFO 链路。
 - 不改 `/scrape/douban-select` 写入 NFO 链路。
 - 不改 `/scrape/execute` 自动刮削链路。
+- 不改 `get_media_info` 无 ID 的 TMDB 搜索匹配路径。
 
 ## 验证
 
 - `cd backend && python -X utf8 -m pytest test_metadata_provider_adapter.py test_metadata_provider_factory.py test_provider_api.py test_provider_contracts.py`
 - `cd backend && python -X utf8 -m pytest test_metadata_route_snapshots.py test_metadata_provider_adapter.py test_metadata_provider_factory.py test_provider_api.py`
 - `cd backend && python -X utf8 -m pytest test_metadata_select_route_snapshots.py test_metadata_route_snapshots.py test_metadata_provider_adapter.py test_metadata_provider_factory.py test_provider_api.py`
+- `cd backend && python -X utf8 -m pytest test_metadata_info_route_snapshots.py test_metadata_route_snapshots.py test_metadata_provider_adapter.py test_metadata_provider_factory.py test_provider_api.py`

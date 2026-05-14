@@ -207,6 +207,7 @@ class MetadataDetail(BaseModel):
     aliases: AliasSet = Field(default_factory=AliasSet)
     episodes: List[EpisodeInfo] = Field(default_factory=list)
     artwork: List[ArtworkInfo] = Field(default_factory=list)
+    extra: JsonValue = Field(default_factory=dict)
 
 
 class DownloadRequest(BaseModel):

@@ -97,6 +97,7 @@ class MetadataProviderAdapter:
             aliases=AliasSet(cn=title, en=english_title, original=original_title, aliases=_aliases_from_item(item)),
             episodes=_episodes_from_item(item),
             artwork=_artwork_from_item(item),
+            extra=dict(item),
         )
 
 
