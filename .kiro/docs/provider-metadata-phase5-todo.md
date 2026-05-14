@@ -14,6 +14,7 @@ Phase 5：迁移 MetadataProvider。
 - [x] 新增 `backend/test_metadata_provider_factory.py`，验证 Metadata provider 清单与静态 metadata 一致。
 - [x] `/api/providers` 的 metadata 分类补充 TMDB / 豆瓣 / Bangumi 静态清单。
 - [x] `/scrape/bangumi` 候选搜索改为通过 `MetadataProvider` adapter 调用，响应结构保持兼容。
+- [x] `/scrape/douban` 候选搜索主路径改为通过 `MetadataProvider` adapter 调用，API v2 响应结构和旧网页 fallback 保持兼容。
 
 ## 暂不做
 
@@ -23,6 +24,7 @@ Phase 5：迁移 MetadataProvider。
 - 不新增元数据源。
 - 不改前端 provider 感知逻辑。
 - 不改 `/scrape/bangumi-select` 写入 NFO 链路。
+- 不改 `/scrape/douban-select` 写入 NFO 链路。
 
 ## 验证
 

@@ -101,8 +101,12 @@ def scrape_douban_candidates(name: str):
     parsed = tmdb_client.parse_filename(name)
     query = parsed["clean_name"] or name
 
-    # 优先 API v2
-    results = douban_api_v2.search(query, count=15)
+    # 优先 API v2 provider
+    provider = get_metadata_provider_map().get("douban")
+    results = []
+    if provider:
+        candidates = provider.search_metadata(MetadataSearchRequest(query=query, limit=15))
+        results = [_douban_candidate_to_legacy(candidate) for candidate in candidates]
     if results:
         # API v2 返回的海报是直链，不需要代理
         for r in results:
@@ -119,6 +123,21 @@ def scrape_douban_candidates(name: str):
             r["poster_url_original"] = r["poster_url"]
             r["poster_url"] = f"/proxy/image?url={requests.utils.quote(r['poster_url'])}"
     return {"query": query, "candidates": results, "source": "web_fallback"}
+
+
+def _douban_candidate_to_legacy(candidate):
+    extra = candidate.extra if isinstance(candidate.extra, dict) else {}
+    return {
+        **extra,
+        "douban_id": candidate.external_id,
+        "title": candidate.title,
+        "original_title": candidate.original_title,
+        "year": str(candidate.year or ""),
+        "poster_url": candidate.poster_url,
+        "rating": candidate.rating or 0,
+        "overview": candidate.overview,
+        "media_type": candidate.media_type,
+    }
 
 
 @router.post("/scrape/douban-select")
