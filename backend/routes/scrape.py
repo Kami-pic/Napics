@@ -12,6 +12,7 @@ from shared import (
     _get_category_from_path, _sync_library_paths, _update_clean_names_after_scrape,
 )
 import tmdb_client, scraper, organizer, douban_api_v2
+from metadata_provider_factory import get_metadata_provider_map
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -319,15 +320,16 @@ def scrape_select(path: str, tmdb_id: int, media_type: str):
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
-    
+    provider = get_metadata_provider_map().get("tmdb")
+
     if media_type == "movie":
-        result = client.get_movie_detail(tmdb_id)
+        detail = provider.get_detail(str(tmdb_id), "movie") if provider else None
     elif media_type in ("tv", "tvshow"):
-        result = client.get_tv_detail(tmdb_id)
+        detail = provider.get_detail(str(tmdb_id), "tv") if provider else None
     else:
         raise HTTPException(status_code=400, detail="Invalid media_type")
-    
+
+    result = _metadata_detail_to_scrape_result(detail)
     if not result.tmdb_id:
         raise HTTPException(status_code=404, detail="TMDB detail not found")
     
@@ -339,6 +341,31 @@ def scrape_select(path: str, tmdb_id: int, media_type: str):
         raise HTTPException(status_code=500, detail=f"写入失败: {e}")
     
     return {"status": "ok", "data": result.dict()}
+
+
+def _metadata_detail_to_scrape_result(detail):
+    if not detail:
+        return tmdb_client.ScrapeResult()
+    poster_url = ""
+    backdrop_url = ""
+    for artwork in detail.artwork:
+        if artwork.kind == "poster" and not poster_url:
+            poster_url = artwork.url
+        elif artwork.kind == "backdrop" and not backdrop_url:
+            backdrop_url = artwork.url
+    return tmdb_client.ScrapeResult(
+        tmdb_id=int(detail.external_id) if str(detail.external_id).isdigit() else 0,
+        media_type=detail.media_type,
+        title=detail.title,
+        original_title=detail.original_title,
+        english_title=detail.aliases.en,
+        year=str(detail.year or ""),
+        poster_url=poster_url or None,
+        backdrop_url=backdrop_url or None,
+        overview=detail.overview,
+        rating=detail.rating or 0,
+        runtime=detail.runtime or 0,
+    )
 
 @router.get("/scrape/read")
 def read_scrape_data(path: str, no_fallback: bool = False):
