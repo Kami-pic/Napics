@@ -76,6 +76,7 @@ class MetadataProviderAdapter:
             overview=str(item.get("overview") or item.get("summary") or ""),
             posterUrl=str(item.get("poster_url") or item.get("cover_url") or ""),
             rating=_float_or_none(item.get("rating")),
+            extra=dict(item),
         )
 
     def _to_detail(self, item: Mapping[str, Any], external_id: str, media_type: str) -> MetadataDetail:

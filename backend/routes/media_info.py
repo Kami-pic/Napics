@@ -17,6 +17,8 @@ from shared import (
 )
 import tmdb_client, douban_client, bangumi_client, scraper, organizer
 import douban_api_v2
+from metadata_provider_factory import get_metadata_provider_map
+from provider_models import MetadataSearchRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -219,8 +221,28 @@ def scrape_bangumi_candidates(name: str):
     """搜索 Bangumi 返回候选结果"""
     parsed = tmdb_client.parse_filename(name)
     query = parsed["clean_name"] or name
-    results = bangumi_client.search(query)
+    provider = get_metadata_provider_map().get("bangumi")
+    results = []
+    if provider:
+        candidates = provider.search_metadata(MetadataSearchRequest(query=query, limit=15))
+        results = [_bangumi_candidate_to_legacy(candidate) for candidate in candidates]
     return {"query": query, "candidates": results}
+
+
+def _bangumi_candidate_to_legacy(candidate):
+    extra = candidate.extra if isinstance(candidate.extra, dict) else {}
+    return {
+        "bgm_id": int(candidate.external_id) if str(candidate.external_id).isdigit() else 0,
+        "title": candidate.title,
+        "original_title": candidate.original_title,
+        "year": str(candidate.year or ""),
+        "poster_url": candidate.poster_url,
+        "summary": candidate.overview,
+        "type": extra.get("type", ""),
+        "type_id": extra.get("type_id", 0),
+        "rating": candidate.rating or 0,
+        "rank": extra.get("rank", 0),
+    }
 
 @router.post("/scrape/bangumi-select")
 def scrape_bangumi_select(path: str, bgm_id: int):

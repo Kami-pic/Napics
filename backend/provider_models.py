@@ -171,6 +171,7 @@ class MetadataCandidate(BaseModel):
     overview: str = ""
     poster_url: str = Field(default="", alias="posterUrl")
     rating: Optional[float] = None
+    extra: JsonValue = Field(default_factory=dict)
 
 
 class EpisodeInfo(BaseModel):

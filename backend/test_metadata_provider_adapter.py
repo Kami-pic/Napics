@@ -68,6 +68,7 @@ def test_metadata_adapter_searches_candidates_from_legacy_source():
     assert candidates[0].provider_id == "fake_metadata"
     assert candidates[0].external_id == "100"
     assert candidates[0].media_type == "tv"
+    assert candidates[0].extra["title"] == "进击的巨人"
 
 
 def test_metadata_adapter_gets_detail_from_legacy_source():
