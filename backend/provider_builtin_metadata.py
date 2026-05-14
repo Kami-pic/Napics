@@ -20,6 +20,12 @@ RSS_SOURCE_DEFAULTS = {
     "yts": {"label": "YTS", "enabled": True},
 }
 
+METADATA_SOURCE_DEFAULTS = {
+    "tmdb": {"label": "TMDB", "enabled": True, "requires": ["api_key"], "supports_proxy": True},
+    "douban": {"label": "豆瓣", "enabled": True, "requires": [], "supports_proxy": False},
+    "bangumi": {"label": "Bangumi", "enabled": True, "requires": [], "supports_proxy": True},
+}
+
 
 def build_builtin_provider_metadata(
     bt_overrides: Mapping[str, Any] | None = None,
@@ -28,6 +34,7 @@ def build_builtin_provider_metadata(
     providers: list[ProviderMetadata] = []
     providers.extend(_build_search_metadata(bt_overrides or {}))
     providers.extend(_build_pan_search_metadata(pan_overrides or {}))
+    providers.extend(_build_metadata_metadata())
     providers.extend(_build_rss_metadata())
     return providers
 
@@ -102,6 +109,26 @@ def _build_rss_metadata() -> list[ProviderMetadata]:
                 defaultEnabled=bool(info.get("enabled", False)),
                 capabilities=["rss", "download_url"],
                 riskLevel=ProviderRiskLevel.HIGH,
+            )
+        )
+    return result
+
+
+def _build_metadata_metadata() -> list[ProviderMetadata]:
+    result: list[ProviderMetadata] = []
+    for provider_id, info in METADATA_SOURCE_DEFAULTS.items():
+        result.append(
+            ProviderMetadata(
+                id=provider_id,
+                name=info["label"],
+                kind=ProviderKind.METADATA,
+                type="metadata",
+                enabled=bool(info.get("enabled", False)),
+                defaultEnabled=bool(info.get("enabled", False)),
+                capabilities=["search", "detail", "artwork", "aliases", "episodes"],
+                riskLevel=ProviderRiskLevel.LOW,
+                requires=list(info.get("requires", [])),
+                supportsProxy=bool(info.get("supports_proxy", False)),
             )
         )
     return result

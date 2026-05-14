@@ -5,22 +5,27 @@ from provider_registry import default_provider_registry
 from providers import list_providers
 
 
-def test_provider_api_returns_static_phase2_catalog():
+def test_provider_api_returns_static_provider_catalog():
     response = list_providers()
     payload = response.model_dump(by_alias=True)
 
-    assert payload["metadata"] == []
     assert payload["download"] == []
     assert payload["storage"] == []
     assert payload["notification"] == []
     assert any(item["id"] == "prowlarr" for item in payload["search"])
     assert any(item["id"] == "pansearch" for item in payload["panSearch"])
+    assert any(item["id"] == "tmdb" for item in payload["metadata"])
+    assert any(item["id"] == "douban" for item in payload["metadata"])
+    assert any(item["id"] == "bangumi" for item in payload["metadata"])
     assert any(item["id"] == "rss_mikan" for item in payload["rss"])
     prowlarr = next(item for item in payload["search"] if item["id"] == "prowlarr")
+    tmdb = next(item for item in payload["metadata"] if item["id"] == "tmdb")
     assert prowlarr["kind"] == "search"
     assert prowlarr["riskLevel"] == "user_configured"
     assert prowlarr["requires"] == ["api_url", "api_key"]
     assert prowlarr["supportsProxy"] is False
+    assert tmdb["kind"] == "metadata"
+    assert tmdb["requires"] == ["api_key"]
 
 
 def test_provider_api_does_not_register_static_metadata_globally():
@@ -59,10 +64,12 @@ def test_builtin_provider_metadata_keeps_legacy_source_counts():
     providers = build_builtin_provider_metadata()
     search_count = sum(1 for item in providers if item.kind == ProviderKind.SEARCH)
     pan_count = sum(1 for item in providers if item.kind == ProviderKind.PAN_SEARCH)
+    metadata_count = sum(1 for item in providers if item.kind == ProviderKind.METADATA)
     rss_count = sum(1 for item in providers if item.kind == ProviderKind.RSS)
 
     assert search_count == len(BT_SOURCE_DEFAULTS)
     assert pan_count == len(PAN_SOURCE_DEFAULTS)
+    assert metadata_count == 3
     assert rss_count == 8
 
 
