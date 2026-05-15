@@ -51,6 +51,9 @@ class DownloadProviderAdapter:
         return DownloadSubmitResult(success=False, errorCode="unsupported_provider", message="不支持的下载 provider")
 
     def progress(self, external_task_id: str) -> DownloadProgress:
+        client = self._get_client()
+        if self.id == "qbittorrent":
+            return self._progress_qb(client, external_task_id)
         return DownloadProgress(
             externalTaskId=external_task_id,
             progress=0.0,
@@ -86,6 +89,31 @@ class DownloadProviderAdapter:
             message="" if success else "OpenList 推送失败",
         )
 
+    def _progress_qb(self, client: Any, external_task_id: str) -> DownloadProgress:
+        try:
+            if not client._login():
+                return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+            response = client.session.get(
+                f"{client.url}/api/v2/torrents/info",
+                params={"hashes": external_task_id},
+                timeout=5,
+            )
+            if response.status_code != 200:
+                return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+            torrents = response.json()
+            if not torrents:
+                return DownloadProgress(externalTaskId=external_task_id, status="lost")
+            item = torrents[0]
+            return DownloadProgress(
+                externalTaskId=external_task_id,
+                progress=round(float(item.get("progress", 0) or 0), 4),
+                speed=_format_qb_speed(item.get("dlspeed", 0)),
+                eta=_format_qb_eta(item.get("eta", 0)),
+                status=str(item.get("state", "")),
+            )
+        except Exception:
+            return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+
 
 def build_download_providers(
     metadata_items: Iterable[ProviderMetadata],
@@ -110,3 +138,27 @@ def _normalize_transfer_result(result: Any) -> tuple[bool, str]:
     if isinstance(result, bool):
         return result, ""
     return False, ""
+
+
+def _format_qb_speed(value: Any) -> str:
+    try:
+        speed = int(value or 0)
+    except (TypeError, ValueError):
+        return ""
+    if speed >= 1024 * 1024:
+        return f"{speed / (1024 * 1024):.1f} MB/s"
+    if speed > 0:
+        return f"{speed / 1024:.0f} KB/s"
+    return ""
+
+
+def _format_qb_eta(value: Any) -> str:
+    try:
+        eta_secs = int(value or 0)
+    except (TypeError, ValueError):
+        return ""
+    if not eta_secs or eta_secs >= 8640000:
+        return ""
+    hours, rem = divmod(eta_secs, 3600)
+    minutes, seconds = divmod(rem, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"

@@ -342,48 +342,23 @@ class DownloadManager:
             return
 
         try:
-            if not self.qb._login():
+            provider = self._get_download_provider("qb")
+            progress = provider.progress(task.downloader_hash)
+            if progress.status == "unknown":
                 task.status = "unknown"
                 return
 
-            r = self.qb.session.get(
-                f"{self.qb.url}/api/v2/torrents/info",
-                params={"hashes": task.downloader_hash},
-                timeout=5,
-            )
-            if r.status_code != 200:
-                task.status = "unknown"
-                return
-
-            torrents = r.json()
-            if not torrents:
-                # hash 在 qB 中不存在
+            if progress.status == "lost":
                 task.status = "lost"
                 task.error = "种子在 qBittorrent 中不存在"
                 return
 
-            t = torrents[0]
-            task.progress = round(t.get("progress", 0), 4)
-            # 速度格式化
-            dl_speed = t.get("dlspeed", 0)
-            if dl_speed > 0:
-                if dl_speed >= 1024 * 1024:
-                    task.speed = f"{dl_speed / (1024*1024):.1f} MB/s"
-                else:
-                    task.speed = f"{dl_speed / 1024:.0f} KB/s"
-            else:
-                task.speed = ""
-            # ETA
-            eta_secs = t.get("eta", 0)
-            if eta_secs and eta_secs < 8640000:  # < 100 天
-                h, rem = divmod(int(eta_secs), 3600)
-                m, s = divmod(rem, 60)
-                task.eta = f"{h:02d}:{m:02d}:{s:02d}"
-            else:
-                task.eta = ""
+            task.progress = progress.progress
+            task.speed = progress.speed
+            task.eta = progress.eta
 
             # 状态判定：增加对 100% 进度和 pausedUP 等状态的保底判定
-            qb_state = t.get("state", "").lower()
+            qb_state = progress.status.lower()
             completed_states = ("uploading", "stalledup", "pausedup", "forcedup", "queuedup", "finished", "seeding")
             if task.progress >= 1.0 or any(s in qb_state for s in completed_states):
                 task.status = "completed"

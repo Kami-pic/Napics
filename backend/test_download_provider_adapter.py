@@ -14,6 +14,36 @@ class FakeQBClient:
         return self.success
 
 
+class FakeQBProgressSession:
+    def __init__(self, response):
+        self.response = response
+        self.calls = []
+
+    def get(self, url, params=None, timeout=None):
+        self.calls.append({"url": url, "params": params, "timeout": timeout})
+        return self.response
+
+
+class FakeQBProgressClient:
+    url = "http://qb"
+
+    def __init__(self, response, login_result=True):
+        self.login_result = login_result
+        self.session = FakeQBProgressSession(response)
+
+    def _login(self):
+        return self.login_result
+
+
+class FakeResponse:
+    def __init__(self, status_code, payload):
+        self.status_code = status_code
+        self._payload = payload
+
+    def json(self):
+        return self._payload
+
+
 class FakeOpenListClient:
     def __init__(self, result=(True, "task-1")):
         self.result = result
@@ -78,6 +108,41 @@ def test_download_provider_progress_is_structured_unknown_until_state_machine_mi
     assert progress.external_task_id == "hash-1"
     assert progress.status == "unknown"
     assert progress.progress == 0.0
+
+
+def test_qbittorrent_download_provider_progress_reads_client_status():
+    client = FakeQBProgressClient(
+        FakeResponse(
+            200,
+            [
+                {
+                    "progress": 0.37567,
+                    "dlspeed": 3 * 1024 * 1024,
+                    "eta": 90,
+                    "state": "downloading",
+                }
+            ],
+        )
+    )
+    provider = DownloadProviderAdapter(_metadata("qbittorrent", "qBittorrent"), lambda: client)
+
+    progress = provider.progress("hash-1")
+
+    assert progress.external_task_id == "hash-1"
+    assert progress.progress == 0.3757
+    assert progress.speed == "3.0 MB/s"
+    assert progress.eta == "00:01:30"
+    assert progress.status == "downloading"
+    assert client.session.calls[0]["params"] == {"hashes": "hash-1"}
+
+
+def test_qbittorrent_download_provider_progress_returns_lost_when_hash_missing():
+    client = FakeQBProgressClient(FakeResponse(200, []))
+    provider = DownloadProviderAdapter(_metadata("qbittorrent", "qBittorrent"), lambda: client)
+
+    progress = provider.progress("hash-1")
+
+    assert progress.status == "lost"
 
 
 def test_build_download_providers_filters_download_metadata_only():
