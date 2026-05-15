@@ -22,7 +22,9 @@ from typing import List, Optional, Dict
 from urllib.parse import parse_qs, unquote_plus, urlparse
 from pydantic import BaseModel
 
-from downloader import QBittorrentClient, AlistManager, DuplicateTorrentError
+from downloader import QBittorrentClient, AlistManager
+from download_provider_adapter import DownloadProviderAdapter
+from provider_models import DownloadRequest as ProviderDownloadRequest, ProviderKind, ProviderMetadata
 
 logger = logging.getLogger(__name__)
 TASK_FILE = "download_tasks.json"
@@ -74,6 +76,7 @@ class DownloadManager:
         self.alist = alist_client
         self.base_path = base_path
         self.tasks: List[DownloadTask] = []
+        self._download_providers: Dict[str, DownloadProviderAdapter] = {}
         self._deleted_hashes: set = set()  # 已删除任务的 hash 黑名单，防止 sync_from_qb 重新导入
         self._lock = threading.Lock()
         self._last_save_time: float = 0
@@ -163,13 +166,14 @@ class DownloadManager:
             # 先记录提交前的种子列表
             before_hashes = self._get_qb_hashes()
 
-            # 传 save_path 给 qB（用户指定的目标路径，不是沙盒）
-            try:
-                ok = self.qb.add_torrent(url, task.save_path or "")
-            except DuplicateTorrentError:
+            provider = self._get_download_provider("qb")
+            result = provider.submit(ProviderDownloadRequest(url=url, savePath=task.save_path or ""))
+            if not result.success and "已在下载队列" in result.message:
                 return False, "该种子已在下载队列中，无需重复添加"
-            if not ok:
-                return False, f"qBittorrent 推送失败（登录状态: {self.qb._logged_in}，URL: {url[:80]}）"
+            if not result.success:
+                if result.message and result.message != "qBittorrent 推送失败":
+                    return False, result.message
+                return False, f"qBittorrent 推送失败（登录状态: {getattr(self.qb, '_logged_in', False)}，URL: {url[:80]}）"
 
             # 等待 qB 处理（最多 5 秒）
             for _ in range(10):
@@ -201,16 +205,37 @@ class DownloadManager:
     def _push_to_alist(self, task: DownloadTask) -> tuple:
         """推送到 OpenList，返回 (success, task_id_or_error)。"""
         try:
-            result = self.alist.transfer_link(task.download_url, task.download_dir)
-            if isinstance(result, tuple):
-                ok, task_id = result
-            else:
-                ok, task_id = bool(result), ""
-            if ok:
-                return True, task_id or f"alist_{task.id}"
-            return False, "OpenList 所有工具均失败"
+            provider = self._get_download_provider("alist")
+            result = provider.submit(ProviderDownloadRequest(url=task.download_url, savePath=task.download_dir))
+            if result.success:
+                return True, result.external_task_id or f"alist_{task.id}"
+            if result.message and result.message != "OpenList 推送失败":
+                return False, result.message
+            return False, "Alist 所有工具均失败"
         except Exception as e:
             return False, str(e)
+
+    def _get_download_provider(self, channel: str) -> DownloadProviderAdapter:
+        provider_id = "qbittorrent" if channel == "qb" else "openlist" if channel == "alist" else ""
+        if not provider_id:
+            raise ValueError(f"不支持的下载通道: {channel}")
+        if provider_id not in self._download_providers:
+            client = self.qb if provider_id == "qbittorrent" else self.alist
+            if client is None:
+                raise RuntimeError(f"下载通道 {channel} 未配置")
+            self._download_providers[provider_id] = DownloadProviderAdapter(
+                ProviderMetadata(
+                    id=provider_id,
+                    name="qBittorrent" if provider_id == "qbittorrent" else "OpenList",
+                    kind=ProviderKind.DOWNLOAD,
+                    type="download",
+                    enabled=True,
+                    defaultEnabled=True,
+                    capabilities=["submit", "progress"],
+                ),
+                lambda client=client: client,
+            )
+        return self._download_providers[provider_id]
 
     # ── 进度同步 ──
 

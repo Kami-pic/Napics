@@ -14,6 +14,7 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - [x] 新增 `backend/test_download_provider_factory.py`，验证 Download provider 清单与静态 metadata 一致。
 - [x] `/api/providers` 的 download 分类补充 qBittorrent / OpenList 静态清单。
 - [x] `/download` 和 `/batch-download` 的直接提交路径改为通过 `DownloadProvider` adapter 调用，响应结构保持兼容。
+- [x] `DownloadManager._push_to_qb()` / `_push_to_alist()` 的提交动作改为通过 `DownloadProvider` adapter 调用，保留旧 hash / task id 兼容规则。
 
 ## 暂不做
 
@@ -29,3 +30,4 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 
 - `cd backend && python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_provider_contracts.py test_provider_registry.py test_provider_api.py`
 - `cd backend && python -X utf8 -m pytest test_download_route_provider_bridge.py test_download_provider_adapter.py test_download_provider_factory.py test_provider_api.py`
+- `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py test_download_provider_adapter.py test_download_provider_factory.py`
