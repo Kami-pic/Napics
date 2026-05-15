@@ -709,3 +709,27 @@
 
 **验证**:
 - `python -X utf8 -m pytest test_search_helpers_provider_bridge.py test_search_route_snapshots.py test_search_service_provider_bridge.py test_bt_search_provider_adapter.py test_bt_search_provider_factory.py test_provider_contracts.py test_provider_registry.py test_searcher.py`
+
+## 2026-05-16 Prowlarr SearchProvider 迁移 Phase 6 收口
+
+**变更**:
+- 新增 `prowlarr_search_provider_adapter.py`，将 `ProwlarrClient.search()` 包装为 `SearchProvider`，输出标准 `SearchCandidate`
+- 新增 `prowlarr_search_provider_factory.py`，集中 Prowlarr provider 构造逻辑，沿用现有 `prowlarr_url` / `prowlarr_api_key`
+- `search_service.search_prowlarr()` 改为通过 Prowlarr `SearchProvider` adapter 调用，再转换回旧 `SearchResult`
+- `/api/search/source?source=prowlarr` 单源搜索路径改为通过 Prowlarr `SearchProvider` adapter 调用
+- `/search/single?skip_filter=true` 裸搜路径改为通过 Prowlarr `SearchProvider` adapter 调用
+- 新增 `test_prowlarr_search_provider_adapter.py`、`test_prowlarr_search_provider_factory.py`，并扩展搜索路由 / search_service 桥接测试
+
+**保持不变**:
+- 未修改 `ProwlarrClient` 内部 API 请求、下载链接选择、429 错误处理
+- 未修改搜索评分、过滤、排序、多语言搜索词回退、SSE 事件结构和 JSON 响应结构
+- 未修改 RSS Prowlarr 源；RSS 侧仍属于 Phase 4 边界
+- 未迁移 `/config/indexers`，它是 Prowlarr 管理接口，不是搜索 provider 执行入口
+- 未迁移 `episode_search.py`、旧兼容 enhanced search fallback、下载批量搜索等跨模块路径
+
+**收口结论**:
+- Prowlarr 作为特殊 `SearchProvider` 的核心搜索执行入口已收口
+- 剩余 Prowlarr 直接引用属于底层 client、索引器管理、RSS、剧集搜索策略、旧兼容增强搜索或下载辅助路径，应在后续独立阶段处理
+
+**验证**:
+- `python -X utf8 -m pytest test_search_route_snapshots.py test_search_service_provider_bridge.py test_prowlarr_search_provider_adapter.py test_prowlarr_search_provider_factory.py test_searcher.py test_provider_api.py`
