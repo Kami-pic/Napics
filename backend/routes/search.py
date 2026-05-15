@@ -17,6 +17,7 @@ from bt_search_provider_factory import (
     LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES,
     get_direct_bt_provider_map,
 )
+from prowlarr_search_provider_factory import get_prowlarr_provider_map
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
 from search_service import (
@@ -176,9 +177,11 @@ def search_single_source(
     try:
         if source == "prowlarr":
             clients = get_clients()
+            provider = get_prowlarr_provider_map(client_factory=lambda: clients["search"])["prowlarr"]
             for kw in kw_list:
                 searched.append(kw)
-                raw = clients["search"].search(kw)
+                candidates = provider.search(SearchRequest(query=kw, limit=0))
+                raw = [_candidate_to_search_result(candidate) for candidate in candidates]
                 if raw:
                     if not hit_kw:
                         hit_kw = kw
