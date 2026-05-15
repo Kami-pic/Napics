@@ -83,3 +83,56 @@ def test_try_tmdb_detail_by_id_returns_not_found_when_provider_misses(monkeypatc
 
     assert provider.calls == [("12345", "movie"), ("12345", "tv")]
     assert body == {"found": False}
+
+
+def test_try_tmdb_detail_uses_metadata_provider_search_and_detail(monkeypatch):
+    from metadata_provider_adapter import MetadataProviderAdapter, build_metadata_provider_metadata
+
+    class FakeTMDBSource:
+        def search(self, request):
+            return [
+                {
+                    "id": 12345,
+                    "tmdb_id": 12345,
+                    "title": "进击的巨人",
+                    "original_title": "進撃の巨人",
+                    "release_date": "2013-04-07",
+                    "year": "2013",
+                    "popularity": 100,
+                    "media_type": "movie",
+                }
+            ]
+
+        def get_detail(self, external_id, media_type=""):
+            return {
+                "tmdb_id": int(external_id),
+                "title": "进击的巨人",
+                "original_title": "進撃の巨人",
+                "english_title": "Attack on Titan",
+                "year": "2013",
+                "poster_url": "https://image.tmdb.org/t/p/w500/poster.jpg",
+                "overview": "巨人题材动画",
+                "rating": 8.9,
+                "genres": ["动画"],
+                "media_type": media_type,
+            }
+
+    source = FakeTMDBSource()
+    provider = MetadataProviderAdapter(
+        build_metadata_provider_metadata("tmdb", "TMDB"),
+        lambda: source,
+    )
+    monkeypatch.setattr(media_info_routes, "get_metadata_provider_map", lambda: {"tmdb": provider})
+
+    body = media_info_routes._try_tmdb_detail("进击的巨人", "2013", "movie")
+    snapshot = RouteResponseSnapshot.from_body(200, body)
+
+    assert body["found"] is True
+    assert body["tmdb_id"] == 12345
+    assert body["source"] == "tmdb"
+    assert body["english_title"] == "Attack on Titan"
+    assert snapshot.field_types["found"] == "bool"
+    assert snapshot.field_types["tmdb_id"] == "int"
+    assert snapshot.field_types["title"] == "str"
+    assert snapshot.field_types["english_title"] == "str"
+    assert snapshot.field_types["source"] == "str"

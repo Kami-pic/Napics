@@ -19,6 +19,7 @@ Phase 5：迁移 MetadataProvider。
 - [x] `get_media_info` 的 TMDB ID 直取详情路径改为通过 `MetadataProvider` adapter 调用，movie/tv 互试行为保持兼容。
 - [x] `/scrape/bangumi-select` 的 Bangumi 详情获取改为通过 `MetadataProvider` adapter 调用，写入 NFO 链路保持不变。
 - [x] `/scrape/douban-select` 的豆瓣 API v2 详情获取改为通过 `MetadataProvider` adapter 调用，旧网页 fallback 与写入链路保持不变。
+- [x] `get_media_info` 无 ID 的 TMDB 搜索匹配与详情获取路径改为通过 `MetadataProvider` adapter 调用，匹配逻辑保持不变。
 
 ## 暂不做
 
@@ -28,7 +29,6 @@ Phase 5：迁移 MetadataProvider。
 - 不新增元数据源。
 - 不改前端 provider 感知逻辑。
 - 不改 `/scrape/execute` 自动刮削链路。
-- 不改 `get_media_info` 无 ID 的 TMDB 搜索匹配路径。
 
 ## 验证
 

@@ -108,23 +108,31 @@ def get_metadata_provider_map(
 def _tmdb_search_item(item: dict, media_type: str) -> dict:
     if media_type == "tv":
         return {
+            "id": item.get("id", 0),
             "tmdb_id": item.get("id", 0),
+            "name": item.get("name", ""),
+            "original_name": item.get("original_name", ""),
             "title": item.get("name", ""),
             "original_title": item.get("original_name", ""),
+            "first_air_date": item.get("first_air_date", ""),
             "year": (item.get("first_air_date", "") or "")[:4],
             "poster_url": _tmdb_poster(item.get("poster_path")),
             "overview": item.get("overview", ""),
             "rating": item.get("vote_average", 0),
+            "popularity": item.get("popularity", 0),
             "media_type": "tv",
         }
     return {
+        "id": item.get("id", 0),
         "tmdb_id": item.get("id", 0),
         "title": item.get("title", ""),
         "original_title": item.get("original_title", ""),
+        "release_date": item.get("release_date", ""),
         "year": (item.get("release_date", "") or "")[:4],
         "poster_url": _tmdb_poster(item.get("poster_path")),
         "overview": item.get("overview", ""),
         "rating": item.get("vote_average", 0),
+        "popularity": item.get("popularity", 0),
         "media_type": "movie",
     }
 

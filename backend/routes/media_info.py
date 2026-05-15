@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from shared import (
     config_m, shadow_m,
-    _tmdb_client, get_clients,
+    _tmdb_client,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
 )
 import tmdb_client, douban_client, bangumi_client, scraper, organizer
@@ -782,19 +782,18 @@ def _format_tmdb_metadata_detail(detail) -> dict:
 def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> dict:
     """尝试从 TMDB 获取详情，使用 tmdb_client.best_match 多维度评分匹配"""
     try:
-        clients = get_clients()
-        tmdb = clients["tmdb"]
+        provider = get_metadata_provider_map().get("tmdb")
+        if not provider:
+            return {"found": False}
         type_key = "name" if type == "tv" else "title"
 
         def _search(query):
-            return tmdb.search_tv(query) if type == "tv" else tmdb.search_movie(query)
+            request = MetadataSearchRequest(query=query, mediaType=type, limit=20)
+            return [_tmdb_candidate_to_best_match_item(candidate) for candidate in provider.search_metadata(request)]
 
         def _search_nolang(query):
-            try:
-                ep = "/search/tv" if type == "tv" else "/search/movie"
-                return tmdb._get(ep, {"query": query, "language": "en-US"}).get("results", [])[:10]
-            except:
-                return []
+            request = MetadataSearchRequest(query=query, mediaType=type, limit=10)
+            return [_tmdb_candidate_to_best_match_item(candidate) for candidate in provider.search_metadata(request)]
 
         def _pick_best(query, results, yr):
             """使用 tmdb_client.best_match 多维度评分（标题相似度+年份+热度，30 分阈值）"""
@@ -819,30 +818,25 @@ def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> di
         if not best:
             return {"found": False}
 
-        tmdb_id = best.get("id", 0)
-        detail = tmdb.get_tv_detail(tmdb_id) if type == "tv" else tmdb.get_movie_detail(tmdb_id)
-        return {
-            "found": True,
-            "tmdb_id": detail.tmdb_id,
-            "title": detail.title,
-            "original_title": detail.original_title,
-            "english_title": detail.english_title,
-            "year": detail.year,
-            "poster_url": detail.poster_url,
-            "backdrop_url": detail.backdrop_url,
-            "overview": detail.overview,
-            "rating": detail.rating,
-            "genres": detail.genres,
-            "director": detail.director,
-            "cast": detail.cast[:6],
-            "runtime": detail.runtime,
-            "imdb_id": detail.imdb_id,
-            "total_seasons": detail.total_seasons,
-            "episode_count": detail.episode_count,
-            "status": detail.status,
-            "countries": detail.countries,
-            "source": "tmdb",
-        }
+        tmdb_id = best.get("id", 0) or best.get("tmdb_id", 0)
+        detail = provider.get_detail(str(tmdb_id), "tv" if type == "tv" else "movie")
+        return _format_tmdb_metadata_detail(detail) if detail else {"found": False}
     except Exception as e:
         logger.error(f"[MediaInfo] TMDB 详情失败: {e}")
         return {"found": False}
+
+
+def _tmdb_candidate_to_best_match_item(candidate) -> dict:
+    extra = candidate.extra if isinstance(candidate.extra, dict) else {}
+    item = dict(extra)
+    tmdb_id = int(candidate.external_id) if str(candidate.external_id).isdigit() else 0
+    item.setdefault("id", tmdb_id)
+    item.setdefault("tmdb_id", tmdb_id)
+    item.setdefault("title", candidate.title)
+    item.setdefault("name", candidate.title)
+    item.setdefault("original_title", candidate.original_title)
+    item.setdefault("original_name", candidate.original_title)
+    if candidate.year:
+        item.setdefault("release_date", f"{candidate.year}-01-01")
+        item.setdefault("first_air_date", f"{candidate.year}-01-01")
+    return item
