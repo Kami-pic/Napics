@@ -41,6 +41,19 @@ class FakeDoubanSource:
         return None
 
 
+class FakeDoubanDetailSource:
+    def __init__(self, details):
+        self.details = details
+        self.calls = []
+
+    def search(self, request):
+        return []
+
+    def get_detail(self, external_id, media_type=""):
+        self.calls.append((external_id, media_type))
+        return self.details.get(media_type)
+
+
 def test_scrape_bangumi_candidates_uses_metadata_provider_and_keeps_shape(monkeypatch):
     source = FakeBangumiSource()
     provider = MetadataProviderAdapter(
@@ -201,3 +214,86 @@ def test_scrape_douban_candidates_keeps_web_fallback_when_provider_empty(monkeyp
     assert body["source"] == "web_fallback"
     assert body["candidates"][0]["poster_url_original"].startswith("https://img1.doubanio.com")
     assert body["candidates"][0]["poster_url"].startswith("/proxy/image?url=")
+
+
+def test_scrape_douban_select_uses_metadata_provider_and_keeps_shape(monkeypatch):
+    source = FakeDoubanDetailSource(
+        {
+            "tv": {
+                "douban_id": "3020000",
+                "title": "进击的巨人",
+                "original_title": "進撃の巨人",
+                "year": "2013",
+                "overview": "巨人题材动画",
+                "rating": 9.1,
+                "genres": ["动画"],
+                "directors": ["荒木哲郎"],
+                "actors": ["梶裕贵"],
+                "runtime": 24,
+                "poster_url": "https://example.com/poster.jpg",
+                "media_type": "tv",
+            }
+        }
+    )
+    provider = MetadataProviderAdapter(
+        build_metadata_provider_metadata("douban", "豆瓣"),
+        lambda: source,
+    )
+    writes = []
+    downloads = []
+    monkeypatch.setattr(media_info_routes, "get_metadata_provider_map", lambda: {"douban": provider})
+    monkeypatch.setattr(media_info_routes.os.path, "isdir", lambda path: True)
+    monkeypatch.setattr(media_info_routes.os.path, "isfile", lambda path: False)
+    monkeypatch.setattr(media_info_routes.os.path, "exists", lambda path: False)
+    monkeypatch.setattr(media_info_routes.scraper, "write_tvshow_nfo", lambda path, result: writes.append(("tv", path, result)))
+    monkeypatch.setattr(media_info_routes.scraper, "write_movie_nfo", lambda path, result: writes.append(("movie", path, result)))
+    monkeypatch.setattr(media_info_routes.scraper, "download_poster", lambda path, url, *args, **kwargs: downloads.append((path, url)))
+
+    body = media_info_routes.scrape_douban_select("D:/Media/Anime", "3020000")
+    snapshot = RouteResponseSnapshot.from_body(200, body)
+
+    assert source.calls == [("3020000", "tv")]
+    assert writes[0][0] == "tv"
+    assert downloads == [("D:/Media/Anime", "https://example.com/poster.jpg")]
+    assert body["status"] == "ok"
+    assert body["data"]["tmdb_id"] == 3020000
+    assert body["data"]["media_type"] == "tv"
+    assert body["data"]["title"] == "进击的巨人"
+    assert body["data"]["poster_url"] == "https://example.com/poster.jpg"
+    assert snapshot.field_types["status"] == "str"
+    assert snapshot.field_types["data.tmdb_id"] == "int"
+    assert snapshot.field_types["data.media_type"] == "str"
+    assert snapshot.field_types["data.title"] == "str"
+    assert snapshot.field_types["data.poster_url"] == "str"
+
+
+def test_scrape_douban_select_keeps_movie_probe_when_tv_empty(monkeypatch):
+    source = FakeDoubanDetailSource(
+        {
+            "movie": {
+                "douban_id": "1292052",
+                "title": "肖申克的救赎",
+                "year": "1994",
+                "poster_url": "https://example.com/movie.jpg",
+                "media_type": "movie",
+            }
+        }
+    )
+    provider = MetadataProviderAdapter(
+        build_metadata_provider_metadata("douban", "豆瓣"),
+        lambda: source,
+    )
+    writes = []
+    monkeypatch.setattr(media_info_routes, "get_metadata_provider_map", lambda: {"douban": provider})
+    monkeypatch.setattr(media_info_routes.os.path, "isdir", lambda path: True)
+    monkeypatch.setattr(media_info_routes.os.path, "isfile", lambda path: False)
+    monkeypatch.setattr(media_info_routes.os.path, "exists", lambda path: False)
+    monkeypatch.setattr(media_info_routes.scraper, "write_tvshow_nfo", lambda path, result: writes.append(("tv", path, result)))
+    monkeypatch.setattr(media_info_routes.scraper, "write_movie_nfo", lambda path, result: writes.append(("movie", path, result)))
+    monkeypatch.setattr(media_info_routes.scraper, "download_poster", lambda path, url, *args, **kwargs: None)
+
+    body = media_info_routes.scrape_douban_select("D:/Media/Movie", "1292052")
+
+    assert source.calls == [("1292052", "tv"), ("1292052", "movie")]
+    assert writes[0][0] == "movie"
+    assert body["data"]["media_type"] == "movie"

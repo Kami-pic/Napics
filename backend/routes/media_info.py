@@ -152,15 +152,17 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
     result = None
     v2_detail = None
     
+    provider = get_metadata_provider_map().get("douban")
+
     if detected_type == "tv" or not detected_type:
         # 先尝试 tv
-        v2_detail = douban_api_v2.get_detail(douban_id, media_type="tv")
+        v2_detail = _get_douban_provider_detail(provider, douban_id, "tv")
         if v2_detail and v2_detail.get("title"):
             detected_type = "tv"
     
     if not v2_detail or not v2_detail.get("title"):
         # 再尝试 movie
-        v2_detail = douban_api_v2.get_detail(douban_id, media_type="movie")
+        v2_detail = _get_douban_provider_detail(provider, douban_id, "movie")
         if v2_detail and v2_detail.get("title"):
             if not detected_type:
                 detected_type = "movie"
@@ -234,6 +236,32 @@ def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str =
             scraper.download_poster(folder, result.poster_url, base + "-poster.jpg")
     
     return {"status": "ok", "data": result.dict()}
+
+
+def _get_douban_provider_detail(provider, douban_id: str, media_type: str):
+    if not provider:
+        return None
+    detail = provider.get_detail(str(douban_id), media_type)
+    if not detail:
+        return None
+    extra = detail.extra if isinstance(detail.extra, dict) else {}
+    poster_url = ""
+    for artwork in detail.artwork:
+        if artwork.kind == "poster":
+            poster_url = artwork.url
+            break
+    return {
+        "title": detail.title,
+        "original_title": detail.original_title,
+        "year": str(detail.year or ""),
+        "overview": detail.overview,
+        "rating": detail.rating or 0,
+        "genres": extra.get("genres", []),
+        "directors": extra.get("directors", []),
+        "actors": extra.get("actors", []),
+        "runtime": detail.runtime or 0,
+        "poster_url": poster_url,
+    }
 
 @router.get("/scrape/bangumi")
 def scrape_bangumi_candidates(name: str):
