@@ -27,14 +27,35 @@ import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
 from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
+from download_provider_factory import get_download_provider_map
+from provider_models import DownloadRequest as ProviderDownloadRequest
 
 router = APIRouter()
 
 
-def _alist_transfer_success(result) -> bool:
-    if isinstance(result, tuple):
-        return bool(result[0])
-    return bool(result)
+class DownloadRequest(BaseModel):
+    url: str
+    save_path: str
+    download_type: str = "qb"
+
+
+def _provider_id_for_download_type(download_type: str) -> str:
+    if download_type == "qb":
+        return "qbittorrent"
+    if download_type == "alist":
+        return "openlist"
+    return ""
+
+
+def _submit_via_download_provider(download_type: str, url: str, save_path: str):
+    provider_id = _provider_id_for_download_type(download_type)
+    if not provider_id:
+        return None
+    providers = get_download_provider_map()
+    provider = providers.get(provider_id)
+    if provider is None:
+        return None
+    return provider.submit(ProviderDownloadRequest(url=url, savePath=save_path))
 
 @router.post("/download")
 def trigger_download(req: DownloadRequest):
@@ -42,15 +63,13 @@ def trigger_download(req: DownloadRequest):
     if req.download_type == "qb":
         if not conf.qb_url:
             return {"success": False, "message": "qBittorrent 未配置"}
-        clients = get_clients()
-        success = clients["qb"].add_torrent(req.url, req.save_path)
     elif req.download_type == "alist":
         if not conf.alist_url or not conf.alist_token:
             return {"success": False, "message": "Alist 未配置"}
-        clients = get_clients()
-        success = _alist_transfer_success(clients["alist"].transfer_link(req.url, req.save_path))
     else:
         return {"success": False, "message": f"不支持的下载类型: {req.download_type}"}
+    result = _submit_via_download_provider(req.download_type, req.url, req.save_path)
+    success = bool(result and result.success)
     return {"success": success, "message": "任务已下达" if success else "执行异常"}
 
 # ── 批量搜索升级 ──
@@ -128,7 +147,6 @@ class BatchDownloadRequest(BaseModel):
 def batch_download(req: BatchDownloadRequest):
     """批量推送下载任务"""
     conf = config_m.config
-    clients = get_clients()
     results = []
     for i, task in enumerate(req.tasks):
         try:
@@ -136,15 +154,15 @@ def batch_download(req: BatchDownloadRequest):
                 if not conf.qb_url:
                     results.append({"index": i, "success": False, "message": "qBittorrent 未配置"})
                     continue
-                success = clients["qb"].add_torrent(task.download_url, task.save_path)
             elif task.download_type == "alist":
                 if not conf.alist_url or not conf.alist_token:
                     results.append({"index": i, "success": False, "message": "Alist 未配置"})
                     continue
-                success = _alist_transfer_success(clients["alist"].transfer_link(task.download_url, task.save_path))
             else:
                 results.append({"index": i, "success": False, "message": f"不支持的下载类型: {task.download_type}"})
                 continue
+            result = _submit_via_download_provider(task.download_type, task.download_url, task.save_path)
+            success = bool(result and result.success)
             results.append({"index": i, "success": success, "message": "任务已下达" if success else "执行异常"})
         except Exception as e:
             results.append({"index": i, "success": False, "message": str(e)})
