@@ -303,10 +303,12 @@ def search_single_keyword(
     skip_filter=True：Prowlarr 裸搜，不做任何过滤
     """
     clients = get_clients()
+    prowlarr_provider = get_prowlarr_provider_map(client_factory=lambda: clients["search"])["prowlarr"]
 
     # 搜索 Prowlarr
     try:
-        raw_results = clients["search"].search(keyword)
+        candidates = prowlarr_provider.search(SearchRequest(query=keyword, limit=0))
+        raw_results = [_candidate_to_search_result(candidate) for candidate in candidates]
     except Exception as e:
         logger.error(f"[Search/Single] Prowlarr error: {e}")
         return {"keyword": keyword, "bt_count": 0, "bt_results": [], "total_raw": 0, "total_filtered": 0}
