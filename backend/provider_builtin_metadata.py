@@ -26,6 +26,11 @@ METADATA_SOURCE_DEFAULTS = {
     "bangumi": {"label": "Bangumi", "enabled": True, "requires": [], "supports_proxy": True},
 }
 
+DOWNLOAD_PROVIDER_DEFAULTS = {
+    "qbittorrent": {"label": "qBittorrent", "enabled": True, "requires": ["api_url", "username", "password"]},
+    "openlist": {"label": "OpenList", "enabled": True, "requires": ["api_url", "token"]},
+}
+
 
 def build_builtin_provider_metadata(
     bt_overrides: Mapping[str, Any] | None = None,
@@ -36,6 +41,7 @@ def build_builtin_provider_metadata(
     providers.extend(_build_pan_search_metadata(pan_overrides or {}))
     providers.extend(_build_metadata_metadata())
     providers.extend(_build_rss_metadata())
+    providers.extend(_build_download_metadata())
     return providers
 
 
@@ -129,6 +135,25 @@ def _build_metadata_metadata() -> list[ProviderMetadata]:
                 riskLevel=ProviderRiskLevel.LOW,
                 requires=list(info.get("requires", [])),
                 supportsProxy=bool(info.get("supports_proxy", False)),
+            )
+        )
+    return result
+
+
+def _build_download_metadata() -> list[ProviderMetadata]:
+    result: list[ProviderMetadata] = []
+    for provider_id, info in DOWNLOAD_PROVIDER_DEFAULTS.items():
+        result.append(
+            ProviderMetadata(
+                id=provider_id,
+                name=info["label"],
+                kind=ProviderKind.DOWNLOAD,
+                type="download",
+                enabled=bool(info.get("enabled", False)),
+                defaultEnabled=bool(info.get("enabled", False)),
+                capabilities=["submit", "progress"],
+                riskLevel=ProviderRiskLevel.USER_CONFIGURED,
+                requires=list(info.get("requires", [])),
             )
         )
     return result

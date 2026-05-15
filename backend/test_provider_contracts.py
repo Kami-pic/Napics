@@ -7,6 +7,8 @@ from provider_models import (
     ProviderKind,
     ProviderMetadata,
     ProviderRiskLevel,
+    DownloadRequest,
+    DownloadSubmitResult,
     SearchCandidate,
     SearchRequest,
 )
@@ -65,3 +67,14 @@ def test_search_dto_round_trip_uses_structured_models():
     assert request.timeout_sec == 3
     assert candidate.model_dump(by_alias=True)["providerId"] == "example"
     assert candidate.model_dump(by_alias=True)["sizeGb"] == 1.5
+
+
+def test_download_dto_round_trip_uses_structured_models():
+    request = DownloadRequest(
+        url="magnet:?xt=urn:btih:abc",
+        savePath="/downloads",
+    )
+    result = DownloadSubmitResult(success=True, externalTaskId="task-1")
+
+    assert request.save_path == "/downloads"
+    assert result.model_dump(by_alias=True)["externalTaskId"] == "task-1"

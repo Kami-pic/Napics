@@ -1,0 +1,29 @@
+# [TODO] provider-download-phase7-todo.md
+
+## 范围
+
+Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
+
+本清单只跟踪下载器与存储适配，不包含 BT 直搜、RSS、Metadata、Prowlarr、网盘搜索源迁移。
+
+## 当前子任务
+
+- [x] 新增 `backend/download_provider_adapter.py`，用通用 adapter 包装已有 qB / OpenList 提交能力。
+- [x] 新增 `backend/download_provider_factory.py`，集中现有 qB / OpenList 构造函数，作为后续替换下载调用链的兼容桥。
+- [x] 新增 `backend/test_download_provider_adapter.py`，验证 adapter 满足 `DownloadProvider` 协议并保持提交参数兼容。
+- [x] 新增 `backend/test_download_provider_factory.py`，验证 Download provider 清单与静态 metadata 一致。
+- [x] `/api/providers` 的 download 分类补充 qBittorrent / OpenList 静态清单。
+
+## 暂不做
+
+- 不修改 `QBittorrentClient` / `AlistManager` 内部请求逻辑。
+- 不修改 `DownloadManager` 状态机。
+- 不修改下载进度同步逻辑。
+- 不修改归位替换与文件白名单逻辑。
+- 不修改订阅自动下载逻辑。
+- 不迁移 OpenList 存储浏览能力。
+- 不修改前端 provider 感知逻辑。
+
+## 验证
+
+- `cd backend && python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_provider_contracts.py test_provider_registry.py test_provider_api.py`
