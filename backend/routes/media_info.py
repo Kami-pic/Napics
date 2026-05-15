@@ -266,23 +266,30 @@ def _bangumi_candidate_to_legacy(candidate):
 @router.post("/scrape/bangumi-select")
 def scrape_bangumi_select(path: str, bgm_id: int):
     """用户选择 Bangumi 候选后，拉取详情写入 NFO + 海报"""
-    detail = bangumi_client.get_detail(bgm_id)
+    provider = get_metadata_provider_map().get("bangumi")
+    detail = provider.get_detail(str(bgm_id), "") if provider else None
     if not detail:
         raise HTTPException(status_code=404, detail="Bangumi detail not found")
     
     from tmdb_client import ScrapeResult
+    extra = detail.extra if isinstance(detail.extra, dict) else {}
+    poster_url = ""
+    for artwork in detail.artwork:
+        if artwork.kind == "poster":
+            poster_url = artwork.url
+            break
     result = ScrapeResult(
         tmdb_id=bgm_id,
-        media_type="movie" if detail.get("total_episodes", 0) <= 1 else "tv",
-        title=detail.get("title", ""),
-        original_title=detail.get("original_title", ""),
-        year=detail.get("year", ""),
-        overview=detail.get("overview", ""),
-        rating=detail.get("rating", 0),
-        genres=detail.get("genres", []),
-        director=detail.get("director", ""),
-        cast=detail.get("cast", []),
-        poster_url=detail.get("poster_url", ""),
+        media_type="movie" if extra.get("total_episodes", 0) <= 1 else "tv",
+        title=detail.title,
+        original_title=detail.original_title,
+        year=str(detail.year or ""),
+        overview=detail.overview,
+        rating=detail.rating or 0,
+        genres=extra.get("genres", []),
+        director=extra.get("director", ""),
+        cast=extra.get("cast", []),
+        poster_url=poster_url,
     )
     
     if os.path.isdir(path):
