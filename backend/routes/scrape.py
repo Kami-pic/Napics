@@ -11,8 +11,9 @@ from shared import (
     config_m, shadow_m, indexer_m,
     _get_category_from_path, _sync_library_paths, _update_clean_names_after_scrape,
 )
-import tmdb_client, scraper, organizer, douban_api_v2
+import tmdb_client, scraper, organizer
 from metadata_provider_factory import get_metadata_provider_map
+from provider_models import MetadataSearchRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -502,22 +503,24 @@ def _execute_scrape_douban(path: str, force: bool = True):
         parsed = parse_filename(file_name)
         search_name = parsed.get("clean_name") or file_name
     
+    provider = get_metadata_provider_map().get("douban")
+
     # 搜索豆瓣
-    candidates = douban_api_v2.search(search_name, count=5)
+    candidates = provider.search_metadata(MetadataSearchRequest(query=search_name, limit=5)) if provider else []
     if not candidates:
         return {"self": {"status": "not_found", "data": None}}
     
     # 取第一个候选
     best = candidates[0]
-    douban_id = best.get("douban_id", "")
+    douban_id = best.external_id
     if not douban_id:
         return {"self": {"status": "not_found", "data": None}}
     
     # 拉详情（先 tv 后 movie）
-    v2_detail = douban_api_v2.get_detail(douban_id, media_type="tv")
+    v2_detail = _douban_metadata_detail_to_legacy(provider.get_detail(str(douban_id), "tv") if provider else None)
     detected_type = "tv"
     if not v2_detail or not v2_detail.get("overview"):
-        v2_detail = douban_api_v2.get_detail(douban_id, media_type="movie")
+        v2_detail = _douban_metadata_detail_to_legacy(provider.get_detail(str(douban_id), "movie") if provider else None)
         detected_type = "movie"
     
     if not v2_detail or not v2_detail.get("title"):
@@ -562,6 +565,29 @@ def _execute_scrape_douban(path: str, force: bool = True):
     
     _update_clean_names_after_scrape(path, {"self": {"status": "ok", "data": result.dict()}})
     return {"self": {"status": "ok", "data": result.dict(), "confidence": {"level": "medium", "reason": "豆瓣自动匹配"}}}
+
+
+def _douban_metadata_detail_to_legacy(detail):
+    if not detail:
+        return None
+    extra = detail.extra if isinstance(detail.extra, dict) else {}
+    poster_url = ""
+    for artwork in detail.artwork:
+        if artwork.kind == "poster":
+            poster_url = artwork.url
+            break
+    return {
+        "title": detail.title,
+        "original_title": detail.original_title,
+        "year": str(detail.year or ""),
+        "overview": detail.overview,
+        "rating": detail.rating or 0,
+        "genres": extra.get("genres", []),
+        "directors": extra.get("directors", []),
+        "actors": extra.get("actors", []),
+        "runtime": detail.runtime or 0,
+        "poster_url": poster_url,
+    }
 
 @router.post("/scrape/batch")
 def batch_scrape_api(paths: List[str]):
