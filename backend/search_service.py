@@ -144,6 +144,7 @@ def search_prowlarr(
     返回: (source_name, results, error, searched_keywords, hit_keyword)
     """
     try:
+        provider = _prowlarr_client_to_provider(search_client)
         kw_list = get_search_keywords_for_source("prowlarr", keywords)
         searched = []
         hit_kw = ""
@@ -154,7 +155,8 @@ def search_prowlarr(
             searched.append(kw)
             logger.info(f"[SearchService/Prowlarr] 搜索词: '{kw}'")
             t0 = time.time()
-            raw = search_client.search(kw)
+            candidates = provider.search(SearchRequest(query=kw, limit=0))
+            raw = [_candidate_to_search_result(candidate) for candidate in candidates]
             elapsed = time.time() - t0
             logger.info(f"[SearchService/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
             if raw:
@@ -178,6 +180,13 @@ def search_prowlarr(
     except Exception as e:
         logger.info(f"[SearchService/Prowlarr] 异常: {e}")
         return "prowlarr", [], str(e), [], ""
+
+
+def _prowlarr_client_to_provider(search_client):
+    from prowlarr_search_provider_factory import get_prowlarr_provider_map
+
+    providers = get_prowlarr_provider_map(client_factory=lambda: search_client)
+    return providers["prowlarr"]
 
 
 def search_direct(

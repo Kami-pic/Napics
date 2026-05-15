@@ -101,3 +101,46 @@ def test_search_direct_uses_provider_adapter_and_keeps_result_shape():
     assert scraper.calls == [("Attack on Titan", 40)]
     assert isinstance(results[0], SearchResult)
     assert results[0].indexer == "bitsearch"
+
+
+class FakeProwlarrClient:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls = []
+
+    def search(self, keyword):
+        self.calls.append(keyword)
+        return list(self.responses.get(keyword, []))
+
+
+def test_search_prowlarr_uses_provider_adapter_and_keeps_result_shape():
+    client = FakeProwlarrClient(
+        {
+            "Attack on Titan": [
+                SearchResult(
+                    title="Attack on Titan S01 1080p",
+                    size_gb=12.5,
+                    indexer="Nyaa",
+                    seeders=20,
+                    leechers=2,
+                    download_url="magnet:?xt=urn:btih:ABCDEF1234567890ABCDEF1234567890ABCDEF12",
+                    info_url="https://example.com/aot",
+                    quality_tag="WEB-1080p",
+                )
+            ]
+        }
+    )
+
+    name, results, err, searched, hit_kw = search_service.search_prowlarr(
+        client,
+        search_service.build_keywords("Attack on Titan"),
+    )
+
+    assert name == "prowlarr"
+    assert err is None
+    assert searched == ["Attack on Titan"]
+    assert hit_kw == "Attack on Titan"
+    assert client.calls == ["Attack on Titan"]
+    assert isinstance(results[0], SearchResult)
+    assert results[0].indexer == "Nyaa"
+    assert results[0].download_url.startswith("magnet:")
