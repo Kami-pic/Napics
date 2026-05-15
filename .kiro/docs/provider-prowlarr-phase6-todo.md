@@ -18,8 +18,8 @@ Phase 6：迁移 Prowlarr 为 `SearchProvider`。
 
 ## 当前子任务
 
-- [ ] 新增 `backend/prowlarr_search_provider_adapter.py`，将 `ProwlarrClient.search()` 包装为 `SearchProvider`，输出 `SearchCandidate`。
-- [ ] 新增 `backend/test_prowlarr_search_provider_adapter.py`，验证 adapter 满足 `SearchProvider` 协议并保持 Prowlarr 下载链接字段兼容。
+- [x] 新增 `backend/prowlarr_search_provider_adapter.py`，将 `ProwlarrClient.search()` 包装为 `SearchProvider`，输出 `SearchCandidate`。
+- [x] 新增 `backend/test_prowlarr_search_provider_adapter.py`，验证 adapter 满足 `SearchProvider` 协议并保持 Prowlarr 下载链接字段兼容。
 - [ ] 新增 `backend/prowlarr_search_provider_factory.py`，集中 Prowlarr provider 构造逻辑，读取现有 `config.prowlarr_url` / `config.prowlarr_api_key`。
 - [ ] `search_service.search_prowlarr()` 改为通过 Prowlarr `SearchProvider` adapter 调用，保留搜索词回退、过滤、返回结构。
 - [ ] `/api/search/source?source=prowlarr` 单源路径改为通过 Prowlarr `SearchProvider` adapter 调用，响应结构保持兼容。
@@ -39,4 +39,3 @@ Phase 6：迁移 Prowlarr 为 `SearchProvider`。
 
 - `cd backend && python -X utf8 -m pytest test_prowlarr_search_provider_adapter.py test_provider_contracts.py test_provider_registry.py`
 - `cd backend && python -X utf8 -m pytest test_search_route_snapshots.py test_search_service_provider_bridge.py test_searcher.py test_provider_api.py`
-
