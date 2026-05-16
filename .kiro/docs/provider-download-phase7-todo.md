@@ -22,6 +22,7 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - [x] 新增 `DownloadFileInfo` DTO 与 `DownloadProvider.list_files()` 契约，归位替换路由的 qB 文件白名单读取改为通过 provider 调用。
 - [x] 新增 OpenList `StorageProvider` 只读适配层，`/alist/mounts` 改为通过 provider 读取挂载列表，响应结构保持兼容。
 - [x] OpenList 旧 `alist_*` marker 的 undone/done 列表读取改为通过 `DownloadProvider.list_tasks(status)`，保留原匹配与状态处理逻辑。
+- [x] OpenList `StorageProvider.list_dir()` / `exists()` 支持只读文件浏览能力，当前不新增路由和前端入口。
 
 ## 暂不做
 
@@ -30,7 +31,7 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - 不修改 `/download-manager/*` 队列和状态机。
 - 不修改归位替换与文件白名单逻辑。
 - 不修改订阅自动下载逻辑。
-- 不迁移 OpenList 存储文件浏览能力（本轮只迁移挂载列表读取）。
+- 不新增 OpenList 存储文件浏览路由或前端入口。
 - 不修改 OpenList 旧 `alist_*` marker 的列表扫描匹配逻辑。
 - 不修改前端 provider 感知逻辑。
 
@@ -44,3 +45,4 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - `cd backend && python -X utf8 -m pytest test_relocate_routes.py test_download_provider_adapter.py test_provider_contracts.py`
 - `cd backend && python -X utf8 -m pytest test_storage_provider_adapter.py test_provider_api.py test_download_provider_adapter.py test_relocate_routes.py`
 - `cd backend && python -X utf8 -m pytest test_download_provider_adapter.py test_download_manager_relocate_flow.py test_provider_contracts.py`
+- `cd backend && python -X utf8 -m pytest test_storage_provider_adapter.py test_provider_api.py test_provider_contracts.py`

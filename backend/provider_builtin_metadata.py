@@ -175,7 +175,7 @@ def _build_storage_metadata() -> list[ProviderMetadata]:
                 type="storage",
                 enabled=bool(info.get("enabled", False)),
                 defaultEnabled=bool(info.get("enabled", False)),
-                capabilities=["list_mounts"],
+                capabilities=["list_mounts", "list_dir", "exists"],
                 riskLevel=ProviderRiskLevel.USER_CONFIGURED,
                 requires=list(info.get("requires", [])),
             )

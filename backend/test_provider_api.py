@@ -32,7 +32,7 @@ def test_provider_api_returns_static_provider_catalog():
     assert qbittorrent["kind"] == "download"
     assert qbittorrent["riskLevel"] == "user_configured"
     assert openlist_storage["kind"] == "storage"
-    assert openlist_storage["capabilities"] == ["list_mounts"]
+    assert openlist_storage["capabilities"] == ["list_mounts", "list_dir", "exists"]
 
 
 def test_provider_api_does_not_register_static_metadata_globally():
