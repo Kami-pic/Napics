@@ -82,7 +82,7 @@ class DownloadProvider(Provider, Protocol):
     def progress(self, external_task_id: str) -> DownloadProgress:
         raise NotImplementedError
 
-    def list_tasks(self) -> List[DownloadTaskInfo]:
+    def list_tasks(self, status: str = "") -> List[DownloadTaskInfo]:
         raise NotImplementedError
 
     def list_files(self, external_task_id: str) -> List[DownloadFileInfo]:

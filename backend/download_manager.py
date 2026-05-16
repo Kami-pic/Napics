@@ -23,7 +23,7 @@ from urllib.parse import parse_qs, unquote_plus, urlparse
 from pydantic import BaseModel
 
 from downloader import QBittorrentClient, AlistManager
-from download_provider_adapter import DownloadProviderAdapter
+from download_provider_adapter import DownloadProviderAdapter, DownloadProviderListStatusError
 from provider_models import DownloadRequest as ProviderDownloadRequest, ProviderKind, ProviderMetadata
 
 logger = logging.getLogger(__name__)
@@ -375,26 +375,20 @@ class DownloadManager:
             if self._sync_alist_progress_by_task_id(task):
                 return
 
-            # 查询 Alist 离线下载任务列表
-            r = requests.get(
-                f"{self.alist.api_url}/api/task/offline_download/undone",
-                headers=self.alist.headers,
-                timeout=5,
-            )
-            if r.status_code != 200:
+            provider = self._get_download_provider("alist")
+            try:
+                data = provider.list_tasks("undone")
+            except Exception:
                 task.status = "unknown"
                 return
-
-            data = r.json().get("data", []) or []
 
             # 在未完成任务中查找
             found = False
             for item in data:
                 if self._match_alist_task_item(task, item):
                     found = True
-                    state = item.get("state", 0)
-                    progress = item.get("progress", 0)
-                    task.progress = self._normalize_alist_progress(progress)
+                    state = item.status
+                    task.progress = item.progress
 
                     if self._is_alist_done_state(state):
                         task.phase = "local_sync"
@@ -404,12 +398,10 @@ class DownloadManager:
 
             if not found:
                 # 不在未完成列表中，检查已完成列表
-                r2 = requests.get(
-                    f"{self.alist.api_url}/api/task/offline_download/done",
-                    headers=self.alist.headers,
-                    timeout=5,
-                )
-                done_data = r2.json().get("data", []) or [] if r2.status_code == 200 else []
+                try:
+                    done_data = provider.list_tasks("done")
+                except DownloadProviderListStatusError:
+                    done_data = []
                 for item in done_data:
                     if self._match_alist_task_item(task, item):
                         found = True
@@ -494,8 +486,12 @@ class DownloadManager:
         return [item for item in candidates if item]
 
     def _match_alist_task_item(self, task: DownloadTask, item: dict) -> bool:
-        item_id = str(item.get("id", "")).strip()
-        item_name = str(item.get("name", "")).strip()
+        if hasattr(item, "external_task_id"):
+            item_id = str(item.external_task_id).strip()
+            item_name = str(item.name).strip()
+        else:
+            item_id = str(item.get("id", "")).strip()
+            item_name = str(item.get("name", "")).strip()
         for candidate in self._alist_task_name_candidates(task):
             if candidate == item_id:
                 return True

@@ -230,6 +230,36 @@ def test_openlist_download_provider_progress_skips_legacy_marker():
     assert progress.status == "unknown"
 
 
+def test_openlist_download_provider_lists_undone_tasks(monkeypatch):
+    client = FakeOpenListClient()
+    get_calls = []
+
+    def fake_get(url, headers=None, timeout=None):
+        get_calls.append({"url": url, "headers": headers, "timeout": timeout})
+        return FakeResponse(
+            200,
+            {"data": [{"id": "task-1", "name": "demo", "state": 1, "progress": 45}]},
+        )
+
+    monkeypatch.setattr("download_provider_adapter.requests.get", fake_get)
+    provider = DownloadProviderAdapter(_metadata("openlist", "OpenList"), lambda: client)
+
+    tasks = provider.list_tasks("undone")
+
+    assert tasks[0].external_task_id == "task-1"
+    assert tasks[0].name == "demo"
+    assert tasks[0].status == "1"
+    assert tasks[0].progress == 0.45
+    assert tasks[0].extra["listStatus"] == "undone"
+    assert get_calls == [
+        {
+            "url": "http://alist/api/task/offline_download/undone",
+            "headers": {"Authorization": "token"},
+            "timeout": 5,
+        }
+    ]
+
+
 def test_build_download_providers_filters_download_metadata_only():
     providers = build_download_providers(
         [

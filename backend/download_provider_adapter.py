@@ -24,6 +24,10 @@ from provider_models import (
 DownloadClientFactory = Callable[[], Any]
 
 
+class DownloadProviderListStatusError(RuntimeError):
+    pass
+
+
 class DownloadProviderAdapter:
     kind = ProviderKind.DOWNLOAD
 
@@ -66,10 +70,12 @@ class DownloadProviderAdapter:
             status="unknown",
         )
 
-    def list_tasks(self) -> list[DownloadTaskInfo]:
+    def list_tasks(self, status: str = "") -> list[DownloadTaskInfo]:
         client = self._get_client()
         if self.id == "qbittorrent":
             return self._list_qb_tasks(client)
+        if self.id == "openlist":
+            return self._list_openlist_tasks(client, status)
         return []
 
     def list_files(self, external_task_id: str) -> list[DownloadFileInfo]:
@@ -185,6 +191,22 @@ class DownloadProviderAdapter:
         except Exception:
             return []
 
+    def _list_openlist_tasks(self, client: Any, status: str) -> list[DownloadTaskInfo]:
+        normalized = (status or "undone").strip().lower()
+        if normalized not in {"undone", "done"}:
+            return []
+        response = requests.get(
+            f"{client.api_url}/api/task/offline_download/{normalized}",
+            headers=client.headers,
+            timeout=5,
+        )
+        if response.status_code != 200:
+            raise DownloadProviderListStatusError(f"OpenList API 返回 {response.status_code}")
+        items = response.json().get("data", []) or []
+        if not isinstance(items, list):
+            raise ValueError("OpenList API payload 非列表")
+        return [_openlist_task_info(item, normalized) for item in items if isinstance(item, Mapping)]
+
 
 def build_download_providers(
     metadata_items: Iterable[ProviderMetadata],
@@ -267,4 +289,14 @@ def _qb_task_info(item: Mapping[str, Any]) -> DownloadTaskInfo:
         eta=_format_qb_eta(item.get("eta", 0)),
         status=str(item.get("state", "")),
         extra=dict(item),
+    )
+
+
+def _openlist_task_info(item: Mapping[str, Any], status: str) -> DownloadTaskInfo:
+    return DownloadTaskInfo(
+        externalTaskId=str(item.get("id", "")),
+        name=str(item.get("name", "")),
+        progress=_normalize_openlist_progress(item.get("progress", 0)),
+        status=str(item.get("state", "")),
+        extra={**dict(item), "listStatus": status},
     )
