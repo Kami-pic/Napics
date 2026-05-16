@@ -234,6 +234,17 @@ class DownloadProgress(BaseModel):
     extra: JsonValue = Field(default_factory=dict)
 
 
+class DownloadTaskInfo(BaseModel):
+    external_task_id: str = Field(alias="externalTaskId")
+    name: str = ""
+    save_path: str = Field(default="", alias="savePath")
+    progress: float = 0.0
+    speed: str = ""
+    eta: str = ""
+    status: str = ""
+    extra: JsonValue = Field(default_factory=dict)
+
+
 class StorageEntry(BaseModel):
     path: str
     name: str

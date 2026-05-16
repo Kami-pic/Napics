@@ -10,6 +10,7 @@ from provider_models import (
     DownloadProgress,
     DownloadRequest,
     DownloadSubmitResult,
+    DownloadTaskInfo,
     MetadataCandidate,
     MetadataDetail,
     MetadataSearchRequest,
@@ -77,6 +78,9 @@ class DownloadProvider(Provider, Protocol):
         raise NotImplementedError
 
     def progress(self, external_task_id: str) -> DownloadProgress:
+        raise NotImplementedError
+
+    def list_tasks(self) -> List[DownloadTaskInfo]:
         raise NotImplementedError
 
 

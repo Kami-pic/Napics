@@ -9,6 +9,7 @@ from provider_models import (
     ProviderRiskLevel,
     DownloadRequest,
     DownloadSubmitResult,
+    DownloadTaskInfo,
     SearchCandidate,
     SearchRequest,
 )
@@ -78,3 +79,18 @@ def test_download_dto_round_trip_uses_structured_models():
 
     assert request.save_path == "/downloads"
     assert result.model_dump(by_alias=True)["externalTaskId"] == "task-1"
+
+
+def test_download_task_info_round_trip_uses_structured_models():
+    task = DownloadTaskInfo(
+        externalTaskId="hash-1",
+        name="Show S01",
+        savePath="/downloads",
+        progress=0.5,
+        status="downloading",
+    )
+
+    payload = task.model_dump(by_alias=True)
+
+    assert task.external_task_id == "hash-1"
+    assert payload["savePath"] == "/downloads"

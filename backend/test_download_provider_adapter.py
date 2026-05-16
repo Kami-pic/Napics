@@ -15,21 +15,22 @@ class FakeQBClient:
 
 
 class FakeQBProgressSession:
-    def __init__(self, response):
+    def __init__(self, response, list_response=None):
         self.response = response
+        self.list_response = list_response or response
         self.calls = []
 
     def get(self, url, params=None, timeout=None):
         self.calls.append({"url": url, "params": params, "timeout": timeout})
-        return self.response
+        return self.response if params else self.list_response
 
 
 class FakeQBProgressClient:
     url = "http://qb"
 
-    def __init__(self, response, login_result=True):
+    def __init__(self, response, login_result=True, list_response=None):
         self.login_result = login_result
-        self.session = FakeQBProgressSession(response)
+        self.session = FakeQBProgressSession(response, list_response=list_response)
 
     def _login(self):
         return self.login_result
@@ -145,6 +146,35 @@ def test_qbittorrent_download_provider_progress_returns_lost_when_hash_missing()
     progress = provider.progress("hash-1")
 
     assert progress.status == "lost"
+
+
+def test_qbittorrent_download_provider_lists_tasks():
+    client = FakeQBProgressClient(
+        FakeResponse(200, []),
+        list_response=FakeResponse(
+            200,
+            [
+                {
+                    "hash": "hash-1",
+                    "name": "Show S01",
+                    "save_path": "D:/Downloads",
+                    "progress": 0.5,
+                    "dlspeed": 2048,
+                    "eta": 60,
+                    "state": "downloading",
+                }
+            ],
+        ),
+    )
+    provider = DownloadProviderAdapter(_metadata("qbittorrent", "qBittorrent"), lambda: client)
+
+    tasks = provider.list_tasks()
+
+    assert len(tasks) == 1
+    assert tasks[0].external_task_id == "hash-1"
+    assert tasks[0].name == "Show S01"
+    assert tasks[0].save_path == "D:/Downloads"
+    assert tasks[0].speed == "2 KB/s"
 
 
 def test_openlist_download_provider_progress_reads_task_info(monkeypatch):

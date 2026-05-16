@@ -12,6 +12,7 @@ from provider_models import (
     DownloadProgress,
     DownloadRequest,
     DownloadSubmitResult,
+    DownloadTaskInfo,
     ProviderHealth,
     ProviderHealthStatus,
     ProviderKind,
@@ -63,6 +64,12 @@ class DownloadProviderAdapter:
             progress=0.0,
             status="unknown",
         )
+
+    def list_tasks(self) -> list[DownloadTaskInfo]:
+        client = self._get_client()
+        if self.id == "qbittorrent":
+            return self._list_qb_tasks(client)
+        return []
 
     def _get_client(self) -> Any:
         if self._client is None:
@@ -143,6 +150,20 @@ class DownloadProviderAdapter:
         except Exception:
             return DownloadProgress(externalTaskId=external_task_id, status="unknown")
 
+    def _list_qb_tasks(self, client: Any) -> list[DownloadTaskInfo]:
+        try:
+            if not client._login():
+                return []
+            response = client.session.get(f"{client.url}/api/v2/torrents/info", timeout=5)
+            if response.status_code != 200:
+                return []
+            items = response.json()
+            if not isinstance(items, list):
+                return []
+            return [_qb_task_info(item) for item in items if isinstance(item, Mapping)]
+        except Exception:
+            return []
+
 
 def build_download_providers(
     metadata_items: Iterable[ProviderMetadata],
@@ -213,3 +234,16 @@ def _normalize_openlist_progress(progress: Any) -> float:
     if value > 1:
         value = value / 100
     return round(min(value, 1.0), 4)
+
+
+def _qb_task_info(item: Mapping[str, Any]) -> DownloadTaskInfo:
+    return DownloadTaskInfo(
+        externalTaskId=str(item.get("hash", "")),
+        name=str(item.get("name", "")),
+        savePath=str(item.get("save_path", "")),
+        progress=round(float(item.get("progress", 0) or 0), 4),
+        speed=_format_qb_speed(item.get("dlspeed", 0)),
+        eta=_format_qb_eta(item.get("eta", 0)),
+        status=str(item.get("state", "")),
+        extra=dict(item),
+    )

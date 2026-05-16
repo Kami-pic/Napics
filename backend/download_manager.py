@@ -191,13 +191,8 @@ class DownloadManager:
     def _get_qb_hashes(self) -> set:
         """获取 qBittorrent 当前所有种子的 hash 集合。"""
         try:
-            if not self.qb._login():
-                return set()
-            r = self.qb.session.get(
-                f"{self.qb.url}/api/v2/torrents/info", timeout=5
-            )
-            if r.status_code == 200:
-                return {t["hash"] for t in r.json()}
+            provider = self._get_download_provider("qb")
+            return {task.external_task_id for task in provider.list_tasks() if task.external_task_id}
         except Exception:
             pass
         return set()

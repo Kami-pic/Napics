@@ -17,6 +17,7 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - [x] `DownloadManager._push_to_qb()` / `_push_to_alist()` 的提交动作改为通过 `DownloadProvider` adapter 调用，保留旧 hash / task id 兼容规则。
 - [x] qBittorrent `DownloadProvider.progress()` 支持读取单任务进度，`DownloadManager._sync_qb_progress()` 改为通过 provider 获取结构化进度。
 - [x] OpenList `DownloadProvider.progress()` 支持通过真实 task id 读取单任务进度，`DownloadManager._sync_alist_progress_by_task_id()` 改为通过 provider 获取结构化进度。
+- [x] 新增 `DownloadTaskInfo` DTO 与 `DownloadProvider.list_tasks()` 契约，qBittorrent provider 支持只读任务列表，`DownloadManager._get_qb_hashes()` 改为通过 provider 获取 hash 集合。
 
 ## 暂不做
 
@@ -35,3 +36,4 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - `cd backend && python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_provider_contracts.py test_provider_registry.py test_provider_api.py`
 - `cd backend && python -X utf8 -m pytest test_download_route_provider_bridge.py test_download_provider_adapter.py test_download_provider_factory.py test_provider_api.py`
 - `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py test_download_provider_adapter.py test_download_provider_factory.py`
+- `cd backend && python -X utf8 -m pytest test_download_manager_relocate_flow.py test_download_provider_adapter.py test_provider_contracts.py`
