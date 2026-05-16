@@ -55,6 +55,8 @@
 
 ## Pan SearchProvider / StorageProvider 候选
 
+> Phase 8 当前执行入口：`.kiro/docs/provider-pan-phase8-todo.md`。
+
 | Provider | 当前模块 | 当前注册/调用点 | 风险等级 | 依赖 `shared.py` | 适合进入开源版 | 建议去向 |
 |---|---|---|---:|---|---|---|
 | PanSearch | `backend/pan_scraper_pansearch.py` | `PanSearchService.__init__`, `shared._get_pan_search_service` | 高 | 间接是 | 否 | private pan search plugin。 |
