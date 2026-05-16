@@ -28,7 +28,7 @@ from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 from download_provider_factory import get_download_provider_map
-from provider_models import DownloadRequest as ProviderDownloadRequest
+from provider_models import DownloadRequest as ProviderDownloadRequest, DownloadTaskInfo
 
 router = APIRouter()
 
@@ -56,6 +56,18 @@ def _submit_via_download_provider(download_type: str, url: str, save_path: str):
     if provider is None:
         return None
     return provider.submit(ProviderDownloadRequest(url=url, savePath=save_path))
+
+
+def _qb_task_info_to_legacy_dict(task: DownloadTaskInfo) -> dict:
+    return {
+        "hash": task.external_task_id,
+        "name": task.name,
+        "save_path": task.save_path,
+        "progress": task.progress,
+        "dlspeed": task.extra.get("dlspeed", 0),
+        "eta": task.extra.get("eta", 0),
+        "state": task.status,
+    }
 
 @router.post("/download")
 def trigger_download(req: DownloadRequest):
@@ -237,19 +249,13 @@ def sync_from_qb():
     3. 更新所有 downloading 任务的进度
     """
     dm = _get_download_manager()
-    clients = get_clients()
-    qb = clients.get("qb")
-    if not qb:
+    provider = get_download_provider_map().get("qbittorrent")
+    if not provider:
         return {"updated": 0, "imported": 0, "error": "qBittorrent 未配置"}
 
     try:
-        if not qb._login():
-            return {"updated": 0, "imported": 0, "error": "qBittorrent 登录失败"}
-        r = qb.session.get(f"{qb.url}/api/v2/torrents/info", timeout=10)
-        if r.status_code != 200:
-            return {"updated": 0, "imported": 0, "error": f"qB API 返回 {r.status_code}"}
-
-        qb_torrents = r.json()
+        qb_tasks = provider.list_tasks()
+        qb_torrents = [_qb_task_info_to_legacy_dict(task) for task in qb_tasks]
         qb_hash_map = {t.get("hash", ""): t for t in qb_torrents}
         qb_hashes = set(qb_hash_map.keys())
 

@@ -153,16 +153,16 @@ class DownloadProviderAdapter:
     def _list_qb_tasks(self, client: Any) -> list[DownloadTaskInfo]:
         try:
             if not client._login():
-                return []
+                raise RuntimeError("qBittorrent 登录失败")
             response = client.session.get(f"{client.url}/api/v2/torrents/info", timeout=5)
             if response.status_code != 200:
-                return []
+                raise RuntimeError(f"qB API 返回 {response.status_code}")
             items = response.json()
             if not isinstance(items, list):
-                return []
+                raise ValueError("qB API payload 非列表")
             return [_qb_task_info(item) for item in items if isinstance(item, Mapping)]
         except Exception:
-            return []
+            raise
 
 
 def build_download_providers(

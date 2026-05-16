@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from provider_models import DownloadSubmitResult
+from provider_models import DownloadSubmitResult, DownloadTaskInfo
 from routes import download as download_routes
 
 
@@ -12,6 +12,36 @@ class FakeDownloadProvider:
     def submit(self, request):
         self.calls.append((request.url, request.save_path))
         return DownloadSubmitResult(success=self.success, externalTaskId="task-1")
+
+    def list_tasks(self):
+        return []
+
+
+class FakeListDownloadProvider:
+    def __init__(self, tasks):
+        self.tasks = tasks
+
+    def list_tasks(self):
+        return self.tasks
+
+
+class FakeDownloadManager:
+    def __init__(self, tasks=None):
+        self.tasks = tasks or []
+        self._deleted_hashes = set()
+        self._lock = _NullLock()
+        self.saved = False
+
+    def _save_now(self):
+        self.saved = True
+
+
+class _NullLock:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
 
 
 def test_download_route_submits_qb_via_download_provider(monkeypatch):
@@ -105,3 +135,45 @@ def test_download_route_still_rejects_unconfigured_and_unknown_download_type(mon
 
     assert qb_response == {"success": False, "message": "qBittorrent 未配置"}
     assert unknown_response == {"success": False, "message": "不支持的下载类型: other"}
+
+
+def test_sync_from_qb_uses_download_provider_task_list(monkeypatch):
+    dm = FakeDownloadManager()
+    provider = FakeListDownloadProvider(
+        [
+            DownloadTaskInfo(
+                externalTaskId="hash-new",
+                name="Show S01",
+                savePath="D:/Downloads",
+                progress=0.5,
+                speed="2 KB/s",
+                eta="00:01:00",
+                status="downloading",
+                extra={"dlspeed": 2048, "eta": 60},
+            )
+        ]
+    )
+    monkeypatch.setattr(download_routes, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(download_routes, "get_download_provider_map", lambda: {"qbittorrent": provider})
+
+    response = download_routes.sync_from_qb()
+
+    assert response == {"updated": 0, "imported": 1, "qb_torrents": 1}
+    assert dm.saved is True
+    assert len(dm.tasks) == 1
+    assert dm.tasks[0].downloader_hash == "hash-new"
+    assert dm.tasks[0].media_name == "Show S01"
+    assert dm.tasks[0].save_path == "D:/Downloads"
+    assert dm.tasks[0].progress == 0.5
+
+
+def test_sync_from_qb_keeps_empty_provider_list_as_success(monkeypatch):
+    dm = FakeDownloadManager()
+    provider = FakeListDownloadProvider([])
+    monkeypatch.setattr(download_routes, "_get_download_manager", lambda: dm)
+    monkeypatch.setattr(download_routes, "get_download_provider_map", lambda: {"qbittorrent": provider})
+
+    response = download_routes.sync_from_qb()
+
+    assert response == {"updated": 0, "imported": 0, "qb_torrents": 0}
+    assert dm.saved is False
