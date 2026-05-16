@@ -18,6 +18,7 @@ from bt_search_provider_factory import (
     get_direct_bt_provider_map,
 )
 from prowlarr_search_provider_factory import get_prowlarr_provider_map
+from storage_provider_factory import get_storage_provider_map
 from global_filter import GlobalFilter
 from search_helpers import enrich_result as _enrich_result, merge_bt_extra_sources as _merge_bt_extra_sources
 from search_service import (
@@ -249,12 +250,21 @@ def search_pan(keyword: str, media_type: str = ""):
 def get_alist_mounts():
     """获取 OpenList 已挂载网盘列表。"""
     try:
-        clients = get_clients()
-        alist = clients.get("alist")
-        if not alist:
+        provider = get_storage_provider_map().get("openlist_storage")
+        if not provider:
             return {"mounts": [], "error": "OpenList 未配置"}
-        mounts = alist.get_mounts_list()
-        return {"mounts": [m.dict() for m in mounts]}
+        mounts = provider.list_mounts()
+        return {
+            "mounts": [
+                {
+                    "pan_type": mount.pan_type,
+                    "driver": mount.driver,
+                    "mount_path": mount.mount_path,
+                    "status": mount.status,
+                }
+                for mount in mounts
+            ]
+        }
     except Exception as e:
         return {"mounts": [], "error": str(e)}
 

@@ -24,6 +24,7 @@ from provider_models import (
     SearchCandidate,
     SearchRequest,
     StorageEntry,
+    StorageMountInfo,
 )
 
 
@@ -91,6 +92,9 @@ class DownloadProvider(Provider, Protocol):
 @runtime_checkable
 class StorageProvider(Provider, Protocol):
     def list_dir(self, path: str) -> List[StorageEntry]:
+        raise NotImplementedError
+
+    def list_mounts(self) -> List[StorageMountInfo]:
         raise NotImplementedError
 
     def exists(self, path: str) -> bool:

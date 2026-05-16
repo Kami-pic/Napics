@@ -31,6 +31,10 @@ DOWNLOAD_PROVIDER_DEFAULTS = {
     "openlist": {"label": "OpenList", "enabled": True, "requires": ["api_url", "token"]},
 }
 
+STORAGE_PROVIDER_DEFAULTS = {
+    "openlist_storage": {"label": "OpenList Storage", "enabled": True, "requires": ["api_url", "token"]},
+}
+
 
 def build_builtin_provider_metadata(
     bt_overrides: Mapping[str, Any] | None = None,
@@ -42,6 +46,7 @@ def build_builtin_provider_metadata(
     providers.extend(_build_metadata_metadata())
     providers.extend(_build_rss_metadata())
     providers.extend(_build_download_metadata())
+    providers.extend(_build_storage_metadata())
     return providers
 
 
@@ -152,6 +157,25 @@ def _build_download_metadata() -> list[ProviderMetadata]:
                 enabled=bool(info.get("enabled", False)),
                 defaultEnabled=bool(info.get("enabled", False)),
                 capabilities=["submit", "progress"],
+                riskLevel=ProviderRiskLevel.USER_CONFIGURED,
+                requires=list(info.get("requires", [])),
+            )
+        )
+    return result
+
+
+def _build_storage_metadata() -> list[ProviderMetadata]:
+    result: list[ProviderMetadata] = []
+    for provider_id, info in STORAGE_PROVIDER_DEFAULTS.items():
+        result.append(
+            ProviderMetadata(
+                id=provider_id,
+                name=info["label"],
+                kind=ProviderKind.STORAGE,
+                type="storage",
+                enabled=bool(info.get("enabled", False)),
+                defaultEnabled=bool(info.get("enabled", False)),
+                capabilities=["list_mounts"],
                 riskLevel=ProviderRiskLevel.USER_CONFIGURED,
                 requires=list(info.get("requires", [])),
             )

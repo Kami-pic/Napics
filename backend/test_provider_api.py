@@ -11,7 +11,7 @@ def test_provider_api_returns_static_provider_catalog():
 
     assert any(item["id"] == "qbittorrent" for item in payload["download"])
     assert any(item["id"] == "openlist" for item in payload["download"])
-    assert payload["storage"] == []
+    assert any(item["id"] == "openlist_storage" for item in payload["storage"])
     assert payload["notification"] == []
     assert any(item["id"] == "prowlarr" for item in payload["search"])
     assert any(item["id"] == "pansearch" for item in payload["panSearch"])
@@ -22,6 +22,7 @@ def test_provider_api_returns_static_provider_catalog():
     prowlarr = next(item for item in payload["search"] if item["id"] == "prowlarr")
     tmdb = next(item for item in payload["metadata"] if item["id"] == "tmdb")
     qbittorrent = next(item for item in payload["download"] if item["id"] == "qbittorrent")
+    openlist_storage = next(item for item in payload["storage"] if item["id"] == "openlist_storage")
     assert prowlarr["kind"] == "search"
     assert prowlarr["riskLevel"] == "user_configured"
     assert prowlarr["requires"] == ["api_url", "api_key"]
@@ -30,6 +31,8 @@ def test_provider_api_returns_static_provider_catalog():
     assert tmdb["requires"] == ["api_key"]
     assert qbittorrent["kind"] == "download"
     assert qbittorrent["riskLevel"] == "user_configured"
+    assert openlist_storage["kind"] == "storage"
+    assert openlist_storage["capabilities"] == ["list_mounts"]
 
 
 def test_provider_api_does_not_register_static_metadata_globally():
@@ -71,12 +74,14 @@ def test_builtin_provider_metadata_keeps_legacy_source_counts():
     metadata_count = sum(1 for item in providers if item.kind == ProviderKind.METADATA)
     rss_count = sum(1 for item in providers if item.kind == ProviderKind.RSS)
     download_count = sum(1 for item in providers if item.kind == ProviderKind.DOWNLOAD)
+    storage_count = sum(1 for item in providers if item.kind == ProviderKind.STORAGE)
 
     assert search_count == len(BT_SOURCE_DEFAULTS)
     assert pan_count == len(PAN_SOURCE_DEFAULTS)
     assert metadata_count == 3
     assert rss_count == 8
     assert download_count == 2
+    assert storage_count == 1
 
 
 def test_root_route_keeps_existing_response():

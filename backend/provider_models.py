@@ -258,6 +258,13 @@ class StorageEntry(BaseModel):
     updated_at: Optional[datetime] = Field(default=None, alias="updatedAt")
 
 
+class StorageMountInfo(BaseModel):
+    pan_type: str = Field(alias="panType")
+    driver: str = ""
+    mount_path: str = Field(default="", alias="mountPath")
+    status: str = ""
+
+
 class ProviderCatalog(BaseModel):
     search: List[ProviderMetadata] = Field(default_factory=list)
     pan_search: List[ProviderMetadata] = Field(default_factory=list, alias="panSearch")
