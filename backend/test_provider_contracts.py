@@ -10,6 +10,7 @@ from provider_models import (
     DownloadRequest,
     DownloadSubmitResult,
     DownloadTaskInfo,
+    DownloadFileInfo,
     SearchCandidate,
     SearchRequest,
 )
@@ -94,3 +95,12 @@ def test_download_task_info_round_trip_uses_structured_models():
 
     assert task.external_task_id == "hash-1"
     assert payload["savePath"] == "/downloads"
+
+
+def test_download_file_info_round_trip_uses_structured_models():
+    item = DownloadFileInfo(name="Show.S01E01.mkv", sizeBytes=1234)
+
+    payload = item.model_dump(by_alias=True)
+
+    assert item.size_bytes == 1234
+    assert payload["sizeBytes"] == 1234

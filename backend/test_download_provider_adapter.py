@@ -13,6 +13,10 @@ class FakeQBClient:
         self.calls.append((url, save_path))
         return self.success
 
+    def get_torrent_files(self, external_task_id):
+        self.calls.append(("files", external_task_id))
+        return [{"name": "Show.S01E01.mkv", "size_bytes": 1234}]
+
 
 class FakeQBProgressSession:
     def __init__(self, response, list_response=None):
@@ -175,6 +179,18 @@ def test_qbittorrent_download_provider_lists_tasks():
     assert tasks[0].name == "Show S01"
     assert tasks[0].save_path == "D:/Downloads"
     assert tasks[0].speed == "2 KB/s"
+
+
+def test_qbittorrent_download_provider_lists_files():
+    client = FakeQBClient()
+    provider = DownloadProviderAdapter(_metadata("qbittorrent", "qBittorrent"), lambda: client)
+
+    files = provider.list_files("hash-1")
+
+    assert len(files) == 1
+    assert files[0].name == "Show.S01E01.mkv"
+    assert files[0].size_bytes == 1234
+    assert client.calls == [("files", "hash-1")]
 
 
 def test_openlist_download_provider_progress_reads_task_info(monkeypatch):

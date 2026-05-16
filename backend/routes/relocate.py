@@ -13,13 +13,26 @@ from pydantic import BaseModel
 
 from shared import (
     config_m, _get_download_manager, _get_file_relocator, _get_recycle_bin,
-    _tmdb_client, get_clients,
+    _tmdb_client,
     _get_category_from_path, _is_top_category, _sync_library_paths,
 )
+from download_provider_factory import get_download_provider_map
 import scraper, organizer
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _get_qb_torrent_files(downloader_hash: str) -> list[dict]:
+    if not downloader_hash:
+        return []
+    provider = get_download_provider_map().get("qbittorrent")
+    if not provider:
+        return []
+    return [
+        {"name": item.name, "size_bytes": item.size_bytes}
+        for item in provider.list_files(downloader_hash)
+    ]
 
 
 # ── 数据模型 ──
@@ -473,10 +486,7 @@ async def organize_dry_run(req: RelocateRequest):
         file_info_list = []   # [{name, size_bytes}, ...]
         if task.downloader_hash:
             try:
-                clients = get_clients()
-                qb = clients.get("qb")
-                if qb:
-                    file_info_list = qb.get_torrent_files(task.downloader_hash)
+                file_info_list = _get_qb_torrent_files(task.downloader_hash)
             except Exception as qe:
                 logger.error(f"[DryRun] qB 获取文件列表失败: {qe}")
         
@@ -586,10 +596,8 @@ async def organize_execute(req: ExecuteRelocateRequest):
     # 注入白名单到 plan 中，供 confirm_replace 使用
     # 这样 confirm_replace 就不需要重新查白名单了
     if task.downloader_hash:
-        clients = get_clients()
-        qb = clients.get("qb")
-        if qb:
-            file_info = qb.get_torrent_files(task.downloader_hash)
+        file_info = _get_qb_torrent_files(task.downloader_hash)
+        if file_info:
             req.plan["whitelist"] = [f["name"] for f in file_info]
 
     execute_res = await rel.confirm_replace(task, req.plan)
@@ -612,11 +620,8 @@ async def organize_archive_both(req: ExecuteRelocateRequest):
     # 重新探测冲突以获取旧资源列表
     new_files = []
     if task.downloader_hash:
-        clients = get_clients()
-        qb = clients.get("qb")
-        if qb:
-            file_info = qb.get_torrent_files(task.downloader_hash)
-            new_files = [f["name"] for f in file_info]
+        file_info = _get_qb_torrent_files(task.downloader_hash)
+        new_files = [f["name"] for f in file_info]
             
     res = await rel.relocate(task, new_files_whitelist=new_files)
     
@@ -637,11 +642,8 @@ async def organize_purge_old(task_id: str):
         
     new_files = []
     if task.downloader_hash:
-        clients = get_clients()
-        qb = clients.get("qb")
-        if qb:
-            file_info = qb.get_torrent_files(task.downloader_hash)
-            new_files = [f["name"] for f in file_info]
+        file_info = _get_qb_torrent_files(task.downloader_hash)
+        new_files = [f["name"] for f in file_info]
     
     if not new_files:
         return {"status": "failed", "message": "无法识别新任务文件，为防误删，停止清理"}

@@ -9,6 +9,7 @@ import requests
 
 from provider_context import ProviderContext
 from provider_models import (
+    DownloadFileInfo,
     DownloadProgress,
     DownloadRequest,
     DownloadSubmitResult,
@@ -69,6 +70,12 @@ class DownloadProviderAdapter:
         client = self._get_client()
         if self.id == "qbittorrent":
             return self._list_qb_tasks(client)
+        return []
+
+    def list_files(self, external_task_id: str) -> list[DownloadFileInfo]:
+        client = self._get_client()
+        if self.id == "qbittorrent":
+            return self._list_qb_files(client, external_task_id)
         return []
 
     def _get_client(self) -> Any:
@@ -163,6 +170,20 @@ class DownloadProviderAdapter:
             return [_qb_task_info(item) for item in items if isinstance(item, Mapping)]
         except Exception:
             raise
+
+    def _list_qb_files(self, client: Any, external_task_id: str) -> list[DownloadFileInfo]:
+        try:
+            items = client.get_torrent_files(external_task_id)
+            return [
+                DownloadFileInfo(
+                    name=str(item.get("name", "")),
+                    sizeBytes=int(item.get("size_bytes", item.get("size", 0)) or 0),
+                )
+                for item in items
+                if isinstance(item, Mapping) and item.get("name")
+            ]
+        except Exception:
+            return []
 
 
 def build_download_providers(

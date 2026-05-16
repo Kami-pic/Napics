@@ -245,6 +245,11 @@ class DownloadTaskInfo(BaseModel):
     extra: JsonValue = Field(default_factory=dict)
 
 
+class DownloadFileInfo(BaseModel):
+    name: str
+    size_bytes: int = Field(default=0, alias="sizeBytes")
+
+
 class StorageEntry(BaseModel):
     path: str
     name: str

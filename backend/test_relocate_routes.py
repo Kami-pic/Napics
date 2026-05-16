@@ -28,9 +28,9 @@ class FakeQBClient:
         self.files = files
         self.calls = []
 
-    def get_torrent_files(self, downloader_hash):
+    def list_files(self, downloader_hash):
         self.calls.append(downloader_hash)
-        return list(self.files)
+        return [SimpleNamespace(name=item["name"], size_bytes=item.get("size_bytes", 0)) for item in self.files]
 
 
 class FakeRelocator:
@@ -111,7 +111,7 @@ def test_organize_dry_run_returns_tree_snapshot_and_whitelist(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": qb})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {"qbittorrent": qb})
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
     monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
 
@@ -175,7 +175,7 @@ def test_organize_dry_run_falls_back_to_action_plan_when_qb_file_list_missing(mo
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
     monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
 
@@ -209,7 +209,7 @@ def test_organize_execute_injects_whitelist_before_confirm(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": qb})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {"qbittorrent": qb})
 
     req = relocate.ExecuteRelocateRequest(task_id=task.id, plan={"plan": [{"target_filename": "Show.S01E02.2160p.mkv"}]})
     body = asyncio.run(relocate.organize_execute(req))
@@ -240,7 +240,7 @@ def test_organize_execute_skips_archive_when_confirm_fails(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
 
     req = relocate.ExecuteRelocateRequest(task_id=task.id, plan={"plan": []})
     body = asyncio.run(relocate.organize_execute(req))
@@ -256,7 +256,7 @@ def test_organize_execute_raises_404_when_task_missing(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
 
     req = relocate.ExecuteRelocateRequest(task_id="missing", plan={"plan": []})
 
@@ -299,7 +299,7 @@ def test_organize_archive_both_relocates_again_before_archiving(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": qb})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {"qbittorrent": qb})
 
     req = relocate.ExecuteRelocateRequest(task_id=task.id, plan={"plan": []})
     body = asyncio.run(relocate.organize_archive_both(req))
@@ -345,7 +345,7 @@ def test_organize_archive_both_skips_archive_when_archive_both_fails(monkeypatch
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
 
     req = relocate.ExecuteRelocateRequest(task_id=task.id, plan={"plan": []})
     body = asyncio.run(relocate.organize_archive_both(req))
@@ -360,7 +360,7 @@ def test_organize_archive_both_raises_404_when_task_missing(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
 
     req = relocate.ExecuteRelocateRequest(task_id="missing", plan={"plan": []})
 
@@ -380,7 +380,7 @@ def test_organize_purge_old_requires_qb_file_list(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
 
     body = asyncio.run(relocate.organize_purge_old(task.id))
 
@@ -404,7 +404,7 @@ def test_organize_purge_old_returns_ok_when_no_conflicts_found(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": qb})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {"qbittorrent": qb})
 
     body = asyncio.run(relocate.organize_purge_old(task.id))
 
@@ -418,7 +418,7 @@ def test_organize_purge_old_raises_404_when_task_missing(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
 
     try:
         asyncio.run(relocate.organize_purge_old("missing"))
@@ -460,7 +460,7 @@ def test_organize_purge_old_recycles_each_detected_conflict(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": qb})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {"qbittorrent": qb})
 
     body = asyncio.run(relocate.organize_purge_old(task.id))
 
@@ -535,7 +535,7 @@ def test_organize_dry_run_returns_failed_when_relocator_fails(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
-    monkeypatch.setattr(relocate, "get_clients", lambda: {"qb": None})
+    monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
     monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
 

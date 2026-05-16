@@ -8,6 +8,7 @@ from typing import List, Optional, Protocol, runtime_checkable
 from provider_context import ProviderContext
 from provider_models import (
     DownloadProgress,
+    DownloadFileInfo,
     DownloadRequest,
     DownloadSubmitResult,
     DownloadTaskInfo,
@@ -81,6 +82,9 @@ class DownloadProvider(Provider, Protocol):
         raise NotImplementedError
 
     def list_tasks(self) -> List[DownloadTaskInfo]:
+        raise NotImplementedError
+
+    def list_files(self, external_task_id: str) -> List[DownloadFileInfo]:
         raise NotImplementedError
 
 
