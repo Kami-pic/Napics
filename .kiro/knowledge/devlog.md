@@ -733,3 +733,32 @@
 
 **验证**:
 - `python -X utf8 -m pytest test_search_route_snapshots.py test_search_service_provider_bridge.py test_prowlarr_search_provider_adapter.py test_prowlarr_search_provider_factory.py test_searcher.py test_provider_api.py`
+
+## 2026-05-17 qB / OpenList DownloadProvider / StorageProvider 迁移 Phase 7 收口
+
+**变更**:
+- 新增 `download_provider_adapter.py` / `download_provider_factory.py`，将 qBittorrent 与 OpenList 下载提交统一包装为 `DownloadProvider`
+- `/download`、`/batch-download`、`DownloadManager._push_to_qb()`、`DownloadManager._push_to_alist()` 改为通过 `DownloadProvider.submit()` 执行，保持旧响应结构和 hash / task id 兼容规则
+- qB 进度、任务列表、种子文件列表读取接入 `DownloadProvider.progress()` / `list_tasks()` / `list_files()`
+- `/download-manager/sync-from-qb` 和归位替换 qB 白名单读取改为通过 provider 获取结构化 DTO，再转换回旧业务结构
+- OpenList 真实 task id 进度读取接入 `DownloadProvider.progress()`；旧 `alist_*` marker 的 undone/done 列表扫描读取接入 `DownloadProvider.list_tasks(status)`
+- 新增 `storage_provider_adapter.py` / `storage_provider_factory.py`，将 OpenList 挂载列表、只读目录浏览和存在性检查包装为 `StorageProvider`
+- `/alist/mounts` 改为通过 `StorageProvider.list_mounts()` 读取，旧响应字段保持不变
+- `/api/providers` 的 `download` / `storage` 分类补充 qBittorrent、OpenList、OpenList Storage metadata
+
+**保持不变**:
+- 未修改 `QBittorrentClient` / `AlistManager` 内部 API 请求逻辑
+- 未修改 `DownloadManager` 核心状态机、归位触发、订阅完成回调、任务持久化格式
+- 未修改 OpenList 转存链路 `/alist/transfer` / `quark_transfer.py`，该部分属于网盘转存与私有能力边界，后续随 Phase 8 处理
+- 未新增 OpenList 存储文件浏览路由或前端入口
+- 未修改前端 provider 动态感知逻辑，按 Phase 9 单独推进
+
+**收口结论**:
+- qB / OpenList 下载执行与只读状态读取已通过 Provider 边界进入
+- `DownloadManager` 保留为 Core 编排层，只依赖 provider 结构化 DTO，不直接拼 qB / OpenList 任务与文件 API
+- `downloader.py` 继续作为底层客户端实现存在，具体客户端构造集中在 provider factory 和 `shared.py` 兼容层
+
+**验证**:
+- `python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_download_route_provider_bridge.py test_download_manager_relocate_flow.py test_storage_provider_adapter.py test_provider_api.py test_relocate_routes.py test_provider_contracts.py`
+- 结果：`171 passed`
+- 完整后端 pytest 当前受缺失 `backend/media_library.json` 阻塞：`test_local_match_e2e.py` 在收集阶段直接读取该文件

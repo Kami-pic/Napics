@@ -1,4 +1,4 @@
-# [TODO] provider-download-phase7-todo.md
+# [当前] provider-download-phase7-todo.md
 
 ## 范围
 
@@ -35,6 +35,17 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - 不修改 OpenList 旧 `alist_*` marker 的列表扫描匹配逻辑。
 - 不修改前端 provider 感知逻辑。
 
+## 收口结论
+
+- Phase 7 的 qB / OpenList 下载与存储适配边界已完成。
+- qB 提交、进度、任务列表、文件白名单读取均通过 `DownloadProvider` 进入。
+- OpenList 提交、真实 task id 进度、旧 `alist_*` marker 列表扫描读取均通过 `DownloadProvider` 进入。
+- OpenList 挂载列表、只读目录浏览、存在性检查均通过 `StorageProvider` 进入。
+- `DownloadManager` 仍保留 Core 下载任务状态机、匹配规则、归位触发和持久化逻辑。
+- `QBittorrentClient` / `AlistManager` 保留为底层客户端实现，只由 provider factory / shared 兼容构造点引用。
+- `/alist/transfer` / `quark_transfer.py` 属于网盘转存与私有能力边界，不在 Phase 7 内继续迁移，后续随 Phase 8 私有化处理。
+- 前端 provider 动态感知不在 Phase 7 内处理，按 Phase 9 推进。
+
 ## 验证
 
 - `cd backend && python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_provider_contracts.py test_provider_registry.py test_provider_api.py`
@@ -46,3 +57,9 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - `cd backend && python -X utf8 -m pytest test_storage_provider_adapter.py test_provider_api.py test_download_provider_adapter.py test_relocate_routes.py`
 - `cd backend && python -X utf8 -m pytest test_download_provider_adapter.py test_download_manager_relocate_flow.py test_provider_contracts.py`
 - `cd backend && python -X utf8 -m pytest test_storage_provider_adapter.py test_provider_api.py test_provider_contracts.py`
+
+## 最终验证记录
+
+- 已通过：`python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_download_route_provider_bridge.py test_download_manager_relocate_flow.py test_storage_provider_adapter.py test_provider_api.py test_relocate_routes.py test_provider_contracts.py`
+- 结果：`171 passed`
+- 完整后端测试未作为 Phase 7 收口门槛：当前工作区缺少 `backend/media_library.json`，`test_local_match_e2e.py` 在收集阶段直接读取该文件会阻塞完整 pytest。
