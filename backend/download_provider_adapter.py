@@ -5,6 +5,8 @@
 
 from typing import Any, Callable, Iterable, Mapping, Optional
 
+import requests
+
 from provider_context import ProviderContext
 from provider_models import (
     DownloadProgress,
@@ -54,6 +56,8 @@ class DownloadProviderAdapter:
         client = self._get_client()
         if self.id == "qbittorrent":
             return self._progress_qb(client, external_task_id)
+        if self.id == "openlist":
+            return self._progress_openlist(client, external_task_id)
         return DownloadProgress(
             externalTaskId=external_task_id,
             progress=0.0,
@@ -114,6 +118,31 @@ class DownloadProviderAdapter:
         except Exception:
             return DownloadProgress(externalTaskId=external_task_id, status="unknown")
 
+    def _progress_openlist(self, client: Any, external_task_id: str) -> DownloadProgress:
+        task_id = (external_task_id or "").strip()
+        if not task_id or task_id.startswith("alist_"):
+            return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+        try:
+            response = requests.post(
+                f"{client.api_url}/api/task/offline_download/info",
+                headers=client.headers,
+                params={"tid": task_id},
+                timeout=5,
+            )
+            if response.status_code != 200:
+                return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+            item = _first_openlist_task_item(response.json())
+            if item is None:
+                return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+            return DownloadProgress(
+                externalTaskId=external_task_id,
+                progress=_normalize_openlist_progress(item.get("progress", 0)),
+                status=str(item.get("state", "")),
+                extra={"error": str(item.get("error", "")).strip()},
+            )
+        except Exception:
+            return DownloadProgress(externalTaskId=external_task_id, status="unknown")
+
 
 def build_download_providers(
     metadata_items: Iterable[ProviderMetadata],
@@ -162,3 +191,25 @@ def _format_qb_eta(value: Any) -> str:
     hours, rem = divmod(eta_secs, 3600)
     minutes, seconds = divmod(rem, 60)
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def _first_openlist_task_item(payload: Any) -> Mapping[str, Any] | None:
+    data = payload.get("data", []) if isinstance(payload, Mapping) else []
+    if isinstance(data, Mapping):
+        return data
+    if isinstance(data, list) and data:
+        item = data[0]
+        return item if isinstance(item, Mapping) else None
+    return None
+
+
+def _normalize_openlist_progress(progress: Any) -> float:
+    try:
+        value = float(progress)
+    except (TypeError, ValueError):
+        return 0.0
+    if value <= 0:
+        return 0.0
+    if value > 1:
+        value = value / 100
+    return round(min(value, 1.0), 4)

@@ -441,31 +441,13 @@ class DownloadManager:
         if not task_id or task_id.startswith("alist_"):
             return False
 
-        response = requests.post(
-            f"{self.alist.api_url}/api/task/offline_download/info",
-            headers=self.alist.headers,
-            params={"tid": task_id},
-            timeout=5,
-        )
-        if response.status_code != 200:
+        provider = self._get_download_provider("alist")
+        progress = provider.progress(task_id)
+        if progress.status == "unknown":
             return False
+        task.progress = progress.progress
 
-        payload = response.json()
-        items = payload.get("data", []) or []
-        if not items:
-            return False
-        if isinstance(items, dict):
-            item = items
-        elif isinstance(items, list):
-            item = items[0] if items else None
-        else:
-            item = None
-        if not isinstance(item, dict):
-            return False
-        progress = item.get("progress", 0)
-        task.progress = self._normalize_alist_progress(progress)
-
-        if self._is_alist_done_state(item.get("state")):
+        if self._is_alist_done_state(progress.status):
             if self._check_local_files_exist(task.download_dir):
                 task.status = "completed"
                 task.progress = 1.0
@@ -477,7 +459,7 @@ class DownloadManager:
 
         task.status = "downloading"
         task.phase = "cloud_download"
-        error = str(item.get("error", "")).strip()
+        error = str(progress.extra.get("error", "")).strip()
         if error:
             task.error = self._refine_alist_error(task, error)
         return True

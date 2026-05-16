@@ -231,6 +231,7 @@ class DownloadProgress(BaseModel):
     eta: str = ""
     status: str = ""
     files: List[str] = Field(default_factory=list)
+    extra: JsonValue = Field(default_factory=dict)
 
 
 class StorageEntry(BaseModel):

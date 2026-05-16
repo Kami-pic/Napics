@@ -48,6 +48,8 @@ class FakeOpenListClient:
     def __init__(self, result=(True, "task-1")):
         self.result = result
         self.calls = []
+        self.api_url = "http://alist"
+        self.headers = {"Authorization": "token"}
 
     def transfer_link(self, url, save_path):
         self.calls.append((url, save_path))
@@ -143,6 +145,43 @@ def test_qbittorrent_download_provider_progress_returns_lost_when_hash_missing()
     progress = provider.progress("hash-1")
 
     assert progress.status == "lost"
+
+
+def test_openlist_download_provider_progress_reads_task_info(monkeypatch):
+    client = FakeOpenListClient()
+    post_calls = []
+
+    def fake_post(url, headers=None, params=None, timeout=None):
+        post_calls.append({"url": url, "headers": headers, "params": params, "timeout": timeout})
+        return FakeResponse(
+            200,
+            {"data": [{"id": "task-real-123", "state": "succeeded", "progress": 100, "error": ""}]},
+        )
+
+    monkeypatch.setattr("download_provider_adapter.requests.post", fake_post)
+    provider = DownloadProviderAdapter(_metadata("openlist", "OpenList"), lambda: client)
+
+    progress = provider.progress("task-real-123")
+
+    assert progress.external_task_id == "task-real-123"
+    assert progress.status == "succeeded"
+    assert progress.progress == 1.0
+    assert post_calls == [
+        {
+            "url": "http://alist/api/task/offline_download/info",
+            "headers": {"Authorization": "token"},
+            "params": {"tid": "task-real-123"},
+            "timeout": 5,
+        }
+    ]
+
+
+def test_openlist_download_provider_progress_skips_legacy_marker():
+    provider = DownloadProviderAdapter(_metadata("openlist", "OpenList"), FakeOpenListClient)
+
+    progress = provider.progress("alist_task-1")
+
+    assert progress.status == "unknown"
 
 
 def test_build_download_providers_filters_download_metadata_only():

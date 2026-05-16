@@ -16,15 +16,17 @@ Phase 7：迁移 qB / OpenList 为 `DownloadProvider` / `StorageProvider`。
 - [x] `/download` 和 `/batch-download` 的直接提交路径改为通过 `DownloadProvider` adapter 调用，响应结构保持兼容。
 - [x] `DownloadManager._push_to_qb()` / `_push_to_alist()` 的提交动作改为通过 `DownloadProvider` adapter 调用，保留旧 hash / task id 兼容规则。
 - [x] qBittorrent `DownloadProvider.progress()` 支持读取单任务进度，`DownloadManager._sync_qb_progress()` 改为通过 provider 获取结构化进度。
+- [x] OpenList `DownloadProvider.progress()` 支持通过真实 task id 读取单任务进度，`DownloadManager._sync_alist_progress_by_task_id()` 改为通过 provider 获取结构化进度。
 
 ## 暂不做
 
 - 不修改 `QBittorrentClient` / `AlistManager` 内部请求逻辑。
 - 不修改 `DownloadManager` 状态机。
-- 不修改 `/download-manager/*` 队列、下载进度同步逻辑。
+- 不修改 `/download-manager/*` 队列和状态机。
 - 不修改归位替换与文件白名单逻辑。
 - 不修改订阅自动下载逻辑。
 - 不迁移 OpenList 存储浏览能力。
+- 不迁移 OpenList 旧 `alist_*` marker 的列表扫描匹配逻辑。
 - 不迁移 `sync_from_qb()` 全量导入与 qB 对账接口。
 - 不修改前端 provider 感知逻辑。
 
