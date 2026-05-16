@@ -8,22 +8,15 @@ import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from pan_models import (
     PanResult, PanSearchResponse, PanType, SourceStatus,
 )
 from content_filter import ContentFilter, PanResultFilter
 from scraper_base import ScraperBase
-from pan_scraper_rrdynb import RrdynbScraper
-from pan_scraper_ddys import DdysScraper
-from pan_scraper_pansou import PanSouClient
-from pan_scraper_pansearch import PanSearchScraper
-from pan_scraper_sites import MultiSiteScraper
-from pan_scraper_slowread import SlowreadScraper
-from pan_scraper_wnsearch import WnSearchScraper
-from pan_scraper_gogopanso import GogoPansoScraper
-from pan_scraper_github import GitHubPanScraper
+from provider_contracts import PanSearchProvider
+from provider_models import PanSearchCandidate, SearchRequest
 
 logger = logging.getLogger(__name__)
 # 默认网盘优先级
@@ -31,6 +24,10 @@ DEFAULT_PAN_PRIORITY = ["quark", "aliyun", "pan115", "pikpak", "baidu"]
 
 # 标题相似度阈值（Levenshtein > 此值视为同一资源）
 TITLE_SIMILARITY_THRESHOLD = 0.9
+ALL_PAN_SOURCE_NAMES = [
+    "pansearch", "rrdynb", "ddys", "pansou",
+    "sites", "slowread", "wnsearch", "gogopanso", "github",
+]
 
 
 class PanSearchService:
@@ -44,44 +41,75 @@ class PanSearchService:
         sensitive_words: List[str] = None,
         scraper_proxy: str = "",
         alist_manager=None,  # OpenList 管理器实例（可选，用于挂载状态标记）
+        pan_providers: List[PanSearchProvider] = None,
     ):
         self.pan_type_priority = pan_type_priority or DEFAULT_PAN_PRIORITY
         self.content_filter = ContentFilter(sensitive_words or [])
         self.quality_filter = PanResultFilter()
         self.alist_manager = alist_manager
+        self.pan_providers: Dict[str, PanSearchProvider] = {
+            provider.metadata().id: provider
+            for provider in (pan_providers or [])
+        }
+        self._all_source_names = list(ALL_PAN_SOURCE_NAMES)
 
-        # 根据配置初始化已启用的爬虫
         sources = search_sources or {
             "pansearch": True, "rrdynb": True, "ddys": True, "pansou": False,
             "sites": False, "slowread": False, "wnsearch": False,
         }
+        for name in sources:
+            if name not in self._all_source_names:
+                self._all_source_names.append(name)
+
         self.scrapers: Dict[str, ScraperBase] = {}
+        if self.pan_providers:
+            return
+        self.scrapers = self._build_legacy_scrapers(sources, pansou_api_url, scraper_proxy)
+
+    def _build_legacy_scrapers(
+        self,
+        sources: Dict[str, bool],
+        pansou_api_url: str,
+        scraper_proxy: str,
+    ) -> Dict[str, ScraperBase]:
+        from pan_scraper_ddys import DdysScraper
+        from pan_scraper_github import GitHubPanScraper
+        from pan_scraper_gogopanso import GogoPansoScraper
+        from pan_scraper_pansearch import PanSearchScraper
+        from pan_scraper_pansou import PanSouClient
+        from pan_scraper_rrdynb import RrdynbScraper
+        from pan_scraper_sites import MultiSiteScraper
+        from pan_scraper_slowread import SlowreadScraper
+        from pan_scraper_wnsearch import WnSearchScraper
+
+        scrapers: Dict[str, ScraperBase] = {}
         # pansearch — 国内可直连，优先启用
         if sources.get("pansearch", True):
-            self.scrapers["pansearch"] = PanSearchScraper(proxy=scraper_proxy or None)
+            scrapers["pansearch"] = PanSearchScraper(proxy=scraper_proxy or None)
         if sources.get("rrdynb"):
-            self.scrapers["rrdynb"] = RrdynbScraper(proxy=scraper_proxy or None)
+            scrapers["rrdynb"] = RrdynbScraper(proxy=scraper_proxy or None)
         if sources.get("ddys"):
-            self.scrapers["ddys"] = DdysScraper(proxy=scraper_proxy or None)
+            scrapers["ddys"] = DdysScraper(proxy=scraper_proxy or None)
         if sources.get("pansou") and pansou_api_url:
-            self.scrapers["pansou"] = PanSouClient(
+            scrapers["pansou"] = PanSouClient(
                 api_url=pansou_api_url, proxy=scraper_proxy or None
             )
         # 通用网盘搜索站（凌风云/盘搜搜/小白盘/趣盘搜）
         if sources.get("sites"):
-            self.scrapers["sites"] = MultiSiteScraper(proxy=scraper_proxy or None)
+            scrapers["sites"] = MultiSiteScraper(proxy=scraper_proxy or None)
         # 慢读搜索（16 种网盘类型）
         if sources.get("slowread"):
-            self.scrapers["slowread"] = SlowreadScraper(proxy=scraper_proxy or None)
+            scrapers["slowread"] = SlowreadScraper(proxy=scraper_proxy or None)
         # 我能搜（夸克/百度/迅雷/UC）
         if sources.get("wnsearch"):
-            self.scrapers["wnsearch"] = WnSearchScraper(proxy=scraper_proxy or None)
+            scrapers["wnsearch"] = WnSearchScraper(proxy=scraper_proxy or None)
         # 狗狗盘搜（aliyunpanshare 搜索前端，每日更新）
         if sources.get("gogopanso", True):
-            self.scrapers["gogopanso"] = GogoPansoScraper(proxy=scraper_proxy or None)
+            scrapers["gogopanso"] = GogoPansoScraper(proxy=scraper_proxy or None)
         # GitHub 资源仓库（QuarkShare + quark-share，本地索引）
         if sources.get("github", True):
-            self.scrapers["github"] = GitHubPanScraper(proxy=scraper_proxy or None)
+            scrapers["github"] = GitHubPanScraper(proxy=scraper_proxy or None)
+        return scrapers
 
     async def search(
         self, keyword: str, media_type: str = ""
@@ -93,7 +121,8 @@ class PanSearchService:
         self, keyword: str, media_type: str = ""
     ) -> PanSearchResponse:
         """同步版搜索 — 用线程池并发调用爬虫。"""
-        if not self.scrapers:
+        active_sources = self.pan_providers or self.scrapers
+        if not active_sources:
             return PanSearchResponse(
                 source_statuses=[
                     SourceStatus(name="all", status="disabled", count=0)
@@ -104,8 +133,11 @@ class PanSearchService:
         source_statuses: List[SourceStatus] = []
         all_results: List[PanResult] = []
 
-        with ThreadPoolExecutor(max_workers=len(self.scrapers)) as pool:
-            futures = {name: pool.submit(scraper.search, keyword) for name, scraper in self.scrapers.items()}
+        with ThreadPoolExecutor(max_workers=len(active_sources)) as pool:
+            futures = {
+                name: pool.submit(self._search_source, name, source, keyword, media_type)
+                for name, source in active_sources.items()
+            }
 
             for name, future in futures.items():
                 try:
@@ -121,12 +153,8 @@ class PanSearchService:
                     ))
 
         # 补充未启用的源状态
-        all_source_names = [
-            "pansearch", "rrdynb", "ddys", "pansou",
-            "sites", "slowread", "wnsearch", "gogopanso", "github",
-        ]
-        for name in all_source_names:
-            if name not in self.scrapers:
+        for name in self._all_source_names:
+            if name not in active_sources:
                 source_statuses.append(SourceStatus(
                     name=name, status="disabled",
                 ))
@@ -150,6 +178,31 @@ class PanSearchService:
             groups=groups,
             source_statuses=source_statuses,
             total=len(quality_filtered),
+        )
+
+    def _search_source(
+        self,
+        name: str,
+        source,
+        keyword: str,
+        media_type: str,
+    ) -> List[PanResult]:
+        if name in self.pan_providers:
+            request = SearchRequest(query=keyword, media_type=media_type, limit=0)
+            candidates = source.search_pan(request)
+            return [self._candidate_to_result(candidate) for candidate in candidates]
+        return source.search(keyword)
+
+    def _candidate_to_result(self, candidate: PanSearchCandidate) -> PanResult:
+        return PanResult(
+            title=candidate.title,
+            clean_title=candidate.clean_title or candidate.title,
+            pan_type=_parse_pan_type(candidate.pan_type),
+            share_url=candidate.share_url,
+            password=candidate.password,
+            source=candidate.source_provider_id,
+            resolution=candidate.resolution,
+            size_gb=_parse_size_gb(candidate.file_size),
         )
 
     def _filter_relevant(self, results: List[PanResult], keyword: str) -> List[PanResult]:
@@ -264,3 +317,27 @@ class PanSearchService:
             ordered[pt] = items
 
         return ordered
+
+
+def _parse_pan_type(value: str) -> PanType:
+    try:
+        return PanType(value)
+    except ValueError:
+        return PanType.UNKNOWN
+
+
+def _parse_size_gb(value: str) -> float:
+    text = (value or "").strip().lower()
+    if not text:
+        return 0.0
+    import re
+    match = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*(tb|gb|mb)?", text)
+    if not match:
+        return 0.0
+    size = float(match.group(1))
+    unit = match.group(2) or "gb"
+    if unit == "tb":
+        return size * 1024
+    if unit == "mb":
+        return size / 1024
+    return size

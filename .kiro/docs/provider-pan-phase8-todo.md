@@ -43,7 +43,7 @@ Phase 8：网盘搜索源与自动转存能力私有化。
 1. [x] 新增 `PanSearchProvider` adapter / factory，把现有 `pan_scraper_*` 包装为 provider，但先不移动文件。  
    验证：provider adapter 单测 + `PanSearchService` 响应结构快照。
 
-2. `PanSearchService` 改为接收 provider 列表，保留 Core 聚合、去重、相关性过滤、敏感词过滤、质量过滤、分组逻辑。  
+2. [x] `PanSearchService` 改为接收 provider 列表，保留 Core 聚合、去重、相关性过滤、敏感词过滤、质量过滤、分组逻辑。  
    验证：`/search/pan` 响应结构不变，`source_statuses` 仍包含 disabled / success / failed。
 
 3. 将 `PAN_SOURCE_DEFAULTS` 的公开输出改为按 runtime/private 开关裁剪，公开 Core 默认不暴露具体 pan provider。  
@@ -69,3 +69,4 @@ Phase 8：网盘搜索源与自动转存能力私有化。
 - 审计命令：`rg -n "PAN_SOURCE_DEFAULTS|PanSearchService|pan_scraper|pansearch|pansou|gogopanso|github|rrdynb|ddys|QuarkTransfer|/alist/transfer|transfer_pan|share_url|pan_type|private_pan|private_" backend .kiro/docs -g "*.py" -g "*.md"`
 - 本轮为纯文档审计，无业务测试。
 - adapter / factory 验证命令：`cd backend && python -X utf8 -m pytest test_pan_search_provider_adapter.py test_provider_contracts.py`
+- `PanSearchService` provider bridge 验证命令：`cd backend && python -X utf8 -m pytest test_pan_search_service_provider_bridge.py test_pan_search_provider_adapter.py test_provider_contracts.py`
