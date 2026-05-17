@@ -15,7 +15,14 @@ router = APIRouter(prefix="/api/providers", tags=["providers"])
 
 def get_provider_catalog() -> ProviderCatalog:
     registry = ProviderRegistry()
-    registry.load_metadata(build_builtin_provider_metadata(*_get_config_overrides()))
+    bt_overrides, pan_overrides = _get_config_overrides()
+    registry.load_metadata(
+        build_builtin_provider_metadata(
+            bt_overrides,
+            pan_overrides,
+            include_private_pan=_allow_private_pan_providers(),
+        )
+    )
     registry.load_metadata(default_provider_registry.list())
     return registry.catalog()
 
@@ -27,6 +34,11 @@ def _get_config_overrides() -> tuple[dict, dict]:
         return {}, {}
     conf = config_m.config
     return conf.bt_search_sources or {}, conf.pan_search_sources or {}
+
+
+def _allow_private_pan_providers() -> bool:
+    import os
+    return os.getenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", "").strip().lower() in {"1", "true", "yes"}
 
 
 @router.get("", response_model=ProviderCatalog)

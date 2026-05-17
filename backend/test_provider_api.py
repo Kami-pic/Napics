@@ -1,4 +1,5 @@
 from main import app
+import providers as providers_module
 from provider_builtin_metadata import build_builtin_provider_metadata
 from provider_models import ProviderKind
 from provider_registry import default_provider_registry
@@ -14,7 +15,7 @@ def test_provider_api_returns_static_provider_catalog():
     assert any(item["id"] == "openlist_storage" for item in payload["storage"])
     assert payload["notification"] == []
     assert any(item["id"] == "prowlarr" for item in payload["search"])
-    assert any(item["id"] == "pansearch" for item in payload["panSearch"])
+    assert payload["panSearch"] == []
     assert any(item["id"] == "tmdb" for item in payload["metadata"])
     assert any(item["id"] == "douban" for item in payload["metadata"])
     assert any(item["id"] == "bangumi" for item in payload["metadata"])
@@ -53,6 +54,7 @@ def test_builtin_provider_metadata_applies_config_overrides():
     providers = build_builtin_provider_metadata(
         bt_overrides={"bitsearch": {"enabled": False, "proxy": False}},
         pan_overrides={"pansou": True},
+        include_private_pan=True,
     )
 
     bitsearch = next(item for item in providers if item.id == "bitsearch")
@@ -65,7 +67,7 @@ def test_builtin_provider_metadata_applies_config_overrides():
     assert pansou.enabled is True
 
 
-def test_builtin_provider_metadata_keeps_legacy_source_counts():
+def test_builtin_provider_metadata_keeps_open_core_source_counts():
     from search_service import BT_SOURCE_DEFAULTS, PAN_SOURCE_DEFAULTS
 
     providers = build_builtin_provider_metadata()
@@ -77,11 +79,28 @@ def test_builtin_provider_metadata_keeps_legacy_source_counts():
     storage_count = sum(1 for item in providers if item.kind == ProviderKind.STORAGE)
 
     assert search_count == len(BT_SOURCE_DEFAULTS)
-    assert pan_count == len(PAN_SOURCE_DEFAULTS)
+    assert pan_count == 0
     assert metadata_count == 3
     assert rss_count == 8
     assert download_count == 2
     assert storage_count == 1
+
+
+def test_builtin_provider_metadata_can_include_private_pan_sources():
+    from search_service import PAN_SOURCE_DEFAULTS
+
+    providers = build_builtin_provider_metadata(include_private_pan=True)
+    pan_count = sum(1 for item in providers if item.kind == ProviderKind.PAN_SEARCH)
+
+    assert pan_count == len(PAN_SOURCE_DEFAULTS)
+
+
+def test_provider_api_can_expose_private_pan_sources_with_explicit_env(monkeypatch):
+    monkeypatch.setenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", "true")
+
+    payload = providers_module.list_providers().model_dump(by_alias=True)
+
+    assert any(item["id"] == "pansearch" for item in payload["panSearch"])
 
 
 def test_root_route_keeps_existing_response():

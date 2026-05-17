@@ -46,7 +46,7 @@ Phase 8：网盘搜索源与自动转存能力私有化。
 2. [x] `PanSearchService` 改为接收 provider 列表，保留 Core 聚合、去重、相关性过滤、敏感词过滤、质量过滤、分组逻辑。  
    验证：`/search/pan` 响应结构不变，`source_statuses` 仍包含 disabled / success / failed。
 
-3. 将 `PAN_SOURCE_DEFAULTS` 的公开输出改为按 runtime/private 开关裁剪，公开 Core 默认不暴露具体 pan provider。  
+3. [x] 将 `PAN_SOURCE_DEFAULTS` 的公开输出改为按 runtime/private 开关裁剪，公开 Core 默认不暴露具体 pan provider。  
    验证：无 private provider 时 `/api/providers.panSearch` 为空或只含 example disabled provider，Core 可启动。
 
 4. 新增 private plugin 目录占位与 `.gitignore` 规则：`backend/plugins/**/private_*/`。  
@@ -70,3 +70,4 @@ Phase 8：网盘搜索源与自动转存能力私有化。
 - 本轮为纯文档审计，无业务测试。
 - adapter / factory 验证命令：`cd backend && python -X utf8 -m pytest test_pan_search_provider_adapter.py test_provider_contracts.py`
 - `PanSearchService` provider bridge 验证命令：`cd backend && python -X utf8 -m pytest test_pan_search_service_provider_bridge.py test_pan_search_provider_adapter.py test_provider_contracts.py`
+- provider 输出裁剪验证命令：`cd backend && python -X utf8 -m pytest test_provider_api.py test_pan_search_provider_adapter.py test_provider_contracts.py`
