@@ -762,3 +762,31 @@
 - `python -X utf8 -m pytest test_download_provider_adapter.py test_download_provider_factory.py test_download_route_provider_bridge.py test_download_manager_relocate_flow.py test_storage_provider_adapter.py test_provider_api.py test_relocate_routes.py test_provider_contracts.py`
 - 结果：`171 passed`
 - 完整后端 pytest 当前受缺失 `backend/media_library.json` 阻塞：`test_local_match_e2e.py` 在收集阶段直接读取该文件
+
+## 2026-05-17 网盘源私有化 Phase 8 收口
+
+**变更**:
+- 新增 `pan_search_provider_adapter.py` / `pan_search_provider_factory.py`，将现有 `pan_scraper_*` 包装为 `PanSearchProvider` 兼容桥
+- `PanSearchService` 支持接收 `PanSearchProvider` 列表，并继续保留旧 scraper 构造路径
+- `/api/providers` 默认 open-core 视图不再暴露具体 `panSearch` 私有网盘源；设置 `NAPICS_ALLOW_PRIVATE_PROVIDERS=true` 时保留私有环境清单
+- 新增 `backend/plugins/` 公开插件骨架和搜索 Provider 示例，`.gitignore` 排除 `backend/plugins/**/private_*/`
+- `/alist/transfer` 默认 open-core 下返回 `private_disabled`，设置 `NAPICS_ALLOW_PRIVATE_PROVIDERS=true` 时保留旧 `QuarkTransfer` 自动转存路径
+- 新增 provider bridge、provider API、private transfer boundary 相关测试
+
+**保持不变**:
+- 未移动任何 `pan_scraper_*` 文件
+- 未修改 `PanResult` / `PanSearchResponse` 响应字段
+- 未修改 `/search/pan` 搜索聚合接口的默认执行路径
+- 未修改网盘搜索评分、过滤、去重、分组、OpenList 挂载状态标记逻辑
+- 未修改前端搜索 Tab、设置页或 Provider 动态感知逻辑
+- 未新增 Docker / RuntimeProfile 系统
+
+**收口结论**:
+- 网盘搜索源已具备 Provider adapter / factory 边界，Core 聚合层可接收 provider 输入
+- 公开 provider catalog 默认不暴露具体私有网盘源
+- 自动转存链路已从 open-core 默认能力中关闭，私有环境需显式启用
+- Phase 8 仍保留私有实现文件在原位置，后续如果要物理迁移到 `private_*` 目录，应作为独立小步执行
+
+**验证**:
+- `python -X utf8 -m pytest test_search_transfer_private_boundary.py test_provider_api.py test_pan_search_provider_adapter.py test_pan_search_service_provider_bridge.py test_provider_contracts.py test_provider_registry.py`
+- 结果：`30 passed`

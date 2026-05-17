@@ -27,6 +27,7 @@ from search_service import (
     PAN_SOURCE_DEFAULTS as _PAN_SOURCE_DEFAULTS,
 )
 from provider_models import SearchCandidate, SearchRequest
+from provider_runtime import allow_private_providers
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -275,6 +276,13 @@ def transfer_pan_resource(req: dict):
     其他网盘 → 返回提示让用户手动保存。
     """
     try:
+        if not allow_private_providers():
+            return {
+                "success": False,
+                "error_code": "private_disabled",
+                "error_message": "自动转存属于私有 Provider 能力，公开核心默认禁用",
+            }
+
         share_url = req.get("share_url", "")
         pan_type = req.get("pan_type", "")
         passcode = req.get("password", "")
