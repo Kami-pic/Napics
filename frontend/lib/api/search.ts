@@ -59,6 +59,7 @@ export const searchApi = {
   },
 
   // ── 搜索源管理 ──
+  getProviders: () => request<any>(`${BASE_URL}/api/providers`),
   getSearchSources: () => request<any>(`${BASE_URL}/search/sources`),
   toggleSearchSource: (name: string, enabled: boolean) =>
     request<any>(`${BASE_URL}/search/sources/${name}`, {

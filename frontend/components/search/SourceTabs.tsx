@@ -3,42 +3,12 @@
 import { useMemo } from "react";
 import type { SourceStatus } from "./FilterBar";
 
-// 源 Tab 的中文标签映射
-const BT_SOURCE_LABELS: Record<string, string> = {
-  all: "全部",
-  prowlarr: "Prowlarr",
-  bitsearch: "Bitsearch",
-  cilixiong: "磁力熊",
-  xl720: "XL720",
-  nyaa: "Nyaa",
-  mikan: "蜜柑",
-  yts: "YTS",
-  limetorrents: "LimeTorrents",
-  acgrip: "ACG.RIP",
-  bangumi_moe: "萌番组",
-  eztv: "EZTV",
-  dmhy: "动漫花园",
-  "1337x": "1337x",
-};
-
-const PAN_SOURCE_LABELS: Record<string, string> = {
-  all: "全部",
-  pansearch: "PanSearch",
-  rrdynb: "人人电影",
-  ddys: "低端影视",
-  pansou: "PanSou",
-  sites: "多站聚合",
-  slowread: "慢读",
-  wnsearch: "WnSearch",
-  gogopanso: "狗狗盘搜",
-  github: "GitHub",
-};
-
 export interface SourceTabsProps {
   type: "bt" | "pan";
   activeSource: string;  // "all" 或具体源名
   onSelect: (source: string) => void;
   enabledSources: string[];  // 已启用的源列表
+  sourceLabels?: Record<string, string>;
   /** 各源搜索状态（loading/done/failed + 结果条数） */
   sourceStatuses?: Record<string, SourceStatus>;
   /** "全部"模式下的总结果数 */
@@ -47,19 +17,18 @@ export interface SourceTabsProps {
   allSearching?: boolean;
 }
 
-export default function SourceTabs({ type, activeSource, onSelect, enabledSources, sourceStatuses, totalCount, allSearching }: SourceTabsProps) {
-  const labels = type === "bt" ? BT_SOURCE_LABELS : PAN_SOURCE_LABELS;
-
+export default function SourceTabs({ type, activeSource, onSelect, enabledSources, sourceLabels, sourceStatuses, totalCount, allSearching }: SourceTabsProps) {
   // Tab 列表：全部 + 已启用的源
   const tabs = useMemo(() => {
     const list = [{ name: "all", label: "全部" }];
     for (const name of enabledSources) {
-      if (labels[name]) {
-        list.push({ name, label: labels[name] });
+      const label = sourceLabels?.[name] || name;
+      if (label) {
+        list.push({ name, label });
       }
     }
     return list;
-  }, [enabledSources, labels]);
+  }, [enabledSources, sourceLabels]);
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
@@ -97,5 +66,3 @@ export default function SourceTabs({ type, activeSource, onSelect, enabledSource
     </div>
   );
 }
-
-export { BT_SOURCE_LABELS, PAN_SOURCE_LABELS };

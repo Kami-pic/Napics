@@ -1,7 +1,7 @@
 // 搜索弹窗状态管理 hook — 从 SearchModal.tsx 拆分
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
+import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus, ProviderCatalog, ProviderMetadata } from "@/types";
 import { api } from "@/lib/api";
 import { DEFAULT_FILTERS, applyFilters, type SourceStatus } from "./FilterBar";
 import { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
@@ -39,9 +39,6 @@ export interface UseSearchStateParams {
   episodeTag?: string;
   qbConfigured?: boolean;
 }
-
-// 已知直搜源名称（用于区分 Prowlarr 索引器）
-const DIRECT_SOURCES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe", "eztv", "dmhy", "1337x"]);
 
 export function useSearchState({
   open, query, defaultSavePath, currentResolution, mediaType,
@@ -168,11 +165,18 @@ export function useSearchState({
   const [disabledSources, setDisabledSources] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (open) {
-      api.getSearchSources().then((d: any) => {
-        const sources = d.sources || [];
-        setBtSources(sources.filter((s: any) => s.type === "bt"));
-        setPanSources(sources.filter((s: any) => s.type === "pan"));
-      }).catch(() => {});
+      api.getProviders()
+        .then((catalog: ProviderCatalog) => {
+          setBtSources(toSearchSources(catalog.search.filter(p => p.type === "bt")));
+          setPanSources(toSearchSources(catalog.panSearch));
+        })
+        .catch(() => {
+          api.getSearchSources().then((d: any) => {
+            const sources = d.sources || [];
+            setBtSources(sources.filter((s: any) => s.type === "bt"));
+            setPanSources(sources.filter((s: any) => s.type === "pan"));
+          }).catch(() => {});
+        });
     }
   }, [open]);
   const toggleSource = useCallback((name: string) => {
@@ -186,15 +190,16 @@ export function useSearchState({
   // Prowlarr 索引器（仅从 Prowlarr 来源的结果中提取，排除直搜源）
   const availableIndexers = useMemo(() => {
     const s = new Set<string>();
+    const directSources = new Set(btSources.filter(src => src.name !== "prowlarr").map(src => src.name));
     results.forEach(r => {
       const src = (r as any)._source || r.indexer;
       // 只有 Prowlarr 来源的结果才提取索引器名
-      if (src === "prowlarr" && r.indexer && !DIRECT_SOURCES.has(r.indexer)) {
+      if (src === "prowlarr" && r.indexer && !directSources.has(r.indexer)) {
         s.add(r.indexer);
       }
     });
     return Array.from(s);
-  }, [results]);
+  }, [results, btSources]);
 
   useEffect(() => { setKeyword(query); }, [query]);
 
@@ -599,4 +604,12 @@ export function useSearchState({
     // 计算结果
     activeResults, displayResults, filtered,
   };
+}
+
+function toSearchSources(providers: ProviderMetadata[]) {
+  return providers.map(provider => ({
+    name: provider.id,
+    label: provider.name,
+    enabled: provider.enabled,
+  }));
 }

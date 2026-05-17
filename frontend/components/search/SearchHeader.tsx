@@ -205,6 +205,7 @@ export default function SearchHeader(props: SearchHeaderProps) {
           activeSource={btActiveSource}
           onSelect={handleBtSourceSelect}
           enabledSources={btSources.filter(s => s.enabled).map(s => s.name)}
+          sourceLabels={Object.fromEntries(btSources.map(s => [s.name, s.label]))}
           sourceStatuses={sourceStatuses}
           totalCount={results.length}
           allSearching={searching}
@@ -228,6 +229,7 @@ export default function SearchHeader(props: SearchHeaderProps) {
           activeSource={panActiveSource}
           onSelect={handlePanSourceSelect}
           enabledSources={panSources.filter(s => s.enabled).map(s => s.name)}
+          sourceLabels={Object.fromEntries(panSources.map(s => [s.name, s.label]))}
           sourceStatuses={panSourceStatusMap}
           totalCount={panTotal}
           allSearching={panSearching}

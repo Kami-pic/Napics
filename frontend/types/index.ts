@@ -508,6 +508,32 @@ export interface PanSearchResponse {
   total: number;
 }
 
+// ===== Provider metadata 类型定义 =====
+
+export interface ProviderMetadata {
+  id: string;
+  name: string;
+  kind: "search" | "pan_search" | "metadata" | "rss" | "download" | "storage" | "notification";
+  type: string;
+  enabled: boolean;
+  defaultEnabled: boolean;
+  capabilities: string[];
+  riskLevel: "low" | "medium" | "high" | "private" | "user_configured";
+  requires: string[];
+  supportsProxy: boolean;
+  description: string;
+}
+
+export interface ProviderCatalog {
+  search: ProviderMetadata[];
+  panSearch: ProviderMetadata[];
+  metadata: ProviderMetadata[];
+  rss: ProviderMetadata[];
+  download: ProviderMetadata[];
+  storage: ProviderMetadata[];
+  notification: ProviderMetadata[];
+}
+
 
 // ===== AI 集成 类型定义 =====
 
