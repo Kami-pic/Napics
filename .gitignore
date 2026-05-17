@@ -74,6 +74,9 @@ backend/config_manager.py.old
 # Gemini 废弃的重构目录
 backend/app/
 
+# 私有 Provider 实现（公开仓库只保留 SDK / example / 低风险 provider）
+backend/plugins/**/private_*/
+
 # 根目录临时文件
 scrape_cache/
 media_library.json

@@ -49,7 +49,7 @@ Phase 8：网盘搜索源与自动转存能力私有化。
 3. [x] 将 `PAN_SOURCE_DEFAULTS` 的公开输出改为按 runtime/private 开关裁剪，公开 Core 默认不暴露具体 pan provider。  
    验证：无 private provider 时 `/api/providers.panSearch` 为空或只含 example disabled provider，Core 可启动。
 
-4. 新增 private plugin 目录占位与 `.gitignore` 规则：`backend/plugins/**/private_*/`。  
+4. [x] 新增 private plugin 目录占位与 `.gitignore` 规则：`backend/plugins/**/private_*/`。  
    验证：公开仓库不会纳入 private 实现；example provider 仍可作为 SDK 示例。
 
 5. 将 `/alist/transfer` / `QuarkTransfer` 迁移到 private storage transfer provider 或在 open-core profile 下禁用。  
@@ -71,3 +71,4 @@ Phase 8：网盘搜索源与自动转存能力私有化。
 - adapter / factory 验证命令：`cd backend && python -X utf8 -m pytest test_pan_search_provider_adapter.py test_provider_contracts.py`
 - `PanSearchService` provider bridge 验证命令：`cd backend && python -X utf8 -m pytest test_pan_search_service_provider_bridge.py test_pan_search_provider_adapter.py test_provider_contracts.py`
 - provider 输出裁剪验证命令：`cd backend && python -X utf8 -m pytest test_provider_api.py test_pan_search_provider_adapter.py test_provider_contracts.py`
+- private plugin 占位验证命令：`git check-ignore backend/plugins/search/private_pan/example.py`；`cd backend && python -m py_compile plugins/search/example_provider.py`
