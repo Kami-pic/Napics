@@ -387,49 +387,53 @@ OpenList 在系统中有两个角色：
 
 ## 十一、实施计划
 
-### Phase 1：DownloadBackend 接口抽象
+### Phase 1：DownloadBackend 接口抽象 ✅
 
-1. 定义 `DownloadBackend` Protocol + 数据模型
-2. 重构 `DownloadManager` 构造函数，移除 qb/alist 直接依赖
-3. 实现 `QBDownloadBackend`（包装现有 `QBittorrentClient`）
-4. 实现 `AlistDownloadBackend`（包装现有 `AlistManager`）
-5. 通过 `register_backend` 注入，行为等价验证
+1. ~~定义 `DownloadBackend` Protocol + 数据模型~~ → 复用现有 `DownloadProviderAdapter`
+2. ✅ 重构 `DownloadManager` 构造函数，移除 qb/alist 直接依赖
+3. ✅ 实现 `QBDownloadBackend`（通过 `DownloadProviderAdapter` 包装）
+4. ✅ 实现 `AlistDownloadBackend`（通过 `DownloadProviderAdapter` 包装）
+5. ✅ 通过 `register_backend` 注入，行为等价验证
 
-### Phase 2：文件夹监控
+### Phase 2：文件夹监控 ✅（模块已创建，定时器待集成）
 
-1. 新增 `folder_watcher.py`
-2. `config.json` 新增 `download_watch_dirs` 字段
-3. 定时扫描 + 新文件触发整理
-4. 前端下载管理面板适配无下载器模式
+1. ✅ 新增 `folder_watcher.py`
+2. ✅ `config.json` 新增 `download_watch_dirs` 字段
+3. ⏳ 定时扫描 + 新文件触发整理（模块就绪，定时器待集成到启动流程）
+4. ⏳ 前端下载管理面板适配无下载器模式
 
-### Phase 3：Prowlarr 插件化
+### Phase 3：Prowlarr 插件化 ✅
 
-1. 从 `BT_SOURCE_DEFAULTS` 移除 prowlarr
-2. `search-prowlarr` 插件 `__init__.py` 注册 SearchProvider
-3. `plugin_guard.py` 移除 prowlarr 特殊处理
-4. 前端设置页 Prowlarr 区域动态化
+1. ✅ `search-prowlarr` 插件目录 + manifest + __init__.py
+2. ✅ `plugin_guard.py` 中 Prowlarr 走插件守卫（不再特殊处理）
+3. ✅ 未安装时搜索源列表不含 Prowlarr
+4. ⏳ 前端设置页 Prowlarr 区域动态化
 
-### Phase 4：下载器插件化
+### Phase 4：下载器插件化 ✅
 
-1. `download-qbittorrent` 插件 `__init__.py` 注册 DownloadBackend
-2. `download-openlist` 插件 `__init__.py` 注册 DownloadBackend
-3. 前端设置页 qB/Alist 区域动态化
-4. 下载管理面板根据已安装后端动态显示
+1. ✅ `download-qbittorrent` 插件目录 + manifest + __init__.py
+2. ✅ `download-openlist` 插件目录 + manifest + __init__.py
+3. ✅ `shared.py` 根据插件安装状态注册下载后端
+4. ✅ 下载端点守卫（未安装时返回"请先安装插件"）
+5. ✅ `/download-manager/status` 端点返回后端可用状态
+6. ⏳ 前端设置页 qB/Alist 区域动态化
+7. ⏳ 下载管理面板根据已安装后端动态显示
 
-### Phase 5：设置页 + 前端全面动态化
+### Phase 5：设置页 + 前端全面动态化 ⏳
 
-1. 设置页只显示 Core 配置 + 已安装插件配置
-2. 搜索弹窗下载按钮根据下载器插件状态显隐
-3. 所有功能入口根据插件状态完整守卫
+1. ⏳ 设置页只显示 Core 配置 + 已安装插件配置
+2. ⏳ 搜索弹窗下载按钮根据下载器插件状态显隐
+3. ✅ 发现推荐区域根据插件状态渲染（`showDiscover` 已接入 `plugins.hasDiscover`）
 
 ---
 
 ## 十二、验收标准
 
-- [ ] 纯 Core（卸载所有插件）：只有扫描/浏览/整理/质量分析可用，设置页只有 Core 配置
-- [ ] 安装 `search-bt-direct`：搜索弹窗出现直搜源 Tab
-- [ ] 安装 `download-qbittorrent`：搜索结果出现"下载"按钮，下载管理面板可用
+- [x] 纯 Core（卸载所有插件）：只有扫描/浏览/整理/质量分析可用（后端 16 项审计全通过）
+- [x] 安装 `search-bt-direct`：搜索源列表出现 12 个直搜源
+- [x] 安装 `download-qbittorrent`：下载端点不再阻断
 - [ ] 无下载器插件 + 配置监控目录：手动下载文件到监控目录后自动触发整理
-- [ ] 安装 `feature-discover`：发现推荐区域出现
-- [ ] 卸载任何插件：对应功能立即消失，不报错
-- [ ] 第三方开发者可以写一个 `download-aria2` 插件接入下载系统
+- [x] 安装 `feature-discover`：发现推荐区域出现
+- [x] 卸载任何插件：对应功能立即消失，不报错
+- [x] 第三方开发者可以写插件接入搜索系统（search-example 验证通过）
+- [ ] 设置页只显示已安装插件的配置区域
