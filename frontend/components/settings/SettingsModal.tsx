@@ -1,7 +1,8 @@
 // 设置弹窗
 "use client";
 import { useState, useEffect } from "react";
-import type { AppConfig, AIFeaturesConfig } from "@/types";
+import { api } from "@/lib/api";
+import type { AppConfig, AIFeaturesConfig, ProviderMetadata } from "@/types";
 
 // AI 服务商预设
 const AI_PRESETS: { label: string; base_url: string; hint: string }[] = [
@@ -83,9 +84,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   const [aiTesting, setAiTesting] = useState(false);
   const [aiUsage, setAiUsage] = useState<Record<string, { calls: number; tokens: number }>>({});
   const [aiExpanded, setAiExpanded] = useState(false);
+  const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
 
   useEffect(() => {
     if (open) {
+      api.getProviders()
+        .then(catalog => setMetadataProviders(catalog.metadata || []))
+        .catch(() => setMetadataProviders([]));
       fetch("http://localhost:8000/cache/info").then(r => r.json()).then(setCacheInfo).catch(() => {});
       fetch("http://localhost:8000/ai/status").then(r => r.json()).then(data => {
         setAiUsage(data.usage || {});
@@ -289,8 +294,9 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               <p className="text-xs text-slate-600 mt-0.5 mb-1.5">一键刮削时优先使用的数据源</p>
               <select value={config.default_scrape_source || "tmdb"} onChange={e => setConfig({ ...config, default_scrape_source: e.target.value })}
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30">
-                <option value="tmdb">TMDB（英文元数据为主，需代理）</option>
-                <option value="douban">豆瓣（中文元数据为主，无需代理）</option>
+                {(metadataProviders.length > 0 ? metadataProviders : fallbackMetadataProviders).map(provider => (
+                  <option key={provider.id} value={provider.id}>{formatMetadataProviderOption(provider)}</option>
+                ))}
               </select>
             </div>
             <div className="flex items-center justify-between">
@@ -347,4 +353,40 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
       </div>
     </div>
   );
+}
+
+const fallbackMetadataProviders: ProviderMetadata[] = [
+  {
+    id: "tmdb",
+    name: "TMDB",
+    kind: "metadata",
+    type: "metadata",
+    enabled: true,
+    defaultEnabled: true,
+    capabilities: ["search", "detail", "artwork", "aliases", "episodes"],
+    riskLevel: "low",
+    requires: ["api_key"],
+    supportsProxy: true,
+    description: "",
+  },
+  {
+    id: "douban",
+    name: "豆瓣",
+    kind: "metadata",
+    type: "metadata",
+    enabled: true,
+    defaultEnabled: true,
+    capabilities: ["search", "detail", "artwork", "aliases", "episodes"],
+    riskLevel: "low",
+    requires: [],
+    supportsProxy: false,
+    description: "",
+  },
+];
+
+function formatMetadataProviderOption(provider: ProviderMetadata): string {
+  const hints = [];
+  if (provider.requires.includes("api_key")) hints.push("需 API Key");
+  if (provider.supportsProxy) hints.push("可走代理");
+  return hints.length > 0 ? `${provider.name}（${hints.join("，")}）` : provider.name;
 }

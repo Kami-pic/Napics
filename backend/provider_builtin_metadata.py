@@ -10,14 +10,14 @@ from search_service import BT_SOURCE_DEFAULTS, PAN_SOURCE_DEFAULTS
 
 
 RSS_SOURCE_DEFAULTS = {
-    "prowlarr": {"label": "Prowlarr", "enabled": True},
-    "mikan": {"label": "蜜柑计划", "enabled": True},
-    "nyaa": {"label": "Nyaa", "enabled": True},
-    "eztv": {"label": "EZTV", "enabled": True},
-    "dmhy": {"label": "动漫花园", "enabled": True},
-    "acgrip": {"label": "ACG.RIP", "enabled": True},
-    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True},
-    "yts": {"label": "YTS", "enabled": True},
+    "prowlarr": {"label": "Prowlarr", "enabled": True, "recommended_for": ["us_tv", "movie"]},
+    "mikan": {"label": "蜜柑计划", "enabled": True, "recommended_for": ["anime"]},
+    "nyaa": {"label": "Nyaa", "enabled": True, "recommended_for": ["anime"]},
+    "eztv": {"label": "EZTV", "enabled": True, "recommended_for": ["us_tv"]},
+    "dmhy": {"label": "动漫花园", "enabled": True, "recommended_for": ["anime"]},
+    "acgrip": {"label": "ACG.RIP", "enabled": True, "recommended_for": ["anime"]},
+    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "recommended_for": ["anime"]},
+    "yts": {"label": "YTS", "enabled": True, "recommended_for": ["movie"]},
 }
 
 METADATA_SOURCE_DEFAULTS = {
@@ -42,6 +42,22 @@ NO_SEEDER_INFO_BT_PROVIDERS = {
     "bangumi_moe",
     "dmhy",
     "mikan",
+}
+
+BT_RECOMMENDED_FOR = {
+    "prowlarr": ["us_tv", "movie"],
+    "cilixiong": ["cn_tv", "movie"],
+    "xl720": ["cn_tv", "movie"],
+    "bitsearch": ["us_tv", "movie"],
+    "nyaa": ["anime"],
+    "mikan": ["anime"],
+    "yts": ["movie"],
+    "acgrip": ["anime"],
+    "bangumi_moe": ["anime"],
+    "eztv": ["us_tv"],
+    "dmhy": ["anime"],
+    "1337x": ["us_tv", "movie"],
+    "limetorrents": ["us_tv", "movie"],
 }
 
 BT_KEYWORD_CAPABILITIES = {
@@ -103,6 +119,8 @@ def _bt_capabilities(provider_id: str) -> list[str]:
     if provider_id not in NO_SEEDER_INFO_BT_PROVIDERS:
         capabilities.append("seeders")
     capabilities.extend(BT_KEYWORD_CAPABILITIES.get(provider_id, ["keyword_en", "keyword_cn", "season_en"]))
+    for rec in BT_RECOMMENDED_FOR.get(provider_id, []):
+        capabilities.append(f"recommended_{rec}")
     return capabilities
 
 
@@ -145,6 +163,9 @@ def _resolve_bt_override(
 def _build_rss_metadata() -> list[ProviderMetadata]:
     result: list[ProviderMetadata] = []
     for provider_id, info in RSS_SOURCE_DEFAULTS.items():
+        capabilities = ["rss", "download_url"]
+        for rec in info.get("recommended_for", []):
+            capabilities.append(f"recommended_{rec}")
         result.append(
             ProviderMetadata(
                 id=f"rss_{provider_id}",
@@ -153,7 +174,7 @@ def _build_rss_metadata() -> list[ProviderMetadata]:
                 type="rss",
                 enabled=bool(info.get("enabled", False)),
                 defaultEnabled=bool(info.get("enabled", False)),
-                capabilities=["rss", "download_url"],
+                capabilities=capabilities,
                 riskLevel=ProviderRiskLevel.HIGH,
             )
         )

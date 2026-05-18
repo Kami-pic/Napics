@@ -5,6 +5,42 @@
 
 ---
 
+## 2026-05-18 插件化 Phase 9 收口（前端 Provider 动态感知）
+
+**变更**:
+- **Phase 9-A（搜索弹窗）**：`SourceTabs` 展示名、`DIRECT_SOURCES`/`NO_SEEDER_INFO` 判断、`SearchSettingsPanel` 源列表、单源 Tab 默认搜索词、Prowlarr 索引器筛选全部改为从 `GET /api/providers` 的 provider metadata 派生
+- **Phase 9-B（订阅源）**：`SubscribeSourceSelect` 移除硬编码 `RSS_SOURCES` 集合和 `RECOMMENDATIONS` 表，改为从 provider metadata 获取 RSS/直搜分组、展示名、`recommended_*` capabilities 推荐标签
+- **Phase 9-C（Metadata Tab）**：`CandidatePicker` Tab 列表从 `GET /api/providers` 的 metadata 分类动态获取；候选卡片拆为独立子组件（`CandidateCardTmdb`/`CandidateCardDouban`/`CandidateCardBangumi`）；`SettingsModal` 默认刮削源下拉从 metadata provider 列表动态渲染
+- **后端**：`provider_builtin_metadata.py` RSS 源和 BT 源 metadata 增加 `recommended_for` 信息，通过 `recommended_anime`/`recommended_us_tv`/`recommended_movie`/`recommended_cn_tv` capabilities 输出；BT 源增加 `BT_RECOMMENDED_FOR` 映射
+- **Phase 1 补齐**：新增 `pluginization-audit.md` 索引文档，指向 PUBLIC_CORE/PLUGIN_BOUNDARY/PRIVATE_PROVIDERS/FRONTEND_PROVIDER_HARDCODE 四份审计文档
+- **遗留整理**：新增 `pluginization-remaining-todo.md`，统一记录 Phase 5/6/7 暂缓项和跨阶段技术债
+
+**达成目标**:
+- 新增 BT/RSS/网盘 provider 时，前端无需改代码即可出现在搜索 Tab、订阅源选择、设置页
+- 新增 metadata provider 时，前端 Tab 自动出现
+- 禁用 provider 后，前端自动隐藏或标记不可用
+- 前端不再承担 provider 业务判断（做种信息、搜索词语言、源分组、推荐策略）
+
+**已消除的前端硬编码**:
+- `DIRECT_SOURCES`、`NO_SEEDER_INFO`、`BT_SOURCE_LABELS`、`PAN_SOURCE_LABELS`
+- `RSS_SOURCES`、`RECOMMENDATIONS`、`sourceDefaultKeywords`
+- Metadata Tab 列表（tmdb/douban/bangumi 写死）
+
+**保留为合理边界**:
+- Provider 接口失败时的 fallback 硬编码
+- CandidatePicker 各源独立搜索/选择函数（API 协议不同）
+- SettingsModal FIELD_GROUPS 配置表单（用户表单，非 provider 业务判断）
+- 搜索结果品牌色表（展示样式 fallback）
+
+**测试**: 后端 22 passed（provider API/contracts/registry）；前端 116 passed + build 通过
+
+**插件化改造总体状态**:
+- Phase 1-9 全部收口
+- Phase 5/6/7 有明确暂缓项（scraper 核心/索引器管理/剧集搜索策略），属于有意识的边界决策
+- 下一步：清债阶段（ScrapeMetadataClient 兼容层 + shared.py 收口）或 Deploy Phase（环境变量/Dockerfile/NAS 文档）
+
+---
+
 ## 2026-05-09 清洗名手动编辑不生效 + 环绕声筛选误匹配
 
 **变更**:
