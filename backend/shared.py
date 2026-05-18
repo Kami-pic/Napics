@@ -35,6 +35,7 @@ import scanner
 import searcher
 import downloader
 import tmdb_client
+import metadata_service
 import config_manager
 import ai_organizer
 import douban_client
@@ -270,11 +271,12 @@ def _get_mikan_scraper():
 
 
 def _tmdb_client():
-    """统一创建 TMDBClient，自动带 proxy"""
+    """统一创建 MetadataService（包装 TMDBClient），自动带 proxy"""
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         return None
-    return tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
+    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
+    return metadata_service.MetadataService(client)
 
 
 # ── 新增直搜源 getter ──
@@ -368,9 +370,10 @@ def _get_1337x_scraper():
 def get_clients():
     """动态实例化客户端（由配置驱动）"""
     conf = config_m.config
+    raw_tmdb = tmdb_client.TMDBClient(conf.tmdb_api_key, proxy=getattr(conf, 'http_proxy', '') or '')
     return {
         "search": searcher.ProwlarrClient(conf.prowlarr_url, conf.prowlarr_api_key),
-        "tmdb": tmdb_client.TMDBClient(conf.tmdb_api_key, proxy=getattr(conf, 'http_proxy', '') or ''),
+        "tmdb": metadata_service.MetadataService(raw_tmdb),
         "qb": downloader.QBittorrentClient(conf.qb_url, username=conf.qb_username, password=conf.qb_password),
         "alist": downloader.AlistManager(conf.alist_url, conf.alist_token),
         "netdisk": searcher.NetdiskSearcher()
