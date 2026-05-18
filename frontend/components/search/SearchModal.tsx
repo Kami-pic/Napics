@@ -109,7 +109,7 @@ export default function SearchModal({
                 const origIdx = s.results.indexOf(res);
                 const aiReason = origIdx >= 0 ? s.aiRecommended.get(origIdx) : undefined;
                 return (
-                  <BtResultCard key={i} res={res} index={i} currentResolution={s.curRes} qbConfigured={qbConfigured} downloadingUrl={s.downloadingUrl} onDownload={s.handleDownload} aiReason={aiReason} />
+                  <BtResultCard key={i} res={res} index={i} currentResolution={s.curRes} qbConfigured={qbConfigured} downloadingUrl={s.downloadingUrl} onDownload={s.handleDownload} noSeederInfoSources={s.noSeederInfoSources} aiReason={aiReason} />
                 );
               })}
               {s.filtered.length === 0 && s.activeResults.length > 0 && (

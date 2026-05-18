@@ -28,6 +28,7 @@ def test_provider_api_returns_static_provider_catalog():
     assert prowlarr["riskLevel"] == "user_configured"
     assert prowlarr["requires"] == ["api_url", "api_key"]
     assert prowlarr["supportsProxy"] is False
+    assert "seeders" in prowlarr["capabilities"]
     assert tmdb["kind"] == "metadata"
     assert tmdb["requires"] == ["api_key"]
     assert qbittorrent["kind"] == "download"
@@ -84,6 +85,15 @@ def test_builtin_provider_metadata_keeps_open_core_source_counts():
     assert rss_count == 8
     assert download_count == 2
     assert storage_count == 1
+
+
+def test_builtin_provider_metadata_marks_sources_without_seeder_info():
+    providers = build_builtin_provider_metadata()
+    mikan = next(item for item in providers if item.id == "mikan")
+    bitsearch = next(item for item in providers if item.id == "bitsearch")
+
+    assert "seeders" not in mikan.capabilities
+    assert "seeders" in bitsearch.capabilities
 
 
 def test_builtin_provider_metadata_can_include_private_pan_sources():

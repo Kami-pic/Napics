@@ -160,8 +160,8 @@ export function useSearchState({
   }, [panSourceStatuses]);
 
   // ── 固定源列表（打开时加载一次）──
-  const [btSources, setBtSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
-  const [panSources, setPanSources] = useState<{ name: string; label: string; enabled: boolean }[]>([]);
+  const [btSources, setBtSources] = useState<SearchSourceView[]>([]);
+  const [panSources, setPanSources] = useState<SearchSourceView[]>([]);
   const [disabledSources, setDisabledSources] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (open) {
@@ -173,8 +173,8 @@ export function useSearchState({
         .catch(() => {
           api.getSearchSources().then((d: any) => {
             const sources = d.sources || [];
-            setBtSources(sources.filter((s: any) => s.type === "bt"));
-            setPanSources(sources.filter((s: any) => s.type === "pan"));
+            setBtSources(sources.filter((s: any) => s.type === "bt").map(toLegacySearchSource));
+            setPanSources(sources.filter((s: any) => s.type === "pan").map(toLegacySearchSource));
           }).catch(() => {});
         });
     }
@@ -200,6 +200,10 @@ export function useSearchState({
     });
     return Array.from(s);
   }, [results, btSources]);
+
+  const noSeederInfoSources = useMemo(() => new Set(
+    btSources.filter(source => !source.capabilities.includes("seeders")).map(source => source.name)
+  ), [btSources]);
 
   useEffect(() => { setKeyword(query); }, [query]);
 
@@ -555,8 +559,8 @@ export function useSearchState({
       return b.size_gb - a.size_gb;
     });
     return list;
-  }, [activeResults, smartFilter]);
-  const filtered = applyFilters(displayResults, filters, disabledSources);
+  }, [activeResults, smartFilter, noSeederInfoSources]);
+  const filtered = applyFilters(displayResults, filters, disabledSources, noSeederInfoSources);
 
   const handleDownload = async (res: EnhancedSearchResult, channel: "qb" | "alist") => {
     setDownloadingUrl(res.download_url); setToast(null);
@@ -592,6 +596,7 @@ export function useSearchState({
     panSourceStatusMap,
     // 源列表
     btSources, panSources, disabledSources, toggleSource,
+    noSeederInfoSources,
     availableIndexers,
     // 搜索步骤
     searchingStep, sourceStatuses,
@@ -606,10 +611,27 @@ export function useSearchState({
   };
 }
 
+interface SearchSourceView {
+  name: string;
+  label: string;
+  enabled: boolean;
+  capabilities: string[];
+}
+
 function toSearchSources(providers: ProviderMetadata[]) {
   return providers.map(provider => ({
     name: provider.id,
     label: provider.name,
     enabled: provider.enabled,
+    capabilities: provider.capabilities,
   }));
+}
+
+function toLegacySearchSource(source: { name: string; label: string; enabled: boolean }) {
+  return {
+    name: source.name,
+    label: source.label,
+    enabled: source.enabled,
+    capabilities: ["search", "magnet", "torrent", "size", "seeders"],
+  };
 }

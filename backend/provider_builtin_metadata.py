@@ -35,6 +35,15 @@ STORAGE_PROVIDER_DEFAULTS = {
     "openlist_storage": {"label": "OpenList Storage", "enabled": True, "requires": ["api_url", "token"]},
 }
 
+NO_SEEDER_INFO_BT_PROVIDERS = {
+    "cilixiong",
+    "xl720",
+    "acgrip",
+    "bangumi_moe",
+    "dmhy",
+    "mikan",
+}
+
 
 def build_builtin_provider_metadata(
     bt_overrides: Mapping[str, Any] | None = None,
@@ -64,13 +73,20 @@ def _build_search_metadata(bt_overrides: Mapping[str, Any]) -> list[ProviderMeta
                 type=info.get("type", "bt"),
                 enabled=enabled,
                 defaultEnabled=bool(info.get("enabled", False)),
-                capabilities=["search", "magnet", "torrent", "size", "seeders"],
+                capabilities=_bt_capabilities(provider_id),
                 riskLevel=ProviderRiskLevel.USER_CONFIGURED if provider_id == "prowlarr" else ProviderRiskLevel.HIGH,
                 requires=["api_url", "api_key"] if provider_id == "prowlarr" else [],
                 supportsProxy=proxy,
             )
         )
     return result
+
+
+def _bt_capabilities(provider_id: str) -> list[str]:
+    capabilities = ["search", "magnet", "torrent", "size"]
+    if provider_id not in NO_SEEDER_INFO_BT_PROVIDERS:
+        capabilities.append("seeders")
+    return capabilities
 
 
 def _build_pan_search_metadata(pan_overrides: Mapping[str, Any]) -> list[ProviderMetadata]:

@@ -36,7 +36,7 @@ export const DEFAULT_FILTERS: FilterState = {
 const isSeasonPack = (title: string) => /S\d{2}/i.test(title) && !/E\d{2}/i.test(title);
 
 // ── 筛选逻辑 ──
-export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>): EnhancedSearchResult[] {
+export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>, noSeederInfoSources?: Set<string>): EnhancedSearchResult[] {
   let list = results;
   if (disabledSources && disabledSources.size > 0) {
     list = list.filter(r => {
@@ -70,7 +70,9 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
     if (filters.minSeeders > 0 && r.seeders < filters.minSeeders) {
       // 磁力链接源（seeders=0 且 size=0）不受做种数筛选影响
       const isMagnetOnly = r.seeders === 0 && r.size_gb === 0;
-      if (!isMagnetOnly) return false;
+      const source = (r as any)._source || "";
+      const hasNoSeederInfo = noSeederInfoSources?.has(source) ?? false;
+      if (!isMagnetOnly && !hasNoSeederInfo) return false;
     }
     if (filters.indexers.length > 0) {
       // Prowlarr 索引器筛选：只对 Prowlarr 来源的结果生效，直搜源不受影响
@@ -80,11 +82,6 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
     return true;
   });
 }
-
-// ── 无做种数筛选的源（磁力链接源，做种数无意义）──
-const NO_SEEDER_FILTER_SOURCES = new Set(["cilixiong", "xl720"]);
-// ── 无做种数信息的源（ACG.RIP/Bangumi Moe seeders=0 但 size>0）──
-const NO_SEEDER_INFO_SOURCES = new Set(["acgrip", "bangumi_moe", "dmhy", "mikan"]);
 
 // ── 通用多选下拉 ──
 export function MultiSelect({ label, selected, options, onChange, variant = "blue" }: {
@@ -237,11 +234,12 @@ interface SourceFilterBarProps {
   onChange: (filters: FilterState) => void;
   onClear: () => void;
   availableIndexers?: string[];
+  noSeederInfoSources?: Set<string>;
 }
 
-function SourceFilterBar({ source, filters, onChange, onClear, availableIndexers }: SourceFilterBarProps) {
+function SourceFilterBar({ source, filters, onChange, onClear, availableIndexers, noSeederInfoSources }: SourceFilterBarProps) {
   const set = <K extends keyof FilterState>(key: K, val: FilterState[K]) => onChange({ ...filters, [key]: val });
-  const hasSeederFilter = !NO_SEEDER_FILTER_SOURCES.has(source) && !NO_SEEDER_INFO_SOURCES.has(source);
+  const hasSeederFilter = !(noSeederInfoSources?.has(source) ?? false);
   const isProwlarr = source === "prowlarr";
 
   return (
@@ -303,9 +301,10 @@ interface FilterBarProps {
   disabledSources: Set<string>;
   onToggleSource: (name: string) => void;
   availableIndexers?: string[];
+  noSeederInfoSources?: Set<string>;
 }
 
-export default function FilterBar({ activeSource, filters, onChange, onClear, btSources, disabledSources, onToggleSource, availableIndexers }: FilterBarProps) {
+export default function FilterBar({ activeSource, filters, onChange, onClear, btSources, disabledSources, onToggleSource, availableIndexers, noSeederInfoSources }: FilterBarProps) {
   if (activeSource === "all") {
     return (
       <AllFilterBar
@@ -319,6 +318,7 @@ export default function FilterBar({ activeSource, filters, onChange, onClear, bt
     <SourceFilterBar
       source={activeSource} filters={filters} onChange={onChange}
       onClear={onClear} availableIndexers={availableIndexers}
+      noSeederInfoSources={noSeederInfoSources}
     />
   );
 }

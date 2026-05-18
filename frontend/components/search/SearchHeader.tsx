@@ -48,10 +48,11 @@ export interface SearchHeaderProps {
   sourceKeywordInfo: Record<string, { searched: string[]; hit: string }>;
   panSourceStatusMap: Record<string, SourceStatus>;
   // 源列表
-  btSources: { name: string; label: string; enabled: boolean }[];
-  panSources: { name: string; label: string; enabled: boolean }[];
+  btSources: { name: string; label: string; enabled: boolean; capabilities?: string[] }[];
+  panSources: { name: string; label: string; enabled: boolean; capabilities?: string[] }[];
   disabledSources: Set<string>;
   toggleSource: (name: string) => void;
+  noSeederInfoSources: Set<string>;
   availableIndexers: string[];
   // 搜索步骤
   sourceStatuses: Record<string, SourceStatus>;
@@ -80,7 +81,7 @@ export default function SearchHeader(props: SearchHeaderProps) {
     showSettings, setShowSettings,
     btActiveSource, panActiveSource,
     sourceTabStates, sourceKeywordInfo, panSourceStatusMap,
-    btSources, panSources, disabledSources, toggleSource, availableIndexers,
+    btSources, panSources, disabledSources, toggleSource, noSeederInfoSources, availableIndexers,
     sourceStatuses, userEditedRef,
     doSearch, doPanSearch, doSourceSearch,
     handleBtSourceSelect, handlePanSourceSelect,
@@ -221,6 +222,7 @@ export default function SearchHeader(props: SearchHeaderProps) {
           disabledSources={disabledSources}
           onToggleSource={toggleSource}
           availableIndexers={availableIndexers}
+          noSeederInfoSources={noSeederInfoSources}
         />
       )}
       {activeTab === "pan" && (
