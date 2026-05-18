@@ -96,6 +96,21 @@ def test_builtin_provider_metadata_marks_sources_without_seeder_info():
     assert "seeders" in bitsearch.capabilities
 
 
+def test_builtin_provider_metadata_exposes_keyword_preferences():
+    providers = build_builtin_provider_metadata()
+    nyaa = next(item for item in providers if item.id == "nyaa")
+    mikan = next(item for item in providers if item.id == "mikan")
+    prowlarr = next(item for item in providers if item.id == "prowlarr")
+
+    assert nyaa.capabilities[:4] == ["search", "magnet", "torrent", "size"]
+    assert "keyword_original" in nyaa.capabilities
+    assert "season_en" in nyaa.capabilities
+    assert "keyword_cn" in mikan.capabilities
+    assert "season_cn" in mikan.capabilities
+    assert "keyword_en" in prowlarr.capabilities
+    assert "indexers" in prowlarr.capabilities
+
+
 def test_builtin_provider_metadata_can_include_private_pan_sources():
     from search_service import PAN_SOURCE_DEFAULTS
 

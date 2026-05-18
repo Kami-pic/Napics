@@ -53,6 +53,7 @@ export interface SearchHeaderProps {
   disabledSources: Set<string>;
   toggleSource: (name: string) => void;
   noSeederInfoSources: Set<string>;
+  indexerProviderSources: Set<string>;
   availableIndexers: string[];
   // 搜索步骤
   sourceStatuses: Record<string, SourceStatus>;
@@ -81,7 +82,7 @@ export default function SearchHeader(props: SearchHeaderProps) {
     showSettings, setShowSettings,
     btActiveSource, panActiveSource,
     sourceTabStates, sourceKeywordInfo, panSourceStatusMap,
-    btSources, panSources, disabledSources, toggleSource, noSeederInfoSources, availableIndexers,
+    btSources, panSources, disabledSources, toggleSource, noSeederInfoSources, indexerProviderSources, availableIndexers,
     sourceStatuses, userEditedRef,
     doSearch, doPanSearch, doSourceSearch,
     handleBtSourceSelect, handlePanSourceSelect,
@@ -223,6 +224,7 @@ export default function SearchHeader(props: SearchHeaderProps) {
           onToggleSource={toggleSource}
           availableIndexers={availableIndexers}
           noSeederInfoSources={noSeederInfoSources}
+          indexerProviderSources={indexerProviderSources}
         />
       )}
       {activeTab === "pan" && (

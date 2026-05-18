@@ -44,6 +44,22 @@ NO_SEEDER_INFO_BT_PROVIDERS = {
     "mikan",
 }
 
+BT_KEYWORD_CAPABILITIES = {
+    "prowlarr": ["keyword_en", "keyword_cn", "season_en", "indexers"],
+    "bitsearch": ["keyword_en", "keyword_cn", "season_en"],
+    "yts": ["keyword_en", "keyword_cn", "season_en"],
+    "limetorrents": ["keyword_en", "keyword_cn", "season_en"],
+    "eztv": ["keyword_en", "keyword_cn", "season_en"],
+    "1337x": ["keyword_en", "keyword_cn", "season_en"],
+    "cilixiong": ["keyword_cn", "keyword_en", "season_cn"],
+    "xl720": ["keyword_cn", "keyword_en", "season_cn"],
+    "mikan": ["keyword_cn", "keyword_original", "keyword_en", "season_cn"],
+    "acgrip": ["keyword_cn", "keyword_original", "keyword_en", "season_cn"],
+    "bangumi_moe": ["keyword_cn", "keyword_original", "keyword_en", "season_cn"],
+    "dmhy": ["keyword_cn", "keyword_original", "keyword_en", "season_cn"],
+    "nyaa": ["keyword_original", "keyword_en", "keyword_cn", "season_en"],
+}
+
 
 def build_builtin_provider_metadata(
     bt_overrides: Mapping[str, Any] | None = None,
@@ -86,6 +102,7 @@ def _bt_capabilities(provider_id: str) -> list[str]:
     capabilities = ["search", "magnet", "torrent", "size"]
     if provider_id not in NO_SEEDER_INFO_BT_PROVIDERS:
         capabilities.append("seeders")
+    capabilities.extend(BT_KEYWORD_CAPABILITIES.get(provider_id, ["keyword_en", "keyword_cn", "season_en"]))
     return capabilities
 
 

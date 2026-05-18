@@ -122,30 +122,23 @@ export function useSearchState({
   const [panActiveSource, setPanActiveSource] = useState("all");
   // 每个单源 Tab 的独立状态
   const [sourceTabStates, setSourceTabStates] = useState<Record<string, SourceTabState>>({});
+  // ── 固定源列表（打开时加载一次）──
+  const [btSources, setBtSources] = useState<SearchSourceView[]>([]);
+  const [panSources, setPanSources] = useState<SearchSourceView[]>([]);
+  const [disabledSources, setDisabledSources] = useState<Set<string>>(new Set());
 
-  // 源→默认搜索词映射（前端侧，用于切换 Tab 时填入搜索框）
+  // 源→默认搜索词映射（从 provider capabilities 派生，用于切换 Tab 时填入搜索框）
   const sourceDefaultKeywords = useMemo(() => {
     const cn = (cnName || "").trim();
     const en = (enName || "").trim();
+    const original = (originalName || "").trim();
     const sNum = seasonNumber || 0;
     const map: Record<string, string> = {};
-    // 英文源
-    for (const s of ["prowlarr", "bitsearch", "yts", "limetorrents"]) {
-      let kw = en || cn || query;
-      if (sNum > 0) kw += ` S${String(sNum).padStart(2, "0")}`;
-      map[s] = kw;
+    for (const source of btSources) {
+      map[source.name] = buildDefaultKeyword(source.capabilities, { cn, en, original, query, seasonNumber: sNum });
     }
-    // 中文源
-    for (const s of ["cilixiong", "xl720", "acgrip", "bangumi_moe", "mikan"]) {
-      let kw = cn || en || query;
-      if (sNum > 0) kw += ` 第${sNum}季`;
-      map[s] = kw;
-    }
-    // 动画源（Nyaa 优先原始语言名/英文）
-    map["nyaa"] = originalName || en || cn || query;
-    if (sNum > 0) map["nyaa"] += ` S${String(sNum).padStart(2, "0")}`;
     return map;
-  }, [cnName, enName, originalName, query, seasonNumber]);
+  }, [btSources, cnName, enName, originalName, query, seasonNumber]);
 
   // 源搜索词回显信息（从 SSE source_done 事件收集）
   const [sourceKeywordInfo, setSourceKeywordInfo] = useState<Record<string, { searched: string[]; hit: string }>>({});
@@ -159,10 +152,6 @@ export function useSearchState({
     return m;
   }, [panSourceStatuses]);
 
-  // ── 固定源列表（打开时加载一次）──
-  const [btSources, setBtSources] = useState<SearchSourceView[]>([]);
-  const [panSources, setPanSources] = useState<SearchSourceView[]>([]);
-  const [disabledSources, setDisabledSources] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (open) {
       api.getProviders()
@@ -190,16 +179,21 @@ export function useSearchState({
   // Prowlarr 索引器（仅从 Prowlarr 来源的结果中提取，排除直搜源）
   const availableIndexers = useMemo(() => {
     const s = new Set<string>();
-    const directSources = new Set(btSources.filter(src => src.name !== "prowlarr").map(src => src.name));
+    const indexerProviderSources = new Set(btSources.filter(src => src.capabilities.includes("indexers")).map(src => src.name));
+    const directSources = new Set(btSources.filter(src => !indexerProviderSources.has(src.name)).map(src => src.name));
     results.forEach(r => {
       const src = (r as any)._source || r.indexer;
-      // 只有 Prowlarr 来源的结果才提取索引器名
-      if (src === "prowlarr" && r.indexer && !directSources.has(r.indexer)) {
+      // 只有带 indexers 能力的聚合 provider 才提取索引器名
+      if (indexerProviderSources.has(src) && r.indexer && !directSources.has(r.indexer)) {
         s.add(r.indexer);
       }
     });
     return Array.from(s);
   }, [results, btSources]);
+
+  const indexerProviderSources = useMemo(() => new Set(
+    btSources.filter(source => source.capabilities.includes("indexers")).map(source => source.name)
+  ), [btSources]);
 
   const noSeederInfoSources = useMemo(() => new Set(
     btSources.filter(source => !source.capabilities.includes("seeders")).map(source => source.name)
@@ -536,13 +530,12 @@ export function useSearchState({
       list = list.filter(r => !(r as any).is_junk);
     }
     // 排序：有做种 > 无做种 > 磁力链接，同层内按 quality_score > match_score > seeders > size
-    const NO_SEEDER_INFO = new Set(["cilixiong", "xl720", "acgrip", "bangumi_moe", "dmhy", "mikan"]);
     list = [...list].sort((a, b) => {
       const tier = (r: EnhancedSearchResult) => {
         if (r.seeders === 0 && r.size_gb === 0) return 2;
         if (r.seeders === 0) {
           const src = (r as any)._source || "";
-          if (NO_SEEDER_INFO.has(src)) return 0;
+          if (noSeederInfoSources.has(src)) return 0;
           return 1;
         }
         return 0;
@@ -560,7 +553,7 @@ export function useSearchState({
     });
     return list;
   }, [activeResults, smartFilter, noSeederInfoSources]);
-  const filtered = applyFilters(displayResults, filters, disabledSources, noSeederInfoSources);
+  const filtered = applyFilters(displayResults, filters, disabledSources, noSeederInfoSources, indexerProviderSources);
 
   const handleDownload = async (res: EnhancedSearchResult, channel: "qb" | "alist") => {
     setDownloadingUrl(res.download_url); setToast(null);
@@ -597,6 +590,7 @@ export function useSearchState({
     // 源列表
     btSources, panSources, disabledSources, toggleSource,
     noSeederInfoSources,
+    indexerProviderSources,
     availableIndexers,
     // 搜索步骤
     searchingStep, sourceStatuses,
@@ -634,4 +628,26 @@ function toLegacySearchSource(source: { name: string; label: string; enabled: bo
     enabled: source.enabled,
     capabilities: ["search", "magnet", "torrent", "size", "seeders"],
   };
+}
+
+function buildDefaultKeyword(
+  capabilities: string[],
+  values: { cn: string; en: string; original: string; query: string; seasonNumber: number },
+) {
+  const priority = capabilities
+    .filter(capability => capability.startsWith("keyword_"))
+    .map(capability => capability.replace("keyword_", ""));
+  const langs = priority.length > 0 ? priority : ["en", "cn", "query"];
+  const keyword = langs
+    .map(lang => {
+      if (lang === "cn") return values.cn;
+      if (lang === "en") return values.en;
+      if (lang === "original") return values.original;
+      return values.query;
+    })
+    .find(Boolean) || values.query;
+
+  if (!keyword || values.seasonNumber <= 0) return keyword;
+  if (capabilities.includes("season_cn")) return `${keyword} 第${values.seasonNumber}季`;
+  return `${keyword} S${String(values.seasonNumber).padStart(2, "0")}`;
 }

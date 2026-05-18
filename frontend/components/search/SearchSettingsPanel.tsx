@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
-import type { AppConfig, IndexerPriority, SortWeightsConfig } from "@/types";
+import type { AppConfig, IndexerPriority, ProviderCatalog, ProviderMetadata, SortWeightsConfig } from "@/types";
 
 interface SearchSource { name: string; label: string; type: "bt" | "pan"; enabled: boolean; needs_proxy?: boolean; proxy?: boolean; }
 type SettingsTab = "sources" | "filter" | "indexer" | "sort";
@@ -24,11 +24,16 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [srcData, cfgData, idxData, wData] = await Promise.allSettled([
-        api.getSearchSources(), api.getConfig(),
+      const [providerData, legacySrcData, cfgData, idxData, wData] = await Promise.allSettled([
+        api.getProviders(), api.getSearchSources(), api.getConfig(),
         api.getIndexerPriorities(), api.getSortWeights(),
       ]);
-      if (srcData.status === "fulfilled") setSources(srcData.value.sources || []);
+      if (providerData.status === "fulfilled") {
+        const legacySources = legacySrcData.status === "fulfilled" ? legacySrcData.value.sources || [] : [];
+        setSources(toSearchSettingsSources(providerData.value, legacySources));
+      } else if (legacySrcData.status === "fulfilled") {
+        setSources(legacySrcData.value.sources || []);
+      }
       if (cfgData.status === "fulfilled") setConfig(cfgData.value);
       if (idxData.status === "fulfilled") setIndexers(idxData.value);
       if (wData.status === "fulfilled") setSortWeights(wData.value);
@@ -270,6 +275,27 @@ function Toggle({ label, enabled, onChange, compact }: { label: string; enabled:
       </button>
     </div>
   );
+}
+
+function toSearchSettingsSources(catalog: ProviderCatalog, legacySources: SearchSource[]): SearchSource[] {
+  const legacyByName = new Map(legacySources.map(source => [source.name, source]));
+  const btSources = catalog.search
+    .filter(provider => provider.type === "bt")
+    .map(provider => toSearchSettingsSource(provider, "bt", legacyByName.get(provider.id)));
+  const panSources = catalog.panSearch
+    .map(provider => toSearchSettingsSource(provider, "pan", legacyByName.get(provider.id)));
+  return [...btSources, ...panSources];
+}
+
+function toSearchSettingsSource(provider: ProviderMetadata, type: "bt" | "pan", legacy?: SearchSource): SearchSource {
+  return {
+    name: provider.id,
+    label: provider.name,
+    type,
+    enabled: provider.enabled,
+    needs_proxy: legacy?.needs_proxy ?? provider.supportsProxy,
+    proxy: legacy?.proxy ?? provider.supportsProxy,
+  };
 }
 
 function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {

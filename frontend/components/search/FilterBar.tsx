@@ -36,7 +36,7 @@ export const DEFAULT_FILTERS: FilterState = {
 const isSeasonPack = (title: string) => /S\d{2}/i.test(title) && !/E\d{2}/i.test(title);
 
 // ── 筛选逻辑 ──
-export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>, noSeederInfoSources?: Set<string>): EnhancedSearchResult[] {
+export function applyFilters(results: EnhancedSearchResult[], filters: FilterState, disabledSources?: Set<string>, noSeederInfoSources?: Set<string>, indexerProviderSources?: Set<string>): EnhancedSearchResult[] {
   let list = results;
   if (disabledSources && disabledSources.size > 0) {
     list = list.filter(r => {
@@ -75,9 +75,9 @@ export function applyFilters(results: EnhancedSearchResult[], filters: FilterSta
       if (!isMagnetOnly && !hasNoSeederInfo) return false;
     }
     if (filters.indexers.length > 0) {
-      // Prowlarr 索引器筛选：只对 Prowlarr 来源的结果生效，直搜源不受影响
+      // 索引器筛选：只对带 indexers 能力的聚合 provider 生效，直搜源不受影响
       const source = (r as any)._source || r.indexer;
-      if (source === "prowlarr" && !filters.indexers.includes(r.indexer)) return false;
+      if ((indexerProviderSources?.has(source) ?? false) && !filters.indexers.includes(r.indexer)) return false;
     }
     return true;
   });
@@ -152,11 +152,14 @@ interface AllFilterBarProps {
   disabledSources: Set<string>;
   onToggleSource: (name: string) => void;
   availableIndexers?: string[];
+  indexerProviderSources?: Set<string>;
 }
 
-function AllFilterBar({ filters, onChange, onClear, btSources, disabledSources, onToggleSource, availableIndexers }: AllFilterBarProps) {
+function AllFilterBar({ filters, onChange, onClear, btSources, disabledSources, onToggleSource, availableIndexers, indexerProviderSources }: AllFilterBarProps) {
   const set = <K extends keyof FilterState>(key: K, val: FilterState[K]) => onChange({ ...filters, [key]: val });
-  const prowlarrEnabled = !disabledSources.has("prowlarr");
+  const indexerProviderEnabled = btSources.some(source =>
+    indexerProviderSources?.has(source.name) && source.enabled && !disabledSources.has(source.name)
+  );
 
   // 直搜源选项（已启用的源）
   const sourceOptions = useMemo(() =>
@@ -183,8 +186,8 @@ function AllFilterBar({ filters, onChange, onClear, btSources, disabledSources, 
             if (wasShown !== nowShown) onToggleSource(name);
           }
         }} />
-      {/* Prowlarr 索引器：仅 Prowlarr 开启时显示 */}
-      {prowlarrEnabled && (availableIndexers?.length ?? 0) > 0 && (
+      {/* 索引器：仅聚合 provider 开启时显示 */}
+      {indexerProviderEnabled && (availableIndexers?.length ?? 0) > 0 && (
         <MultiSelect label="索引器" selected={filters.indexers}
           options={(availableIndexers || []).sort().map(i => ({ value: i, label: i }))}
           onChange={(v) => set("indexers", v)} />
@@ -235,17 +238,18 @@ interface SourceFilterBarProps {
   onClear: () => void;
   availableIndexers?: string[];
   noSeederInfoSources?: Set<string>;
+  indexerProviderSources?: Set<string>;
 }
 
-function SourceFilterBar({ source, filters, onChange, onClear, availableIndexers, noSeederInfoSources }: SourceFilterBarProps) {
+function SourceFilterBar({ source, filters, onChange, onClear, availableIndexers, noSeederInfoSources, indexerProviderSources }: SourceFilterBarProps) {
   const set = <K extends keyof FilterState>(key: K, val: FilterState[K]) => onChange({ ...filters, [key]: val });
   const hasSeederFilter = !(noSeederInfoSources?.has(source) ?? false);
-  const isProwlarr = source === "prowlarr";
+  const hasIndexerFilter = indexerProviderSources?.has(source) ?? false;
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      {/* Prowlarr 专属：索引器筛选 */}
-      {isProwlarr && (availableIndexers?.length ?? 0) > 0 && (
+      {/* 聚合 provider 专属：索引器筛选 */}
+      {hasIndexerFilter && (availableIndexers?.length ?? 0) > 0 && (
         <MultiSelect label="索引器" selected={filters.indexers}
           options={(availableIndexers || []).sort().map(i => ({ value: i, label: i }))}
           onChange={(v) => set("indexers", v)} />
@@ -282,7 +286,7 @@ function SourceFilterBar({ source, filters, onChange, onClear, availableIndexers
           className="bg-[#1a1a1a] border border-white/[0.06] rounded-lg px-2 py-1.5 text-[11px] text-slate-300 outline-none focus:border-blue-500/50 w-[64px]" />
         <span className="text-[11px] text-slate-600">GB</span>
       </div>
-      {/* 磁力熊/xl720/acgrip/bangumi_moe 无做种数筛选 */}
+      {/* 无做种能力的 provider 不显示做种数筛选 */}
       {hasSeederFilter && (
         <NumberInput label="做种≥" value={filters.minSeeders} placeholder="0" onChange={(v) => set("minSeeders", v ?? 0)} />
       )}
@@ -302,15 +306,17 @@ interface FilterBarProps {
   onToggleSource: (name: string) => void;
   availableIndexers?: string[];
   noSeederInfoSources?: Set<string>;
+  indexerProviderSources?: Set<string>;
 }
 
-export default function FilterBar({ activeSource, filters, onChange, onClear, btSources, disabledSources, onToggleSource, availableIndexers, noSeederInfoSources }: FilterBarProps) {
+export default function FilterBar({ activeSource, filters, onChange, onClear, btSources, disabledSources, onToggleSource, availableIndexers, noSeederInfoSources, indexerProviderSources }: FilterBarProps) {
   if (activeSource === "all") {
     return (
       <AllFilterBar
         filters={filters} onChange={onChange} onClear={onClear}
         btSources={btSources} disabledSources={disabledSources}
         onToggleSource={onToggleSource} availableIndexers={availableIndexers}
+        indexerProviderSources={indexerProviderSources}
       />
     );
   }
@@ -319,6 +325,7 @@ export default function FilterBar({ activeSource, filters, onChange, onClear, bt
       source={activeSource} filters={filters} onChange={onChange}
       onClear={onClear} availableIndexers={availableIndexers}
       noSeederInfoSources={noSeederInfoSources}
+      indexerProviderSources={indexerProviderSources}
     />
   );
 }

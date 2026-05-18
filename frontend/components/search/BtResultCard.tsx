@@ -1,9 +1,7 @@
 // BT 搜索结果单条卡片
 "use client";
 import type { EnhancedSearchResult } from "@/types";
-import { INDEXER_TAG_STYLE, INDEXER_DOT_COLOR } from "./FilterBar";
-
-const DIRECT_SOURCE_NAMES = new Set(["bitsearch", "cilixiong", "xl720", "nyaa", "mikan", "yts", "limetorrents", "acgrip", "bangumi_moe", "eztv", "dmhy", "1337x"]);
+import { INDEXER_TAG_STYLE } from "./FilterBar";
 
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 
@@ -19,10 +17,11 @@ export interface BtResultCardProps {
   downloadingUrl: string | null;
   onDownload: (res: EnhancedSearchResult, channel: "qb" | "alist") => void;
   noSeederInfoSources: Set<string>;
+  indexerProviderSources: Set<string>;
   aiReason?: string;
 }
 
-export default function BtResultCard({ res, index, currentResolution, qbConfigured, downloadingUrl, onDownload, noSeederInfoSources, aiReason }: BtResultCardProps) {
+export default function BtResultCard({ res, index, currentResolution, qbConfigured, downloadingUrl, onDownload, noSeederInfoSources, indexerProviderSources, aiReason }: BtResultCardProps) {
   const curRes = currentResolution;
   const isHigher = (() => {
     const resScore = (res as any).quality_score ?? 0;
@@ -71,7 +70,7 @@ export default function BtResultCard({ res, index, currentResolution, qbConfigur
             {(() => {
               const source = (res as any)._source || "";
               const indexer = res.indexer || "";
-              const isDirectSource = DIRECT_SOURCE_NAMES.has(source);
+              const isDirectSource = source && !indexerProviderSources.has(source);
               if (isDirectSource) {
                 // 直搜源：用各自品牌色
                 return <span className={`text-[10px] px-2 py-0.5 rounded ${INDEXER_TAG_STYLE[source] || "bg-white/[0.04] text-slate-500"}`}>{indexer}</span>;
