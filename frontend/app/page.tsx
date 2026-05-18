@@ -19,6 +19,8 @@ import AnalysisReport from "@/components/media/AnalysisReport";
 import OperationHistory from "@/components/media/OperationHistory";
 import OrganizeProgress from "@/components/media/OrganizeProgress";
 import DownloadManagerPanel from "@/components/download/DownloadManagerPanel";
+import PluginCenter from "@/components/plugins/PluginCenter";
+import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { api } from "@/lib/api";
 import type { VideoInfo, FolderNode } from "@/types";
 
@@ -81,6 +83,7 @@ export default function Home() {
   } = useLibrary();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const plugins = useInstalledPlugins();
   const [showSettings, setShowSettings] = useState(false);
   const discoverRef = useRef<HTMLDivElement>(null);
   const libraryContentRef = useRef<HTMLDivElement>(null);
@@ -100,6 +103,7 @@ export default function Home() {
   const [showOrganizeProgress, setShowOrganizeProgress] = useState(false);
   const [organizeTargetPath, setOrganizeTargetPath] = useState("");
   const [showDownloadManager, setShowDownloadManager] = useState(false);
+  const [showPlugins, setShowPlugins] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
@@ -161,7 +165,7 @@ export default function Home() {
   const currentVideoResolution = detailTarget?.type === "video" ? detailTarget.video.resolution : undefined;
   const qbConfigured = !!config.qb_url;
   const alistConfigured = !!config.alist_url && !!config.alist_token;
-  const showDiscover = !currentFolder || currentFolder.path === "";
+  const showDiscover = (!currentFolder || currentFolder.path === "") && plugins.hasDiscover;
 
   const handleStartScan = () => {
     const hasPath = paths.some(p => p.trim() !== "");
@@ -216,7 +220,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white font-sans flex overflow-hidden">
       <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={navigateTo}
-        collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onOpenPlugins={() => setShowPlugins(true)} />
 
       <div ref={scrollContainerRef} className="flex-1 h-screen overflow-y-auto no-scrollbar" onClick={(e) => {
         const target = e.target as HTMLElement;
@@ -353,6 +358,8 @@ export default function Home() {
       />
 
       <DownloadManagerPanel open={showDownloadManager} onClose={() => setShowDownloadManager(false)} />
+
+      <PluginCenter open={showPlugins} onClose={() => setShowPlugins(false)} />
 
       {batchMode && selectedPaths.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40">

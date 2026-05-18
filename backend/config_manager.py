@@ -73,6 +73,10 @@ class AppConfig(BaseModel):
     pan_search_sources: dict = {}                 # 网盘源开关 {"pansearch": true, "rrdynb": true, ...}
     # 刮削配置
     default_scrape_source: str = "tmdb"           # 默认刮削源 "tmdb" | "douban"
+    # 插件系统
+    installed_plugins: List[str] = []             # 已安装的插件 ID 列表
+    # 下载监控目录（无下载器插件时的兜底方案）
+    download_watch_dirs: List[str] = []           # 监控目录列表，新文件自动触发整理
 
 class ConfigManager:
     def __init__(self, config_path: str = None):

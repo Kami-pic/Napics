@@ -58,6 +58,10 @@ def search_resources(
     total_episodes: int = 0,
 ):
     """搜索资源。增强搜索：回退链 + 二次匹配 + 全局过滤 + 综合排序。"""
+    from plugin_guard import get_allowed_bt_sources
+    allowed_bt = get_allowed_bt_sources()
+    if not allowed_bt:
+        return {"query": query, "bt_count": 0, "bt_results": [], "hit_keyword": "", "total_raw": 0, "total_filtered": 0, "enhanced": False}
     clients = get_clients()
     conf = config_m.config
     gf = GlobalFilter(
@@ -124,7 +128,16 @@ def search_resources_stream(
     season_number: int = 0,
 ):
     """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词 + 回退链。"""
+    from plugin_guard import get_allowed_bt_sources
+
     def _generate():
+        allowed_bt = get_allowed_bt_sources()
+        if not allowed_bt:
+            # 无搜索插件安装，返回空
+            import json as _json
+            yield f"data: {_json.dumps({'type': 'done', 'message': '未安装搜索插件，请在插件中心安装搜索源'})}\n\n"
+            return
+
         keywords = build_keywords(
             query=query, cn_name=cn_name, en_name=en_name,
             original_name=original_name, shadow_name=shadow_name,
@@ -139,6 +152,7 @@ def search_resources_stream(
             query=query,
             bt_overrides=bt_overrides,
             search_client=clients["search"],
+            allowed_sources=allowed_bt,
         )
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
@@ -157,6 +171,9 @@ def search_single_source(
     - keyword: 主搜索词
     - fallback_keywords: 逗号分隔的回退词列表（可选，用户手动改词后不传）
     """
+    from plugin_guard import is_bt_source_allowed
+    if not is_bt_source_allowed(source):
+        return {"error": f"搜索源 {source} 未安装对应插件", "results": [], "search_keywords": [], "hit_keyword": ""}
     # 构造搜索词列表
     kw_list = [keyword.strip()]
     if fallback_keywords:
@@ -168,6 +185,18 @@ def search_single_source(
     # 获取源的搜索函数
     direct_providers = get_direct_bt_provider_map()
     source_getters = {"prowlarr": None, **direct_providers}
+
+    # 加入第三方插件注册的搜索源
+    try:
+        from plugin_context import get_plugin_providers
+        from search_service import _PluginScraperAdapter, _PluginSearchAdapter
+        for pid, info in get_plugin_providers().items():
+            if info["type"] == "scraper_search":
+                source_getters[pid] = _PluginScraperAdapter(pid, info)
+            elif info["type"] == "search":
+                source_getters[pid] = _PluginSearchAdapter(pid, info)
+    except Exception:
+        pass
 
     if source not in source_getters:
         return {"error": f"未知源: {source}", "results": [], "search_keywords": [], "hit_keyword": ""}
@@ -194,7 +223,7 @@ def search_single_source(
                             all_results.append(r)
                     break
         else:
-            provider = direct_providers[source]
+            provider = source_getters[source]
             for kw in kw_list:
                 searched.append(kw)
                 candidates = provider.search(SearchRequest(query=kw, limit=40))
@@ -238,6 +267,9 @@ def search_single_source(
 @router.get("/search/pan")
 def search_pan(keyword: str, media_type: str = ""):
     """网盘搜索聚合接口。"""
+    from plugin_guard import is_pan_search_allowed
+    if not is_pan_search_allowed():
+        return {"results": [], "groups": {}, "source_statuses": [], "total": 0}
     try:
         service = _get_pan_search_service()
         response = service.search_sync(keyword, media_type=media_type)
@@ -453,13 +485,18 @@ def search_single_keyword(
 
 @router.get("/search/sources")
 def get_search_sources():
-    """获取所有搜索源及启用状态和代理配置。"""
+    """获取所有搜索源及启用状态和代理配置。仅返回已安装插件对应的源。"""
+    from plugin_guard import get_allowed_bt_sources, is_pan_search_allowed
+
     conf = config_m.config
     bt_overrides = conf.bt_search_sources or {}
     pan_overrides = conf.pan_search_sources or {}
+    allowed_bt = get_allowed_bt_sources()
 
     sources = []
     for name, info in _BT_SOURCE_DEFAULTS.items():
+        if name not in allowed_bt:
+            continue
         override = bt_overrides.get(name)
         if isinstance(override, dict):
             enabled = override.get("enabled", info["enabled"])
@@ -475,11 +512,34 @@ def get_search_sources():
             "enabled": enabled, "needs_proxy": info.get("needs_proxy", False),
             "proxy": proxy,
         })
-    for name, info in _PAN_SOURCE_DEFAULTS.items():
-        sources.append({
-            "name": name, "label": info["label"], "type": info["type"],
-            "enabled": pan_overrides.get(name, info["enabled"]),
-        })
+
+    if is_pan_search_allowed():
+        for name, info in _PAN_SOURCE_DEFAULTS.items():
+            sources.append({
+                "name": name, "label": info["label"], "type": info["type"],
+                "enabled": pan_overrides.get(name, info["enabled"]),
+            })
+
+    # 第三方插件注册的搜索源
+    try:
+        from plugin_context import get_plugin_providers
+        for pid, info in get_plugin_providers().items():
+            if info["type"] in ("search", "scraper_search") and pid in allowed_bt:
+                meta = info["metadata"]
+                sources.append({
+                    "name": pid, "label": meta.name, "type": "bt",
+                    "enabled": True, "needs_proxy": meta.supports_proxy,
+                    "proxy": False,
+                })
+            elif info["type"] == "pan_search" and is_pan_search_allowed():
+                meta = info["metadata"]
+                sources.append({
+                    "name": pid, "label": meta.name, "type": "pan",
+                    "enabled": True,
+                })
+    except Exception:
+        pass
+
     return {"sources": sources}
 
 

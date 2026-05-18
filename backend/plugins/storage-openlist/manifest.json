@@ -1,0 +1,12 @@
+{
+    "id": "storage-openlist",
+    "name": "OpenList 浏览",
+    "version": "1.0.0",
+    "description": "网盘挂载浏览，通过 OpenList/Alist 查看云存储文件",
+    "category": "storage",
+    "icon": "💾",
+    "requires_config": ["alist_url", "alist_token"],
+    "depends_on": [],
+    "provides": ["StorageProvider:openlist"],
+    "risk_level": "medium"
+}

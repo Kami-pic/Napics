@@ -71,11 +71,16 @@ def _qb_task_info_to_legacy_dict(task: DownloadTaskInfo) -> dict:
 
 @router.post("/download")
 def trigger_download(req: DownloadRequest):
+    from plugin_guard import is_download_allowed
     conf = config_m.config
     if req.download_type == "qb":
+        if not is_download_allowed("qb"):
+            return {"success": False, "message": "请先在插件中心安装 qBittorrent 插件"}
         if not conf.qb_url:
             return {"success": False, "message": "qBittorrent 未配置"}
     elif req.download_type == "alist":
+        if not is_download_allowed("alist"):
+            return {"success": False, "message": "请先在插件中心安装 OpenList 插件"}
         if not conf.alist_url or not conf.alist_token:
             return {"success": False, "message": "Alist 未配置"}
     else:
@@ -215,6 +220,22 @@ def submit_download(req: DownloadSubmitRequest):
         torrent_bl.add(req.download_url, reason=result.error or "submit failed")
 
     return {"success": result.status != "failed", "task": result.dict()}
+
+
+@router.get("/download-manager/status")
+def get_download_status():
+    """获取下载系统状态：可用后端、监控目录等"""
+    from plugin_guard import is_download_allowed, has_any_download_backend
+    dm = _get_download_manager()
+    conf = config_m.config
+    return {
+        "has_backend": has_any_download_backend(),
+        "available_backends": dm.get_available_backends(),
+        "qb_installed": is_download_allowed("qb"),
+        "alist_installed": is_download_allowed("alist"),
+        "watch_dirs": conf.download_watch_dirs or [],
+    }
+
 
 @router.get("/download-manager/tasks")
 def get_download_tasks(status: str = ""):

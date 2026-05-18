@@ -68,21 +68,52 @@ class DownloadManager:
 
     def __init__(
         self,
-        qb_client: Optional[QBittorrentClient],
-        alist_client: Optional[AlistManager],
         base_path: str = ".",
+        # 兼容旧调用（逐步移除）
+        qb_client=None,
+        alist_client=None,
     ):
-        self.qb = qb_client
-        self.alist = alist_client
         self.base_path = base_path
+        self._backends: Dict[str, Any] = {}  # channel -> DownloadProviderAdapter
         self.tasks: List[DownloadTask] = []
-        self._download_providers: Dict[str, DownloadProviderAdapter] = {}
-        self._deleted_hashes: set = set()  # 已删除任务的 hash 黑名单，防止 sync_from_qb 重新导入
+        self._download_providers: Dict[str, Any] = {}
+        self._deleted_hashes: set = set()
         self._lock = threading.Lock()
         self._last_save_time: float = 0
-        self._dirty = False  # 是否有未落盘的进度变更
+        self._dirty = False
         self._load()
         self._load_deleted_hashes()
+
+        # 兼容旧调用方式（如果直接传入 client）
+        if qb_client is not None:
+            self.qb = qb_client
+        else:
+            self.qb = None
+        if alist_client is not None:
+            self.alist = alist_client
+        else:
+            self.alist = None
+
+    def register_backend(self, channel: str, backend) -> None:
+        """注册下载后端（插件安装时调用）"""
+        self._backends[channel] = backend
+        # 同步设置兼容属性
+        if channel == "qb":
+            self.qb = backend._get_client() if backend else None
+        elif channel == "alist":
+            self.alist = backend._get_client() if backend else None
+
+    def unregister_backend(self, channel: str) -> None:
+        """注销下载后端（插件卸载时调用）"""
+        self._backends.pop(channel, None)
+        if channel == "qb":
+            self.qb = None
+        elif channel == "alist":
+            self.alist = None
+
+    def get_available_backends(self) -> List[str]:
+        """返回当前可用的下载后端 channel 列表"""
+        return list(self._backends.keys())
 
     # ── 沙盒管理 ──
 
@@ -211,6 +242,10 @@ class DownloadManager:
             return False, str(e)
 
     def _get_download_provider(self, channel: str) -> DownloadProviderAdapter:
+        # 优先从已注册的 backends 获取
+        if channel in self._backends:
+            return self._backends[channel]
+
         provider_id = "qbittorrent" if channel == "qb" else "openlist" if channel == "alist" else ""
         if not provider_id:
             raise ValueError(f"不支持的下载通道: {channel}")

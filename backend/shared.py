@@ -168,15 +168,45 @@ def _get_sub_manager() -> SubscriptionManager:
 def _get_download_manager() -> DownloadManager:
     global _download_manager
     if _download_manager is None:
-        conf = config_m.config
-        clients = get_clients()
         _download_manager = DownloadManager(
-            qb_client=clients["qb"] if conf.qb_url else None,
-            alist_client=clients["alist"] if conf.alist_url and conf.alist_token else None,
             base_path=os.path.dirname(os.path.abspath(__file__)),
         )
+        # 根据已安装插件注册下载后端
+        _register_download_backends(_download_manager)
         _download_manager.on_startup()
     return _download_manager
+
+
+def _register_download_backends(dm: DownloadManager):
+    """根据已安装插件和配置注册下载后端到 DownloadManager"""
+    from plugin_guard import is_plugin_installed
+    conf = config_m.config
+
+    if is_plugin_installed("download-qbittorrent") and conf.qb_url:
+        try:
+            from download_provider_adapter import DownloadProviderAdapter
+            from provider_models import ProviderKind, ProviderMetadata
+            qb_metadata = ProviderMetadata(
+                id="qbittorrent", name="qBittorrent", kind=ProviderKind.DOWNLOAD,
+                type="download", enabled=True, defaultEnabled=True, capabilities=["submit", "progress"],
+            )
+            qb_client = downloader.QBittorrentClient(conf.qb_url, conf.qb_username, conf.qb_password)
+            dm.register_backend("qb", DownloadProviderAdapter(qb_metadata, lambda: qb_client))
+        except Exception as e:
+            logging.getLogger(__name__).error(f"[Shared] qB 后端注册失败: {e}")
+
+    if is_plugin_installed("download-openlist") and conf.alist_url and conf.alist_token:
+        try:
+            from download_provider_adapter import DownloadProviderAdapter
+            from provider_models import ProviderKind, ProviderMetadata
+            alist_metadata = ProviderMetadata(
+                id="openlist", name="OpenList", kind=ProviderKind.DOWNLOAD,
+                type="download", enabled=True, defaultEnabled=True, capabilities=["submit", "progress"],
+            )
+            alist_client = downloader.AlistManager(conf.alist_url, conf.alist_token)
+            dm.register_backend("alist", DownloadProviderAdapter(alist_metadata, lambda: alist_client))
+        except Exception as e:
+            logging.getLogger(__name__).error(f"[Shared] Alist 后端注册失败: {e}")
 
 
 def _get_recycle_bin() -> RecycleBin:

@@ -1,0 +1,12 @@
+{
+    "id": "metadata-tmdb",
+    "name": "TMDB",
+    "version": "1.0.0",
+    "description": "影视元数据源，提供搜索、详情、海报、季集信息",
+    "category": "metadata",
+    "icon": "🎬",
+    "requires_config": ["tmdb_api_key"],
+    "depends_on": [],
+    "provides": ["MetadataProvider:tmdb"],
+    "risk_level": "low"
+}

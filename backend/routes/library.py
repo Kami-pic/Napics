@@ -818,6 +818,10 @@ def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = F
     """获取 TV 文件夹的季集完整度（基于 TMDB 数据源）
     默认读缓存秒返回，refresh=true 时清除 TMDB 缓存后重新请求
     """
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("completeness"):
+        return {"status": "plugin_not_installed", "message": "请先安装「季集完整性检测」插件"}
+
     from completeness import (
         collect_local_episodes, get_tmdb_id_from_folder, compute_completeness,
         get_cached_completeness, save_completeness_to_cache, refresh_completeness_for_path,

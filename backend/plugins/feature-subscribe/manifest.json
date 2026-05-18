@@ -1,0 +1,12 @@
+{
+    "id": "feature-subscribe",
+    "name": "订阅追更",
+    "version": "1.0.0",
+    "description": "RSS 定时轮询 + 自动下载新集",
+    "category": "feature",
+    "icon": "🔔",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["Feature:subscribe"],
+    "risk_level": "low"
+}

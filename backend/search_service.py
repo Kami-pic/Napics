@@ -230,11 +230,85 @@ def _candidate_to_search_result(candidate: SearchCandidate) -> SearchResult:
 
 
 def _get_provider_list() -> List[Tuple[str, Any]]:
-    """获取所有直搜源的 (name, SearchProvider) 列表。"""
+    """获取所有直搜源的 (name, SearchProvider) 列表。包含内置源和第三方插件注册的源。"""
     from bt_search_provider_factory import get_direct_bt_provider_map
 
     providers = get_direct_bt_provider_map()
-    return [(name, provider) for name, provider in providers.items()]
+    result = [(name, provider) for name, provider in providers.items()]
+
+    # 加载第三方插件注册的搜索源
+    try:
+        from plugin_context import get_plugin_providers
+        from provider_models import SearchRequest, SearchCandidate
+        for pid, info in get_plugin_providers().items():
+            if info["type"] == "scraper_search":
+                # 基于 ScraperBase 的爬虫，包装为兼容接口
+                result.append((pid, _PluginScraperAdapter(pid, info)))
+            elif info["type"] == "search":
+                # 函数式搜索源
+                result.append((pid, _PluginSearchAdapter(pid, info)))
+    except Exception:
+        pass
+
+    return result
+
+
+class _PluginScraperAdapter:
+    """将第三方插件的 ScraperBase 爬虫适配为搜索系统可用的接口"""
+
+    def __init__(self, provider_id: str, info: dict):
+        self.id = provider_id
+        self._info = info
+        self._scraper = None
+
+    def _get_scraper(self):
+        if self._scraper is None:
+            scraper_class = self._info["scraper_class"]
+            try:
+                from shared import config_m
+                proxy = config_m.config.http_proxy or ""
+            except Exception:
+                proxy = ""
+            self._scraper = scraper_class(proxy=proxy if proxy else None)
+        return self._scraper
+
+    def metadata(self):
+        return self._info["metadata"]
+
+    def search(self, request):
+        from provider_models import SearchCandidate
+        scraper = self._get_scraper()
+        results = scraper.search_as_search_results(request.query, max_results=request.limit or 40)
+        candidates = []
+        for r in results:
+            candidates.append(SearchCandidate(
+                title=r.title,
+                downloadUrl=r.download_url,
+                infoUrl=getattr(r, "info_url", ""),
+                sizeGb=r.size_gb,
+                seeders=r.seeders,
+                leechers=r.leechers,
+                rawQuality=getattr(r, "quality_tag", ""),
+                providerId=self.id,
+                indexer=getattr(r, "indexer", self.id),
+                infoHash="",
+            ))
+        return candidates
+
+
+class _PluginSearchAdapter:
+    """将第三方插件的函数式搜索源适配为搜索系统可用的接口"""
+
+    def __init__(self, provider_id: str, info: dict):
+        self.id = provider_id
+        self._info = info
+
+    def metadata(self):
+        return self._info["metadata"]
+
+    def search(self, request):
+        search_fn = self._info["search_fn"]
+        return search_fn(request.query, request.limit or 40)
 
 
 def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]]]:
@@ -267,6 +341,7 @@ def search_all_sources_iter(
     bt_overrides: Optional[dict] = None,
     search_client=None,
     match_names: Optional[List[str]] = None,
+    allowed_sources: Optional[set] = None,
 ) -> Iterator[str]:
     """迭代器版本：逐源返回 SSE 事件字符串。供 SSE 端点使用。
 
@@ -275,6 +350,8 @@ def search_all_sources_iter(
     2. 全部并行提交，as_completed 逐个 yield source_done 事件
     3. 超时未完成的源推送 failed
     4. 最后推送 done
+
+    allowed_sources: 如果提供，只搜索在此集合中的源（插件守卫用）
     """
     if bt_overrides is None:
         bt_overrides = {}
@@ -282,6 +359,11 @@ def search_all_sources_iter(
         match_names = _build_match_names(keywords, query)
 
     prowlarr_enabled, enabled_scrapers = _get_enabled_sources(bt_overrides)
+
+    # 插件守卫：过滤掉未安装插件对应的源
+    if allowed_sources is not None:
+        prowlarr_enabled = prowlarr_enabled and ("prowlarr" in allowed_sources)
+        enabled_scrapers = [(name, getter) for name, getter in enabled_scrapers if name in allowed_sources]
 
     # 推送所有源的 searching 状态
     all_source_names = []

@@ -1,0 +1,12 @@
+{
+    "id": "search-example",
+    "name": "示例搜索源",
+    "version": "1.0.0",
+    "description": "第三方插件开发示例 — 展示如何接入自定义 BT 搜索源",
+    "category": "search",
+    "icon": "🧪",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["SearchProvider:example_source"],
+    "risk_level": "low"
+}

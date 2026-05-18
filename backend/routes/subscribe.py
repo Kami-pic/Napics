@@ -57,6 +57,9 @@ def check_subscribed(tmdb_id: Optional[int] = None,
                      year: Optional[str] = None,
                      season: Optional[int] = None):
     """检查是否已订阅（前端用于显示订阅状态）"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("subscribe"):
+        return {"subscribed": False}
     mgr = _get_sub_manager()
     return {"subscribed": mgr.is_subscribed(
         tmdb_id=tmdb_id, title=title or "", year=year or "", season=season
@@ -65,7 +68,10 @@ def check_subscribed(tmdb_id: Optional[int] = None,
 
 @router.get("/subscribe/sources")
 def list_sources():
-    """查询所有 RSS 源及状态"""
+    """查询所有 RSS 源及状态。未安装 feature-subscribe 插件时返回空。"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("subscribe"):
+        return []
     sm = _get_source_manager()
     return sm.get_all_sources()
 
@@ -83,6 +89,9 @@ def toggle_source(name: str, req: dict):
 @router.get("/subscribe/calendar")
 def get_calendar():
     """订阅日历：返回剧集订阅的播出时间线"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("subscribe"):
+        return {"calendar": []}
     mgr = _get_sub_manager()
     tmdb = _tmdb_client()
     if not tmdb:
@@ -193,7 +202,10 @@ def add_subscription(req: dict):
 
 @router.get("/subscribe")
 def list_subscriptions(state: Optional[str] = None):
-    """查询所有订阅"""
+    """查询所有订阅。未安装 feature-subscribe 插件时返回空列表。"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("subscribe"):
+        return []
     mgr = _get_sub_manager()
     subs = mgr.get_all(state=state)
     return [s.model_dump() for s in subs]

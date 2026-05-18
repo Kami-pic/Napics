@@ -23,14 +23,30 @@
 | 海报管理 | poster_downloader（本地上传/URL 下载） |
 | 回收站 | recycle_bin |
 | 文件归位替换 | file_relocator |
+| 下载管理核心 | 任务状态机 + 持久化 + 归位触发（不含具体下载器） |
+| 文件夹监控 | 监控下载目录，新文件自动触发整理 |
 | 配置管理 | config_manager |
 | L1-L4 通用匹配链 | text_processing → match_scoring → data_filtering → result_sorting |
 | AI 辅助框架 | ai_client（用户自配 API Key） |
-| 订阅框架 | subscriber + rss_engine（无具体源） |
 | 搜索框架 | search_service + search_helpers（无具体源） |
-| 发现推荐框架 | combined_recommend 骨架（无具体数据源） |
+| 插件系统 | plugin_manager + plugin_context + plugin_guard |
 
 ## 插件清单（可安装/卸载）
+
+### 搜索源插件
+
+| 插件 ID | 名称 | 说明 | 默认状态 |
+|---|---|---|---|
+| `search-prowlarr` | Prowlarr | BT/PT 聚合搜索（需自建） | 未安装 |
+| `search-bt-direct` | BT 直搜源包 | 12 个直搜源（Bitsearch/Nyaa/蜜柑等） | 未安装 |
+| `search-pan` | 网盘搜索 | 网盘源聚合 | 未安装 |
+
+### 下载器插件
+
+| 插件 ID | 名称 | 说明 | 默认状态 |
+|---|---|---|---|
+| `download-qbittorrent` | qBittorrent | BT 下载后端（进度追踪+自动整理） | 未安装 |
+| `download-openlist` | OpenList/Alist | 网盘离线下载后端 | 未安装 |
 
 ### 元数据源插件
 
@@ -40,14 +56,6 @@
 | `metadata-douban` | 豆瓣 | 中文元数据补充 | 未安装 |
 | `metadata-bangumi` | Bangumi | 动画元数据 | 未安装 |
 
-### 搜索源插件
-
-| 插件 ID | 名称 | 说明 | 默认状态 |
-|---|---|---|---|
-| `search-prowlarr` | Prowlarr | BT/PT 聚合搜索（需自建） | 未安装 |
-| `search-bt-direct` | BT 直搜源包 | 12 个直搜源（Bitsearch/Nyaa/蜜柑等） | 未安装 |
-| `search-pan` | 网盘搜索 | 9 个网盘源聚合 | 未安装 |
-
 ### RSS/订阅源插件
 
 | 插件 ID | 名称 | 说明 | 默认状态 |
@@ -55,19 +63,11 @@
 | `rss-anime` | 动画 RSS 源包 | 蜜柑/Nyaa/ACG.RIP/Bangumi Moe/动漫花园 | 未安装 |
 | `rss-tv-movie` | 影视 RSS 源包 | EZTV/YTS/Prowlarr RSS | 未安装 |
 
-### 下载器插件
+### 存储插件
 
 | 插件 ID | 名称 | 说明 | 默认状态 |
 |---|---|---|---|
-| `download-qbittorrent` | qBittorrent | BT 下载器 | 未安装 |
-| `download-openlist` | OpenList/Alist | 网盘离线下载 | 未安装 |
-
-### 存储/转存插件
-
-| 插件 ID | 名称 | 说明 | 默认状态 |
-|---|---|---|---|
-| `storage-openlist` | OpenList 存储 | 网盘挂载浏览 | 未安装 |
-| `storage-transfer` | 网盘自动转存 | 夸克/阿里转存 | 未安装 |
+| `storage-openlist` | OpenList 浏览 | 网盘挂载浏览 | 未安装 |
 
 ### 增强功能插件
 
@@ -147,45 +147,60 @@ PUT    /api/plugins/:id/config   — 保存插件配置
 
 ### Phase A：后端插件框架
 
-- [ ] 新增 `backend/plugin_manager.py`：插件加载/注册/卸载逻辑
-- [ ] 新增 `backend/plugins/` 目录结构，每个插件一个子目录 + manifest.json
-- [ ] `config.json` 新增 `installed_plugins` 字段
-- [ ] 后端启动时根据 `installed_plugins` 选择性注册 provider
-- [ ] 新增 `/api/plugins` CRUD 端点
-- [ ] 未安装的插件对应的 API 端点返回 501 或空数据（而非报错）
+- [x] 新增 `backend/plugin_manager.py`：插件加载/注册/卸载逻辑
+- [x] 新增 `backend/plugins/` 目录结构，每个插件一个子目录 + manifest.json
+- [x] `config.json` 新增 `installed_plugins` 字段
+- [x] 后端启动时根据 `installed_plugins` 选择性注册 provider
+- [x] 新增 `/api/plugins` CRUD 端点
+- [x] 未安装的插件对应的 API 端点返回空数据（通过 plugin_guard 守卫实现）
 
 ### Phase B：现有功能拆分为插件
 
-- [ ] 将 TMDB/豆瓣/Bangumi 客户端包装为 metadata 插件
-- [ ] 将 BT 直搜源包装为 search 插件
-- [ ] 将网盘搜索包装为 search-pan 插件
-- [ ] 将 RSS 源包装为 rss 插件
-- [ ] 将 qB/OpenList 包装为 download 插件
-- [ ] 将 completeness/discover/subscribe/local-match 包装为 feature 插件
-- [ ] 每个插件写 manifest.json
+- [x] 将 TMDB/豆瓣/Bangumi 客户端包装为 metadata 插件（manifest 已创建）
+- [x] 将 BT 直搜源包装为 search 插件（manifest + 守卫已实现）
+- [x] 将网盘搜索包装为 search-pan 插件（manifest + 守卫已实现）
+- [x] 将 RSS 源包装为 rss 插件（manifest 已创建）
+- [x] 将 qB/OpenList 包装为 download 插件（manifest + 守卫已实现）
+- [x] 将 completeness/discover/subscribe/local-match 包装为 feature 插件（manifest + 守卫已实现）
+- [x] 每个插件写 manifest.json
+- [x] 第三方插件开发接口（PluginContext + register/unregister 机制）
+- [x] 第三方插件开发指南（PLUGIN_DEV_GUIDE.md）
+- [x] 示例第三方插件（search-example）
 
 ### Phase C：前端插件中心
 
-- [ ] 侧边栏底部新增"插件中心"入口
-- [ ] 新增 `/plugins` 页面（或抽屉面板）
-- [ ] 插件卡片列表（分类 Tab + 安装状态）
-- [ ] 安装/卸载交互（确认弹窗 + 依赖提示）
-- [ ] 插件配置入口（跳转到对应设置区域或内联配置）
+- [x] 侧边栏底部新增"插件中心"入口
+- [x] 新增 `/plugins` 页面（或抽屉面板）
+- [x] 插件卡片列表（分类 Tab + 安装状态）
+- [x] 安装/卸载交互（确认弹窗 + 依赖提示）
+- [x] 插件配置入口（跳转到对应设置区域或内联配置）
 
 ### Phase D：Core 降级体验
 
-- [ ] 无 metadata 插件时：刮削入口隐藏或提示"请先安装元数据源插件"
-- [ ] 无 search 插件时：搜索弹窗提示"请先安装搜索源插件"
-- [ ] 无 download 插件时：下载按钮隐藏或提示
-- [ ] 无 subscribe 插件时：订阅 Tab 隐藏
-- [ ] 无 discover 插件时：发现页显示空状态 + 安装引导
+- [x] 无 search 插件时：搜索源列表为空，SSE 搜索返回提示
+- [x] 无 metadata 插件时：provider 列表不含元数据源
+- [x] 无 download 插件时：下载提交返回"请先安装插件"
+- [x] 无 subscribe 插件时：订阅列表返回空
+- [x] 无 discover 插件时：发现源列表返回空
+- [x] 无 completeness 插件时：完整性检测返回"请先安装插件"
 
 ---
 
 ## 验收标准
 
-- 公开版首次启动：只有媒体库扫描/浏览/整理/质量分析可用
-- 用户进入插件中心，安装 metadata-tmdb 后，刮削功能可用
-- 用户安装 search-prowlarr 后，搜索功能可用
-- 用户卸载某插件后，对应功能立即不可用（不报错，优雅降级）
-- 私有自用版：`installed_plugins` 默认包含所有插件（行为等价于当前）
+- [x] 公开版首次启动：只有媒体库扫描/浏览/整理/质量分析可用
+- [x] 用户进入插件中心，安装 metadata-tmdb 后，刮削功能可用
+- [x] 用户安装 search-prowlarr 后，搜索功能可用
+- [x] 用户卸载某插件后，对应功能立即不可用（不报错，优雅降级）
+- [ ] 私有自用版：`installed_plugins` 默认包含所有插件（行为等价于当前）
+
+---
+
+## 遗留事项（后续迭代）
+
+- [ ] 前端设置页动态化：只显示已安装插件的配置区域（Prowlarr/qB/Alist 配置根据插件状态显隐）
+- [ ] 前端下载管理面板适配无下载器模式（显示监控目录配置 + 新文件列表）
+- [ ] 文件夹监控定时扫描集成到后端启动流程（FolderWatcher + 定时器）
+- [ ] 默认安装插件列表（新用户开箱即用）
+- [ ] DownloadManager 完全移除 qb/alist 兼容属性（当前保留了 self.qb/self.alist 兼容）
+- [ ] 搜索弹窗下载按钮根据 hasDownload 状态显隐

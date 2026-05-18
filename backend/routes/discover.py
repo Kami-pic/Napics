@@ -87,6 +87,10 @@ def get_movie_poster(name: str):
 @router.get("/douban/hot")
 def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
     """获取热榜列表。动画 tab 用 Bangumi，其他用豆瓣+TMDB（文件缓存+并发）"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("discover"):
+        return {"type": type, "items": []}
+
     # 动画 tab 走 Bangumi
     if tag == "动画":
         items = bangumi_client.get_hot_anime(page_start, 12)
@@ -289,6 +293,10 @@ _RECOMMEND_SOURCES = {
 @router.get("/discover/recommend/{source}")
 def discover_recommend(source: str, start: int = 0, count: int = 20):
     """统一推荐接口，豆瓣 API v2 失败时 fallback 到旧版网页接口"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("discover"):
+        return {"source": source, "items": [], "total": 0}
+
     # 综合推荐走独立逻辑（带文件缓存 1 小时）
     if source == "combined":
         cache_key = hashlib.md5(b"combined_recommend").hexdigest()[:12]
@@ -359,6 +367,10 @@ def discover_explore(
     cat: int = None, year: str = "",
 ):
     """探索接口。provider: douban/tmdb/bangumi"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("discover"):
+        return {"items": [], "total": 0}
+
     try:
         if provider == "douban":
             has_rating_filter = vote_average > 0 or vote_max < 10
@@ -427,7 +439,10 @@ def discover_explore(
 
 @router.get("/discover/sources")
 def discover_sources():
-    """返回所有可用的推荐源和探索源列表"""
+    """返回所有可用的推荐源和探索源列表。未安装 feature-discover 插件时返回空。"""
+    from plugin_guard import is_feature_allowed
+    if not is_feature_allowed("discover"):
+        return {"recommend": [], "explore": {}}
     return {
         "recommend": list(_RECOMMEND_SOURCES.keys()),
         "explore": {

@@ -1,0 +1,12 @@
+{
+    "id": "metadata-douban",
+    "name": "豆瓣",
+    "version": "1.0.0",
+    "description": "中文元数据补充，提供评分、简介、演员信息",
+    "category": "metadata",
+    "icon": "🎭",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["MetadataProvider:douban"],
+    "risk_level": "low"
+}

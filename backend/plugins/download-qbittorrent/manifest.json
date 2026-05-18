@@ -1,0 +1,12 @@
+{
+    "id": "download-qbittorrent",
+    "name": "qBittorrent",
+    "version": "1.0.0",
+    "description": "BT 下载器，支持一键下载、进度追踪、自动整理",
+    "category": "download",
+    "icon": "⬇️",
+    "requires_config": ["qb_url", "qb_username", "qb_password"],
+    "depends_on": [],
+    "provides": ["DownloadBackend:qbittorrent"],
+    "risk_level": "medium"
+}

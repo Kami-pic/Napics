@@ -1,0 +1,12 @@
+{
+    "id": "metadata-bangumi",
+    "name": "Bangumi",
+    "version": "1.0.0",
+    "description": "动画元数据源，提供番剧详情、日历、评分",
+    "category": "metadata",
+    "icon": "📺",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["MetadataProvider:bangumi"],
+    "risk_level": "low"
+}

@@ -9,9 +9,10 @@ interface SidebarProps {
   onNavigate: (node: FolderNode) => void;
   collapsed: boolean;
   onToggle: () => void;
+  onOpenPlugins?: () => void;
 }
 
-export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins }: SidebarProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -122,6 +123,15 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
             {!collapsed && <p className="text-xs text-slate-500">加载中...</p>}
           </div>
         )}
+      </div>
+
+      {/* 插件中心入口 */}
+      <div className="border-t border-white/[0.06] p-2">
+        <button onClick={onOpenPlugins}
+          className={`w-full flex items-center gap-2 py-2.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all ${collapsed ? "justify-center px-2" : "px-3"}`}>
+          <span className="text-sm">🧩</span>
+          {!collapsed && <span className="text-xs">插件中心</span>}
+        </button>
       </div>
     </aside>
   );

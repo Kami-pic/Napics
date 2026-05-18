@@ -1,0 +1,12 @@
+{
+    "id": "search-prowlarr",
+    "name": "Prowlarr",
+    "version": "1.0.0",
+    "description": "BT/PT 聚合搜索，需自建 Prowlarr 服务",
+    "category": "search",
+    "icon": "🔍",
+    "requires_config": ["prowlarr_url", "prowlarr_api_key"],
+    "depends_on": [],
+    "provides": ["SearchProvider:prowlarr"],
+    "risk_level": "medium"
+}

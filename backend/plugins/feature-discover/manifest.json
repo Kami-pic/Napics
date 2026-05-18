@@ -1,0 +1,12 @@
+{
+    "id": "feature-discover",
+    "name": "发现推荐",
+    "version": "1.0.0",
+    "description": "豆瓣热门/TMDB 趋势/Bangumi 日历",
+    "category": "feature",
+    "icon": "🌟",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["Feature:discover"],
+    "risk_level": "low"
+}
