@@ -503,7 +503,7 @@ class SubscriptionScheduler:
             if not tmdb:
                 return False
             season_num = sub.season or 1
-            raw = tmdb._get(f"/tv/{sub.tmdb_id}/season/{season_num}")
+            raw = tmdb.get_raw(f"/tv/{sub.tmdb_id}/season/{season_num}")
             episodes = raw.get("episodes", [])
             today = datetime.now().strftime("%Y-%m-%d")
             downloaded = set(sub.downloaded_episodes.keys())

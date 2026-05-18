@@ -153,7 +153,7 @@ def test_inject_clean_names_cache_miss_sync():
         fake_tmdb.search_movie.return_value = [
             {"id": 550, "original_title": "Fight Club", "vote_average": 8.4}
         ]
-        fake_tmdb._get_english_title.return_value = "Fight Club"
+        fake_tmdb.get_english_title.return_value = "Fight Club"
 
         items = [{
             "title": "搏击俱乐部",

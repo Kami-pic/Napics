@@ -258,7 +258,7 @@ def compute_completeness(tmdb_client, tmdb_id: int, local_episodes: Dict[int, Li
             # get_season_detail 返回的是 ScrapeResult，没有 episodes 列表
             # 需要直接调用 TMDB API 获取集列表
             try:
-                season_raw = tmdb_client._get(f"/tv/{tmdb_id}/season/{s_num}")
+                season_raw = tmdb_client.get_raw(f"/tv/{tmdb_id}/season/{s_num}")
                 episodes = season_raw.get("episodes", [])
                 for ep in episodes:
                     ep_num = ep.get("episode_number", 0)

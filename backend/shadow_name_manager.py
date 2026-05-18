@@ -147,9 +147,9 @@ class ShadowNameManager:
                     if original_title and nfo_tmdb_id and tmdb_client:
                         if not self._is_latin(original_title):
                             try:
-                                en = tmdb_client._get_english_title("movie", nfo_tmdb_id, original_title)
+                                en = tmdb_client.get_english_title("movie", nfo_tmdb_id, original_title)
                                 if not en:
-                                    en = tmdb_client._get_english_title("tv", nfo_tmdb_id, original_title)
+                                    en = tmdb_client.get_english_title("tv", nfo_tmdb_id, original_title)
                                 if en:
                                     original_title = en
                             except Exception:
@@ -174,7 +174,7 @@ class ShadowNameManager:
                             if not self._is_latin(orig):
                                 try:
                                     mt = "tv" if result.media_type in ("tv", "tvshow", "episode") else "movie"
-                                    en = tmdb_client._get_english_title(mt, result.tmdb_id, orig)
+                                    en = tmdb_client.get_english_title(mt, result.tmdb_id, orig)
                                     if en:
                                         orig = en
                                 except Exception:

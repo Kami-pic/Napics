@@ -204,7 +204,7 @@ def _sync_enrich_english_names(items: list, tmdb, timeout: float = 2.0) -> list:
                     en_title = orig
             # 不是英文则用 en-US 请求
             if not en_title and tid:
-                en_title = tmdb._get_english_title(
+                en_title = tmdb.get_english_title(
                     "tv" if media_type == "tv" else "movie", tid, orig or ""
                 )
                 if en_title == title:
@@ -299,7 +299,7 @@ def async_enrich_tmdb_ids(items: list):
                         # 如果还没有英文名，尝试用 en-US 请求
                         if not en_title and not item.get("clean_name_en") and tid:
                             try:
-                                en_title = tmdb._get_english_title(
+                                en_title = tmdb.get_english_title(
                                     "tv" if media_type == "tv" else "movie", tid, orig or ""
                                 )
                                 if en_title and en_title != title:

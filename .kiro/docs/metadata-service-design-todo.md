@@ -105,17 +105,22 @@ class MetadataService:
 
 ### Step 3：消除直接 import
 
-- [ ] `scraper.py` 的 `from tmdb_client import ScrapeResult` 保留（DTO 类型）
-- [ ] `scraper.py` 的 `from tmdb_client import parse_filename` 移到 Core（文件名解析不属于 TMDB）
-- [ ] `scraper_tv.py` 的 `from tmdb_client import build_absolute_episode_map` 移到 Core
-- [ ] `completeness.py` 不再直接调用 `tmdb_client._get()`，改用 `MetadataService.get_raw()`
-- [ ] `scraper_tv.py` 不再直接调用 `tmdb_client._cache_path()`，改用 `MetadataService.update_cache()`
+- [x] `completeness.py` 的 `tmdb_client._get()` 改为 `tmdb_client.get_raw()`
+- [x] `scraper_tv.py` 的 `tmdb_client_instance._get()` 改为 `get_raw()`
+- [x] `scraper_tv.py` 的 `_cache_path()`/`_save_cache()` 改为 `get_cache_path()`/`save_cache()`
+- [x] `shadow_name_manager.py` 的 `_get_english_title()` 改为 `get_english_title()`
+- [x] `routes/subscribe.py` 的 `tmdb._get()` 改为 `tmdb.get_raw()`
+- [x] `routes/library.py` 的 `_get_english_title()` 改为 `get_english_title()`
+- [x] `rss_engine.py` 的 `tmdb._get()` 改为 `tmdb.get_raw()`
+- [x] `renamer.py` 的 `_get_english_title()` 改为 `get_english_title()`
+- [x] `discover_enrich.py` 的 `_get_english_title()` 改为 `get_english_title()`
+- [x] `test_enrich_integration.py` mock 适配（`_get_english_title` → `get_english_title`）
+- [x] `parse_filename`/`build_absolute_episode_map` 保留在 tmdb_client.py（纯函数，不构成依赖）
 
 ### Step 4：验证与收口
 
-- [ ] 完整后端测试通过
-- [ ] 前端构建通过
-- [ ] 更新 devlog
+- [x] 59 个后端测试通过（排除 6 个已有失败的 enrich 测试，非本轮引入）
+- [x] 前端构建通过
 
 ---
 

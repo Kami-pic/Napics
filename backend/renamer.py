@@ -183,7 +183,7 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
                     mt = nfo.get("media_type", "movie")
                     if mt in ("tvshow", "tv", "episode"):
                         mt = "tv"
-                    en = tmdb_client._get_english_title(mt, nfo["tmdb_id"], nfo.get("original_title", ""))
+                    en = tmdb_client.get_english_title(mt, nfo["tmdb_id"], nfo.get("original_title", ""))
                     if en:
                         folder_scrape = dict(folder_scrape)
                         folder_scrape["english_title"] = en
@@ -312,7 +312,7 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
                     mt = file_nfo.get("media_type", "movie")
                     if mt in ("tvshow", "tv", "episode"):
                         mt = "tv"
-                    en = tmdb_client._get_english_title(mt, file_nfo["tmdb_id"], file_nfo.get("original_title", ""))
+                    en = tmdb_client.get_english_title(mt, file_nfo["tmdb_id"], file_nfo.get("original_title", ""))
                     if en:
                         scrape_data = dict(scrape_data)
                         scrape_data["english_title"] = en

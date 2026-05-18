@@ -220,9 +220,9 @@ def quick_sync():
                             yr = nfo_info.get("year", "")
                             if not shadow_m._is_latin(orig) and nfo_info.get("tmdb_id") and sync_tmdb:
                                 try:
-                                    en = sync_tmdb._get_english_title("movie", nfo_info["tmdb_id"], orig)
+                                    en = sync_tmdb.get_english_title("movie", nfo_info["tmdb_id"], orig)
                                     if not en:
-                                        en = sync_tmdb._get_english_title("tv", nfo_info["tmdb_id"], orig)
+                                        en = sync_tmdb.get_english_title("tv", nfo_info["tmdb_id"], orig)
                                     if en:
                                         orig = en
                                 except Exception:

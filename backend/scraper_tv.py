@@ -251,7 +251,7 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
     elif tv_detail and tv_detail.tmdb_id and not tv_detail.seasons_info:
         # 旧缓存没有 seasons_info，重新请求获取
         try:
-            raw = tmdb_client_instance._get(f"/tv/{tv_detail.tmdb_id}")
+            raw = tmdb_client_instance.get_raw(f"/tv/{tv_detail.tmdb_id}")
             seasons_raw = raw.get("seasons", [])
             tv_detail.seasons_info = [
                 {"season_number": s["season_number"], "episode_count": s["episode_count"]}
@@ -261,8 +261,8 @@ def _scrape_tv_v3(folder_path, folder_name, subdirs, video_files,
             if tv_detail.seasons_info:
                 abs_map = build_absolute_episode_map(tv_detail.seasons_info)
                 # 更新缓存
-                cp = tmdb_client_instance._cache_path("tv", tv_detail.tmdb_id)
-                tmdb_client_instance._save_cache(cp, tv_detail.dict())
+                cp = tmdb_client_instance.get_cache_path("tv", tv_detail.tmdb_id)
+                tmdb_client_instance.save_cache(cp, tv_detail.dict())
         except Exception as e:
             logger.error(f"[V3] Failed to fetch seasons_info: {e}")
 
