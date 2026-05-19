@@ -198,9 +198,7 @@ PUT    /api/plugins/:id/config   — 保存插件配置
 
 ## 遗留事项（后续迭代）
 
-- [ ] 前端设置页动态化：只显示已安装插件的配置区域（Prowlarr/qB/Alist 配置根据插件状态显隐）
-- [ ] 前端下载管理面板适配无下载器模式（显示监控目录配置 + 新文件列表）
-- [ ] 文件夹监控定时扫描集成到后端启动流程（FolderWatcher + 定时器）
-- [ ] 默认安装插件列表（新用户开箱即用）
+- [ ] 私有自用版：`installed_plugins` 默认包含所有插件（行为等价于当前）
 - [ ] DownloadManager 完全移除 qb/alist 兼容属性（当前保留了 self.qb/self.alist 兼容）
-- [ ] 搜索弹窗下载按钮根据 hasDownload 状态显隐
+- [ ] 搜索弹窗下载按钮根据 hasDownload 状态显隐（当前后端已阻断，前端按钮仍显示）
+- [ ] 文件夹监控检测到新文件后自动创建 DownloadTask 并触发归位（当前只打日志）

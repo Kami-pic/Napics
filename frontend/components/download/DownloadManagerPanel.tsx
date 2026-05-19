@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { DownloadTask } from "@/types";
 import { api } from "@/lib/api";
+import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { FileTree } from "./FileTreeNode";
 
 type StatusFilter = "" | "downloading" | "completed" | "awaiting_confirm" | "archived" | "failed";
@@ -31,6 +32,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
   const [filter, setFilter] = useState<StatusFilter>("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const plugins = useInstalledPlugins();
 
   // 视图控制：list 为列表，wash 为整理替换详情
   const [view, setView] = useState<"list" | "wash">("list");
@@ -202,10 +204,12 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                 <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.06] text-slate-400">{tasks.length} 个任务</span>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={handleSyncFromQb} disabled={syncingQb}
-                  className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
-                  {syncingQb ? "同步中..." : "从 qB 同步"}
-                </button>
+                {plugins.hasDownload && (
+                  <button onClick={handleSyncFromQb} disabled={syncingQb}
+                    className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                    {syncingQb ? "同步中..." : "从下载器同步"}
+                  </button>
+                )}
                 {syncMsg && <span className="text-[10px] text-green-400">{syncMsg}</span>}
                 <button onClick={handleClearCompleted}
                   className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-slate-300">
@@ -226,8 +230,16 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
 
             <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0 custom-scrollbar">
               {tasks.length === 0 && (
-                <div className="h-40 flex flex-col items-center justify-center opacity-20">
-                  <p className="text-[11px]">暂无记录</p>
+                <div className="h-40 flex flex-col items-center justify-center opacity-60">
+                  {!plugins.hasDownload ? (
+                    <>
+                      <span className="text-2xl mb-2">🧩</span>
+                      <p className="text-[11px] text-slate-400">未安装下载器插件</p>
+                      <p className="text-[10px] text-slate-600 mt-1">在插件中心安装 qBittorrent 或 OpenList 后可一键下载</p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-slate-500">暂无记录</p>
+                  )}
                 </div>
               )}
               {tasks.map(task => {

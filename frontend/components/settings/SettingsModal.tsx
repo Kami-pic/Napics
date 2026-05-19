@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import type { AppConfig, AIFeaturesConfig, ProviderMetadata } from "@/types";
 
 // AI 服务商预设
@@ -85,6 +86,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   const [aiUsage, setAiUsage] = useState<Record<string, { calls: number; tokens: number }>>({});
   const [aiExpanded, setAiExpanded] = useState(false);
   const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
+  const plugins = useInstalledPlugins();
 
   useEffect(() => {
     if (open) {
@@ -149,8 +151,14 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               className="w-full mt-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30 resize-y min-h-[38px]" placeholder="@eaDir&#10;#recycle" />
           </div>
 
-          {/* 按分组渲染字段 */}
-          {FIELD_GROUPS.map((g, gi) => (
+          {/* 按分组渲染字段（根据插件安装状态过滤） */}
+          {FIELD_GROUPS.filter(g => {
+            if (g.group === "影视数据") return plugins.installed.has("metadata-tmdb");
+            if (g.group === "搜索下载") return plugins.installed.has("search-prowlarr");
+            if (g.group === "BT 下载") return plugins.installed.has("download-qbittorrent");
+            if (g.group === "网盘转存") return plugins.installed.has("download-openlist") || plugins.installed.has("storage-openlist");
+            return true; // AI 辅助始终显示
+          }).map((g, gi) => (
             <div key={g.group} className={gi > 0 ? "pt-3 border-t border-white/[0.06]" : ""}>
               {/* AI 辅助分组：自定义渲染 */}
               {g.group === "AI 辅助" ? (
