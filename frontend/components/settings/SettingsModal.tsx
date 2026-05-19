@@ -126,66 +126,88 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
         </div>
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
-          {/* NAS 扫描路径 */}
+          {/* 统一路径管理 */}
           <div className="pb-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-blue-400">扫描路径</label>
+              <button onClick={() => setPaths(["", ...paths])} className="text-xs text-blue-400 hover:text-blue-300 flex-shrink-0">+ 添加路径</button>
             </div>
-            <div className="flex items-center justify-between mt-1 mb-3">
-              <p className="text-xs text-slate-500">添加需要扫描的媒体目录</p>
-              <button onClick={() => setPaths([...paths, ""])} className="text-xs text-blue-400 hover:text-blue-300 flex-shrink-0">+ 添加路径</button>
-            </div>
-            {paths.map((p, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input value={p} onChange={e => updatePath(i, e.target.value)} placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
-                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30" />
-                <button onClick={async () => {
-                  try { const res = await (await import("@/lib/api")).api.browseFolder(); if (res.path) updatePath(i, res.path); } catch {}
-                }} title="选择文件夹" className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all flex-shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-slate-400">
-                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                </button>
-                <button onClick={async () => {
-                  const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
-                  if (remaining.length === 0) {
-                    if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
-                    try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
-                    setPaths([""]);
-                    const resetConfig = { ...config, scan_paths: [], media_libraries: [] };
-                    await (await import("@/lib/api")).api.saveConfig(resetConfig);
-                    setConfig(resetConfig);
-                    onClose();
-                    window.location.reload();
-                  } else {
-                    if (!confirm(`确定删除路径 "${p}" ？`)) return;
-                    setPaths(remaining.length > 0 ? remaining : [""]);
-                  }
-                }} className="text-red-400 hover:text-red-300 text-xs px-2 flex-shrink-0">删除</button>
-              </div>
-            ))}
+            <p className="text-xs text-slate-500 mt-1 mb-3">所有媒体目录（含分类文件夹）</p>
+            {(() => {
+              // 合并 scan_paths 和 media_libraries 为统一列表
+              const libPathMap: Record<string, string> = {};
+              (config.media_libraries || []).forEach(lib => {
+                lib.paths.forEach(p => { libPathMap[p] = lib.category_tag; });
+              });
+              return paths.map((p, i) => {
+                const tag = libPathMap[p] || "library";
+                return (
+                  <div key={i} className="group flex gap-1.5 mb-2 items-center">
+                    <button onClick={async () => {
+                      try { const res = await (await import("@/lib/api")).api.browseFolder(); if (res.path) updatePath(i, res.path); } catch {}
+                    }} title="选择文件夹" className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all flex-shrink-0">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-slate-400">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    </button>
+                    <div className="flex-1 flex items-center bg-white/[0.04] border border-white/[0.06] rounded-lg overflow-hidden focus-within:border-blue-500/30">
+                      <select value={tag} onChange={e => {
+                        const newTag = e.target.value;
+                        // 更新 media_libraries 中的标签
+                        const libs = [...(config.media_libraries || [])];
+                        if (newTag === "library") {
+                          // 从 media_libraries 中移除
+                          const newLibs = libs.filter(lib => !lib.paths.includes(p));
+                          setConfig({ ...config, media_libraries: newLibs });
+                        } else {
+                          // 添加或更新到 media_libraries
+                          const existing = libs.find(lib => lib.paths.includes(p));
+                          if (existing) {
+                            existing.category_tag = newTag;
+                          } else {
+                            const folderName = p.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || "媒体库";
+                            libs.push({ name: folderName, category_tag: newTag, paths: [p], exclude_dirs: [] });
+                          }
+                          setConfig({ ...config, media_libraries: libs });
+                        }
+                      }} className="bg-transparent text-[10px] font-medium px-2 py-2 text-blue-400 outline-none cursor-pointer border-r border-white/[0.06] flex-shrink-0">
+                        <option value="library">媒体库</option>
+                        <option value="movie">电影</option>
+                        <option value="tv">电视剧</option>
+                        <option value="anime_tv">动画番剧</option>
+                        <option value="anime_movie">动画电影</option>
+                        <option value="variety">综艺</option>
+                        <option value="other">其他</option>
+                      </select>
+                      <input value={p} onChange={e => updatePath(i, e.target.value)} placeholder="选择或输入路径"
+                        className="flex-1 bg-transparent px-2.5 py-2 text-sm font-mono text-slate-300 outline-none placeholder:text-slate-600" />
+                      <button onClick={async () => {
+                        const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
+                        if (remaining.length === 0) {
+                          if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
+                          try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
+                          setPaths([""]);
+                          const resetConfig = { ...config, scan_paths: [], media_libraries: [] };
+                          await (await import("@/lib/api")).api.saveConfig(resetConfig);
+                          setConfig(resetConfig);
+                          onClose();
+                          window.location.reload();
+                        } else {
+                          if (!confirm(`确定删除路径 "${p}" ？`)) return;
+                          // 同时从 media_libraries 中移除
+                          const newLibs = (config.media_libraries || []).filter(lib => !lib.paths.includes(p));
+                          setConfig({ ...config, media_libraries: newLibs });
+                          setPaths(remaining.length > 0 ? remaining : [""]);
+                        }
+                      }} className="w-7 h-7 flex items-center justify-center text-red-400/0 group-hover:text-red-400/60 hover:!text-red-400 transition-all flex-shrink-0 mr-0.5">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
-          {/* 媒体文件夹（media_libraries）*/}
-          {config.media_libraries && config.media_libraries.length > 0 && (
-            <div className="pb-3 -mt-2">
-              <label className="text-sm font-medium text-blue-400">分类文件夹</label>
-              <p className="text-xs text-slate-500 mt-1 mb-3">通过"添加分类文件夹"创建的媒体文件夹</p>
-              {config.media_libraries.map((lib, i) => (
-                <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-lg p-3 mb-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-slate-300">{lib.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">{lib.category_tag}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-600 space-y-0.5">
-                    {lib.paths.map((p, pi) => <p key={pi} className="font-mono truncate">{p}</p>)}
-                    {lib.exclude_dirs.length > 0 && (
-                      <p className="text-slate-700">排除: {lib.exclude_dirs.join(", ")}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
           {/* 排除文件夹 */}
           <div className="pb-3 border-b border-white/[0.06] -mt-2">
             <label className="text-sm font-medium text-slate-300">排除文件夹</label>
