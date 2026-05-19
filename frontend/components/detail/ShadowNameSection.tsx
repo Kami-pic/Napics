@@ -1,4 +1,4 @@
-// 影子名（标准名）管理区：显示/编辑标准名和清洗名
+// 标准化名称管理区：显示/编辑标准化名称和搜索索引名称
 "use client";
 import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
@@ -116,7 +116,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
             onKeyDown={e => { if (e.key === "Enter") handleSaveShadow(editValue); if (e.key === "Escape") setEditing(false); }}
             onBlur={() => { setTimeout(() => setEditing(false), 150); }}
             className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded px-2 py-0.5 text-xs text-white outline-none focus:border-blue-500/40 min-w-0"
-            placeholder="输入标准名" />
+            placeholder="输入标准化名称" />
           <button onMouseDown={e => e.preventDefault()} onClick={() => handleSaveShadow(editValue)} disabled={saving} className="text-[10px] text-blue-400 flex-shrink-0">{saving ? "..." : "保存"}</button>
           <button onClick={() => setEditing(false)} className="text-[10px] text-slate-600 flex-shrink-0">取消</button>
         </div>
@@ -126,23 +126,23 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
 
   return (
     <div className="space-y-1">
-      {/* 标准名 */}
+      {/* 标准化名称 */}
       <div className="flex items-center gap-2 px-1">
         <span className="text-[10px] text-slate-600">✨</span>
         {shadowName ? (
           <>
             <span className="text-xs text-slate-400 truncate flex-1 cursor-pointer hover:text-slate-300"
-              onClick={() => { setEditValue(shadowName); setEditing(true); }} title="点击编辑标准名">{shadowName}</span>
+              onClick={() => { setEditValue(shadowName); setEditing(true); }} title="点击编辑标准化名称">{shadowName}</span>
             {shadowName !== (isFolder ? fileName : fileName.replace(/\.[^.]+$/, '')) && (
               <button onClick={handleApplyShadow} className="text-[10px] text-amber-500/70 hover:text-amber-400 flex-shrink-0" title="用标准名替换原始名">替换原始名</button>
             )}
           </>
         ) : (
           <span className="text-xs text-slate-600 truncate flex-1 cursor-pointer hover:text-slate-400"
-            onClick={() => { setEditValue(fileName.replace(/\.[^.]+$/, '')); setEditing(true); }} title="点击设置标准名">{fileName}</span>
+            onClick={() => { setEditValue(fileName.replace(/\.[^.]+$/, '')); setEditing(true); }} title="点击设置标准化名称">{fileName}</span>
         )}
       </div>
-      {/* 清洗名（中文 + 英文同一行，各自可独立编辑） */}
+      {/* 搜索索引名称（中文 + 英文同一行，各自可独立编辑） */}
       <div className="flex items-center gap-2 px-1">
         <span className="text-[10px] text-slate-600 flex-shrink-0">🧹</span>
         {editingClean ? (
@@ -165,7 +165,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
         ) : (
           <span className="text-[11px] truncate flex-1">
             {cleanName ? (
-              <span className="text-slate-600 cursor-pointer hover:text-slate-400" onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑清洗名">{cleanName}</span>
+              <span className="text-slate-600 cursor-pointer hover:text-slate-400" onClick={() => { setCleanEditValue(cleanName); setEditingClean(true); }} title="点击编辑搜索索引名称">{cleanName}</span>
             ) : (
               <span className="text-slate-600">未设置</span>
             )}

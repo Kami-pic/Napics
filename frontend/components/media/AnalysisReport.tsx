@@ -111,7 +111,7 @@ export default function AnalysisReport({ open, onClose }: Props) {
               <StatCard label="命名问题" value={summary.rename_issues} icon="✏️" warn />
               <StatCard label="刮削缺失" value={summary.scrape_issues} icon="🎬" warn />
               <StatCard label="质量问题" value={summary.quality_issues} icon="📊" warn />
-              <StatCard label="影子名" value={summary.shadow_name_issues} icon="👤" warn />
+              <StatCard label="标准化名称" value={summary.shadow_name_issues} icon="👤" warn />
             </div>
           </div>
         ) : (

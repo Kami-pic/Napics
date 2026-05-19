@@ -190,7 +190,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
             if (steps.archive) msg += `\n旧刮削清理: ${steps.archive} 项`;
             if (steps.scrape?.nfo_written) msg += `\n刮削: ${steps.scrape.nfo_written} 个 NFO`;
             if (steps.structure?.moved) msg += `\n结构归位: ${steps.structure.moved} 项`;
-            if (steps.shadow) msg += `\n影子名: ${steps.shadow} 项`;
+            if (steps.shadow) msg += `\n标准化名称: ${steps.shadow} 项`;
             setActionResult(msg);
             setActionPlan(null);
             onRefresh();
@@ -198,7 +198,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
             const res = await api.fullOrganize(node.path, false, useAi);
             const steps = res.steps || {};
             let msg = "整理完成";
-            if (steps.shadow) msg += `\n影子名: ${steps.shadow} 项`;
+            if (steps.shadow) msg += `\n标准化名称: ${steps.shadow} 项`;
             setActionResult(msg);
             onRefresh();
           }

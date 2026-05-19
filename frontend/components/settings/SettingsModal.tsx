@@ -32,7 +32,7 @@ interface SettingsModalProps {
 const FIELD_GROUPS: { group: string; fields: { label: string; key: string; desc: string; link?: boolean; type?: string }[] }[] = [
   { group: "影视数据", fields: [
     { label: "TMDB API Key", key: "tmdb_api_key", desc: "影视封面和标准化标题" },
-    { label: "HTTP 代理", key: "http_proxy", desc: "如 http://127.0.0.1:7890，留空不使用代理" },
+    { label: "HTTP 代理", key: "http_proxy", desc: "如 http://127.0.0.1:7890，TMDB 等海外服务需要" },
   ]},
   { group: "搜索下载", fields: [
     { label: "Prowlarr 地址", key: "prowlarr_url", desc: "BT/PT 全网聚合搜索后台", link: true },
@@ -296,17 +296,19 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
 
           {/* 缓存管理 */}
           <div className="pt-3 border-t border-white/[0.06]">
-            {/* 默认刮削源 */}
+            {/* 默认刮削源：只在有元数据插件时显示 */}
+            {metadataProviders.length > 0 && (
             <div className="mb-4">
-              <label className="text-sm font-medium text-slate-300">默认刮削源</label>
-              <p className="text-xs text-slate-600 mt-0.5 mb-1.5">一键刮削时优先使用的数据源</p>
+              <label className="text-sm font-medium text-slate-300">默认数据源</label>
+              <p className="text-xs text-slate-600 mt-0.5 mb-1.5">自动识别影视信息时优先使用的数据源</p>
               <select value={config.default_scrape_source || "tmdb"} onChange={e => setConfig({ ...config, default_scrape_source: e.target.value })}
                 className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30">
-                {(metadataProviders.length > 0 ? metadataProviders : fallbackMetadataProviders).map(provider => (
+                {metadataProviders.map(provider => (
                   <option key={provider.id} value={provider.id}>{formatMetadataProviderOption(provider)}</option>
                 ))}
               </select>
             </div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-slate-300">刮削缓存</label>
@@ -321,12 +323,12 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               }} className="px-3 py-1.5 bg-white/[0.04] hover:bg-red-500/10 hover:text-red-400 rounded-lg text-[10px] text-slate-500 transition-all">清空缓存</button>
             </div>
           </div>
-          {/* 影子名 */}
+          {/* 标准化名称 */}
           <div className="pt-3 border-t border-white/[0.06]">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-300">影子名管理</label>
-                <p className="text-xs text-slate-600 mt-0.5">从 NFO 批量提取英文原名作为影子名</p>
+                <label className="text-sm font-medium text-slate-300">标准化名称管理</label>
+                <p className="text-xs text-slate-600 mt-0.5">从 NFO 批量提取英文原名作为标准化名称，用于搜索匹配</p>
               </div>
               <button onClick={async () => {
                 try { const r = await (await import("@/lib/api")).api.batchGenerateShadowNames(); alert(`生成 ${r.generated} 个，跳过 ${r.skipped} 个`); } catch { alert("失败"); }
@@ -362,35 +364,6 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
     </div>
   );
 }
-
-const fallbackMetadataProviders: ProviderMetadata[] = [
-  {
-    id: "tmdb",
-    name: "TMDB",
-    kind: "metadata",
-    type: "metadata",
-    enabled: true,
-    defaultEnabled: true,
-    capabilities: ["search", "detail", "artwork", "aliases", "episodes"],
-    riskLevel: "low",
-    requires: ["api_key"],
-    supportsProxy: true,
-    description: "",
-  },
-  {
-    id: "douban",
-    name: "豆瓣",
-    kind: "metadata",
-    type: "metadata",
-    enabled: true,
-    defaultEnabled: true,
-    capabilities: ["search", "detail", "artwork", "aliases", "episodes"],
-    riskLevel: "low",
-    requires: [],
-    supportsProxy: false,
-    description: "",
-  },
-];
 
 function formatMetadataProviderOption(provider: ProviderMetadata): string {
   const hints = [];
