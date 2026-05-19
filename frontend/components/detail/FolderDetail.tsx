@@ -387,13 +387,32 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         );
       })()}
       {/* 第二行：移动到 / 复制到 / 删除 / 移除 */}
-      <div className="grid grid-cols-4 gap-2">
-        <MoveAction onMove={handleMove} />
-        <CopyAction onCopy={async (t) => { try { await api.batchManage("copy", [node.path], t); onRefresh(); } catch { alert("失败"); } }} />
-        <DeleteAction onDelete={handleDelete} />
-        <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
-      </div>
-      {/* 第三行：自动命名 / 标准结构 / 一键整理 + AI开关 */}
+      {node.is_virtual_library ? (
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={async () => {
+            if (!confirm(`确定从媒体库中移除 "${node.name}"？（不会删除文件）`)) return;
+            try {
+              await api.deleteLibrary(node.name);
+              onRefresh();
+            } catch { alert("移除失败"); }
+          }} className="py-2 rounded-lg bg-white/[0.04] hover:bg-red-500/10 hover:text-red-400 text-xs text-slate-500 transition-all">移除文件夹</button>
+          <button onClick={() => {
+            const newName = prompt("修改文件夹名称", node.name);
+            if (newName && newName !== node.name) {
+              api.updateLibrary(node.name, { name: newName }).then(() => onRefresh()).catch(() => alert("修改失败"));
+            }
+          }} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">改名</button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-2">
+          <MoveAction onMove={handleMove} />
+          <CopyAction onCopy={async (t) => { try { await api.batchManage("copy", [node.path], t); onRefresh(); } catch { alert("失败"); } }} />
+          <DeleteAction onDelete={handleDelete} />
+          <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
+        </div>
+      )}
+      {/* 第三行：自动命名 / 标准结构 / 一键整理 + AI开关（虚拟文件夹不显示） */}
+      {!node.is_virtual_library && (
       <div className="space-y-2">
         <button onClick={() => doAction("rename")} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">自动命名</button>
         <button onClick={async () => { setActionLoading(true); setActionResult(""); try { const res = await api.structureOrganize(node.path, true); const ops = res.ops || []; const videoExts = ['.mp4','.mkv','.avi','.rmvb','.rm','.flv','.ts','.m4v','.mov','.wmv']; const videoOps = ops.filter((o: any) => { const p = o.old || o.path || o.desc || ''; return videoExts.some(ext => p.toLowerCase().endsWith(ext)) || o.action === 'rename_dir' || o.action === 'rmdir'; }); const moveOps = videoOps.filter((o: any) => o.action === 'move'); const renameOps = videoOps.filter((o: any) => o.action === 'rename_dir'); if (ops.length) { let msg = `预览-structure ${moveOps.length} 个视频`; if (renameOps.length) msg += `，${renameOps.length} 个目录重命名`; moveOps.slice(0, 8).forEach((o: any) => { msg += `\n📦 ${o.desc || ''}`; }); renameOps.slice(0, 3).forEach((o: any) => { msg += `\n✏️ ${o.desc || ''}`; }); if (moveOps.length > 8) msg += `\n  ... 还有 ${moveOps.length - 8} 个视频`; setActionResult(msg); } else { setActionResult("结构已标准，无需调整"); } } catch (e: any) { setActionResult("操作失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">标准结构</button>
@@ -412,6 +431,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <button onClick={() => setUseAi(!useAi)} className={`px-3 py-2.5 rounded-lg text-xs transition-all ${useAi ? "bg-blue-600/60 text-white" : "bg-white/[0.04] text-slate-500 hover:bg-white/[0.06]"}`}>🤖</button>
         </div>
       </div>
+      )}
       {/* 操作结果 */}
       {actionResult && (
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-xs text-slate-300">

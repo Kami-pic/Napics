@@ -810,6 +810,8 @@ def get_library_tree():
                 node["folder_type"] = ""
                 node["category_tag"] = category_tag
                 node["is_top_category"] = True
+                # 标记虚拟媒体库文件夹
+                node["is_virtual_library"] = node["name"] in _lib_category_tags
             else:
                 node["category_tag"] = ""
                 node["is_top_category"] = False

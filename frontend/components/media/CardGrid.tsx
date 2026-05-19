@@ -233,7 +233,7 @@ export default function CardGrid({
 
             return (
               <div key={item.id} data-card
-                className={`group rounded-xl overflow-hidden bg-[#1a1a1a] border cursor-pointer transition-all ${isActive ? "border-blue-500/50 ring-1 ring-blue-500/20" : "border-white/[0.06] hover:border-slate-500"}`}
+                className={`group rounded-xl overflow-hidden bg-[#1a1a1a] border cursor-pointer transition-all ${isActive ? "border-blue-500/50 ring-1 ring-blue-500/20" : folder.is_virtual_library ? "border-purple-500/20 hover:border-purple-500/40" : "border-white/[0.06] hover:border-slate-500"}`}
                 onClick={handleClick}>
                 {hasPoster ? (
                   <div className="relative aspect-[2/3] bg-[#111]">
@@ -242,7 +242,12 @@ export default function CardGrid({
                     {leaf && ft !== "movie" && (
                       <div className="absolute top-3 left-3 bg-green-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{folder.video_count} 集</div>
                     )}
-                    {folder.category_tag && (
+                    {folder.is_virtual_library && (
+                      <div className="absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide bg-purple-500/30 text-purple-300">
+                        {getCategoryTagLabel(folder.category_tag || "")}
+                      </div>
+                    )}
+                    {!folder.is_virtual_library && folder.category_tag && (
                       <div className={`absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide ${folder.category_tag === "movie" ? "bg-blue-500/30 text-blue-300" : "bg-green-500/30 text-green-300"}`}>
                         {getCategoryTagLabel(folder.category_tag)}
                       </div>

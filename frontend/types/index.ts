@@ -37,6 +37,7 @@ export interface FolderNode {
   has_cover: boolean;
   is_category?: boolean;
   is_top_category?: boolean;
+  is_virtual_library?: boolean;
   parent_category_tag?: "movie" | "tv" | "";
   folder_type?: string;
   shadow_name?: string;
