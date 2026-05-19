@@ -20,6 +20,9 @@ import OperationHistory from "@/components/media/OperationHistory";
 import OrganizeProgress from "@/components/media/OrganizeProgress";
 import DownloadManagerPanel from "@/components/download/DownloadManagerPanel";
 import PluginCenter from "@/components/plugins/PluginCenter";
+import EmptyLibraryGuide from "@/components/media/EmptyLibraryGuide";
+import AddLibraryModal from "@/components/media/AddLibraryModal";
+import AddScanPathModal from "@/components/media/AddScanPathModal";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { api } from "@/lib/api";
 import type { VideoInfo, FolderNode } from "@/types";
@@ -97,6 +100,8 @@ export default function Home() {
     seasonNumber?: number; episodeTag?: string; savePath?: string;
   }>({});
   const [showAddMedia, setShowAddMedia] = useState(false);
+  const [showAddLibrary, setShowAddLibrary] = useState(false);
+  const [showAddScanPath, setShowAddScanPath] = useState(false);
   const [showBatchUpgrade, setShowBatchUpgrade] = useState(false);
   const [addMediaQuery, setAddMediaQuery] = useState("");
   const [showHistory, setShowHistory] = useState(false);
@@ -108,14 +113,6 @@ export default function Home() {
   const [syncMsg, setSyncMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
-
-  useEffect(() => {
-    const hasPath = paths.some(p => p.trim() !== "");
-    if (!hasPath && stats.total === 0 && !scanning) {
-      const timer = setTimeout(() => setShowSettings(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [paths, stats.total, scanning]);
 
   useEffect(() => {
     if (!currentFolder || currentFolder.path === "") closeDetail();
@@ -143,14 +140,14 @@ export default function Home() {
   // 从发现页跳转到本地媒体库目录
   const handleNavigateToLocal = useCallback((folderPath: string) => {
     if (!folderPath || !fileTree) return;
-    const basePaths = config.nas_paths?.length ? config.nas_paths : (config.nas_path ? [config.nas_path] : []);
+    const basePaths = config.scan_paths?.length ? config.scan_paths : [];
     const targetNode = findLibraryNodeByPath(fileTree, folderPath, basePaths);
     if (targetNode) {
       navigateTo(targetNode);
       // 滚动到顶部
       if (scrollContainerRef.current) scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [config.nas_path, config.nas_paths, fileTree, navigateTo, scrollContainerRef]);
+  }, [config.scan_paths, fileTree, navigateTo, scrollContainerRef]);
 
   // 监听下载面板的"查看"按钮事件
   useEffect(() => {
@@ -264,16 +261,11 @@ export default function Home() {
                 <div className="w-10 h-10 border-3 border-slate-700 border-t-blue-500 rounded-full animate-spin mb-4" />
                 <p className="text-slate-500 text-sm">加载媒体库...</p>
               </div>
-            ) : stats.total === 0 && !scanning && !fileTree ? (
-              <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                <span className="text-6xl mb-5 opacity-20">📂</span>
-                <p className="text-base font-medium text-slate-400 mb-2">媒体库为空</p>
-                <p className="text-sm text-slate-600 mb-6">配置 NAS 路径后点击扫描开始</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowSettings(true)} className="px-5 py-2.5 bg-white/[0.06] border border-white/[0.06] rounded-xl text-sm text-slate-300 hover:bg-white/10 transition-all">设置</button>
-                  <button onClick={handleStartScan} className="px-5 py-2.5 bg-blue-600 rounded-xl text-sm text-white hover:bg-blue-500 transition-all">扫描媒体库</button>
-                </div>
-              </div>
+            ) : stats.total === 0 && !scanning && (!fileTree || (fileTree.children.length === 0 && fileTree.videos.length === 0)) ? (
+              <EmptyLibraryGuide
+                onAddScanPath={() => setShowAddScanPath(true)}
+                onAddLibrary={() => setShowAddLibrary(true)}
+              />
             ) : (
               <>
                 {viewMode === "card" && (
@@ -281,7 +273,8 @@ export default function Home() {
                     selectedPaths={selectedPaths} batchMode={batchMode} refreshKey={refreshKey}
                     onToggleSelect={toggleSelect} onToggleFolderSelect={toggleFolderSelect}
                     onPlay={handlePlay} onSearch={handleOpenSearch} onNavigate={navigateTo}
-                    onVideoDetail={openVideoDetail} onFolderDetail={openFolderDetail} />
+                    onVideoDetail={openVideoDetail} onFolderDetail={openFolderDetail}
+                    onAddLibrary={() => setShowAddLibrary(true)} />
                 )}
                 {viewMode === "list" && (
                   <FolderTable currentFolder={currentFolder} selectedPaths={selectedPaths}
@@ -296,7 +289,7 @@ export default function Home() {
           {/* 发现区域：根目录时显示，滚动到此处时懒加载 */}
           {showDiscover && (
             <div ref={discoverRef} className="min-h-[200px] mt-10">
-              <DiscoverPage onSelectMedia={handleSelectDoubanMedia} onNavigateToLocal={handleNavigateToLocal} visible={discoverVisible} scrollContainerRef={scrollContainerRef} defaultSavePath={config.nas_paths?.[0] || config.nas_path || ""} />
+              <DiscoverPage onSelectMedia={handleSelectDoubanMedia} onNavigateToLocal={handleNavigateToLocal} visible={discoverVisible} scrollContainerRef={scrollContainerRef} defaultSavePath={config.scan_paths?.[0] || ""} />
             </div>
           )}
         </div>
@@ -325,7 +318,7 @@ export default function Home() {
       <SettingsModal open={showSettings} config={config} onSave={saveConfig}
         onClose={() => setShowSettings(false)} setConfig={setConfig} paths={paths} setPaths={setPaths} />
       <SearchModal open={showSearch} query={searchQuery} onClose={() => setShowSearch(false)}
-        defaultSavePath={searchContext.savePath || currentFolder?.path || config.nas_paths?.[0] || config.nas_path || ""}
+        defaultSavePath={searchContext.savePath || currentFolder?.path || config.scan_paths?.[0] || ""}
         currentResolution={currentVideoResolution}
         qbConfigured={qbConfigured} alistConfigured={alistConfigured}
         shadowName={searchContext.shadowName} cleanName={searchContext.cleanName}
@@ -335,8 +328,20 @@ export default function Home() {
         episodeTag={searchContext.episodeTag} />
 
       <AddMediaPanel open={showAddMedia} onClose={() => setShowAddMedia(false)}
-        onRefresh={refreshLibrary} defaultSavePath={config.nas_paths?.[0] || config.nas_path || ""}
+        onRefresh={refreshLibrary} defaultSavePath={config.scan_paths?.[0] || ""}
         qbConfigured={qbConfigured} alistConfigured={alistConfigured} initialQuery={addMediaQuery} />
+
+      <AddLibraryModal open={showAddLibrary} onClose={() => setShowAddLibrary(false)}
+        onSuccess={(libPaths, libName) => {
+          setPaths(prev => [...libPaths, ...prev.filter(p => p.trim() && !libPaths.includes(p))]);
+          startScan(libPaths, libName);
+        }} />
+
+      <AddScanPathModal open={showAddScanPath} onClose={() => setShowAddScanPath(false)}
+        onSuccess={(newPaths) => {
+          setPaths(prev => [...newPaths, ...prev.filter(p => p.trim() && !newPaths.includes(p))]);
+          startScan(newPaths);
+        }} />
 
       <BatchUpgradePanel open={showBatchUpgrade} onClose={() => setShowBatchUpgrade(false)}
         items={videos.filter(v => selectedPaths.has(v.file_path)).map(v => ({

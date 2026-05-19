@@ -219,7 +219,7 @@ def batch_manage(req: BatchRequest):
         # 更新 media_library.json 中的路径
         if path_map or dir_map:
             library = config_m.load_library()
-            base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+            base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
             for v in library:
                 fp = v.get("file_path", "")
                 # 文件级匹配

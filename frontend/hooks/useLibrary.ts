@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 const DEFAULT_CONFIG: AppConfig = {
   prowlarr_url: "", prowlarr_api_key: "", tmdb_api_key: "",
   qb_url: "", alist_url: "", alist_token: "",
-  nas_paths: [], exclude_dirs: "",
+  scan_paths: [], exclude_dirs: "",
 };
 
 export function useLibrary() {
@@ -128,8 +128,7 @@ export function useLibrary() {
   useEffect(() => {
     api.getConfig().then(data => {
       setConfig(data);
-      if (data.nas_paths?.length > 0) setPaths(data.nas_paths);
-      else if (data.nas_path) setPaths([data.nas_path]);
+      if (data.scan_paths?.length > 0) setPaths(data.scan_paths);
     }).catch(() => {});
     refreshLibrary();
   }, [refreshLibrary]);
@@ -197,16 +196,17 @@ export function useLibrary() {
   }, [filteredVideos]);
 
   // 扫描：增量追加
-  const startScan = useCallback(async () => {
+  const startScan = useCallback(async (overridePaths?: string[], libraryName?: string) => {
+    const scanPaths = overridePaths || paths;
     const controller = new AbortController();
     setAbortController(controller); setScanning(true);
     setScanProgress({ current: 0, total: 0, lastFile: "" });
     const existingPaths = new Set(videos.map(v => v.file_path));
     const accumulated = [...videos];
     try {
-      for (const p of paths) {
+      for (const p of scanPaths) {
         if (!p.trim()) continue;
-        const response = await api.scan(p.trim(), controller.signal);
+        const response = await api.scan(p.trim(), libraryName, controller.signal);
         const reader = response.body?.getReader();
         if (!reader) continue;
         const decoder = new TextDecoder();
@@ -264,7 +264,7 @@ export function useLibrary() {
     try { await api.batchManage(action, Array.from(selectedPaths), targetDir); setSelectedPaths(new Set()); refreshLibrary(); } catch { alert("操作失败"); }
   }, [selectedPaths, refreshLibrary]);
   const saveConfig = useCallback(async (newConfig: AppConfig) => {
-    const toSave = { ...newConfig, nas_paths: paths };
+    const toSave = { ...newConfig, scan_paths: paths };
     await api.saveConfig(toSave); setConfig(toSave);
   }, [paths]);
   const clearSelection = useCallback(() => setSelectedPaths(new Set()), []);

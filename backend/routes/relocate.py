@@ -474,7 +474,7 @@ async def organize_dry_run(req: RelocateRequest):
                            f"无法进行整理替换探测。请手动将文件移到正确的子目录后重试。",
                 "coexist_pairs": []
             }
-        nas_roots = config_m.config.nas_paths or []
+        nas_roots = config_m.config.scan_paths or []
         if any(os.path.normpath(task.save_path).lower() == os.path.normpath(r).lower() for r in nas_roots):
             return {
                 "status": "failed",

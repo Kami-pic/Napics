@@ -69,6 +69,14 @@ export interface CompletenessResult {
   message?: string;
 }
 
+/** 虚拟媒体库配置 */
+export interface MediaLibraryConfig {
+  name: string;
+  category_tag: string;
+  paths: string[];
+  exclude_dirs: string[];
+}
+
 export interface AppConfig {
   prowlarr_url: string;
   prowlarr_api_key: string;
@@ -78,9 +86,9 @@ export interface AppConfig {
   qb_password?: string;
   alist_url: string;
   alist_token: string;
-  nas_paths: string[];
-  nas_path?: string; // 兼容旧配置
+  scan_paths: string[];
   exclude_dirs: string;
+  media_libraries?: MediaLibraryConfig[];
   http_proxy?: string;
   player_path?: string;
   openai_api_key?: string;

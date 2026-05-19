@@ -249,10 +249,11 @@ def test_infer_category_tag():
     from organizer import infer_category_tag
     assert infer_category_tag("电影") == "movie"
     assert infer_category_tag("电视剧") == "tv"
-    assert infer_category_tag("动画番") == "tv"
-    assert infer_category_tag("综艺") == "tv"
+    assert infer_category_tag("动画番") == "anime_tv"
+    assert infer_category_tag("综艺") == "variety"
     assert infer_category_tag("纪录片") == "tv"
-    assert infer_category_tag("动画电影") == "movie"
+    assert infer_category_tag("动画电影") == "anime_movie"
+    assert infer_category_tag("其他") == "other"
     assert infer_category_tag("未知分类") == "movie"  # 默认 movie
 def test_structure_organizer_import():
     from structure_organizer import (

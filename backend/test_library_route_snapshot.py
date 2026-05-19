@@ -25,9 +25,9 @@ def test_library_tree_snapshot_keeps_root_shape(monkeypatch):
                 }
             ],
             config=SimpleNamespace(
-                nas_paths=[r"\\NAS\视频"],
-                nas_path="",
+                scan_paths=[r"\\NAS\视频"],
                 category_tags={r"\\NAS\视频\动画番": "tv"},
+                media_libraries=[],
             ),
         ),
     )

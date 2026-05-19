@@ -218,7 +218,7 @@ def _get_recycle_bin() -> RecycleBin:
         _recycle_bin = RecycleBin(
             recycle_dir=recycle_dir,
             retention_days=conf.recycle_bin_retention_days,
-            library_roots=conf.nas_paths,
+            library_roots=conf.scan_paths,
             meta_path=os.path.join(backend_dir, "recycle_bin.json"),
         )
     return _recycle_bin
@@ -414,7 +414,7 @@ def get_clients():
 
 def _get_category_from_path(path: str) -> str:
     """从文件路径推断一级分类标签（movie/tv）"""
-    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+    base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
     configured_tags = config_m.config.category_tags or {}
     norm_path = os.path.normpath(path)
 
@@ -448,8 +448,8 @@ def _get_category_from_path(path: str) -> str:
 
 
 def _is_top_category(path: str) -> bool:
-    """判断 path 是否是 NAS 根目录的直接子目录（一级分类目录）"""
-    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+    """判断 path 是否是扫描根目录的直接子目录（一级分类目录）"""
+    base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
     if not base:
         return False
     norm_path = os.path.normpath(path)
@@ -470,7 +470,7 @@ def _sync_library_paths(ops: list):
             for v in library:
                 if v.get("file_path") == op["old"]:
                     v["file_path"] = op["new"]
-                    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+                    base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
                     if base:
                         rel = os.path.relpath(os.path.dirname(op["new"]), base)
                         v["folder_name"] = "" if rel == "." else rel

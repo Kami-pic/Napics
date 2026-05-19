@@ -29,7 +29,7 @@ def analyze_folder_api(path: str, enhanced: bool = False):
 def analyze_library_api(enhanced: bool = False):
     """分析整个媒体库"""
     config = config_m.config
-    base_path = config.nas_paths[0] if config.nas_paths else config.nas_path if config.nas_path else ""
+    base_path = config.scan_paths[0] if config.scan_paths else ""
     if not base_path or not os.path.isdir(base_path):
         raise HTTPException(status_code=400, detail="NAS path not configured or not accessible")
     library = config_m.load_library()

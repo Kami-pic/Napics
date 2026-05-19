@@ -50,4 +50,7 @@ export const configApi = {
     const res = await fetch(`${BASE_URL}/restore`, { method: "POST", body: form });
     return res.json();
   },
+
+  // 文件夹选择器
+  browseFolder: () => request<{ path: string }>(`${BASE_URL}/config/browse-folder`),
 };

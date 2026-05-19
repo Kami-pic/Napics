@@ -113,7 +113,7 @@ def test_organize_dry_run_returns_tree_snapshot_and_whitelist(monkeypatch):
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
     monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {"qbittorrent": qb})
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
-    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(scan_paths=[])))
 
     body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
     snapshot = RouteResponseSnapshot.from_body(200, body)
@@ -177,7 +177,7 @@ def test_organize_dry_run_falls_back_to_action_plan_when_qb_file_list_missing(mo
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
     monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
-    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(scan_paths=[])))
 
     body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
 
@@ -483,7 +483,7 @@ def test_organize_dry_run_fails_when_task_missing(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
-    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(scan_paths=[])))
 
     body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id="missing")))
 
@@ -496,7 +496,7 @@ def test_organize_dry_run_fails_for_top_category(monkeypatch):
 
     monkeypatch.setattr(relocate, "_get_download_manager", lambda: dm)
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: True)
-    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(scan_paths=[])))
 
     body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
 
@@ -514,7 +514,7 @@ def test_organize_dry_run_fails_for_nas_root(monkeypatch):
     monkeypatch.setattr(
         relocate,
         "config_m",
-        SimpleNamespace(config=SimpleNamespace(nas_paths=[r"C:\library\root"])),
+        SimpleNamespace(config=SimpleNamespace(scan_paths=[r"C:\library\root"])),
     )
 
     body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
@@ -537,7 +537,7 @@ def test_organize_dry_run_returns_failed_when_relocator_fails(monkeypatch):
     monkeypatch.setattr(relocate, "_get_file_relocator", lambda: relocator)
     monkeypatch.setattr(relocate, "get_download_provider_map", lambda: {})
     monkeypatch.setattr(relocate, "_is_top_category", lambda path: False)
-    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(nas_paths=[])))
+    monkeypatch.setattr(relocate, "config_m", SimpleNamespace(config=SimpleNamespace(scan_paths=[])))
 
     body = asyncio.run(relocate.organize_dry_run(relocate.RelocateRequest(task_id=task.id)))
 

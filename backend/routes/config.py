@@ -86,6 +86,35 @@ def update_config(conf: config_manager.AppConfig):
     config_m.save(conf)
     return {"message": "Success"}
 
+
+@router.get("/config/browse-folder")
+def browse_folder():
+    """弹出系统文件夹选择器，返回用户选择的路径"""
+    import sys
+    import threading
+
+    result = {"path": ""}
+
+    def _pick():
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.wm_attributes("-topmost", 1)
+            root.focus_force()
+            path = filedialog.askdirectory(title="选择文件夹", mustexist=True)
+            root.destroy()
+            result["path"] = path.replace("/", "\\") if path and sys.platform == "win32" else (path or "")
+        except Exception:
+            result["path"] = ""
+
+    t = threading.Thread(target=_pick)
+    t.start()
+    t.join(timeout=120)
+    return {"path": result["path"]}
+
+
 # ── 搜索过滤规则配置 API ──
 
 @router.get("/config/search-filter")

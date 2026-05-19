@@ -14,12 +14,26 @@ export const FOLDER_TYPE_LABELS: Record<string, string> = {
 export const CATEGORY_TAG_LABELS: Record<string, string> = {
   movie: "电影",
   tv: "剧集",
+  anime_tv: "动画番剧",
+  anime_movie: "动画电影",
+  variety: "综艺",
+  other: "其他",
 };
+
+/** 标签 → 底层文件结构类型映射 */
+export function categoryTagToStructureType(tag: string): "movie" | "tv" {
+  if (tag === "tv" || tag === "anime_tv" || tag === "variety") return "tv";
+  return "movie"; // movie / anime_movie / other 都按 movie 逻辑
+}
 
 /** 一级分类标签下允许的文件夹类型 */
 export const ALLOWED_FOLDER_TYPES: Record<string, string[]> = {
   movie: ["movie", "collection", "series", "mixed"],
   tv: ["tv", "season", "mixed"],
+  anime_tv: ["tv", "season", "mixed"],
+  anime_movie: ["movie", "collection", "series", "mixed"],
+  variety: ["tv", "season", "mixed"],
+  other: ["movie", "tv", "collection", "series", "mixed"],
 };
 
 /** 获取文件夹类型中文标签 */

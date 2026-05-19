@@ -129,21 +129,64 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
           {/* NAS 扫描路径 */}
           <div className="pb-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-blue-400">NAS 扫描路径</label>
+              <label className="text-sm font-medium text-blue-400">扫描路径</label>
             </div>
             <div className="flex items-center justify-between mt-1 mb-3">
-              <p className="text-xs text-slate-500">添加需要扫描的媒体库目录</p>
+              <p className="text-xs text-slate-500">添加需要扫描的媒体目录</p>
               <button onClick={() => setPaths([...paths, ""])} className="text-xs text-blue-400 hover:text-blue-300 flex-shrink-0">+ 添加路径</button>
             </div>
             {paths.map((p, i) => (
               <div key={i} className="flex gap-2 mb-2">
-                <input value={p} onChange={e => updatePath(i, e.target.value)} placeholder="如 Z:\Movies 或 \\NAS\media"
+                <input value={p} onChange={e => updatePath(i, e.target.value)} placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
                   className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30" />
-                {paths.length > 1 && <button onClick={() => setPaths(paths.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 text-xs px-2">删除</button>}
+                <button onClick={async () => {
+                  try { const res = await (await import("@/lib/api")).api.browseFolder(); if (res.path) updatePath(i, res.path); } catch {}
+                }} title="选择文件夹" className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all flex-shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-slate-400">
+                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </button>
+                <button onClick={async () => {
+                  const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
+                  if (remaining.length === 0) {
+                    if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
+                    try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
+                    setPaths([""]);
+                    const resetConfig = { ...config, scan_paths: [], media_libraries: [] };
+                    await (await import("@/lib/api")).api.saveConfig(resetConfig);
+                    setConfig(resetConfig);
+                    onClose();
+                    window.location.reload();
+                  } else {
+                    if (!confirm(`确定删除路径 "${p}" ？`)) return;
+                    setPaths(remaining.length > 0 ? remaining : [""]);
+                  }
+                }} className="text-red-400 hover:text-red-300 text-xs px-2 flex-shrink-0">删除</button>
               </div>
             ))}
           </div>
-          {/* 排除文件夹（紧跟路径下面）*/}
+          {/* 媒体文件夹（media_libraries）*/}
+          {config.media_libraries && config.media_libraries.length > 0 && (
+            <div className="pb-3 -mt-2">
+              <label className="text-sm font-medium text-blue-400">分类文件夹</label>
+              <p className="text-xs text-slate-500 mt-1 mb-3">通过"添加分类文件夹"创建的媒体文件夹</p>
+              {config.media_libraries.map((lib, i) => (
+                <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-lg p-3 mb-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-slate-300">{lib.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">{lib.category_tag}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-600 space-y-0.5">
+                    {lib.paths.map((p, pi) => <p key={pi} className="font-mono truncate">{p}</p>)}
+                    {lib.exclude_dirs.length > 0 && (
+                      <p className="text-slate-700">排除: {lib.exclude_dirs.join(", ")}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* 排除文件夹 */}
           <div className="pb-3 border-b border-white/[0.06] -mt-2">
             <label className="text-sm font-medium text-slate-300">排除文件夹</label>
             <textarea rows={1} value={(config.exclude_dirs || "").split(",").join("\n")}

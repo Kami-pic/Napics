@@ -33,8 +33,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/scan")
-async def scan_path(path: str):
-    """EventSource 实时返回扫描进度"""
+async def scan_path(path: str, library_name: str = ""):
+    """EventSource 实时返回扫描进度。
+    library_name: 如果指定，folder_name 会以该名称为前缀（用于虚拟媒体库）"""
     if not os.path.exists(path):
         raise HTTPException(status_code=400, detail="Path does not exist")
     
@@ -60,7 +61,12 @@ async def scan_path(path: str):
                     info = scanner.get_video_metadata(f)
                     if info:
                         rel_dir = os.path.relpath(os.path.dirname(f), path)
-                        info.folder_name = "" if rel_dir == "." else rel_dir
+                        rel_dir = "" if rel_dir == "." else rel_dir
+                        # 虚拟媒体库：folder_name 以库名为前缀
+                        if library_name:
+                            info.folder_name = os.path.join(library_name, rel_dir) if rel_dir else library_name
+                        else:
+                            info.folder_name = rel_dir
                         results.append(info.dict())
                         yield "data: " + json.dumps({"type": "progress", "file": info.dict()}) + "\n\n"
                     else:
@@ -70,7 +76,11 @@ async def scan_path(path: str):
                     fallback = scanner._fallback_info(f)
                     if fallback:
                         rel_dir = os.path.relpath(os.path.dirname(f), path)
-                        fallback.folder_name = "" if rel_dir == "." else rel_dir
+                        rel_dir = "" if rel_dir == "." else rel_dir
+                        if library_name:
+                            fallback.folder_name = os.path.join(library_name, rel_dir) if rel_dir else library_name
+                        else:
+                            fallback.folder_name = rel_dir
                         results.append(fallback.dict())
                     yield "data: " + json.dumps({"type": "progress", "raw_file_name": os.path.basename(f)}) + "\n\n"
             
@@ -115,7 +125,7 @@ async def scan_path(path: str):
 def quick_sync():
     """快速同步（EventSource 流式进度）"""
     library = config_m.load_library()
-    nas_paths = config_m.config.nas_paths or ([config_m.config.nas_path] if config_m.config.nas_path else [])
+    nas_paths = config_m.config.scan_paths or []
     extensions = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
     excluded = config_m.load_excluded()
 
@@ -320,16 +330,132 @@ def set_folder_type(req: dict):
 
 @router.post("/library/category-tag")
 def set_category_tag(req: dict):
-    """设置一级分类目录的标签（movie/tv/variety/anime/other）"""
+    """设置一级分类目录的标签"""
     path = req.get("path", "")
     tag = req.get("tag", "")
-    if not path or tag not in ("movie", "tv"):
-        return {"status": "error", "message": "path and valid tag (movie/tv) required"}
+    valid_tags = ("movie", "tv", "anime_tv", "anime_movie", "variety", "other")
+    if not path or tag not in valid_tags:
+        return {"status": "error", "message": f"path and valid tag ({'/'.join(valid_tags)}) required"}
     config = config_m.config
     tags = dict(config.category_tags or {})
     tags[path] = tag
     config.category_tags = tags
     config_m.save(config)
+    return {"status": "ok"}
+
+
+# ── 虚拟媒体库 CRUD ──
+
+class AddLibraryRequest(BaseModel):
+    name: str
+    category_tag: str = "movie"
+    paths: List[str]
+    exclude_dirs: List[str] = []
+
+
+@router.post("/library/add")
+def add_media_library(req: AddLibraryRequest):
+    """添加虚拟媒体库"""
+    valid_tags = ("movie", "tv", "anime_tv", "anime_movie", "variety", "other")
+    if req.category_tag not in valid_tags:
+        return {"status": "error", "message": f"invalid category_tag, must be one of {valid_tags}"}
+    if not req.paths or not any(p.strip() for p in req.paths):
+        return {"status": "error", "message": "at least one path required"}
+    # 清理路径
+    clean_paths = [p.strip() for p in req.paths if p.strip()]
+    name = req.name.strip() or os.path.basename(clean_paths[0].rstrip("\\/"))
+    config = config_m.config
+    libs = list(config.media_libraries)
+    # 检查同名库是否已存在 → 合并路径
+    existing = next((lib for lib in libs if lib.name == name), None)
+    if existing:
+        for p in clean_paths:
+            if p not in existing.paths:
+                existing.paths.append(p)
+        if req.exclude_dirs:
+            for d in req.exclude_dirs:
+                if d not in existing.exclude_dirs:
+                    existing.exclude_dirs.append(d)
+    else:
+        from config_manager import MediaLibraryConfig
+        libs.append(MediaLibraryConfig(
+            name=name,
+            category_tag=req.category_tag,
+            paths=clean_paths,
+            exclude_dirs=req.exclude_dirs or [],
+        ))
+    config.media_libraries = libs
+    config_m.save(config)
+    return {"status": "ok", "name": name}
+
+
+@router.put("/library/{name}")
+def update_media_library(name: str, req: dict):
+    """修改虚拟媒体库（改名/改标签/增删路径/改排除）"""
+    config = config_m.config
+    libs = list(config.media_libraries)
+    target = next((lib for lib in libs if lib.name == name), None)
+    if not target:
+        raise HTTPException(status_code=404, detail=f"library '{name}' not found")
+    if "name" in req and req["name"].strip():
+        target.name = req["name"].strip()
+    if "category_tag" in req:
+        valid_tags = ("movie", "tv", "anime_tv", "anime_movie", "variety", "other")
+        if req["category_tag"] in valid_tags:
+            target.category_tag = req["category_tag"]
+    if "paths" in req:
+        target.paths = [p.strip() for p in req["paths"] if p.strip()]
+    if "exclude_dirs" in req:
+        target.exclude_dirs = req["exclude_dirs"]
+    config.media_libraries = libs
+    config_m.save(config)
+    return {"status": "ok"}
+
+
+@router.delete("/library/{name}")
+def delete_media_library(name: str):
+    """删除虚拟媒体库"""
+    config = config_m.config
+    libs = list(config.media_libraries)
+    new_libs = [lib for lib in libs if lib.name != name]
+    if len(new_libs) == len(libs):
+        raise HTTPException(status_code=404, detail=f"library '{name}' not found")
+    config.media_libraries = new_libs
+    config_m.save(config)
+    return {"status": "ok"}
+
+
+@router.get("/library/list")
+def list_media_libraries():
+    """列出所有媒体库（含 scan_paths 的自动识别库 + media_libraries 的分类库）"""
+    config = config_m.config
+    result = []
+    # scan_paths 作为"自动识别"类型的库
+    for p in (config.scan_paths or []):
+        if p.strip():
+            result.append({
+                "name": os.path.basename(p.rstrip("\\/")),
+                "type": "scan",
+                "category_tag": "",
+                "paths": [p],
+                "exclude_dirs": [],
+            })
+    # media_libraries 作为"分类添加"类型的库
+    for lib in (config.media_libraries or []):
+        result.append({
+            "name": lib.name,
+            "type": "library",
+            "category_tag": lib.category_tag,
+            "paths": lib.paths,
+            "exclude_dirs": lib.exclude_dirs,
+        })
+    return {"libraries": result}
+
+
+@router.post("/library/reset")
+def reset_library():
+    """重置媒体库（清空扫描记录），用于测试首次引导"""
+    config_m.save_library([])
     return {"status": "ok"}
 
 @router.post("/library/clean-name")
@@ -424,22 +550,43 @@ def get_library_tree():
     }
     
     config = config_m.config
-    base_path = config.nas_paths[0] if config.nas_paths else config.nas_path if config.nas_path else ""
+    base_path = config.scan_paths[0] if config.scan_paths else ""
+
+    # 构建 media_libraries 的库名 → 实际路径映射
+    _lib_path_map: Dict[str, str] = {}
+    for lib in (config.media_libraries or []):
+        if lib.paths:
+            _lib_path_map[lib.name] = lib.paths[0]
 
     for v in videos:
-        rel_dir = v.get("folder_name", "")  # "Movies/Action"
+        rel_dir = v.get("folder_name", "")  # "Movies/Action" 或 "电影/复仇者联盟"
         rel_dir = rel_dir.replace("\\", "/")
         parts = [p for p in rel_dir.split("/") if p]
         
         current_node = root_node
         current_rel = ""
-        for part in parts:
+        # 判断该视频是否属于某个 media_library
+        is_lib_video = parts and parts[0] in _lib_path_map
+        lib_base = _lib_path_map.get(parts[0], "") if is_lib_video else ""
+
+        for i, part in enumerate(parts):
             current_rel = os.path.join(current_rel, part) if current_rel else part
             child = current_node["_child_index"].get(part)
             if not child:
+                # 计算节点的绝对路径
+                if is_lib_video:
+                    if i == 0:
+                        # 库名节点：path 用库的第一个路径
+                        node_path = lib_base
+                    else:
+                        # 库内子节点：相对于库路径
+                        sub_rel = os.path.join(*parts[1:i+1])
+                        node_path = os.path.join(lib_base, sub_rel)
+                else:
+                    node_path = os.path.join(base_path, current_rel) if base_path else current_rel
                 child = {
                     "name": part,
-                    "path": os.path.join(base_path, current_rel),
+                    "path": node_path,
                     "children": [],
                     "videos": [],
                     "video_count": 0,
@@ -451,31 +598,133 @@ def get_library_tree():
             current_node = child
         current_node["videos"].append(v)
     
-    # 预计算一级分类路径集合
-    top_category_paths = set()
-    for child in root_node["children"]:
-        if child["children"]:
-            top_category_paths.add(child["path"])
-
     # 读取用户配置的 category_tags（路径 → 标签）
     configured_tags = config.category_tags or {}
 
+    # 预计算一级分类路径集合
+    # 只有目录名能被识别为分类关键词（非默认 movie）或在 configured_tags 中配置过的才算
+    # media_libraries 的库名节点也算一级分类
+    top_category_paths = set()
+    # media_libraries 的库名 → category_tag 映射
+    _lib_category_tags: Dict[str, str] = {}
+    for lib in (config.media_libraries or []):
+        _lib_category_tags[lib.name] = lib.category_tag
+
+    for child in root_node["children"]:
+        if child["children"]:
+            child_path = child["path"]
+            child_name = child["name"]
+            # media_libraries 的库名节点 → 一定是一级分类
+            if child_name in _lib_category_tags:
+                top_category_paths.add(child_path)
+            # 已配置的标签 → 一定是一级分类
+            elif child_path in configured_tags:
+                top_category_paths.add(child_path)
+            else:
+                # 目录名能被识别为非默认标签 → 一级分类
+                name_lower = child_name.strip().lower()
+                if name_lower in organizer._CATEGORY_KEYWORD_MAP:
+                    top_category_paths.add(child_path)
+                elif any(kw in name_lower for kw in organizer._CATEGORY_KEYWORD_MAP):
+                    top_category_paths.add(child_path)
+
     def _resolve_category_tag(node_path: str, node_name: str) -> str:
         """解析一级分类目录的标签：配置优先，否则自动推断"""
+        # media_libraries 的库名节点：使用配置的 category_tag
+        if node_name in _lib_category_tags:
+            return _lib_category_tags[node_name]
         if node_path in configured_tags:
             return configured_tags[node_path]
         return organizer.infer_category_tag(node_name)
 
+    # 季目录名正则（用于自主推断）
+    _SEASON_DIR_PAT = re.compile(
+        r'(?:S\d+|第\d+季|第[一二三四五六七八九十]+季|Season\s*\d+|特别篇|SP|OVA|OAD|剧[場场]版|Specials?)',
+        re.I
+    )
+    # 集号文件名正则
+    _EPISODE_PAT = re.compile(
+        r'(?:S\d+E\d+|EP?\d+|第\d+[集话話]|\b\d{2,3}\b(?=\s*[\.\-\[\(]))',
+        re.I
+    )
+
+    def _guess_structure_type_from_tree(node) -> str:
+        """无 category_tag 时，从树结构特征自主推断底层结构类型（movie/tv）。
+        核心信号：
+        1. 子目录名匹配季目录模式 → tv
+        2. 视频文件名含集号特征 → tv
+        3. 多视频 + 短时长（<45min）→ tv
+        4. 单视频或少量视频 + 无集号 → movie
+        5. 文件夹名含 tv 类关键词 → tv
+        """
+        children = node.get("children", [])
+        videos = node.get("videos", [])
+
+        # 信号1：子目录名匹配季目录模式
+        if children:
+            season_like = sum(1 for c in children if _SEASON_DIR_PAT.search(c["name"]))
+            if season_like >= 1 and season_like >= len(children) * 0.3:
+                return "tv"
+
+        # 信号2：视频文件名含集号特征
+        if videos:
+            ep_count = sum(1 for v in videos if _EPISODE_PAT.search(v.get("file_name", "")))
+            if ep_count >= len(videos) * 0.5 and len(videos) >= 2:
+                return "tv"
+
+        # 信号3：多视频 + 平均时长短
+        if videos and len(videos) >= 3:
+            durations = [v.get("duration", 0) for v in videos if v.get("duration", 0) > 0]
+            if durations:
+                avg_min = (sum(durations) / len(durations)) / 60
+                if avg_min < 45:
+                    return "tv"
+
+        # 信号4：文件夹名含 tv 类关键词
+        folder_name = node.get("name", "")
+        if folder_name:
+            tag = organizer.infer_category_tag(folder_name)
+            if tag and organizer.category_tag_to_structure_type(tag) == "tv":
+                return "tv"
+
+        # 信号5：子目录各自有多视频且含集号 → tv（聚合多部剧）
+        if children and not videos:
+            tv_like_children = 0
+            for c in children:
+                c_videos = c.get("videos", [])
+                if c_videos and len(c_videos) >= 2:
+                    c_ep = sum(1 for v in c_videos if _EPISODE_PAT.search(v.get("file_name", "")))
+                    if c_ep >= len(c_videos) * 0.5:
+                        tv_like_children += 1
+                elif c.get("children"):
+                    # 子目录有子目录（可能是季结构）
+                    c_season = sum(1 for cc in c["children"] if _SEASON_DIR_PAT.search(cc["name"]))
+                    if c_season >= 1:
+                        tv_like_children += 1
+            if tv_like_children >= len(children) * 0.5 and tv_like_children >= 1:
+                return "tv"
+
+        # 默认 movie（更宽松，不会强行改变结构）
+        return "movie"
+
     def _infer_folder_type_from_tree(node, category_tag: str) -> str:
         """从树结构推断 folder_type，不依赖文件系统。
-        使用树节点的 children 和 videos 信息判断。"""
+        使用树节点的 children 和 videos 信息判断。
+        当 category_tag 为空时，自主从结构特征推断。"""
         children = node.get("children", [])
         videos = node.get("videos", [])
         has_children = len(children) > 0
         has_videos = len(videos) > 0
         video_count = node.get("video_count", 0)
 
-        if category_tag == "movie":
+        # 将标签映射到底层结构类型（movie/tv）
+        # 如果没有 category_tag，先尝试自主推断
+        if category_tag:
+            structure_type = organizer.category_tag_to_structure_type(category_tag)
+        else:
+            structure_type = _guess_structure_type_from_tree(node)
+
+        if structure_type == "movie":
             # movie 标签下
             if not has_children:
                 if not has_videos:
@@ -501,7 +750,7 @@ def get_library_tree():
             # 有更深层嵌套 → mixed
             return "mixed"
 
-        elif category_tag == "tv":
+        elif structure_type == "tv":
             # tv 标签下
             if not has_children:
                 if has_videos:
@@ -877,7 +1126,7 @@ def refresh_all_completeness():
     if not tc:
         return {"status": "error", "message": "TMDB 未配置"}
 
-    nas_paths = config_m.config.nas_paths or ([config_m.config.nas_path] if config_m.config.nas_path else [])
+    nas_paths = config_m.config.scan_paths or []
     category_tags = config_m.config.category_tags or {}
 
     # 后台线程执行，避免阻塞

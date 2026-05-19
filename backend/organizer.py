@@ -92,20 +92,40 @@ def classify_folder(folder_path: str, library_data: List[Dict] = None, category_
 
 
 # ── 一级分类名 → 标签映射 ──
-# 标签只有 2 种：movie / tv
+# 标签 6 种：movie / tv / anime_tv / anime_movie / variety / other
+# 底层文件结构类型只有 2 种：movie / tv
 # 自动推断用关键词匹配，用户可在 UI 上覆盖（持久化到 config.category_tags）
 _CATEGORY_KEYWORD_MAP = {
     # movie
     "电影": "movie", "movie": "movie", "movies": "movie", "film": "movie", "films": "movie",
-    "动画电影": "movie",
-    # tv（所有非电影的都归 tv）
+    # anime_movie
+    "动画电影": "anime_movie",
+    # tv
     "电视剧": "tv", "tv": "tv", "tvshow": "tv", "tvshows": "tv", "tv show": "tv", "tv shows": "tv",
     "剧集": "tv", "连续剧": "tv", "drama": "tv", "series": "tv",
-    "动画番": "tv", "动画": "tv", "番剧": "tv", "anime": "tv", "animation": "tv",
-    "综艺": "tv", "variety": "tv", "variety show": "tv", "综艺节目": "tv",
-    "其他": "tv", "其他视频": "tv", "other": "tv", "mv": "tv", "cg": "tv",
     "纪录片": "tv", "documentary": "tv",
+    # anime_tv
+    "动画番": "anime_tv", "动画": "anime_tv", "番剧": "anime_tv", "anime": "anime_tv", "animation": "anime_tv",
+    # variety
+    "综艺": "variety", "variety": "variety", "variety show": "variety", "综艺节目": "variety",
+    # other
+    "其他": "other", "其他视频": "other", "other": "other", "mv": "other", "cg": "other",
 }
+
+# 标签 → 底层文件结构类型
+CATEGORY_TAG_TO_STRUCTURE = {
+    "movie": "movie",
+    "anime_movie": "movie",
+    "other": "movie",
+    "tv": "tv",
+    "anime_tv": "tv",
+    "variety": "tv",
+}
+
+
+def category_tag_to_structure_type(tag: str) -> str:
+    """标签 → 底层文件结构类型（movie/tv）"""
+    return CATEGORY_TAG_TO_STRUCTURE.get(tag, "movie")
 
 
 def infer_category_tag(dir_name: str) -> str:
@@ -130,16 +150,17 @@ def get_category_tag(category_name: str) -> str:
 
 def _classify_by_category(folder_path: str, folder_name: str, category_hint: str, library_data: List[Dict] = None) -> Dict:
     """根据一级分类标签 + 文件结构做简化判断。
-    category_hint 是标签（movie/tv）。"""
+    category_hint 是标签（movie/tv/anime_tv/anime_movie/variety/other）。"""
     subdirs, videos = _collect_children(folder_path)
-    tag = category_hint
+    # 映射到底层结构类型
+    structure_type = category_tag_to_structure_type(category_hint)
     
     # TV 类：需要区分 tv / mixed
-    if tag == "tv":
+    if structure_type == "tv":
         return _classify_tv_category(folder_path, folder_name, subdirs, videos, library_data)
     
     # 电影类：需要区分 movie / collection / series / mixed
-    if tag == "movie":
+    if structure_type == "movie":
         return _classify_movie_category(folder_path, folder_name, subdirs, videos, library_data)
     
     # 未知标签 fallback 到结构推断

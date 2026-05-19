@@ -20,9 +20,9 @@ def test_get_library_tree_avoids_live_nfo_reads(monkeypatch):
                 }
             ],
             config=SimpleNamespace(
-                nas_paths=[r"\\NAS\视频"],
-                nas_path="",
+                scan_paths=[r"\\NAS\视频"],
                 category_tags={r"\\NAS\视频\动画番": "tv"},
+                media_libraries=[],
             ),
         ),
     )

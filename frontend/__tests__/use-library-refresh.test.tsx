@@ -50,7 +50,7 @@ describe("useLibrary refreshTree", () => {
     mockApi.getLibraryTree.mockReset();
 
     mockApi.getConfig.mockResolvedValue({
-      nas_paths: ["\\\\NAS\\视频"],
+      scan_paths: ["\\\\NAS\\视频"],
     });
     mockApi.getLibrary.mockResolvedValue([]);
     mockApi.getLibraryTree.mockResolvedValue(makeTree());

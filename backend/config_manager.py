@@ -35,6 +35,14 @@ class SearchFilterConfig(BaseModel):
     must_include: List[str] = []                                          # 必须包含的关键词
     must_exclude: List[str] = ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS"]  # 严格排除的关键词
 
+class MediaLibraryConfig(BaseModel):
+    """虚拟媒体库配置（分类添加文件夹）"""
+    name: str = ""                    # 显示名称（默认取根目录名）
+    category_tag: str = "movie"       # 标签：movie/tv/anime_tv/anime_movie/variety/other
+    paths: List[str] = []             # 一个或多个真实路径
+    exclude_dirs: List[str] = []      # 该库独立的排除规则
+
+
 class AppConfig(BaseModel):
     prowlarr_url: str = "http://127.0.0.1:9696"
     prowlarr_api_key: str = ""
@@ -44,9 +52,11 @@ class AppConfig(BaseModel):
     qb_password: str = ""
     alist_url: str = "http://127.0.0.1:5244"
     alist_token: str = ""
-    nas_paths: List[str] = ["C:\\Users\\shenq\\Videos"]
+    scan_paths: List[str] = []        # 扫描路径（自动识别模式，忽略根目录平铺内容）
     exclude_dirs: str = ""
-    nas_path: Optional[str] = "" # 兼容旧配置
+    media_libraries: List[MediaLibraryConfig] = []  # 虚拟媒体库（分类添加模式）
+    # 兼容旧配置字段已在 load() 中迁移，不再作为模型字段
+    # nas_paths / nas_path 读取时自动合并到 scan_paths
     openai_api_key: Optional[str] = ""
     openai_base_url: Optional[str] = ""
     openai_model: Optional[str] = ""
@@ -91,9 +101,17 @@ class ConfigManager:
         if os.path.exists(self.config_path):
             with open(self.config_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                # 迁移逻辑：如果旧的单路径存在且新的多路径不存在，则自动合并
-                if "nas_path" in data and ("nas_paths" not in data or data["nas_paths"] == ["C:\\Users\\shenq\\Videos"]):
-                   data["nas_paths"] = [data["nas_path"]]
+                # 迁移逻辑：nas_path / nas_paths → scan_paths
+                if "scan_paths" not in data:
+                    migrated = []
+                    if "nas_paths" in data and data["nas_paths"]:
+                        migrated = [p for p in data["nas_paths"] if p]
+                    elif "nas_path" in data and data["nas_path"]:
+                        migrated = [data["nas_path"]]
+                    data["scan_paths"] = migrated
+                # 清理旧字段避免 Pydantic 校验问题
+                data.pop("nas_path", None)
+                data.pop("nas_paths", None)
                 return AppConfig(**data)
         return AppConfig()
 

@@ -163,7 +163,7 @@ def rename_videos(path: str, dry_run: bool = True, shadow_only: bool = False):
                         v["file_path"] = new_folder + fp[len(old_folder):]
                         changed = True
                     if changed:
-                        base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+                        base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
                         if base and v.get("file_path", "").startswith(base):
                             rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
                             v["folder_name"] = "" if rel == "." else rel
@@ -600,7 +600,7 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
 def merge_scattered_seasons_api(path: str = "", dry_run: bool = True):
     """合并散落的同剧多季目录"""
     config = config_m.config
-    base_path = path or (config.nas_paths[0] if config.nas_paths else config.nas_path if config.nas_path else "")
+    base_path = path or (config.scan_paths[0] if config.scan_paths else "")
     if not base_path or not os.path.isdir(base_path):
         raise HTTPException(status_code=400, detail="Path not configured or not accessible")
     library = config_m.load_library()

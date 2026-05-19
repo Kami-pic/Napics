@@ -20,6 +20,7 @@ interface CardGridProps {
   onNavigate: (node: FolderNode) => void;
   onVideoDetail: (v: VideoInfo) => void;
   onFolderDetail: (n: FolderNode) => void;
+  onAddLibrary?: () => void;
 }
 
 export function getSeasonLabel(name: string): string {
@@ -60,7 +61,7 @@ export type CardItem =
 export default function CardGrid({
   currentFolder, groupedVideos, selectedPaths, batchMode, refreshKey = 0,
   onToggleSelect, onToggleFolderSelect, onPlay, onSearch, onNavigate,
-  onVideoDetail, onFolderDetail,
+  onVideoDetail, onFolderDetail, onAddLibrary,
 }: CardGridProps) {
   const [limit, setLimit] = useState(48);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -177,9 +178,26 @@ export default function CardGrid({
   // 封面逻辑：所有文件夹都尝试显示封面
   const showFolderPoster = (_folder: FolderNode) => true;
 
+  // 只在根目录（currentFolder 是树的根节点）时显示添加卡片
+  const isRootLevel = currentFolder?.path === "" || !currentFolder?.path;
+
   return (
     <div className="animate-in fade-in duration-200">
       <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 pb-20">
+        {/* 常驻添加卡片：仅根目录第一张 */}
+        {isRootLevel && onAddLibrary && (
+          <div data-card>
+            <button onClick={onAddLibrary}
+              className="group w-full aspect-[2/3] rounded-xl border-2 border-dashed border-white/[0.08] hover:border-blue-500/30 bg-white/[0.02] hover:bg-blue-500/[0.03] flex flex-col items-center justify-center gap-3 transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-white/[0.04] group-hover:bg-blue-500/10 flex items-center justify-center transition-all">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500 group-hover:text-blue-400 transition-colors">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </div>
+              <span className="text-xs text-slate-500 group-hover:text-slate-300 transition-colors">添加媒体文件夹</span>
+            </button>
+          </div>
+        )}
         {renderList.map((entry, ri) => {
           if ("type" in entry && entry.type === "expand" && expandedItem) {
             return (

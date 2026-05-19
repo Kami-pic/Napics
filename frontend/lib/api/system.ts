@@ -1,5 +1,5 @@
 // 系统相关 API
-import type { VideoInfo, FolderNode, CompletenessResult, AnalysisReport } from "@/types";
+import type { VideoInfo, FolderNode, CompletenessResult, AnalysisReport, MediaLibraryConfig } from "@/types";
 import { request, BASE_URL } from "./base";
 
 export const systemApi = {
@@ -21,8 +21,28 @@ export const systemApi = {
   },
 
   // scan 返回 fetch Response，不走 request
-  scan: (path: string, signal?: AbortSignal) =>
-    fetch(`${BASE_URL}/scan?path=${encodeURIComponent(path)}`, { signal }),
+  scan: (path: string, libraryName?: string, signal?: AbortSignal) => {
+    let url = `${BASE_URL}/scan?path=${encodeURIComponent(path)}`;
+    if (libraryName) url += `&library_name=${encodeURIComponent(libraryName)}`;
+    return fetch(url, { signal });
+  },
+
+  // ── 媒体库管理 ──
+  listLibraries: () => request<{ libraries: Array<{ name: string; type: string; category_tag: string; paths: string[]; exclude_dirs: string[] }> }>(`${BASE_URL}/library/list`),
+  addLibrary: (data: { name: string; category_tag: string; paths: string[]; exclude_dirs: string[] }) =>
+    request<{ status: string; name: string }>(`${BASE_URL}/library/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  updateLibrary: (name: string, data: Partial<MediaLibraryConfig>) =>
+    request<{ status: string }>(`${BASE_URL}/library/${encodeURIComponent(name)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  deleteLibrary: (name: string) =>
+    request<{ status: string }>(`${BASE_URL}/library/${encodeURIComponent(name)}`, { method: "DELETE" }),
 
   play: (path: string) => request<any>(`${BASE_URL}/play?path=${encodeURIComponent(path)}`),
 

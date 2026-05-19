@@ -172,8 +172,8 @@ def get_save_paths():
     tag_to_paths: dict = {}
     for path, tag in category_tags.items():
         tag_to_paths.setdefault(tag, []).append(path)
-    # 兜底：nas_paths 的第一个路径
-    default_path = conf.nas_paths[0] if conf.nas_paths else ""
+    # 兜底：scan_paths 的第一个路径
+    default_path = conf.scan_paths[0] if conf.scan_paths else ""
     return {"paths": tag_to_paths, "default": default_path}
 
 

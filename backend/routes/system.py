@@ -113,7 +113,7 @@ def get_analysis_report(force: bool = False):
     library = config_m.load_library()
     conf = config_m.config
     all_results = []
-    for base in conf.nas_paths:
+    for base in conf.scan_paths:
         if os.path.isdir(base):
             report = analyzer.analyze_library(base, library)
             all_results.append(report)

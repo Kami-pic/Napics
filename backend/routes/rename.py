@@ -45,7 +45,7 @@ def rename_item(old_path: str, new_name: str):
                 fp = v.get("file_path", "")
                 if fp.startswith(old_path + os.sep) or fp.startswith(old_path + "/"):
                     v["file_path"] = new_path + fp[len(old_path):]
-                    base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+                    base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
                     if base:
                         rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
                         v["folder_name"] = "" if rel == "." else rel
@@ -125,7 +125,7 @@ def rename_item(old_path: str, new_name: str):
                                         fp = v.get("file_path", "")
                                         if fp.startswith(folder_path + os.sep) or fp.startswith(folder_path + "/") or fp == new_path:
                                             v["file_path"] = new_folder_path + fp[len(folder_path):]
-                                            base = config_m.config.nas_paths[0] if config_m.config.nas_paths else ""
+                                            base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
                                             if base:
                                                 rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
                                                 v["folder_name"] = "" if rel == "." else rel
