@@ -166,8 +166,26 @@ export default function Home() {
 
   const handleStartScan = () => {
     const hasPath = paths.some(p => p.trim() !== "");
-    if (!hasPath) { setShowSettings(true); return; }
-    startScan();
+    const hasLib = (config.media_libraries || []).length > 0;
+    if (!hasPath && !hasLib) { setShowSettings(true); return; }
+    // 合并 scan_paths 和 media_libraries 路径，逐个扫描
+    const libEntries = (config.media_libraries || []).map(lib => ({ path: lib.paths[0], name: lib.name }));
+    const scanPathsList = paths.filter(p => p.trim());
+    // 先扫描 scan_paths（无 libraryName），再扫描 media_libraries（带 libraryName）
+    const allPaths = [...scanPathsList];
+    const libPaths = libEntries.filter(e => e.path && !allPaths.includes(e.path));
+    if (libPaths.length > 0) {
+      // 先扫描 scan_paths，完成后逐个扫描 media_libraries
+      const scanAll = async () => {
+        if (scanPathsList.length > 0) await startScan(scanPathsList);
+        for (const entry of libPaths) {
+          await startScan([entry.path], entry.name);
+        }
+      };
+      scanAll();
+    } else {
+      startScan();
+    }
   };
 
   // ── 发现区域懒加载：IntersectionObserver 检测进入视口 ──

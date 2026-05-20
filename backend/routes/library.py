@@ -445,6 +445,7 @@ def update_media_library(name: str, req: dict):
     target = next((lib for lib in libs if lib.name == name), None)
     if not target:
         raise HTTPException(status_code=404, detail=f"library '{name}' not found")
+    old_name = target.name
     if "name" in req and req["name"].strip():
         target.name = req["name"].strip()
     if "category_tag" in req:
@@ -457,6 +458,24 @@ def update_media_library(name: str, req: dict):
         target.exclude_dirs = req["exclude_dirs"]
     config.media_libraries = libs
     config_m.save(config)
+    # 改名时同步更新 media_library.json 中的 folder_name 前缀
+    new_name = target.name
+    if new_name != old_name:
+        library = config_m.load_library()
+        updated = 0
+        old_prefix = old_name + os.sep
+        old_prefix_slash = old_name + "/"
+        for v in library:
+            fn = v.get("folder_name", "")
+            if fn == old_name:
+                v["folder_name"] = new_name
+                updated += 1
+            elif fn.startswith(old_prefix) or fn.startswith(old_prefix_slash):
+                v["folder_name"] = new_name + fn[len(old_name):]
+                updated += 1
+        if updated > 0:
+            config_m.save_library(library)
+            logger.info(f"[library] 媒体文件夹改名 '{old_name}' → '{new_name}'，更新 {updated} 条记录的 folder_name")
     return {"status": "ok"}
 
 
@@ -883,12 +902,8 @@ def get_library_tree():
                 node["is_top_category"] = True
                 # 标记虚拟媒体库文件夹
                 node["is_virtual_library"] = node["name"] in _lib_category_tags
-                # 虚拟媒体库文件夹：推断 folder_type（让子目录能被正确标记为 season）
-                # 普通一级分类目录（如"电影"、"剧集"）：folder_type 为空
-                if node["is_virtual_library"]:
-                    node["folder_type"] = _infer_folder_type_from_tree(node, category_tag)
-                else:
-                    node["folder_type"] = ""
+                # 所有一级节点都推断 folder_type（让子目录能被正确标记）
+                node["folder_type"] = _infer_folder_type_from_tree(node, category_tag)
             else:
                 node["category_tag"] = ""
                 node["is_top_category"] = False

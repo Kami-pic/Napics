@@ -187,10 +187,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                     setConfig({ ...config, media_libraries: libs });
                   }}
                   tag={lib.category_tag}
-                  onTagChange={newTag => {
+                  onTagChange={async newTag => {
                     const libs = [...(config.media_libraries || [])];
                     libs[i] = { ...libs[i], category_tag: newTag };
-                    setConfig({ ...config, media_libraries: libs });
+                    const newConfig = { ...config, media_libraries: libs };
+                    setConfig(newConfig);
+                    await api.saveConfig(newConfig);
+                    onRefresh?.();
                   }}
                   onDelete={async () => {
                     const libPath = lib.paths[0] || "";
