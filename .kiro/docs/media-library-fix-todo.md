@@ -8,20 +8,20 @@
 
 ### P0：核心逻辑缺陷
 
-- [ ] **4. 虚拟文件夹标记未生效**
+- [x] **4. 虚拟文件夹标记未生效**
   - 添加分类文件夹（如综艺）后，卡片无标签显示，详情页无类型切换
-  - 根因：`is_virtual_library` 标记逻辑依赖 `_lib_category_tags`（库名匹配），但树构建时库名节点的 path 可能和 `top_category_paths` 不匹配
-  - 需要排查 `finalize` 中 `is_virtual_library` 的赋值条件是否正确触发
-  - 详情页的类型切换（category_tag 下拉）对虚拟文件夹应该调用 `PUT /library/{name}` 而非 `POST /library/category-tag`
+  - 根因：`quick_sync` 中，当 `scan_paths` 直接包含 `media_library` 的路径时，`folder_name` 缺少库名前缀，导致树构建时无法识别
+  - 修复：`quick_sync` 新增 `_sync_lib_name_map` + `_get_folder_name`，自动为属于 media_library 的路径添加库名前缀
 
-- [ ] **5. 设置页类型标签不同步**
+- [x] **5. 设置页类型标签不同步**
   - 添加分类文件夹后，设置页中该路径的类型标签显示为"媒体库"而非对应类型
-  - 根因：设置页的 `libPathMap` 从 `config.media_libraries` 读取，但 `AddLibraryModal` 保存后 config 状态可能未刷新
-  - 或者 `media_libraries` 的 paths 和 `scan_paths` 中的路径格式不一致（斜杠/反斜杠）
+  - 根因：`libPathMap` 构建时路径格式不一致（斜杠/反斜杠），导致匹配失败
+  - 修复：`libPathMap` 构建和查询时统一规范化路径（反斜杠 + 去尾部斜杠）
 
-- [ ] **7. 删除扫描路径应同步删除虚拟文件夹**
+- [x] **7. 删除扫描路径应同步删除虚拟文件夹**
   - 设置页删除一个路径时，如果该路径属于某个 media_library，应同时从 media_libraries 中移除
-  - 当前只从 `scan_paths` 中删除，media_libraries 中的记录残留
+  - 根因：路径比较用 `includes` 直接匹配，格式不一致时失败
+  - 修复：删除和类型切换时统一用规范化路径比较（`some` + normalize）
 
 ### P1：交互与 UI 问题
 
@@ -81,5 +81,5 @@ P2（数据一致性）：
 - `is_virtual_library` 的赋值在 `routes/library.py` 的 `finalize` 函数中
 - 判断条件是 `node["name"] in _lib_category_tags`
 - `_lib_category_tags` 从 `config.media_libraries` 构建：`{lib.name: lib.category_tag}`
-- 如果库名和树节点名不匹配（比如路径末段名 vs 用户自定义名），标记就不会生效
-- 需要改为按路径匹配而非按名称匹配
+- `quick_sync` 中新增 `_sync_lib_name_map`（scan_path → lib.name），确保 folder_name 以库名为前缀
+- 前端路径比较统一用 `normalize`：`p.replace(/[\\/]+/g, "\\").replace(/\\$/, "")`

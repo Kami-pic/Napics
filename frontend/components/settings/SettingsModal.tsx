@@ -137,10 +137,15 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               // 合并 scan_paths 和 media_libraries 为统一列表
               const libPathMap: Record<string, string> = {};
               (config.media_libraries || []).forEach(lib => {
-                lib.paths.forEach(p => { libPathMap[p] = lib.category_tag; });
+                lib.paths.forEach(p => {
+                  // 规范化路径用于匹配（统一反斜杠，去尾部斜杠）
+                  const norm = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+                  libPathMap[norm] = lib.category_tag;
+                });
               });
               return paths.map((p, i) => {
-                const tag = libPathMap[p] || "library";
+                const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+                const tag = libPathMap[normP] || "library";
                 return (
                   <div key={i} className="group flex gap-1.5 mb-2 items-center">
                     <button onClick={async () => {
@@ -157,11 +162,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                         const libs = [...(config.media_libraries || [])];
                         if (newTag === "library") {
                           // 从 media_libraries 中移除
-                          const newLibs = libs.filter(lib => !lib.paths.includes(p));
+                          const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+                          const newLibs = libs.filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normP));
                           setConfig({ ...config, media_libraries: newLibs });
                         } else {
                           // 添加或更新到 media_libraries
-                          const existing = libs.find(lib => lib.paths.includes(p));
+                          const normP2 = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+                          const existing = libs.find(lib => lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normP2));
                           if (existing) {
                             existing.category_tag = newTag;
                           } else {
@@ -194,8 +201,9 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                           window.location.reload();
                         } else {
                           if (!confirm(`确定删除路径 "${p}" ？`)) return;
-                          // 同时从 media_libraries 中移除
-                          const newLibs = (config.media_libraries || []).filter(lib => !lib.paths.includes(p));
+                          // 同时从 media_libraries 中移除（规范化路径后比较）
+                          const normDel = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+                          const newLibs = (config.media_libraries || []).filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normDel));
                           setConfig({ ...config, media_libraries: newLibs });
                           setPaths(remaining.length > 0 ? remaining : [""]);
                         }

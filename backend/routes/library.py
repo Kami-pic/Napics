@@ -144,6 +144,23 @@ def quick_sync():
             folder = parent
         return False
 
+    # 构建 scan_path → media_library 名称的映射（用于 folder_name 前缀）
+    _sync_lib_name_map: Dict[str, str] = {}
+    for lib in (config_m.config.media_libraries or []):
+        for lp in lib.paths:
+            norm_lp = lp.replace("/", "\\").rstrip("\\")
+            _sync_lib_name_map[norm_lp] = lib.name
+
+    def _get_folder_name(fp: str, base: str) -> str:
+        """计算视频的 folder_name，如果 base 属于某个 media_library 则加库名前缀"""
+        rel_dir = os.path.relpath(os.path.dirname(fp), base)
+        rel_dir = "" if rel_dir == "." else rel_dir
+        norm_base = base.replace("/", "\\").rstrip("\\")
+        lib_name = _sync_lib_name_map.get(norm_base, "")
+        if lib_name:
+            return os.path.join(lib_name, rel_dir) if rel_dir else lib_name
+        return rel_dir
+
     def event_gen():
         try:
             yield "data: " + json.dumps({"type": "status", "message": "扫描文件系统..."}) + "\n\n"
@@ -207,8 +224,7 @@ def quick_sync():
                     if info:
                         for base in nas_paths:
                             if fp.startswith(base):
-                                rel_dir = os.path.relpath(os.path.dirname(fp), base)
-                                info.folder_name = "" if rel_dir == "." else rel_dir
+                                info.folder_name = _get_folder_name(fp, base)
                                 break
                         new_videos.append(info.dict())
                 except Exception as e:
