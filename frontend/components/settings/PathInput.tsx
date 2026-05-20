@@ -16,6 +16,7 @@ export interface PathInputProps {
 }
 
 const TAG_OPTIONS: [string, string][] = [
+  ["library", "媒体库"],
   ["movie", "电影"],
   ["tv", "电视剧"],
   ["anime_tv", "动画番剧"],

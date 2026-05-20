@@ -145,14 +145,14 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               });
               return paths.map((p, i) => {
                 const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                const tag = libPathMap[normP] || "";
+                const tag = libPathMap[normP] || "library";
                 return (
                   <div key={i} className="mb-2">
                     <PathInput
                       value={p}
                       onChange={v => updatePath(i, v)}
-                      tag={tag || undefined}
-                      onTagChange={tag ? (newTag => {
+                      tag={tag}
+                      onTagChange={newTag => {
                         const libs = [...(config.media_libraries || [])];
                         const norm2 = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                         if (newTag === "library") {
@@ -168,7 +168,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                           }
                           setConfig({ ...config, media_libraries: libs });
                         }
-                      }) : undefined}
+                      }}
                       onDelete={async () => {
                         const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
                         if (remaining.length === 0) {
