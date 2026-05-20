@@ -1,8 +1,6 @@
-# [当前] PLUGIN_BOUNDARY.md
+# [废弃] PLUGIN_BOUNDARY.md
 
-> open-core extraction 审计输出之三。  
-> 范围：建议抽象的 Provider 契约与依赖边界。  
-> 本文档是 Phase 2 的输入，不在本轮实现。
+> 全部完成，已归档。Phase 2 已建立 Provider 契约。
 
 ## 目标边界
 

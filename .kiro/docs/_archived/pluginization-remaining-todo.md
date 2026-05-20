@@ -1,8 +1,6 @@
-# [当前] pluginization-remaining-todo.md
+# [废弃] pluginization-remaining-todo.md
 
-> 插件化改造遗留项统一清单。
-> 整理自 Phase 1-9 各阶段 TODO 中的"暂不做"和未交付项。
-> 用于判断：继续推进 Phase 9 剩余，还是先回补前置遗漏。
+> 全部完成，已归档。Phase 9 已收口，遗留项归入清债阶段。
 
 ---
 

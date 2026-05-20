@@ -1,8 +1,6 @@
-# [当前] PHASED_MIGRATION_PLAN.md
+# [废弃] PHASED_MIGRATION_PLAN.md
 
-> open-core extraction 审计输出之五。  
-> 范围：基于当前仓库的分阶段迁移计划。  
-> 本文档不修改既有 Phase 顺序，只把本轮审计拆成可执行里程碑。
+> 全部完成，已归档。Phase 1-9 全部交付。
 
 ## 总原则
 

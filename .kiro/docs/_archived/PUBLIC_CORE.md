@@ -1,8 +1,6 @@
-# [当前] PUBLIC_CORE.md
+# [废弃] PUBLIC_CORE.md
 
-> open-core extraction 审计输出之一。  
-> 范围：基于当前仓库静态扫描，判断哪些能力适合进入公开 Core。  
-> 本文档只做边界审计，不要求立即迁移代码。
+> 全部完成，已归档。Phase 1 审计产出。
 
 ## 结论
 

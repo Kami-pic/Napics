@@ -1,7 +1,6 @@
-# [当前] pluginization-audit.md
+# [废弃] pluginization-audit.md
 
-> Phase 1 边界审计交付文档（索引）。
-> V2 方案要求本阶段输出完整模块清单和归类，实际审计内容分散在以下四份文档中。
+> 全部完成，已归档。Phase 1 边界审计交付完成。
 
 ---
 

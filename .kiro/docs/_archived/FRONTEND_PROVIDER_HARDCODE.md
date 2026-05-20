@@ -1,8 +1,6 @@
-# [当前] FRONTEND_PROVIDER_HARDCODE.md
+# [废弃] FRONTEND_PROVIDER_HARDCODE.md
 
-> open-core extraction 审计输出之四。  
-> 范围：前端硬编码 provider 列表与改造建议。  
-> 本文档只做审计，不修改前端代码。
+> 全部完成，已归档。Phase 9 前端动态化已完成。
 
 ## 结论
 

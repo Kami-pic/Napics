@@ -1,8 +1,6 @@
-# [当前] PRIVATE_PROVIDERS.md
+# [废弃] PRIVATE_PROVIDERS.md
 
-> open-core extraction 审计输出之二。  
-> 范围：当前仓库中应保持私有或插件化的 provider 清单。  
-> 本文档只做清单与风险判断，不迁移代码。
+> 全部完成，已归档。Phase 1 审计产出。
 
 ## 风险等级与结论
 
