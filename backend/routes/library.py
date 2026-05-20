@@ -246,10 +246,13 @@ def quick_sync():
                     else:
                         info = scanner.get_video_metadata(fp)
                     if info:
+                        # 优先匹配最长的路径（子路径优先于父路径）
+                        best_base = ""
                         for base in nas_paths:
-                            if fp.startswith(base):
-                                info.folder_name = _get_folder_name(fp, base)
-                                break
+                            if fp.startswith(base) and len(base) > len(best_base):
+                                best_base = base
+                        if best_base:
+                            info.folder_name = _get_folder_name(fp, best_base)
                         new_videos.append(info.dict())
                 except Exception as e:
                     logger.error(f"[sync] 文件处理失败: {fp} — {e}")
@@ -454,15 +457,39 @@ def update_media_library(name: str, req: dict):
 
 @router.delete("/library/{name}")
 def delete_media_library(name: str):
-    """删除虚拟媒体库"""
+    """删除虚拟媒体库（同时清理该库路径下的媒体数据）"""
     config = config_m.config
     libs = list(config.media_libraries)
-    new_libs = [lib for lib in libs if lib.name != name]
-    if len(new_libs) == len(libs):
+    target = next((lib for lib in libs if lib.name == name), None)
+    if not target:
         raise HTTPException(status_code=404, detail=f"library '{name}' not found")
+    # 清理该库所有路径下的媒体数据
+    library = config_m.load_library()
+    paths_to_remove = set(target.paths)
+    kept = [v for v in library if not any(v.get("file_path", "").startswith(p) for p in paths_to_remove)]
+    if len(kept) < len(library):
+        config_m.save_library(kept)
+        logger.info(f"[library] 删除媒体库 '{name}'，清理 {len(library) - len(kept)} 条媒体记录")
+    # 从 config 中移除
+    new_libs = [lib for lib in libs if lib.name != name]
     config.media_libraries = new_libs
     config_m.save(config)
-    return {"status": "ok"}
+    return {"status": "ok", "removed_videos": len(library) - len(kept)}
+
+
+@router.post("/library/remove-path")
+def remove_library_path(req: dict):
+    """删除指定路径下的媒体数据（设置页删除路径时调用）"""
+    path = req.get("path", "").strip()
+    if not path:
+        return {"status": "error", "message": "path required"}
+    library = config_m.load_library()
+    kept = [v for v in library if not v.get("file_path", "").startswith(path)]
+    removed = len(library) - len(kept)
+    if removed > 0:
+        config_m.save_library(kept)
+        logger.info(f"[library] 删除路径 '{path}' 下 {removed} 条媒体记录")
+    return {"status": "ok", "removed": removed}
 
 
 @router.get("/library/list")
@@ -651,14 +678,14 @@ def get_library_tree():
         _lib_category_tags[lib.name] = lib.category_tag
 
     for child in root_node["children"]:
-        if child["children"]:
-            child_path = child["path"]
-            child_name = child["name"]
-            # media_libraries 的库名节点 → 一定是一级分类
-            if child_name in _lib_category_tags:
-                top_category_paths.add(child_path)
+        child_path = child["path"]
+        child_name = child["name"]
+        # media_libraries 的库名节点 → 一定是一级分类（无论是否有子目录）
+        if child_name in _lib_category_tags:
+            top_category_paths.add(child_path)
+        elif child["children"]:
             # 已配置的标签 → 一定是一级分类
-            elif child_path in configured_tags:
+            if child_path in configured_tags:
                 top_category_paths.add(child_path)
             else:
                 # 目录名能被识别为非默认标签 → 一级分类

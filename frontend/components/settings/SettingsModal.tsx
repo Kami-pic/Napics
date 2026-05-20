@@ -145,14 +145,14 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               });
               return paths.map((p, i) => {
                 const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                const tag = libPathMap[normP] || "library";
+                const tag = libPathMap[normP] || "";
                 return (
                   <div key={i} className="mb-2">
                     <PathInput
                       value={p}
                       onChange={v => updatePath(i, v)}
-                      tag={tag}
-                      onTagChange={newTag => {
+                      tag={tag || undefined}
+                      onTagChange={tag ? (newTag => {
                         const libs = [...(config.media_libraries || [])];
                         const norm2 = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                         if (newTag === "library") {
@@ -168,7 +168,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                           }
                           setConfig({ ...config, media_libraries: libs });
                         }
-                      }}
+                      }) : undefined}
                       onDelete={async () => {
                         const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
                         if (remaining.length === 0) {
@@ -181,7 +181,10 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                           onClose();
                           window.location.reload();
                         } else {
-                          if (!confirm(`确定删除路径 "${p}" ？`)) return;
+                          if (!confirm(`确定删除路径 "${p}" ？删除后该路径下的媒体数据也会被清除。`)) return;
+                          // 清理该路径下的媒体数据
+                          try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) }); } catch {}
+                          // 同时从 media_libraries 中移除
                           const normDel = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                           const newLibs = (config.media_libraries || []).filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normDel));
                           setConfig({ ...config, media_libraries: newLibs });

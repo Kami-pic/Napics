@@ -16,7 +16,6 @@ export interface PathInputProps {
 }
 
 const TAG_OPTIONS: [string, string][] = [
-  ["library", "媒体库"],
   ["movie", "电影"],
   ["tv", "电视剧"],
   ["anime_tv", "动画番剧"],
@@ -36,7 +35,7 @@ export default function PathInput({ value, onChange, tag, onTagChange, onDelete,
   return (
     <div className="group flex gap-1.5 items-center">
       <button onClick={handleBrowse} title="选择文件夹"
-        className="w-8 h-[34px] flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all flex-shrink-0">
+        className="w-8 h-[36px] flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all flex-shrink-0">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-slate-400">
           <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
