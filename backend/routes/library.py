@@ -879,11 +879,16 @@ def get_library_tree():
         # 一级分类目录显示 category_tag
         if node["path"] and node["path"] != base_path:
             if node["path"] in top_category_paths:
-                node["folder_type"] = ""
                 node["category_tag"] = category_tag
                 node["is_top_category"] = True
                 # 标记虚拟媒体库文件夹
                 node["is_virtual_library"] = node["name"] in _lib_category_tags
+                # 虚拟媒体库文件夹：推断 folder_type（让子目录能被正确标记为 season）
+                # 普通一级分类目录（如"电影"、"剧集"）：folder_type 为空
+                if node["is_virtual_library"]:
+                    node["folder_type"] = _infer_folder_type_from_tree(node, category_tag)
+                else:
+                    node["folder_type"] = ""
             else:
                 node["category_tag"] = ""
                 node["is_top_category"] = False

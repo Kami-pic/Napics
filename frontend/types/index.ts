@@ -38,14 +38,14 @@ export interface FolderNode {
   is_category?: boolean;
   is_top_category?: boolean;
   is_virtual_library?: boolean;
-  parent_category_tag?: "movie" | "tv" | "";
+  parent_category_tag?: string;
   folder_type?: string;
   shadow_name?: string;
   clean_name?: string;
   clean_name_cn?: string;
   clean_name_en?: string;
   clean_name_original?: string;
-  category_tag?: "movie" | "tv" | "";
+  category_tag?: string;
 }
 
 // 季集完整度

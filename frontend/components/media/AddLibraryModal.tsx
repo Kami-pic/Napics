@@ -83,6 +83,16 @@ export default function AddLibraryModal({ open, onClose, onSuccess }: AddLibrary
                     setName(folderName);
                   }
                 }}
+                onMultiSelect={selected => {
+                  // 多选：替换当前空行 + 追加新路径
+                  const existing = paths.filter((x, j) => j !== i && x.trim());
+                  const merged = [...existing, ...selected.filter(s => !existing.includes(s))];
+                  setPaths(merged.length > 0 ? merged : [""]);
+                  if (!name && selected[0]) {
+                    const folderName = selected[0].replace(/[\\/]+$/, "").split(/[\\/]/).pop() || "";
+                    setName(folderName);
+                  }
+                }}
                 onDelete={paths.length > 1 ? () => setPaths(paths.filter((_, j) => j !== i)) : undefined}
                 placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
               />

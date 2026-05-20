@@ -5,6 +5,43 @@
 
 ---
 
+## 2026-05-20 媒体文件夹功能修复（添加/删除/显示/交互）
+
+**变更**:
+- **后端 `routes/library.py`**：`is_virtual_library` 节点推断 `folder_type`（让子目录能被正确标记为 season），普通 `is_top_category` 节点保持 `folder_type = ""`
+- **后端 `routes/config.py`**：`browse-folder` 端点新增 `multi` 参数，Windows 上通过 PowerShell 循环调用 FolderBrowserDialog 实现多次选择
+- **前端 `CardGrid.tsx`**：
+  - `is_virtual_library` 节点在根目录始终作为独立文件夹卡片渲染（不按 folder_type 展开为 tv/collection），置顶显示（`unshift`）
+  - 进入媒体文件夹后，根据 `folder_type` 把自身当作完整内容项渲染（tv→季卡片，movie→视频卡片，collection→合集卡片）
+  - 卡片样式：蓝色加粗描边（`border-2 border-blue-500/30`）、蓝色类型标签、不显示集数/画质标签、使用 `cover=true` 模式加载封面（只显示手动上传的 cover.jpg，不显示刮削 poster）
+  - 底部信息始终显示"X 个项目"
+- **前端 `SettingsModal.tsx`**：
+  - 新增 `onRefresh` 回调，删除路径/保存设置后触发媒体库刷新
+  - 删除 scan_path 时从后端获取最新 config 确认 media_libraries 状态，避免误判清空
+  - 媒体文件夹标题颜色从紫色改为蓝色
+- **前端 `page.tsx`**：AddLibraryModal 成功后重新加载 config 同步 media_libraries 状态；不再把媒体文件夹路径写入 scan_paths
+- **前端 `FolderDetail.tsx`**：分类标签选择器仅对 `is_virtual_library` 节点显示（6 个选项），内容文件夹显示 folder_type 选择器（自动识别逻辑不变）
+- **前端 `PathInput.tsx`**：新增 `onMultiSelect` 回调支持多选文件夹
+- **前端 `AddLibraryModal.tsx` / `AddScanPathModal.tsx`**：传入 `onMultiSelect` 支持批量选择路径
+- **前端 `types/index.ts`**：`category_tag` / `parent_category_tag` 类型从 `"movie"|"tv"|""` 改为 `string`，支持所有标签值
+
+**核心设计决策**:
+- 媒体文件夹（`is_virtual_library`）只出现在根目录一级，`category_tag` 由用户添加时选择（6 种），底层映射到 tv/movie 两种结构类型
+- 媒体文件夹的子文件夹走正常的自动识别逻辑（movie/tv/collection/series/mixed），和 scan_paths 下的内容文件夹完全一致
+- 媒体文件夹和 scan_paths 可以同时存在，互不影响
+- 媒体文件夹封面独立于内容刮削封面（使用 cover.jpg，不使用 poster.jpg）
+
+**修复的 Bug**:
+1. 添加媒体文件夹后根目录显示异常（紫色文件夹和内容重叠）
+2. 删除设置中的媒体文件夹/路径后媒体库不实时刷新
+3. 添加媒体文件夹后路径错误写入 scan_paths
+4. 删除最后一个 scan_path 时误判清空整个媒体库（config 未同步导致）
+5. 设置页打开后看不到刚添加的媒体文件夹（config 未同步）
+6. 详情侧边栏分类标签选项不完整
+7. 设置中修改标签后媒体库不生效
+
+---
+
 ## 2026-05-18 插件中心 + 新用户体验规划
 
 **变更**:

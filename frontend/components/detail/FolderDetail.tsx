@@ -236,8 +236,8 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           </div>
         </div>
       )}
-      {/* 一级分类目录：分类标签选择器 */}
-      {(node.is_top_category || node.category_tag) && (
+      {/* 媒体文件夹：分类标签选择器（仅 is_virtual_library） */}
+      {node.is_virtual_library && (
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-slate-500">分类标签</span>
           <select value={node.category_tag || "movie"} onChange={async (e) => {
@@ -253,14 +253,18 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
             {[
               {v: "movie", l: "电影"},
               {v: "tv", l: "剧集"},
+              {v: "anime_tv", l: "动画番剧"},
+              {v: "anime_movie", l: "动画电影"},
+              {v: "variety", l: "综艺"},
+              {v: "other", l: "其他"},
             ].map(t => (
               <option key={t.v} value={t.v}>{t.l}</option>
             ))}
           </select>
         </div>
       )}
-      {/* 文件夹类型标签（可修改，非一级分类目录） */}
-      {folderType && !node.is_top_category && (
+      {/* 文件夹类型标签（内容文件夹，非媒体文件夹） */}
+      {folderType && !node.is_virtual_library && (
         <div className="flex items-center gap-2">
           <select value={folderType} onChange={async (e) => {
             const newType = e.target.value;

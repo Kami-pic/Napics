@@ -27,6 +27,7 @@ interface SettingsModalProps {
   open: boolean; onClose: () => void;
   config: AppConfig; onSave: (c: AppConfig) => void; setConfig: (c: AppConfig) => void;
   paths: string[]; setPaths: (p: string[]) => void;
+  onRefresh?: () => void;
 }
 
 // 按分组定义字段，group 用于插入分割线
@@ -80,7 +81,7 @@ function getDefaultRecycleBinPlaceholder(paths: string[]): string {
   return `默认：${firstPath}\\.recycle_bins`;
 }
 
-export default function SettingsModal({ open, onClose, config, onSave, setConfig, paths, setPaths }: SettingsModalProps) {
+export default function SettingsModal({ open, onClose, config, onSave, setConfig, paths, setPaths, onRefresh }: SettingsModalProps) {
   const [cacheInfo, setCacheInfo] = useState<{ size_mb: number; file_count: number } | null>(null);
   const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [aiTesting, setAiTesting] = useState(false);
@@ -141,11 +142,15 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                   onChange={v => updatePath(i, v)}
                   onDelete={async () => {
                     const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
-                    if (remaining.length === 0 && !(config.media_libraries || []).length) {
+                    // 从后端获取最新 config，确保 media_libraries 状态准确
+                    let latestConfig = config;
+                    try { latestConfig = await api.getConfig(); } catch {}
+                    const hasMediaLibraries = (latestConfig.media_libraries || []).length > 0;
+                    if (remaining.length === 0 && !hasMediaLibraries) {
                       if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
                       try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
                       setPaths([""]);
-                      const resetConfig = { ...config, scan_paths: [] };
+                      const resetConfig = { ...latestConfig, scan_paths: [] };
                       await api.saveConfig(resetConfig);
                       setConfig(resetConfig);
                       onClose();
@@ -156,9 +161,10 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                       const newPaths = remaining.length > 0 ? remaining : [""];
                       setPaths(newPaths);
                       // 立即保存 scan_paths 变更
-                      const newConfig = { ...config, scan_paths: newPaths.filter(x => x.trim()) };
+                      const newConfig = { ...latestConfig, scan_paths: newPaths.filter(x => x.trim()) };
                       await api.saveConfig(newConfig);
                       setConfig(newConfig);
+                      onRefresh?.();
                     }
                   }}
                   placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
@@ -169,7 +175,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
 
           {/* 媒体文件夹 */}
           <div className="pb-3 border-t border-white/[0.06] pt-3">
-            <label className="text-sm font-medium text-purple-400">媒体文件夹</label>
+            <label className="text-sm font-medium text-blue-400">媒体文件夹</label>
             <p className="text-xs text-slate-500 mt-1 mb-3">带类型标签的独立文件夹，置顶显示</p>
             {(config.media_libraries || []).map((lib, i) => (
               <div key={lib.name + i} className="mb-2">
@@ -196,6 +202,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                     const newConfig = { ...config, media_libraries: newLibs };
                     setConfig(newConfig);
                     await api.saveConfig(newConfig);
+                    onRefresh?.();
                   }}
                   placeholder="如 Z:\Movies 或 \\NAS\media"
                 />
@@ -419,7 +426,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
         </div>
 
         <div className="mt-6 flex gap-3">
-          <button onClick={() => { onSave(config); onClose(); }} className="flex-1 bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-sm font-medium transition-all">保存</button>
+          <button onClick={() => { onSave(config); onRefresh?.(); onClose(); }} className="flex-1 bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-sm font-medium transition-all">保存</button>
           <button onClick={onClose} className="flex-1 bg-white/[0.06] hover:bg-white/[0.08] py-2.5 rounded-xl text-sm text-slate-400 transition-all">取消</button>
         </div>
       </div>

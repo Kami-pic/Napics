@@ -316,7 +316,8 @@ export default function Home() {
       />
 
       <SettingsModal open={showSettings} config={config} onSave={saveConfig}
-        onClose={() => setShowSettings(false)} setConfig={setConfig} paths={paths} setPaths={setPaths} />
+        onClose={() => setShowSettings(false)} setConfig={setConfig} paths={paths} setPaths={setPaths}
+        onRefresh={refreshLibrary} />
       <SearchModal open={showSearch} query={searchQuery} onClose={() => setShowSearch(false)}
         defaultSavePath={searchContext.savePath || currentFolder?.path || config.scan_paths?.[0] || ""}
         currentResolution={currentVideoResolution}
@@ -332,8 +333,12 @@ export default function Home() {
         qbConfigured={qbConfigured} alistConfigured={alistConfigured} initialQuery={addMediaQuery} />
 
       <AddLibraryModal open={showAddLibrary} onClose={() => setShowAddLibrary(false)}
-        onSuccess={(libPaths, libName) => {
-          setPaths(prev => [...libPaths, ...prev.filter(p => p.trim() && !libPaths.includes(p))]);
+        onSuccess={async (libPaths, libName) => {
+          // 重新加载 config 以同步 media_libraries 状态
+          try {
+            const freshConfig = await api.getConfig();
+            setConfig(freshConfig);
+          } catch {}
           startScan(libPaths, libName);
         }} />
 

@@ -88,31 +88,59 @@ def update_config(conf: config_manager.AppConfig):
 
 
 @router.get("/config/browse-folder")
-def browse_folder():
-    """弹出系统文件夹选择器，返回用户选择的路径"""
+def browse_folder(multi: bool = False):
+    """弹出系统文件夹选择器，返回用户选择的路径。multi=True 时支持多选"""
     import sys
     import threading
+    import subprocess
 
-    result = {"path": ""}
+    result = {"path": "", "paths": []}
 
     def _pick():
         try:
-            import tkinter as tk
-            from tkinter import filedialog
-            root = tk.Tk()
-            root.withdraw()
-            root.wm_attributes("-topmost", 1)
-            root.focus_force()
-            path = filedialog.askdirectory(title="选择文件夹", mustexist=True)
-            root.destroy()
-            result["path"] = path.replace("/", "\\") if path and sys.platform == "win32" else (path or "")
+            if sys.platform == "win32" and multi:
+                # Windows 多选文件夹：通过 PowerShell 调用 COM 接口
+                ps_script = '''
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = "选择文件夹（多次选择，取消结束）"
+$dialog.ShowNewFolderButton = $false
+$paths = @()
+do {
+    $r = $dialog.ShowDialog()
+    if ($r -eq [System.Windows.Forms.DialogResult]::OK) {
+        $paths += $dialog.SelectedPath
+    }
+} while ($r -eq [System.Windows.Forms.DialogResult]::OK)
+$paths -join "|"
+'''
+                proc = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", ps_script],
+                    capture_output=True, text=True, timeout=120
+                )
+                output = proc.stdout.strip()
+                if output:
+                    result["paths"] = [p for p in output.split("|") if p]
+                    result["path"] = result["paths"][0] if result["paths"] else ""
+            else:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                root.wm_attributes("-topmost", 1)
+                root.focus_force()
+                path = filedialog.askdirectory(title="选择文件夹", mustexist=True)
+                root.destroy()
+                result["path"] = path.replace("/", "\\") if path and sys.platform == "win32" else (path or "")
+                result["paths"] = [result["path"]] if result["path"] else []
         except Exception:
             result["path"] = ""
+            result["paths"] = []
 
     t = threading.Thread(target=_pick)
     t.start()
     t.join(timeout=120)
-    return {"path": result["path"]}
+    return {"path": result["path"], "paths": result["paths"]}
 
 
 # ── 搜索过滤规则配置 API ──

@@ -52,5 +52,5 @@ export const configApi = {
   },
 
   // 文件夹选择器
-  browseFolder: () => request<{ path: string }>(`${BASE_URL}/config/browse-folder`),
+  browseFolder: (multi?: boolean) => request<{ path: string; paths: string[] }>(`${BASE_URL}/config/browse-folder${multi ? '?multi=true' : ''}`),
 };

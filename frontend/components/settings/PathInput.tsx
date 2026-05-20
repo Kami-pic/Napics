@@ -6,6 +6,8 @@ import { api } from "@/lib/api";
 export interface PathInputProps {
   value: string;
   onChange: (value: string) => void;
+  /** 多选回调：选择多个文件夹时触发 */
+  onMultiSelect?: (paths: string[]) => void;
   /** 类型标签下拉（传入则显示） */
   tag?: string;
   onTagChange?: (tag: string) => void;
@@ -24,13 +26,22 @@ const TAG_OPTIONS: [string, string][] = [
   ["other", "其他"],
 ];
 
-export default function PathInput({ value, onChange, tag, onTagChange, onDelete, placeholder = "选择或输入路径" }: PathInputProps) {
+export default function PathInput({ value, onChange, onMultiSelect, tag, onTagChange, onDelete, placeholder = "选择或输入路径" }: PathInputProps) {
   const handleBrowse = useCallback(async () => {
     try {
-      const res = await api.browseFolder();
-      if (res.path) onChange(res.path);
+      const multi = !!onMultiSelect;
+      const res = await api.browseFolder(multi);
+      if (multi && res.paths?.length > 0) {
+        if (res.paths.length === 1) {
+          onChange(res.paths[0]);
+        } else {
+          onMultiSelect!(res.paths);
+        }
+      } else if (res.path) {
+        onChange(res.path);
+      }
     } catch { /* 用户取消 */ }
-  }, [onChange]);
+  }, [onChange, onMultiSelect]);
 
   return (
     <div className="group flex gap-1.5 items-center">

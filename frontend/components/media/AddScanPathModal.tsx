@@ -53,6 +53,11 @@ export default function AddScanPathModal({ open, onClose, onSuccess }: AddScanPa
               <PathInput
                 value={p}
                 onChange={v => { const n = [...paths]; n[i] = v; setPaths(n); }}
+                onMultiSelect={selected => {
+                  const existing = paths.filter((x, j) => j !== i && x.trim());
+                  const merged = [...existing, ...selected.filter(s => !existing.includes(s))];
+                  setPaths(merged.length > 0 ? merged : [""]);
+                }}
                 onDelete={paths.length > 1 ? () => setPaths(paths.filter((_, j) => j !== i)) : undefined}
                 placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
               />

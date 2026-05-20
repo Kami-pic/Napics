@@ -107,10 +107,44 @@ export default function CardGrid({
     if (!currentFolder) return [];
     const results: CardItem[] = [];
     const children = currentFolder.children || [];
+
+    // 虚拟媒体库文件夹内部：把自身当作一个内容项渲染
+    // 进入紫色文件夹后，看到的是一个完整的内容卡片（tv/movie/collection），而不是散落的子目录或视频
+    if (currentFolder.is_virtual_library) {
+      const ft = currentFolder.folder_type || "";
+      if (ft === "tv" && children.length > 0) {
+        // tv 类型：显示为 tv 卡片，children 作为季目录
+        const seasons = [...children].sort(compareSeasons);
+        results.push({ type: "tv", seriesName: currentFolder.name, seasons, id: `ms-${currentFolder.path}`, parentNode: currentFolder });
+      } else if (ft === "tv" && children.length === 0 && currentFolder.videos?.length > 0) {
+        // 扁平 tv（无季目录，直接有视频）
+        results.push({ type: "tv", seriesName: currentFolder.name, seasons: [currentFolder], id: `ms-${currentFolder.path}`, parentNode: currentFolder });
+      } else if (ft === "movie" && currentFolder.videos?.length === 1) {
+        // 单个电影
+        const v = currentFolder.videos[0];
+        results.push({ type: "video", data: v, id: `v-${v.file_path}-0` });
+      } else if ((ft === "collection" || ft === "series") && children.length > 0) {
+        // collection/series
+        results.push({ type: ft === "series" ? "series" : "collection", data: currentFolder, id: `${ft}-${currentFolder.path}` });
+      } else {
+        // 其他情况：正常渲染 children 和 videos
+        children.forEach(node => results.push({ type: "folder", data: node, id: `f-${node.path}` }));
+        Object.entries(groupedVideos).forEach(([, vids]) => {
+          vids.forEach((v, vi) => results.push({ type: "video", data: v, id: `v-${v.file_path}-${vi}` }));
+        });
+      }
+      return results;
+    }
+
     const seriesGroups: Record<string, FolderNode[]> = {};
     const standalone: FolderNode[] = [];
     children.forEach(node => {
       const ft = node.folder_type || "";
+      // 虚拟媒体库文件夹始终作为独立文件夹卡片显示，不按 folder_type 展开
+      if (node.is_virtual_library) {
+        standalone.push(node);
+        return;
+      }
       // 用 folder_type 优先判断
       if (ft === "series") {
         results.push({ type: "series", data: node, id: `sc-${node.path}` });
@@ -144,7 +178,13 @@ export default function CardGrid({
         results.push({ type: "tv", seriesName: name, seasons: nodes, id: `ms-${name}` });
       } else { standalone.push(nodes[0]); }
     });
-    standalone.forEach(node => results.push({ type: "folder", data: node, id: `f-${node.path}` }));
+    // 媒体文件夹置顶，插入到 results 最前面
+    const pinned = standalone.filter(n => n.is_virtual_library);
+    const normal = standalone.filter(n => !n.is_virtual_library);
+    const pinnedItems: CardItem[] = pinned.map(node => ({ type: "folder", data: node, id: `f-${node.path}` }));
+    normal.forEach(node => results.push({ type: "folder", data: node, id: `f-${node.path}` }));
+    // 将 pinned 插入到 results 最前面
+    results.unshift(...pinnedItems);
     Object.entries(groupedVideos).forEach(([, vids]) => {
       vids.forEach((v, vi) => results.push({ type: "video", data: v, id: `v-${v.file_path}-${vi}` }));
     });
@@ -220,8 +260,13 @@ export default function CardGrid({
             const ft = folder.folder_type || "";
             // 末端文件夹 → 展开；非末端 → 进入
             const handleClick = () => {
-              // movie 类型：显示视频详情（不是文件夹详情）
-              if (ft === "movie" && folder.videos[0]) {
+              // 虚拟媒体库文件夹：始终作为文件夹进入，不当作单个电影处理
+              if (folder.is_virtual_library) {
+                onFolderDetail(folder);
+                setExpandedId(null); setExpandPos(null);
+                onNavigate(folder);
+              } else if (ft === "movie" && folder.videos[0]) {
+                // movie 类型：显示视频详情（不是文件夹详情）
                 onVideoDetail(folder.videos[0]);
                 setExpandedId(null); setExpandPos(null);
               } else {
@@ -233,17 +278,17 @@ export default function CardGrid({
 
             return (
               <div key={item.id} data-card
-                className={`group rounded-xl overflow-hidden bg-[#1a1a1a] border cursor-pointer transition-all ${isActive ? "border-blue-500/50 ring-1 ring-blue-500/20" : folder.is_virtual_library ? "border-purple-500/20 hover:border-purple-500/40" : "border-white/[0.06] hover:border-slate-500"}`}
+                className={`group rounded-xl overflow-hidden bg-[#1a1a1a] border cursor-pointer transition-all ${isActive ? "border-blue-500/50 ring-1 ring-blue-500/20" : folder.is_virtual_library ? "border-2 border-blue-500/30 hover:border-blue-500/50" : "border-white/[0.06] hover:border-slate-500"}`}
                 onClick={handleClick}>
                 {hasPoster ? (
                   <div className="relative aspect-[2/3] bg-[#111]">
-                    <CardPoster name={folder.name} path={folder.path} cacheKey={refreshKey} cover={ft === "collection" || ft === "series" || ft === "mixed" || (ft !== "movie" && ft !== "tv" && ft !== "season" && folder.children?.length > 0)} />
+                    <CardPoster name={folder.name} path={folder.path} cacheKey={refreshKey} cover={folder.is_virtual_library || (ft === "collection" || ft === "series" || ft === "mixed" || (ft !== "movie" && ft !== "tv" && ft !== "season" && folder.children?.length > 0))} />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
-                    {leaf && ft !== "movie" && (
+                    {leaf && ft !== "movie" && !folder.is_virtual_library && (
                       <div className="absolute top-3 left-3 bg-green-600 text-white text-[12px] px-2.5 py-1 rounded-lg font-bold">{folder.video_count} 集</div>
                     )}
                     {folder.is_virtual_library && (
-                      <div className="absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide bg-purple-500/30 text-purple-300">
+                      <div className="absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide bg-blue-500/30 text-blue-300">
                         {getCategoryTagLabel(folder.category_tag || "")}
                       </div>
                     )}
@@ -252,7 +297,7 @@ export default function CardGrid({
                         {getCategoryTagLabel(folder.category_tag)}
                       </div>
                     )}
-                    {ft === "movie" && folder.videos[0] && (
+                    {ft === "movie" && !folder.is_virtual_library && folder.videos[0] && (
                       <div className="absolute top-3 right-3 flex flex-col gap-1 z-10">
                         {folder.videos[0].is_low_res && <span className="bg-orange-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">低画质</span>}
                         {folder.videos[0].hdr_type && folder.videos[0].hdr_type !== "SDR" && <span className="bg-purple-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">{folder.videos[0].hdr_type}</span>}
@@ -267,7 +312,9 @@ export default function CardGrid({
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <p className="text-[15px] font-semibold text-white truncate">{folder.name}</p>
                       <p className="text-xs text-slate-400 mt-1">
-                        {ft === "movie" && folder.videos[0]
+                        {folder.is_virtual_library
+                          ? `${folder.video_count} 个项目`
+                          : ft === "movie" && folder.videos[0]
                           ? `${folder.videos[0].resolution || ""} · ${formatSize(folder.videos[0].size_gb)}`
                           : leaf ? "点击展开" : `${folder.video_count} 个项目`}
                       </p>
