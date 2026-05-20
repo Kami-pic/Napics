@@ -47,8 +47,20 @@ async def scan_path(path: str, library_name: str = ""):
             
             all_files = []
             extensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"]
+            # 获取排除目录（库级 + 全局）
+            _scan_excludes = set()
+            if library_name:
+                for lib in (config_m.config.media_libraries or []):
+                    if lib.name == library_name:
+                        _scan_excludes.update(lib.exclude_dirs)
+                        break
+            _global_excl = set(
+                d.strip() for d in (config_m.config.exclude_dirs or "").split(",") if d.strip()
+            )
+            _scan_excludes.update(_global_excl)
             for root, dirs, files in os.walk(path):
                 if "@eaDir" in root or "#recycle" in root: continue
+                dirs[:] = [d for d in dirs if d not in _scan_excludes]
                 for f in files:
                     if any(f.lower().endswith(ext) for ext in extensions):
                         all_files.append(os.path.join(root, f))
@@ -146,10 +158,18 @@ def quick_sync():
 
     # 构建 scan_path → media_library 名称的映射（用于 folder_name 前缀）
     _sync_lib_name_map: Dict[str, str] = {}
+    # 构建 scan_path → exclude_dirs 映射（用于扫描时过滤）
+    _sync_lib_exclude_map: Dict[str, set] = {}
     for lib in (config_m.config.media_libraries or []):
         for lp in lib.paths:
             norm_lp = lp.replace("/", "\\").rstrip("\\")
             _sync_lib_name_map[norm_lp] = lib.name
+            if lib.exclude_dirs:
+                _sync_lib_exclude_map[norm_lp] = set(lib.exclude_dirs)
+    # 全局排除目录（逗号分隔）
+    _global_exclude_dirs = set(
+        d.strip() for d in (config_m.config.exclude_dirs or "").split(",") if d.strip()
+    )
 
     def _get_folder_name(fp: str, base: str) -> str:
         """计算视频的 folder_name，如果 base 属于某个 media_library 则加库名前缀"""
@@ -168,8 +188,12 @@ def quick_sync():
             fs_files = set()
             for base in nas_paths:
                 if not base or not os.path.exists(base): continue
+                norm_base = base.replace("/", "\\").rstrip("\\")
+                lib_excludes = _sync_lib_exclude_map.get(norm_base, set())
                 for root, dirs, files in os.walk(base):
                     if "@eaDir" in root or "#recycle" in root: continue
+                    # 过滤排除目录（全局 + 库级）
+                    dirs[:] = [d for d in dirs if d not in _global_exclude_dirs and d not in lib_excludes]
                     for f in files:
                         if os.path.splitext(f)[1].lower() in extensions:
                             fp = os.path.join(root, f)

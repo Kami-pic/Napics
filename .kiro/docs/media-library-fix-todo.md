@@ -48,16 +48,15 @@
 
 ### P2：数据一致性
 
-- [ ] **6. 父子路径冲突处理**
+- [x] **6. 父子路径冲突处理**
   - 添加的文件夹如果是已有路径的子目录（或父目录），不应报错
-  - 代码层面：扫描时去重，相同文件不重复入库
-  - 允许多个路径指向有重叠的目录，但扫描结果不重复
+  - 代码层面：`fs_files` 是 set，相同文件不重复入库（已满足）
+  - 允许多个路径指向有重叠的目录，扫描结果不重复
 
-- [ ] **8. 排除路径不生效**
+- [x] **8. 排除路径不生效**
   - AddLibraryModal 中的排除路径字段保存到了 `media_libraries[].exclude_dirs`
-  - 但扫描时没有读取 `media_libraries` 的 exclude_dirs 来过滤
-  - 需要在 `scan_path` 接口中，根据 library_name 查找对应的 exclude_dirs 并应用
-  - 排除逻辑应和全局 `exclude_dirs` 相同（支持多行/逗号分隔的文件夹名）
+  - 修复：scan_path 和 quick_sync 中均读取对应 media_library 的 exclude_dirs + 全局 exclude_dirs
+  - 在 os.walk 中通过 `dirs[:] = [...]` 过滤排除目录名
 
 ---
 
