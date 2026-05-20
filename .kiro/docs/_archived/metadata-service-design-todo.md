@@ -1,7 +1,6 @@
-# [TODO] metadata-service-design-todo.md
+# [废弃] metadata-service-design-todo.md
 
-> 清债阶段第一步：设计 Core MetadataService 兼容层。
-> 目标：让 scraper/discover/completeness 等模块不再直接 import TMDBClient/DoubanClient/BangumiClient。
+> 全部完成，已归档。MetadataService 兼容层已建立并切换完毕。
 
 ---
 

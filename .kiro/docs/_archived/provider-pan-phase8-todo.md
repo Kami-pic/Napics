@@ -1,4 +1,6 @@
-# [TODO] provider-pan-phase8-todo.md
+# [废弃] provider-pan-phase8-todo.md
+
+> 全部完成，已归档。网盘搜索源私有化 5 步迁移全部交付。
 
 ## 范围
 
