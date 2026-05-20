@@ -153,7 +153,12 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                     } else {
                       if (!confirm(`确定删除路径 "${p}" ？删除后该路径下的媒体数据也会被清除。`)) return;
                       try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) }); } catch {}
-                      setPaths(remaining.length > 0 ? remaining : [""]);
+                      const newPaths = remaining.length > 0 ? remaining : [""];
+                      setPaths(newPaths);
+                      // 立即保存 scan_paths 变更
+                      const newConfig = { ...config, scan_paths: newPaths.filter(x => x.trim()) };
+                      await api.saveConfig(newConfig);
+                      setConfig(newConfig);
                     }
                   }}
                   placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
@@ -163,40 +168,43 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
           </div>
 
           {/* 媒体文件夹 */}
-          {(config.media_libraries || []).length > 0 && (
-            <div className="pb-3 border-t border-white/[0.06] pt-3">
-              <label className="text-sm font-medium text-purple-400">媒体文件夹</label>
-              <p className="text-xs text-slate-500 mt-1 mb-3">带类型标签的独立文件夹，置顶显示</p>
-              {(config.media_libraries || []).map((lib, i) => (
-                <div key={lib.name + i} className="mb-2">
-                  <PathInput
-                    value={lib.paths[0] || ""}
-                    onChange={v => {
-                      const libs = [...(config.media_libraries || [])];
-                      libs[i] = { ...libs[i], paths: [v] };
-                      setConfig({ ...config, media_libraries: libs });
-                    }}
-                    tag={lib.category_tag}
-                    onTagChange={newTag => {
-                      const libs = [...(config.media_libraries || [])];
-                      libs[i] = { ...libs[i], category_tag: newTag };
-                      setConfig({ ...config, media_libraries: libs });
-                    }}
-                    onDelete={async () => {
-                      const libPath = lib.paths[0] || "";
-                      if (!confirm(`确定删除媒体文件夹 "${lib.name}" ？该文件夹下的媒体数据也会被清除。`)) return;
-                      if (libPath) {
-                        try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: libPath }) }); } catch {}
-                      }
-                      const newLibs = (config.media_libraries || []).filter((_, j) => j !== i);
-                      setConfig({ ...config, media_libraries: newLibs });
-                    }}
-                    placeholder="如 Z:\Movies 或 \\NAS\media"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="pb-3 border-t border-white/[0.06] pt-3">
+            <label className="text-sm font-medium text-purple-400">媒体文件夹</label>
+            <p className="text-xs text-slate-500 mt-1 mb-3">带类型标签的独立文件夹，置顶显示</p>
+            {(config.media_libraries || []).map((lib, i) => (
+              <div key={lib.name + i} className="mb-2">
+                <PathInput
+                  value={lib.paths[0] || ""}
+                  onChange={v => {
+                    const libs = [...(config.media_libraries || [])];
+                    libs[i] = { ...libs[i], paths: [v] };
+                    setConfig({ ...config, media_libraries: libs });
+                  }}
+                  tag={lib.category_tag}
+                  onTagChange={newTag => {
+                    const libs = [...(config.media_libraries || [])];
+                    libs[i] = { ...libs[i], category_tag: newTag };
+                    setConfig({ ...config, media_libraries: libs });
+                  }}
+                  onDelete={async () => {
+                    const libPath = lib.paths[0] || "";
+                    if (!confirm(`确定删除媒体文件夹 "${lib.name}" ？该文件夹下的媒体数据也会被清除。`)) return;
+                    if (libPath) {
+                      try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: libPath }) }); } catch {}
+                    }
+                    const newLibs = (config.media_libraries || []).filter((_, j) => j !== i);
+                    const newConfig = { ...config, media_libraries: newLibs };
+                    setConfig(newConfig);
+                    await api.saveConfig(newConfig);
+                  }}
+                  placeholder="如 Z:\Movies 或 \\NAS\media"
+                />
+              </div>
+            ))}
+            {!(config.media_libraries || []).length && (
+              <p className="text-xs text-slate-600 italic">暂无，可通过首页"添加媒体文件夹"入口添加</p>
+            )}
+          </div>
           {/* 排除文件夹 */}
           <div className="pb-3 border-b border-white/[0.06] -mt-2">
             <label className="text-sm font-medium text-slate-300">排除文件夹</label>
