@@ -127,77 +127,76 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
         </div>
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
-          {/* 统一路径管理 */}
+          {/* 媒体库路径 */}
           <div className="pb-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-blue-400">扫描路径</label>
+              <label className="text-sm font-medium text-blue-400">媒体库路径</label>
               <button onClick={() => setPaths(["", ...paths])} className="text-xs text-blue-400 hover:text-blue-300 flex-shrink-0">+ 添加路径</button>
             </div>
-            <p className="text-xs text-slate-500 mt-1 mb-3">所有媒体目录（含分类文件夹）</p>
-            {(() => {
-              // 合并 scan_paths 和 media_libraries 为统一列表
-              const libPathMap: Record<string, string> = {};
-              (config.media_libraries || []).forEach(lib => {
-                lib.paths.forEach(p => {
-                  const norm = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                  libPathMap[norm] = lib.category_tag;
-                });
-              });
-              return paths.map((p, i) => {
-                const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                const tag = libPathMap[normP] || "library";
-                return (
-                  <div key={i} className="mb-2">
-                    <PathInput
-                      value={p}
-                      onChange={v => updatePath(i, v)}
-                      tag={tag}
-                      onTagChange={newTag => {
-                        const libs = [...(config.media_libraries || [])];
-                        const norm2 = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                        if (newTag === "library") {
-                          const newLibs = libs.filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === norm2));
-                          setConfig({ ...config, media_libraries: newLibs });
-                        } else {
-                          const existing = libs.find(lib => lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === norm2));
-                          if (existing) {
-                            existing.category_tag = newTag;
-                          } else {
-                            const folderName = p.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || "媒体库";
-                            libs.push({ name: folderName, category_tag: newTag, paths: [p], exclude_dirs: [] });
-                          }
-                          setConfig({ ...config, media_libraries: libs });
-                        }
-                      }}
-                      onDelete={async () => {
-                        const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
-                        if (remaining.length === 0) {
-                          if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
-                          try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
-                          setPaths([""]);
-                          const resetConfig = { ...config, scan_paths: [], media_libraries: [] };
-                          await api.saveConfig(resetConfig);
-                          setConfig(resetConfig);
-                          onClose();
-                          window.location.reload();
-                        } else {
-                          if (!confirm(`确定删除路径 "${p}" ？删除后该路径下的媒体数据也会被清除。`)) return;
-                          // 清理该路径下的媒体数据
-                          try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) }); } catch {}
-                          // 同时从 media_libraries 中移除
-                          const normDel = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                          const newLibs = (config.media_libraries || []).filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normDel));
-                          setConfig({ ...config, media_libraries: newLibs });
-                          setPaths(remaining.length > 0 ? remaining : [""]);
-                        }
-                      }}
-                      placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
-                    />
-                  </div>
-                );
-              });
-            })()}
+            <p className="text-xs text-slate-500 mt-1 mb-3">自动识别目录下所有文件夹和媒体类型</p>
+            {paths.map((p, i) => (
+              <div key={i} className="mb-2">
+                <PathInput
+                  value={p}
+                  onChange={v => updatePath(i, v)}
+                  onDelete={async () => {
+                    const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
+                    if (remaining.length === 0 && !(config.media_libraries || []).length) {
+                      if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
+                      try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
+                      setPaths([""]);
+                      const resetConfig = { ...config, scan_paths: [] };
+                      await api.saveConfig(resetConfig);
+                      setConfig(resetConfig);
+                      onClose();
+                      window.location.reload();
+                    } else {
+                      if (!confirm(`确定删除路径 "${p}" ？删除后该路径下的媒体数据也会被清除。`)) return;
+                      try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) }); } catch {}
+                      setPaths(remaining.length > 0 ? remaining : [""]);
+                    }
+                  }}
+                  placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
+                />
+              </div>
+            ))}
           </div>
+
+          {/* 媒体文件夹 */}
+          {(config.media_libraries || []).length > 0 && (
+            <div className="pb-3 border-t border-white/[0.06] pt-3">
+              <label className="text-sm font-medium text-purple-400">媒体文件夹</label>
+              <p className="text-xs text-slate-500 mt-1 mb-3">带类型标签的独立文件夹，置顶显示</p>
+              {(config.media_libraries || []).map((lib, i) => (
+                <div key={lib.name + i} className="mb-2">
+                  <PathInput
+                    value={lib.paths[0] || ""}
+                    onChange={v => {
+                      const libs = [...(config.media_libraries || [])];
+                      libs[i] = { ...libs[i], paths: [v] };
+                      setConfig({ ...config, media_libraries: libs });
+                    }}
+                    tag={lib.category_tag}
+                    onTagChange={newTag => {
+                      const libs = [...(config.media_libraries || [])];
+                      libs[i] = { ...libs[i], category_tag: newTag };
+                      setConfig({ ...config, media_libraries: libs });
+                    }}
+                    onDelete={async () => {
+                      const libPath = lib.paths[0] || "";
+                      if (!confirm(`确定删除媒体文件夹 "${lib.name}" ？该文件夹下的媒体数据也会被清除。`)) return;
+                      if (libPath) {
+                        try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: libPath }) }); } catch {}
+                      }
+                      const newLibs = (config.media_libraries || []).filter((_, j) => j !== i);
+                      setConfig({ ...config, media_libraries: newLibs });
+                    }}
+                    placeholder="如 Z:\Movies 或 \\NAS\media"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
           {/* 排除文件夹 */}
           <div className="pb-3 border-b border-white/[0.06] -mt-2">
             <label className="text-sm font-medium text-slate-300">排除文件夹</label>

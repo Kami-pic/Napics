@@ -137,7 +137,12 @@ async def scan_path(path: str, library_name: str = ""):
 def quick_sync():
     """快速同步（EventSource 流式进度）"""
     library = config_m.load_library()
-    nas_paths = config_m.config.scan_paths or []
+    # 合并 scan_paths 和 media_libraries 的路径（去重）
+    _scan = config_m.config.scan_paths or []
+    _lib_paths = []
+    for lib in (config_m.config.media_libraries or []):
+        _lib_paths.extend(lib.paths)
+    nas_paths = list(dict.fromkeys(_scan + _lib_paths))  # 保序去重
     extensions = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
     excluded = config_m.load_excluded()
 

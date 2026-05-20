@@ -33,12 +33,7 @@ export default function AddLibraryModal({ open, onClose, onSuccess }: AddLibrary
     try {
       const libName = name.trim() || cleanPaths[0].replace(/[\\/]+$/, "").split(/[\\/]/).pop() || "媒体库";
       const excludeList = excludeDirs.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
-      // 同时写入 scan_paths（新路径放最前面）和 media_libraries
-      const config = await api.getConfig();
-      const existingPaths = (config.scan_paths || []).filter((p: string) => p.trim());
-      const newScanPaths = [...cleanPaths.filter(p => !existingPaths.includes(p)), ...existingPaths];
-      await api.saveConfig({ ...config, scan_paths: newScanPaths });
-      // 记录分类信息
+      // 只写入 media_libraries，不写入 scan_paths（媒体文件夹独立于媒体库路径）
       const res = await api.addLibrary({
         name: libName,
         category_tag: categoryTag,
