@@ -1,4 +1,4 @@
-# [当前] provider-download-phase7-todo.md
+# [废弃] provider-download-phase7-todo.md
 
 ## 范围
 

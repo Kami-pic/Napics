@@ -1,4 +1,4 @@
-# [当前] provider-bt-phase3-todo.md
+# [废弃] provider-bt-phase3-todo.md
 
 ## 范围
 

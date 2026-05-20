@@ -1,4 +1,4 @@
-# [TODO] provider-registry-phase2-todo.md
+# [废弃] provider-registry-phase2-todo.md
 
 ## 范围
 

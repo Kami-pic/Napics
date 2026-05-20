@@ -1,4 +1,4 @@
-# [TODO] provider-metadata-phase5-todo.md
+# [废弃] provider-metadata-phase5-todo.md
 
 ## 范围
 
