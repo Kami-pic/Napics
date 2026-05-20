@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
+import PathInput from "./PathInput";
 import type { AppConfig, AIFeaturesConfig, ProviderMetadata } from "@/types";
 
 // AI 服务商预设
@@ -138,7 +139,6 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               const libPathMap: Record<string, string> = {};
               (config.media_libraries || []).forEach(lib => {
                 lib.paths.forEach(p => {
-                  // 规范化路径用于匹配（统一反斜杠，去尾部斜杠）
                   const norm = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                   libPathMap[norm] = lib.category_tag;
                 });
@@ -147,28 +147,19 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                 const tag = libPathMap[normP] || "library";
                 return (
-                  <div key={i} className="group flex gap-1.5 mb-2 items-center">
-                    <button onClick={async () => {
-                      try { const res = await (await import("@/lib/api")).api.browseFolder(); if (res.path) updatePath(i, res.path); } catch {}
-                    }} title="选择文件夹" className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all flex-shrink-0">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-slate-400">
-                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                      </svg>
-                    </button>
-                    <div className="flex-1 flex items-center bg-white/[0.04] border border-white/[0.06] rounded-lg overflow-hidden focus-within:border-blue-500/30">
-                      <select value={tag} onChange={e => {
-                        const newTag = e.target.value;
-                        // 更新 media_libraries 中的标签
+                  <div key={i} className="mb-2">
+                    <PathInput
+                      value={p}
+                      onChange={v => updatePath(i, v)}
+                      tag={tag}
+                      onTagChange={newTag => {
                         const libs = [...(config.media_libraries || [])];
+                        const norm2 = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                         if (newTag === "library") {
-                          // 从 media_libraries 中移除
-                          const normP = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                          const newLibs = libs.filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normP));
+                          const newLibs = libs.filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === norm2));
                           setConfig({ ...config, media_libraries: newLibs });
                         } else {
-                          // 添加或更新到 media_libraries
-                          const normP2 = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
-                          const existing = libs.find(lib => lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normP2));
+                          const existing = libs.find(lib => lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === norm2));
                           if (existing) {
                             existing.category_tag = newTag;
                           } else {
@@ -177,40 +168,28 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                           }
                           setConfig({ ...config, media_libraries: libs });
                         }
-                      }} className="bg-transparent text-[10px] font-medium px-2 py-2 text-blue-400 outline-none cursor-pointer border-r border-white/[0.06] flex-shrink-0">
-                        <option value="library">媒体库</option>
-                        <option value="movie">电影</option>
-                        <option value="tv">电视剧</option>
-                        <option value="anime_tv">动画番剧</option>
-                        <option value="anime_movie">动画电影</option>
-                        <option value="variety">综艺</option>
-                        <option value="other">其他</option>
-                      </select>
-                      <input value={p} onChange={e => updatePath(i, e.target.value)} placeholder="选择或输入路径"
-                        className="flex-1 bg-transparent px-2.5 py-2 text-sm font-mono text-slate-300 outline-none placeholder:text-slate-600" />
-                      <button onClick={async () => {
+                      }}
+                      onDelete={async () => {
                         const remaining = paths.filter((_, j) => j !== i).filter(x => x.trim());
                         if (remaining.length === 0) {
                           if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
                           try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
                           setPaths([""]);
                           const resetConfig = { ...config, scan_paths: [], media_libraries: [] };
-                          await (await import("@/lib/api")).api.saveConfig(resetConfig);
+                          await api.saveConfig(resetConfig);
                           setConfig(resetConfig);
                           onClose();
                           window.location.reload();
                         } else {
                           if (!confirm(`确定删除路径 "${p}" ？`)) return;
-                          // 同时从 media_libraries 中移除（规范化路径后比较）
                           const normDel = p.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
                           const newLibs = (config.media_libraries || []).filter(lib => !lib.paths.some(lp => lp.replace(/[\\/]+/g, "\\").replace(/\\$/, "") === normDel));
                           setConfig({ ...config, media_libraries: newLibs });
                           setPaths(remaining.length > 0 ? remaining : [""]);
                         }
-                      }} className="w-7 h-7 flex items-center justify-center text-red-400/0 group-hover:text-red-400/60 hover:!text-red-400 transition-all flex-shrink-0 mr-0.5">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                      </button>
-                    </div>
+                      }}
+                      placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
+                    />
                   </div>
                 );
               });

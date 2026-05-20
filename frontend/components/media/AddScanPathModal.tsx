@@ -2,6 +2,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import PathInput from "@/components/settings/PathInput";
 
 interface AddScanPathModalProps {
   open: boolean;
@@ -17,13 +18,6 @@ export default function AddScanPathModal({ open, onClose, onSuccess }: AddScanPa
 
   const reset = useCallback(() => { setPaths([""]); setExcludeDirs(""); setError(""); }, []);
   const handleClose = useCallback(() => { reset(); onClose(); }, [reset, onClose]);
-
-  const handleBrowse = useCallback(async (index: number) => {
-    try {
-      const res = await api.browseFolder();
-      if (res.path) { const n = [...paths]; n[index] = res.path; setPaths(n); }
-    } catch {}
-  }, [paths]);
 
   const handleSubmit = useCallback(async () => {
     const cleanPaths = paths.map(p => p.trim()).filter(Boolean);
@@ -55,19 +49,13 @@ export default function AddScanPathModal({ open, onClose, onSuccess }: AddScanPa
         <div className="mb-4">
           <label className="text-sm text-slate-300 mb-2 block font-medium">扫描路径</label>
           {paths.map((p, i) => (
-            <div key={i} className="flex gap-2 mb-2">
-              <input value={p} onChange={e => { const n = [...paths]; n[i] = e.target.value; setPaths(n); }}
-                placeholder="选择或输入文件夹路径"
-                className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30 placeholder:text-slate-600" />
-              <button onClick={() => handleBrowse(i)} title="选择文件夹"
-                className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-slate-400">
-                  <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-              </button>
-              {paths.length > 1 && (
-                <button onClick={() => setPaths(paths.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 text-xs px-1">✕</button>
-              )}
+            <div key={i} className="mb-2">
+              <PathInput
+                value={p}
+                onChange={v => { const n = [...paths]; n[i] = v; setPaths(n); }}
+                onDelete={paths.length > 1 ? () => setPaths(paths.filter((_, j) => j !== i)) : undefined}
+                placeholder="如 Z:\Movies 或 \\NAS\media 或 /volume1/video"
+              />
             </div>
           ))}
           <button onClick={() => setPaths([...paths, ""])} className="text-xs text-blue-400 hover:text-blue-300">+ 添加路径</button>
