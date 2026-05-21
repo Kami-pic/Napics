@@ -883,3 +883,44 @@
 **验证**:
 - `python -X utf8 -m pytest test_search_transfer_private_boundary.py test_provider_api.py test_pan_search_provider_adapter.py test_pan_search_service_provider_bridge.py test_provider_contracts.py test_provider_registry.py`
 - 结果：`30 passed`
+
+---
+
+## 2026-05-21 插件生态 Phase 1-2a + 新用户体验 P0 收口
+
+**变更**:
+
+### 插件生态 Phase 1：外部插件源加载
+- `config_manager.py` 新增 `PluginSourceConfig` 模型和 `plugin_sources` 字段
+- `plugin_manager.py` 新增远程源拉取（`fetch_remote_index`）、下载安装（`install_remote_plugin`）、卸载删除（`uninstall_remote_plugin`）、GitHub URL 自动转换（`_normalize_source_url`）
+- `routes/plugins.py` 新增 5 个 API 端点：插件源 CRUD（GET/POST/DELETE /sources）+ 远程插件列表（GET /sources/plugins）+ 远程安装（POST /install-remote）
+- 前端插件中心新增"内置/第三方"Tab 切换、`AddSourceModal` 添加插件源弹窗、`RemotePluginList` 远程插件列表组件
+- 安装流程：下载 zip → SHA256 校验 → 解压到 plugins/ → 校验 manifest → 注册 provider
+- 安全：安装第三方插件时弹警告提示
+
+### 插件生态 Phase 2a：社区插件仓库
+- 创建 `icatmiumiu/plugins-of-napics` 仓库（小号，公开）
+- `search-bt-direct` 插件：12 个 BT 直搜源（Bitsearch/Nyaa/蜜柑/磁力熊/YTS/1337x 等）
+- `search-pan` 插件：9 个网盘搜索源（pansearch/rrdynb/gogopanso/ddys 等）
+- 生成 `index.json` 插件源清单 + Release v1.0.0 + zip 包上传
+- 端到端验证通过：拉取源 → 下载 zip → 解压 → 12 个 provider 注册 → 卸载 → 降级正常
+
+### 新用户体验 P0 收口
+- 新增 `SetupWizardModal`：首次扫描完成后弹出配置引导（TMDB API Key + 代理 + 跳过）
+- TMDB Key 输入框带测试按钮（实时验证连接）
+- 跳过后记录 localStorage，不再重复弹出
+- 触发条件：扫描从进行中变为完成 + 有媒体内容 + TMDB Key 未配置 + 未跳过过
+
+**决策**:
+- 三层仓库架构：主仓库（开源 Core）+ 社区仓库（小号，灰色插件）+ napics-pro（闭源付费插件，未来）
+- 主仓库预装低风险插件（metadata-tmdb/bangumi、feature-*、download-qbittorrent）
+- 高风险插件（BT 直搜/网盘搜/RSS/豆瓣）通过外部插件源安装
+- 不做运行时 License 验证（离线友好），靠持续更新留住付费用户
+- 不做 Python 沙箱（不现实），靠安全警告 + 社区信任
+- GitHub URL 自动转换为 raw.githubusercontent.com/main/index.json
+
+**测试**: 后端 19+5 passed（plugin_sources + remote_install_e2e），前端构建通过，getDiagnostics 零错误
+
+**文档更新**:
+- 新增 `.kiro/docs/plugin-ecosystem-todo.md`（插件生态与商业化规划）
+- 更新 `.kiro/docs/new-user-experience-todo.md`（P0 全部标记完成）
