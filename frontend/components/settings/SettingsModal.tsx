@@ -87,7 +87,9 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   const [aiTesting, setAiTesting] = useState(false);
   const [aiUsage, setAiUsage] = useState<Record<string, { calls: number; tokens: number }>>({});
   const [aiExpanded, setAiExpanded] = useState(false);
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
+  const [connTest, setConnTest] = useState<Record<string, "idle" | "testing" | "ok" | "fail">>({});
   const plugins = useInstalledPlugins();
 
   useEffect(() => {
@@ -106,6 +108,37 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   if (!open) return null;
   const updatePath = (i: number, v: string) => { const n = [...paths]; n[i] = v; setPaths(n); };
   const recycleBinPlaceholder = getDefaultRecycleBinPlaceholder(paths);
+
+  const testConnection = async (key: string) => {
+    setConnTest(prev => ({ ...prev, [key]: "testing" }));
+    try {
+      if (key === "tmdb") {
+        const resp = await fetch(`https://api.themoviedb.org/3/configuration?api_key=${(config.tmdb_api_key || "").trim()}`, { signal: AbortSignal.timeout(8000) });
+        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
+      } else if (key === "prowlarr") {
+        const resp = await fetch(`${(config.prowlarr_url || "").replace(/\/$/, "")}/api/v1/health?apikey=${(config.prowlarr_api_key || "").trim()}`, { signal: AbortSignal.timeout(5000) });
+        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
+      } else if (key === "qb") {
+        const resp = await fetch(`${(config.qb_url || "").replace(/\/$/, "")}/api/v2/app/version`, { signal: AbortSignal.timeout(5000) });
+        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
+      } else if (key === "alist") {
+        const resp = await fetch(`${(config.alist_url || "").replace(/\/$/, "")}/api/me`, { headers: { Authorization: config.alist_token || "" }, signal: AbortSignal.timeout(5000) });
+        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
+      }
+    } catch {
+      setConnTest(prev => ({ ...prev, [key]: "fail" }));
+    }
+  };
+
+  const ConnTestBtn = ({ testKey, disabled }: { testKey: string; disabled?: boolean }) => {
+    const st = connTest[testKey];
+    return (
+      <button onClick={() => testConnection(testKey)} disabled={disabled || st === "testing"}
+        className="px-2 py-1 rounded text-[10px] bg-white/[0.04] hover:bg-white/[0.08] text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-all flex-shrink-0">
+        {st === "testing" ? "..." : st === "ok" ? "✓ 连接成功" : st === "fail" ? "✗ 失败" : "测试"}
+      </button>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-8 z-50"
@@ -341,14 +374,17 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 /* 其他分组：正常渲染字段 */
                 g.fields.map(f => {
                 const val = (config as any)[f.key] || "";
+                const testKeyMap: Record<string, string> = { tmdb_api_key: "tmdb", prowlarr_url: "prowlarr", qb_url: "qb", alist_url: "alist" };
+                const testKey = testKeyMap[f.key];
                 return (
                   <div key={f.key} className="mb-3">
                     <div className="flex items-center gap-2">
                       <label className="text-sm font-medium text-slate-300">{f.label}</label>
                       {f.link && val && <a href={val} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300">打开 ↗</a>}
+                      {testKey && val && <ConnTestBtn testKey={testKey} disabled={!val.trim()} />}
                     </div>
                     <p className="text-xs text-slate-600 mt-0.5 mb-1.5">{f.desc}</p>
-                    <input value={val} onChange={e => setConfig({ ...config, [f.key]: e.target.value })} type={f.type || "text"}
+                    <input value={val} onChange={e => { setConfig({ ...config, [f.key]: e.target.value }); if (testKey) setConnTest(prev => ({ ...prev, [testKey]: "idle" })); }} type={f.type || "text"}
                       className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
                   </div>
                 );
@@ -360,6 +396,15 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
 
           {/* 播放器路径 */}
           <div className="pt-3 border-t border-white/[0.06]">
+            <button onClick={() => setAdvancedExpanded(!advancedExpanded)}
+              className="flex items-center gap-2 w-full text-left">
+              <span className={`text-[10px] text-slate-600 transition-transform ${advancedExpanded ? "rotate-90" : ""}`}>▶</span>
+              <label className="text-sm font-medium text-slate-400 cursor-pointer">高级设置</label>
+            </button>
+          </div>
+          {advancedExpanded && (
+          <>
+          <div>
             <label className="text-sm font-medium text-slate-300">播放器路径</label>
             <p className="text-xs text-slate-600 mt-0.5 mb-1.5">本地视频播放器可执行文件路径</p>
             <input value={config.player_path || ""} onChange={e => setConfig({ ...config, player_path: e.target.value })}
@@ -426,6 +471,8 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         <div className="mt-6 flex gap-3">
