@@ -419,7 +419,7 @@ export default function CardGrid({
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <p className="text-[15px] font-semibold text-white truncate flex items-center gap-1.5">
                       {!v.shadow_name && !v.organize_status && <span title="未整理" className="inline-block w-2 h-2 rounded-full bg-slate-500 flex-shrink-0" />}
-                      {v.organize_status === "scrape_failed" && <span title="刮削失败" className="text-orange-400 flex-shrink-0">⚠</span>}
+                      {v.organize_status === "scrape_failed" && <span title="识别失败" className="text-orange-400 flex-shrink-0">⚠</span>}
                       {v.file_name}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">{v.resolution} · {formatSize(v.size_gb)}</p>

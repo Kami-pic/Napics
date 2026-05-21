@@ -2,6 +2,7 @@
 "use client";
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { SubscriptionItem, EpisodeInfo } from "@/hooks/useSubscriptions";
+import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { api } from "@/lib/api";
 import { proxyUrl } from "./discoverUtils";
 import SubscribeCalendar from "./SubscribeCalendar";
@@ -28,6 +29,7 @@ export default function SubscribeInline({ subscriptions, onRefresh, onOpenSearch
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [calendarData, setCalendarData] = useState<CalendarEntry[]>([]);
   const calendarLoaded = useRef(false);
+  const plugins = useInstalledPlugins();
   const view = externalView || "list";
   const filter = externalFilter || "all";
 
@@ -127,7 +129,16 @@ export default function SubscribeInline({ subscriptions, onRefresh, onOpenSearch
       {view === "calendar" && <SubscribeCalendar />}
 
       {view === "list" && (filtered.length === 0 ? (
-        <p className="text-center py-16 text-sm text-slate-600">暂无订阅</p>
+        !plugins.hasSubscribe ? (
+          <div className="flex flex-col items-center py-16">
+            <span className="text-3xl mb-3">📡</span>
+            <p className="text-sm text-slate-300 mb-1">未安装订阅源插件</p>
+            <p className="text-xs text-slate-500">安装 RSS 订阅源插件后可自动追更新番和剧集</p>
+            <p className="text-[10px] text-slate-600 mt-3">插件中心入口：侧边栏底部 🧩</p>
+          </div>
+        ) : (
+          <p className="text-center py-16 text-sm text-slate-600">暂无订阅，在推荐或探索中点击「订阅」开始追更</p>
+        )
       ) : (
         <div className="space-y-3">
           {filtered.map(sub => {

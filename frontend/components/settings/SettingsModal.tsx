@@ -16,7 +16,7 @@ const AI_PRESETS: { label: string; base_url: string; hint: string }[] = [
 // AI 场景描述
 const AI_FEATURE_LIST: { key: keyof AIFeaturesConfig; label: string; desc: string; phase: 1 | 2 }[] = [
   { key: "extract_episode", label: "文件名智能解析", desc: "整理时自动识别乱码文件名", phase: 1 },
-  { key: "scrape_candidate", label: "刮削候选匹配", desc: "批量刮削时自动选择最佳候选", phase: 1 },
+  { key: "scrape_candidate", label: "识别候选匹配", desc: "批量识别时自动选择最佳候选", phase: 1 },
   { key: "library_diagnosis", label: "媒体库诊断", desc: "AI 分析媒体库健康状况", phase: 1 },
   { key: "search_recommend", label: "搜索结果推荐", desc: "标记最值得下载的资源", phase: 2 },
   { key: "natural_search", label: "自然语言搜索", desc: "用自然语言描述想找的片", phase: 2 },
@@ -383,7 +383,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
             )}
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-300">刮削缓存</label>
+                <label className="text-sm font-medium text-slate-300">识别缓存</label>
                 <p className="text-xs text-slate-600 mt-0.5">
                   {cacheInfo ? `${cacheInfo.file_count} 个文件，${cacheInfo.size_mb} MB` : "加载中..."}
                   {cacheInfo && cacheInfo.size_mb > 100 && <span className="text-yellow-400 ml-2">⚠ 缓存较大</span>}

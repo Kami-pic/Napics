@@ -47,7 +47,7 @@ export default function EpisodeList({ videos, selectedPaths, onToggleSelect, onP
             <span className="text-xs text-slate-600 font-mono w-7 flex-shrink-0">{String(idx + 1).padStart(2, '0')}</span>
             <p className="text-[14px] text-slate-300 truncate flex-1 flex items-center gap-1.5">
               {!v.shadow_name && !v.organize_status && <span title="未整理" className="inline-block w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0" />}
-              {v.organize_status === "scrape_failed" && <span title="刮削失败" className="text-orange-400 text-xs flex-shrink-0">⚠</span>}
+              {v.organize_status === "scrape_failed" && <span title="识别失败" className="text-orange-400 text-xs flex-shrink-0">⚠</span>}
               {v.file_name}
             </p>
             <span className="text-xs text-slate-600 flex-shrink-0">{v.resolution}</span>

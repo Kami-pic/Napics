@@ -148,7 +148,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           }
           msg += `\n类型: ${res.folder_type || "unknown"}`;
           if (wrapPlan.length) msg += `\n📦 封装: ${wrapPlan.length} 项`;
-          if (archivePlan.length) msg += `\n🗑️ 旧刮削清理: ${archivePlan.length} 个目录`;
+          if (archivePlan.length) msg += `\n🗑️ 旧数据清理: ${archivePlan.length} 个目录`;
           if (summary.total_videos) {
             msg += `\n\n📊 视频: ${summary.total_videos} 个`;
             msg += `\n✅ 将处理: ${summary.will_process} 个`;
@@ -187,8 +187,8 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
             const steps = res.steps || {};
             let msg = "整理完成";
             if (steps.wrap) msg += `\n封装: ${steps.wrap} 项`;
-            if (steps.archive) msg += `\n旧刮削清理: ${steps.archive} 项`;
-            if (steps.scrape?.nfo_written) msg += `\n刮削: ${steps.scrape.nfo_written} 个 NFO`;
+            if (steps.archive) msg += `\n旧数据清理: ${steps.archive} 项`;
+            if (steps.scrape?.nfo_written) msg += `\n识别: ${steps.scrape.nfo_written} 个 NFO`;
             if (steps.structure?.moved) msg += `\n结构归位: ${steps.structure.moved} 项`;
             if (steps.shadow) msg += `\n标准化名称: ${steps.shadow} 项`;
             setActionResult(msg);
@@ -288,8 +288,8 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           </select>
         </div>
       )}
-      {/* 刮削内容：只在末端刮削单元（movie/tv/season）时显示 */}
-      {!isAggregate && scrapeLoading && <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-500/10 border border-blue-500/20"><div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" /><span className="text-xs text-blue-400">正在刮削...</span></div>}
+      {/* 识别信息：只在末端识别单元（movie/tv/season）时显示 */}
+      {!isAggregate && scrapeLoading && <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-500/10 border border-blue-500/20"><div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" /><span className="text-xs text-blue-400">正在识别...</span></div>}
       {!isAggregate && scrapeStatus === "success" && !scrapeLoading && scrape && (scrape.tmdb_id > 0 || scrape.title) && <><div className="text-xs text-green-400/70">✓ {scrape.title || "已匹配"}</div><ScrapeInfo data={scrape} /></>}
       {!isAggregate && confidence && <ConfidenceBadge confidence={confidence} pendingConfirm={pendingConfirm} onConfirm={() => setPendingConfirm(false)} onReject={() => { setPendingConfirm(false); }} />}
       {/* movie 类型显示视频级标准名，tv/season 显示文件夹级标准名 */}
@@ -380,12 +380,12 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         return isAggregate ? (
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
-            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">一键刮削</button>
+            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">自动识别</button>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
-            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">一键刮削</button>
+            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">自动识别</button>
             <CandidatePicker name={node.clean_name || node.videos[0]?.clean_name || node.name} path={node.path} onSelected={(d) => { if (d) setScrapeData(d); setPosterKey(k => k + 1); refreshFolderTree(); }} />
           </div>
         );
@@ -471,7 +471,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
       <InfoRow label="路径" value={node.path} />
       {!isRoot && !isAggregate && (
         <button onClick={toggleNoScrape} className={`w-full py-2 rounded-lg text-xs transition-all ${noScrape ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/[0.04] text-slate-500 hover:bg-white/[0.06]"}`}>
-          {noScrape ? "🚫 已禁止刮削（点击解除）" : "禁止刮削此文件夹"}
+          {noScrape ? "🚫 已禁止识别（点击解除）" : "禁止识别此文件夹"}
         </button>
       )}
     </div>

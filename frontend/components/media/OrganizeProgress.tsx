@@ -11,7 +11,7 @@ interface Props {
   onComplete: () => void;
 }
 
-const STEP_LABELS = ["", "散装视频封装", "旧刮削清理", "分析判定", "刮削确权", "结构归位"];
+const STEP_LABELS = ["", "散装视频封装", "旧数据清理", "分析判定", "识别匹配", "结构归位"];
 
 export default function OrganizeProgress({ open, path, onClose, onComplete }: Props) {
   const [events, setEvents] = useState<OrganizeProgressEvent[]>([]);

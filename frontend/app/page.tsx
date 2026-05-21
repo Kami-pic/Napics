@@ -324,6 +324,15 @@ export default function Home() {
               <DiscoverPage onSelectMedia={handleSelectDoubanMedia} onNavigateToLocal={handleNavigateToLocal} visible={discoverVisible} scrollContainerRef={scrollContainerRef} defaultSavePath={config.scan_paths?.[0] || ""} />
             </div>
           )}
+          {/* 发现区域空状态：无 discover 插件时引导 */}
+          {(!currentFolder || currentFolder.path === "") && !plugins.hasDiscover && stats.total > 0 && (
+            <div className="mt-10 flex flex-col items-center py-12 border border-dashed border-white/[0.06] rounded-2xl">
+              <span className="text-3xl mb-3">🎬</span>
+              <p className="text-sm text-slate-300 mb-1">发现更多影视内容</p>
+              <p className="text-xs text-slate-500">安装「发现推荐」插件解锁热门推荐、探索筛选和订阅追更</p>
+              <p className="text-[10px] text-slate-600 mt-3">插件中心入口：侧边栏底部 🧩</p>
+            </div>
+          )}
         </div>
       </div>
 

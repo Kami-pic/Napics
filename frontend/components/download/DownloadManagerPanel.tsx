@@ -373,7 +373,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                         <button onClick={() => handleExecuteAction("full_wash")} disabled={!!confirmingId}
                           className="w-full py-2.5 rounded-xl text-[11px] font-bold bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
                           {confirmingId === dryRunData.taskId ? <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : null}
-                          一键整理并刮削
+                          一键整理并识别
                         </button>
                         <p className="text-[8px] text-slate-600 mt-1.5 text-center">旧文件→回收站，新文件→标准化改名 + NFO + 海报</p>
                       </div>

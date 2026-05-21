@@ -5,6 +5,7 @@ import PanResultsView from "./PanResultsView";
 import BtResultCard from "./BtResultCard";
 import SearchHeader from "./SearchHeader";
 import { useSearchState } from "./useSearchState";
+import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { api } from "@/lib/api";
 
 interface SearchModalProps {
@@ -35,8 +36,12 @@ export default function SearchModal({
     open, query, defaultSavePath, currentResolution, mediaType,
     cnName, enName, originalName, folderType, seasonNumber, episodeTag,
   });
+  const plugins = useInstalledPlugins();
 
   if (!open) return null;
+
+  // 无搜索源插件时的引导
+  const noSearchPlugin = !plugins.hasSearch && !plugins.hasPanSearch;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">
@@ -53,7 +58,14 @@ export default function SearchModal({
 
         {/* 结果列表 */}
         <div className="flex-1 overflow-y-auto p-5">
-          {s.activeTab === "bt" ? (
+          {noSearchPlugin ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <span className="text-3xl mb-4">🔍</span>
+              <p className="text-sm text-slate-300 mb-2">未安装搜索源插件</p>
+              <p className="text-xs text-slate-500 mb-4">在插件中心安装 BT 搜索源或网盘搜索源后即可搜索资源</p>
+              <p className="text-[10px] text-slate-600">插件中心入口：侧边栏底部 🧩</p>
+            </div>
+          ) : s.activeTab === "bt" ? (
             /* ── BT/磁力 Tab ── */
             <>
           {(s.btActiveSource === "all" ? s.searching : s.sourceTabStates[s.btActiveSource]?.searching) ? (

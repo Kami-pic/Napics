@@ -109,7 +109,7 @@ export default function AnalysisReport({ open, onClose }: Props) {
               <StatCard label="文件夹" value={summary.total_folders} icon="📁" />
               <StatCard label="结构问题" value={summary.structure_issues} icon="🏗️" warn />
               <StatCard label="命名问题" value={summary.rename_issues} icon="✏️" warn />
-              <StatCard label="刮削缺失" value={summary.scrape_issues} icon="🎬" warn />
+              <StatCard label="识别缺失" value={summary.scrape_issues} icon="🎬" warn />
               <StatCard label="质量问题" value={summary.quality_issues} icon="📊" warn />
               <StatCard label="标准化名称" value={summary.shadow_name_issues} icon="👤" warn />
             </div>
