@@ -23,6 +23,7 @@ import PluginCenter from "@/components/plugins/PluginCenter";
 import EmptyLibraryGuide from "@/components/media/EmptyLibraryGuide";
 import AddLibraryModal from "@/components/media/AddLibraryModal";
 import AddScanPathModal from "@/components/media/AddScanPathModal";
+import SetupWizardModal from "@/components/settings/SetupWizardModal";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { api } from "@/lib/api";
 import type { VideoInfo, FolderNode } from "@/types";
@@ -110,6 +111,7 @@ export default function Home() {
   const [showDownloadManager, setShowDownloadManager] = useState(false);
   const [showPlugins, setShowPlugins] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -117,6 +119,18 @@ export default function Home() {
   useEffect(() => {
     if (!currentFolder || currentFolder.path === "") closeDetail();
   }, [currentFolder]);
+
+  // 首次扫描完成后弹出配置引导（TMDB Key 未配置 + 未跳过过）
+  const prevScanningRef = useRef(false);
+  useEffect(() => {
+    if (prevScanningRef.current && !scanning && stats.total > 0) {
+      const setupDone = localStorage.getItem("napics_setup_done");
+      if (!setupDone && !config.tmdb_api_key) {
+        setShowSetupWizard(true);
+      }
+    }
+    prevScanningRef.current = scanning;
+  }, [scanning, stats.total, config.tmdb_api_key]);
 
   const handlePlay = (path: string) => api.play(path).catch(() => alert("启动播放器失败"));
   const handleOpenSearch = (query: string, ctx?: { shadowName?: string; cleanName?: string; mediaType?: string; cnName?: string; enName?: string; originalName?: string; folderType?: string; seasonNumber?: number; episodeTag?: string; savePath?: string }) => {
@@ -388,6 +402,10 @@ export default function Home() {
       <DownloadManagerPanel open={showDownloadManager} onClose={() => setShowDownloadManager(false)} />
 
       <PluginCenter open={showPlugins} onClose={() => setShowPlugins(false)} />
+
+      <SetupWizardModal open={showSetupWizard} config={config}
+        onClose={() => { setShowSetupWizard(false); localStorage.setItem("napics_setup_done", "1"); }}
+        onSaved={(newConfig) => { setConfig(newConfig); setShowSetupWizard(false); localStorage.setItem("napics_setup_done", "1"); }} />
 
       {batchMode && selectedPaths.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40">
