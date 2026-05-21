@@ -9,12 +9,16 @@
 
 import importlib
 import importlib.util
+import io
 import json
 import logging
 import os
+import shutil
 import sys
+import zipfile
 from typing import Any, Dict, List, Optional
 
+import requests
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -50,6 +54,31 @@ class PluginInfo(BaseModel):
     provides: List[str] = Field(default_factory=list)
     risk_level: str = "low"
     installed: bool = False
+    source: str = "builtin"  # builtin / remote
+
+
+class RemotePluginInfo(BaseModel):
+    """远程插件源中的插件信息"""
+    id: str
+    name: str = ""
+    version: str = "1.0.0"
+    description: str = ""
+    category: str = ""
+    icon: str = ""
+    risk_level: str = "low"
+    depends_on: List[str] = Field(default_factory=list)
+    download_url: str = ""
+    sha256: str = ""
+    min_napics_version: str = ""
+
+
+class PluginSourceIndex(BaseModel):
+    """远程插件源 index.json 结构"""
+    name: str = ""
+    version: str = "1.0.0"
+    description: str = ""
+    homepage: str = ""
+    plugins: List[RemotePluginInfo] = Field(default_factory=list)
 
 
 class PluginManager:
@@ -100,6 +129,7 @@ class PluginManager:
                 provides=manifest.provides,
                 risk_level=manifest.risk_level,
                 installed=manifest.id in installed_plugins,
+                source="builtin",
             ))
         return result
 
@@ -259,3 +289,168 @@ class PluginManager:
                 err = self._load_plugin_module(plugin_id)
                 if err:
                     logger.error(f"[PluginManager] 启动加载插件 {plugin_id} 失败: {err}")
+
+    # ── 远程插件源管理 ──
+
+    def fetch_remote_index(self, source_url: str, proxy: str = "") -> Dict[str, Any]:
+        """拉取远程插件源的 index.json。
+
+        返回 {"success": True, "index": PluginSourceIndex} 或 {"success": False, "error": ...}
+        """
+        try:
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+            # 支持 GitHub 仓库 URL 自动转换为 raw index.json
+            url = self._normalize_source_url(source_url)
+            resp = requests.get(url, timeout=15, proxies=proxies)
+            resp.raise_for_status()
+            data = resp.json()
+            index = PluginSourceIndex(**data)
+            return {"success": True, "index": index}
+        except requests.RequestException as e:
+            logger.error(f"[PluginManager] 拉取远程插件源失败 {source_url}: {e}")
+            return {"success": False, "error": f"网络请求失败: {str(e)}"}
+        except Exception as e:
+            logger.error(f"[PluginManager] 解析远程插件源失败 {source_url}: {e}")
+            return {"success": False, "error": f"解析失败: {str(e)}"}
+
+    def install_remote_plugin(
+        self,
+        plugin_info: RemotePluginInfo,
+        installed_plugins: List[str],
+        proxy: str = "",
+    ) -> Dict[str, Any]:
+        """从远程源下载并安装插件。
+
+        流程：下载 zip → 解压到 plugins/ → 校验 manifest → 注册
+        """
+        plugin_id = plugin_info.id
+
+        if plugin_id in self._manifests and plugin_id in installed_plugins:
+            return {"success": False, "error": "already_installed", "message": f"插件 {plugin_id} 已安装"}
+
+        if not plugin_info.download_url:
+            return {"success": False, "error": "no_download_url", "message": "插件缺少下载地址"}
+
+        # 下载 zip
+        try:
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+            resp = requests.get(plugin_info.download_url, timeout=60, proxies=proxies)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            return {"success": False, "error": "download_failed", "message": f"下载失败: {str(e)}"}
+
+        # SHA256 校验（如果提供了）
+        if plugin_info.sha256:
+            import hashlib
+            actual_hash = hashlib.sha256(resp.content).hexdigest()
+            if actual_hash != plugin_info.sha256:
+                return {
+                    "success": False,
+                    "error": "hash_mismatch",
+                    "message": f"文件校验失败（期望 {plugin_info.sha256[:16]}...，实际 {actual_hash[:16]}...）",
+                }
+
+        # 解压到 plugins/ 目录
+        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        try:
+            # 如果已存在旧版本，先备份
+            if os.path.isdir(plugin_dir):
+                backup_dir = plugin_dir + ".bak"
+                if os.path.isdir(backup_dir):
+                    shutil.rmtree(backup_dir)
+                os.rename(plugin_dir, backup_dir)
+
+            # 解压
+            zip_buffer = io.BytesIO(resp.content)
+            with zipfile.ZipFile(zip_buffer, "r") as zf:
+                # 检测 zip 内是否有单层根目录
+                top_dirs = set()
+                for name in zf.namelist():
+                    parts = name.split("/")
+                    if len(parts) > 1:
+                        top_dirs.add(parts[0])
+                    else:
+                        top_dirs.add("")
+
+                if len(top_dirs) == 1 and "" not in top_dirs:
+                    # zip 内有单层根目录，解压后重命名
+                    zf.extractall(PLUGINS_DIR)
+                    extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
+                    if extracted_dir != plugin_dir:
+                        if os.path.isdir(plugin_dir):
+                            shutil.rmtree(plugin_dir)
+                        os.rename(extracted_dir, plugin_dir)
+                else:
+                    # zip 内无根目录，直接解压到目标目录
+                    os.makedirs(plugin_dir, exist_ok=True)
+                    zf.extractall(plugin_dir)
+
+            # 清理备份
+            backup_dir = plugin_dir + ".bak"
+            if os.path.isdir(backup_dir):
+                shutil.rmtree(backup_dir)
+
+        except Exception as e:
+            # 恢复备份
+            backup_dir = plugin_dir + ".bak"
+            if os.path.isdir(backup_dir):
+                if os.path.isdir(plugin_dir):
+                    shutil.rmtree(plugin_dir)
+                os.rename(backup_dir, plugin_dir)
+            return {"success": False, "error": "extract_failed", "message": f"解压失败: {str(e)}"}
+
+        # 校验 manifest.json 存在
+        manifest_path = os.path.join(plugin_dir, "manifest.json")
+        if not os.path.isfile(manifest_path):
+            shutil.rmtree(plugin_dir)
+            return {"success": False, "error": "no_manifest", "message": "插件包中缺少 manifest.json"}
+
+        # 重新加载 manifest
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            manifest = PluginManifest(**data)
+            self._manifests[manifest.id] = manifest
+        except Exception as e:
+            shutil.rmtree(plugin_dir)
+            return {"success": False, "error": "invalid_manifest", "message": f"manifest.json 无效: {str(e)}"}
+
+        # 加载插件模块
+        load_err = self._load_plugin_module(plugin_id)
+        if load_err:
+            logger.warning(f"[PluginManager] 远程插件 {plugin_id} 模块加载失败（可能是纯声明式）: {load_err}")
+
+        logger.info(f"[PluginManager] 远程插件 {plugin_id} 安装成功")
+        return {"success": True, "plugin_id": plugin_id}
+
+    def uninstall_remote_plugin(self, plugin_id: str, installed_plugins: List[str]) -> Dict[str, Any]:
+        """卸载远程插件（卸载 + 删除文件）"""
+        result = self.uninstall(plugin_id, installed_plugins)
+        if not result["success"]:
+            return result
+
+        # 删除插件目录
+        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        if os.path.isdir(plugin_dir):
+            try:
+                shutil.rmtree(plugin_dir)
+                self._manifests.pop(plugin_id, None)
+                logger.info(f"[PluginManager] 已删除远程插件目录: {plugin_dir}")
+            except Exception as e:
+                logger.warning(f"[PluginManager] 删除插件目录失败: {e}")
+
+        return result
+
+    @staticmethod
+    def _normalize_source_url(url: str) -> str:
+        """将 GitHub 仓库 URL 转换为 raw index.json URL"""
+        url = url.strip().rstrip("/")
+        # 已经是直接指向 json 文件的 URL
+        if url.endswith(".json"):
+            return url
+        # GitHub 仓库 URL → raw index.json
+        if "github.com" in url and "/raw/" not in url and "/releases/" not in url:
+            # https://github.com/user/repo → https://raw.githubusercontent.com/user/repo/main/index.json
+            url = url.replace("github.com", "raw.githubusercontent.com")
+            url += "/main/index.json"
+        return url

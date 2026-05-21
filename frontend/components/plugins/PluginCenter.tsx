@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { fetchPlugins, installPlugin, uninstallPlugin, type PluginInfo } from "@/lib/api/plugins";
 import PluginCard from "./PluginCard";
 import PluginConfigModal from "./PluginConfigModal";
+import RemotePluginList from "./RemotePluginList";
+import AddSourceModal from "./AddSourceModal";
 
 interface PluginCenterProps {
   open: boolean;
@@ -27,6 +29,8 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
   const [configPlugin, setConfigPlugin] = useState<PluginInfo | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [showRemote, setShowRemote] = useState(false);
+  const [showAddSource, setShowAddSource] = useState(false);
 
   const loadPlugins = useCallback(async () => {
     setLoading(true);
@@ -103,49 +107,78 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
           </button>
         </div>
 
-        {/* 分类 Tab */}
-        <div className="flex gap-1 px-6 py-3 border-b border-white/[0.06] overflow-x-auto no-scrollbar">
-          {CATEGORIES.map(cat => (
-            <button key={cat.key} onClick={() => setActiveCategory(cat.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${
-                activeCategory === cat.key
-                  ? "bg-blue-500/15 text-blue-400 font-medium"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
-              }`}>
-              {cat.label}
-            </button>
-          ))}
+        {/* 内置/第三方 切换 */}
+        <div className="flex items-center gap-1 px-6 py-2 border-b border-white/[0.06]">
+          <button onClick={() => setShowRemote(false)}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+              !showRemote ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+            }`}>
+            内置插件
+          </button>
+          <button onClick={() => setShowRemote(true)}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+              showRemote ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+            }`}>
+            第三方插件源
+          </button>
         </div>
 
-        {/* 错误提示 */}
-        {error && (
-          <div className="mx-6 mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
-            {error}
-            <button onClick={() => setError("")} className="ml-2 text-red-500 hover:text-red-300">✕</button>
-          </div>
+        {!showRemote && (
+          <>
+            {/* 分类 Tab */}
+            <div className="flex gap-1 px-6 py-3 border-b border-white/[0.06] overflow-x-auto no-scrollbar">
+              {CATEGORIES.map(cat => (
+                <button key={cat.key} onClick={() => setActiveCategory(cat.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${
+                    activeCategory === cat.key
+                      ? "bg-blue-500/15 text-blue-400 font-medium"
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                  }`}>
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 错误提示 */}
+            {error && (
+              <div className="mx-6 mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+                {error}
+                <button onClick={() => setError("")} className="ml-2 text-red-500 hover:text-red-300">✕</button>
+              </div>
+            )}
+
+            {/* 插件列表 */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-6 h-6 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-12 text-slate-600 text-sm">暂无插件</div>
+              ) : (
+                filtered.map(plugin => (
+                  <PluginCard
+                    key={plugin.id}
+                    plugin={plugin}
+                    loading={actionLoading === plugin.id}
+                    onInstall={() => handleInstall(plugin.id)}
+                    onUninstall={() => handleUninstall(plugin.id)}
+                    onConfig={() => setConfigPlugin(plugin)}
+                  />
+                ))
+              )}
+            </div>
+          </>
         )}
 
-        {/* 插件列表 */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-slate-600 text-sm">暂无插件</div>
-          ) : (
-            filtered.map(plugin => (
-              <PluginCard
-                key={plugin.id}
-                plugin={plugin}
-                loading={actionLoading === plugin.id}
-                onInstall={() => handleInstall(plugin.id)}
-                onUninstall={() => handleUninstall(plugin.id)}
-                onConfig={() => setConfigPlugin(plugin)}
-              />
-            ))
-          )}
-        </div>
+        {showRemote && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <RemotePluginList
+              onAddSource={() => setShowAddSource(true)}
+              onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
+            />
+          </div>
+        )}
       </div>
 
       {/* 配置弹窗 */}
@@ -154,6 +187,14 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
           plugin={configPlugin}
           onClose={() => setConfigPlugin(null)}
           onSaved={() => { setConfigPlugin(null); loadPlugins(); }}
+        />
+      )}
+
+      {/* 添加插件源弹窗 */}
+      {showAddSource && (
+        <AddSourceModal
+          onClose={() => setShowAddSource(false)}
+          onAdded={() => { setShowAddSource(false); }}
         />
       )}
     </div>

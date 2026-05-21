@@ -43,6 +43,12 @@ class MediaLibraryConfig(BaseModel):
     exclude_dirs: List[str] = []      # 该库独立的排除规则
 
 
+class PluginSourceConfig(BaseModel):
+    """外部插件源配置"""
+    name: str = ""                    # 源名称
+    url: str = ""                     # 源 index.json 的 URL
+
+
 class AppConfig(BaseModel):
     prowlarr_url: str = "http://127.0.0.1:9696"
     prowlarr_api_key: str = ""
@@ -85,6 +91,7 @@ class AppConfig(BaseModel):
     default_scrape_source: str = "tmdb"           # 默认刮削源 "tmdb" | "douban"
     # 插件系统
     installed_plugins: List[str] = []             # 已安装的插件 ID 列表
+    plugin_sources: List[PluginSourceConfig] = [] # 外部插件源列表
     # 下载监控目录（无下载器插件时的兜底方案）
     download_watch_dirs: List[str] = []           # 监控目录列表，新文件自动触发整理
 
