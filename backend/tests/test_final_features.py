@@ -66,7 +66,7 @@ def test_search_quality_score():
 def test_pick_best_douban():
     print("\n=== 2. _pick_best_douban_result 匹配算法 ===")
     try:
-        from routes.media_info import _pick_best_douban_result
+        from routes.media_detail import _pick_best_douban_result
 
         # 2.1 精确匹配
         results = [

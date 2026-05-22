@@ -1,5 +1,5 @@
 from provider_models import AliasSet, ArtworkInfo, MetadataDetail
-from routes import media_info as media_info_routes
+from routes import media_detail as media_info_routes
 from test_support.route_response_snapshot import RouteResponseSnapshot
 
 

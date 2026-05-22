@@ -15,7 +15,8 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   ├── library_tree.py # /library/tree（目录树构建）
 │   │   ├── library_crud.py # /library /library/* CRUD + completeness + quality + clean-name
 │   │   ├── scrape.py       # /scrape /scrape/select /scrape/read /scrape/execute /media/shadow-name
-│   │   ├── media_info.py   # /scrape/candidates /scrape/douban /scrape/bangumi /media/info（候选搜索+详情多源）
+│   │   ├── media_info.py   # /scrape/candidates /scrape/douban /scrape/bangumi（候选搜索+选择确认）
+│   │   ├── media_detail.py # /media/info（详情多源获取：TMDB/豆瓣/Bangumi）
 │   │   ├── poster.py       # /scrape/poster /proxy/image /scrape/upload-poster /scrape/poster-url /scrape/delete-poster
 │   │   ├── organize.py     # /organize/rename /organize/full /organize/rollback（整理+重命名+历史）
 │   │   ├── rename.py       # /rename（手动重命名，从 organize.py 拆分）

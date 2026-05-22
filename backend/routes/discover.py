@@ -18,7 +18,7 @@ from shared import (
 )
 import douban_client, bangumi_client, scraper
 import douban_api_v2
-from routes.media_info import AddMediaRequest
+from routes.media_detail import AddMediaRequest
 from discover_enrich import (
     inject_local_status, inject_clean_names, async_enrich_tmdb_ids, in_rating_range,
 )

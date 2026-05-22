@@ -27,7 +27,7 @@
 | 行数 | 文件 | 拆分方案 |
 |------|------|----------|
 | 1235 | `routes/library.py` | ✅ **已完成**。拆出 `routes/library_tree.py`（目录树构建，431 行）、`routes/library_crud.py`（CRUD+完整度+质量分，352 行），library.py 保留扫描同步（246 行） |
-| 842 | `routes/media_info.py` | 拆出候选搜索逻辑到 `routes/media_candidates.py` |
+| 842 | `routes/media_info.py` | ✅ **已完成**。拆出 `routes/media_detail.py`（详情多源获取，436 行），media_info.py 保留候选搜索+选择（321 行） |
 | 671 | `routes/scrape.py` | 拆出批量刮削到 `routes/scrape_batch.py` |
 | 660 | `routes/relocate.py` | 拆出 dry-run 推演逻辑到业务层 `file_relocator.py`（已有，检查是否下沉完全） |
 | 634 | `routes/organize.py` | 拆出 action plan 构建到业务层 |
