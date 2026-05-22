@@ -143,68 +143,80 @@ class TestBestMatchTypeDistinction(unittest.TestCase):
 class TestPickBestNewSignature(unittest.TestCase):
     """验证 _pick_best 新签名在 _try_tmdb_detail 中的调用正确性"""
 
-    @patch("routes.media_info.get_clients")
-    @patch("routes.media_info.douban_api_v2")
-    @patch("routes.media_info.douban_client")
-    def test_pick_best_passes_query(self, mock_douban_client, mock_douban_api, mock_get_clients):
+    @patch("routes.media_detail.douban_api_v2")
+    @patch("routes.media_detail.douban_client")
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_pick_best_passes_query(self, mock_provider_map, mock_douban_client, mock_douban_api):
         """_pick_best 应传入 query 参数给 best_match"""
-        from routes.media_info import _try_tmdb_detail
+        from routes.media_detail import _try_tmdb_detail
+        from provider_models import AliasSet, ArtworkInfo, MetadataDetail, MetadataCandidate
 
-        mock_tmdb = MagicMock()
-        mock_tmdb.search_movie.return_value = [{
-            "id": 27205,
-            "title": "盗梦空间",
-            "original_title": "Inception",
-            "release_date": "2010-07-16",
-            "popularity": 80.0,
-        }]
-        mock_detail = ScrapeResult(
-            tmdb_id=27205, title="盗梦空间", original_title="Inception",
-            english_title="Inception", year="2010", rating=8.8,
+        # 构造 fake provider
+        mock_provider = MagicMock()
+        fake_candidate = MetadataCandidate(
+            providerId="tmdb", externalId="27205", title="盗梦空间",
+            originalTitle="Inception", mediaType="movie", year=2010,
+            overview="", rating=8.8, posterUrl="",
+            aliases=AliasSet(en="Inception"),
+            extra={"id": 27205, "title": "盗梦空间", "original_title": "Inception",
+                   "release_date": "2010-07-16", "popularity": 80.0},
         )
-        mock_tmdb.get_movie_detail.return_value = mock_detail
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+        mock_provider.search_metadata.return_value = [fake_candidate]
+        fake_detail = MetadataDetail(
+            providerId="tmdb", externalId="27205", title="盗梦空间",
+            originalTitle="Inception", mediaType="movie", year=2010,
+            overview="", runtime=148, rating=8.8,
+            aliases=AliasSet(en="Inception"),
+            artwork=[ArtworkInfo(kind="poster", url="https://image.tmdb.org/t/p/w500/poster.jpg")],
+            extra={"genres": ["科幻"], "director": "Christopher Nolan", "imdb_id": "tt1375666"},
+        )
+        mock_provider.get_detail.return_value = fake_detail
+        mock_provider_map.return_value = {"tmdb": mock_provider}
         mock_douban_api.search.return_value = []
         mock_douban_client.search.return_value = []
 
-        with patch("routes.media_info.tmdb_client.best_match", wraps=best_match) as spy:
+        with patch("routes.media_detail.tmdb_client.best_match", wraps=best_match) as spy:
             result = _try_tmdb_detail("盗梦空间", "2010", "movie", "Inception")
-            # 验证 best_match 被调用时第一个参数是搜索词
             self.assertTrue(spy.called, "best_match 应被调用")
             first_call_args = spy.call_args_list[0]
-            query_arg = first_call_args[0][0]  # 第一个位置参数
+            query_arg = first_call_args[0][0]
             self.assertEqual(query_arg, "盗梦空间", "best_match 第一个参数应是搜索词")
 
-    @patch("routes.media_info.get_clients")
-    @patch("routes.media_info.douban_api_v2")
-    @patch("routes.media_info.douban_client")
-    def test_pick_best_tv_uses_name_type_key(self, mock_douban_client, mock_douban_api, mock_get_clients):
+    @patch("routes.media_detail.douban_api_v2")
+    @patch("routes.media_detail.douban_client")
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_pick_best_tv_uses_name_type_key(self, mock_provider_map, mock_douban_client, mock_douban_api):
         """TV 搜索时 type_key 应为 "name" """
-        from routes.media_info import _try_tmdb_detail
+        from routes.media_detail import _try_tmdb_detail
+        from provider_models import AliasSet, ArtworkInfo, MetadataDetail, MetadataCandidate
 
-        mock_tmdb = MagicMock()
-        mock_tmdb.search_tv.return_value = [{
-            "id": 5001,
-            "name": "测试剧",
-            "original_name": "Test Show",
-            "first_air_date": "2023-01-01",
-            "popularity": 50.0,
-        }]
-        mock_detail = ScrapeResult(
-            tmdb_id=5001, title="测试剧", original_title="Test Show",
-            english_title="Test Show", year="2023", rating=7.5,
+        mock_provider = MagicMock()
+        fake_candidate = MetadataCandidate(
+            providerId="tmdb", externalId="5001", title="测试剧",
+            originalTitle="Test Show", mediaType="tv", year=2023,
+            overview="", rating=7.5, posterUrl="",
+            aliases=AliasSet(en="Test Show"),
+            extra={"id": 5001, "name": "测试剧", "original_name": "Test Show",
+                   "first_air_date": "2023-01-01", "popularity": 50.0},
         )
-        mock_tmdb.get_tv_detail.return_value = mock_detail
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+        mock_provider.search_metadata.return_value = [fake_candidate]
+        fake_detail = MetadataDetail(
+            providerId="tmdb", externalId="5001", title="测试剧",
+            originalTitle="Test Show", mediaType="tv", year=2023,
+            overview="", runtime=45, rating=7.5,
+            aliases=AliasSet(en="Test Show"),
+            artwork=[],
+            extra={},
+        )
+        mock_provider.get_detail.return_value = fake_detail
+        mock_provider_map.return_value = {"tmdb": mock_provider}
         mock_douban_api.search.return_value = []
         mock_douban_client.search.return_value = []
 
-        with patch("routes.media_info.tmdb_client.best_match", wraps=best_match) as spy:
+        with patch("routes.media_detail.tmdb_client.best_match", wraps=best_match) as spy:
             result = _try_tmdb_detail("测试剧", "2023", "tv", "")
             self.assertTrue(spy.called)
-            # 检查 type_key 参数
             first_call_kwargs = spy.call_args_list[0]
-            # best_match(query, results, year=yr, type_key=type_key)
             kw = first_call_kwargs[1] if first_call_kwargs[1] else {}
             if "type_key" in kw:
                 self.assertEqual(kw["type_key"], "name", "TV 搜索 type_key 应为 name")
@@ -213,112 +225,102 @@ class TestPickBestNewSignature(unittest.TestCase):
 class TestTryTmdbDetailById(unittest.TestCase):
     """_try_tmdb_detail_by_id 的 movie↔tv 回退逻辑"""
 
-    @patch("routes.media_info.get_clients")
-    def test_movie_success(self, mock_get_clients):
-        """type=movie 直接成功"""
-        from routes.media_info import _try_tmdb_detail_by_id
-
-        mock_tmdb = MagicMock()
-        mock_detail = ScrapeResult(
-            tmdb_id=27205, title="盗梦空间", original_title="Inception",
-            english_title="Inception", year="2010", rating=8.8,
-            genres=["科幻"], director="Christopher Nolan", cast=["Leonardo DiCaprio"],
-            runtime=148, imdb_id="tt1375666", countries=["美国"],
+    def _make_detail(self, tmdb_id, title, original_title="", year=2010, rating=8.8):
+        from provider_models import AliasSet, ArtworkInfo, MetadataDetail
+        return MetadataDetail(
+            providerId="tmdb", externalId=str(tmdb_id), title=title,
+            originalTitle=original_title, mediaType="movie", year=year,
+            overview="", runtime=148, rating=rating,
+            aliases=AliasSet(en=original_title),
+            artwork=[ArtworkInfo(kind="poster", url="https://image.tmdb.org/t/p/w500/poster.jpg")],
+            extra={"genres": [], "director": "", "imdb_id": ""},
         )
-        mock_tmdb.get_movie_detail.return_value = mock_detail
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_movie_success(self, mock_provider_map):
+        """type=movie 直接成功"""
+        from routes.media_detail import _try_tmdb_detail_by_id
+
+        mock_provider = MagicMock()
+        mock_provider.get_detail.return_value = self._make_detail(27205, "盗梦空间", "Inception")
+        mock_provider_map.return_value = {"tmdb": mock_provider}
 
         result = _try_tmdb_detail_by_id(27205, "movie")
         self.assertTrue(result["found"])
         self.assertEqual(result["tmdb_id"], 27205)
         self.assertEqual(result["title"], "盗梦空间")
-        mock_tmdb.get_movie_detail.assert_called_once_with(27205)
-        mock_tmdb.get_tv_detail.assert_not_called()
+        mock_provider.get_detail.assert_called_once_with("27205", "movie")
 
-    @patch("routes.media_info.get_clients")
-    def test_tv_success(self, mock_get_clients):
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_tv_success(self, mock_provider_map):
         """type=tv 直接成功"""
-        from routes.media_info import _try_tmdb_detail_by_id
+        from routes.media_detail import _try_tmdb_detail_by_id
 
-        mock_tmdb = MagicMock()
-        mock_detail = ScrapeResult(
-            tmdb_id=95557, title="无敌少侠", original_title="Invincible",
-            english_title="Invincible", year="2021", rating=8.7,
-        )
-        mock_tmdb.get_tv_detail.return_value = mock_detail
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+        mock_provider = MagicMock()
+        mock_provider.get_detail.return_value = self._make_detail(95557, "无敌少侠", "Invincible", year=2021, rating=8.7)
+        mock_provider_map.return_value = {"tmdb": mock_provider}
 
         result = _try_tmdb_detail_by_id(95557, "tv")
         self.assertTrue(result["found"])
         self.assertEqual(result["tmdb_id"], 95557)
-        mock_tmdb.get_tv_detail.assert_called_once_with(95557)
+        mock_provider.get_detail.assert_called_once_with("95557", "tv")
 
-    @patch("routes.media_info.get_clients")
-    def test_movie_fallback_to_tv(self, mock_get_clients):
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_movie_fallback_to_tv(self, mock_provider_map):
         """type=movie 失败后自动回退到 tv"""
-        from routes.media_info import _try_tmdb_detail_by_id
+        from routes.media_detail import _try_tmdb_detail_by_id
 
-        mock_tmdb = MagicMock()
-        # movie 返回空结果
-        mock_tmdb.get_movie_detail.return_value = ScrapeResult()  # tmdb_id=0
-        # tv 返回有效结果
-        mock_tv_detail = ScrapeResult(
-            tmdb_id=95557, title="无敌少侠", original_title="Invincible",
-            english_title="Invincible", year="2021", rating=8.7,
+        mock_provider = MagicMock()
+        # movie 返回 None（失败），tv 返回有效结果
+        mock_provider.get_detail.side_effect = lambda eid, mtype: (
+            None if mtype == "movie" else self._make_detail(95557, "无敌少侠", "Invincible", year=2021)
         )
-        mock_tmdb.get_tv_detail.return_value = mock_tv_detail
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+        mock_provider_map.return_value = {"tmdb": mock_provider}
 
         result = _try_tmdb_detail_by_id(95557, "movie")
         self.assertTrue(result["found"])
         self.assertEqual(result["tmdb_id"], 95557)
-        self.assertEqual(result["title"], "无敌少侠")
         # 应先尝试 movie，失败后尝试 tv
-        mock_tmdb.get_movie_detail.assert_called_once_with(95557)
-        mock_tmdb.get_tv_detail.assert_called_once_with(95557)
+        self.assertEqual(mock_provider.get_detail.call_count, 2)
+        mock_provider.get_detail.assert_any_call("95557", "movie")
+        mock_provider.get_detail.assert_any_call("95557", "tv")
 
-    @patch("routes.media_info.get_clients")
-    def test_tv_fallback_to_movie(self, mock_get_clients):
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_tv_fallback_to_movie(self, mock_provider_map):
         """type=tv 失败后自动回退到 movie"""
-        from routes.media_info import _try_tmdb_detail_by_id
+        from routes.media_detail import _try_tmdb_detail_by_id
 
-        mock_tmdb = MagicMock()
-        # tv 返回空结果
-        mock_tmdb.get_tv_detail.return_value = ScrapeResult()  # tmdb_id=0
-        # movie 返回有效结果
-        mock_movie_detail = ScrapeResult(
-            tmdb_id=27205, title="盗梦空间", original_title="Inception",
-            english_title="Inception", year="2010", rating=8.8,
+        mock_provider = MagicMock()
+        mock_provider.get_detail.side_effect = lambda eid, mtype: (
+            None if mtype == "tv" else self._make_detail(27205, "盗梦空间", "Inception")
         )
-        mock_tmdb.get_movie_detail.return_value = mock_movie_detail
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+        mock_provider_map.return_value = {"tmdb": mock_provider}
 
         result = _try_tmdb_detail_by_id(27205, "tv")
         self.assertTrue(result["found"])
         self.assertEqual(result["tmdb_id"], 27205)
-        # 应先尝试 tv，失败后尝试 movie
-        mock_tmdb.get_tv_detail.assert_called_once_with(27205)
-        mock_tmdb.get_movie_detail.assert_called_once_with(27205)
+        self.assertEqual(mock_provider.get_detail.call_count, 2)
+        mock_provider.get_detail.assert_any_call("27205", "tv")
+        mock_provider.get_detail.assert_any_call("27205", "movie")
 
-    @patch("routes.media_info.get_clients")
-    def test_both_fail(self, mock_get_clients):
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_both_fail(self, mock_provider_map):
         """movie 和 tv 都失败，返回 found=False"""
-        from routes.media_info import _try_tmdb_detail_by_id
+        from routes.media_detail import _try_tmdb_detail_by_id
 
-        mock_tmdb = MagicMock()
-        mock_tmdb.get_movie_detail.return_value = ScrapeResult()
-        mock_tmdb.get_tv_detail.return_value = ScrapeResult()
-        mock_get_clients.return_value = {"tmdb": mock_tmdb}
+        mock_provider = MagicMock()
+        mock_provider.get_detail.return_value = None
+        mock_provider_map.return_value = {"tmdb": mock_provider}
 
         result = _try_tmdb_detail_by_id(99999, "movie")
         self.assertFalse(result["found"])
 
-    @patch("routes.media_info.get_clients")
-    def test_exception_handling(self, mock_get_clients):
+    @patch("routes.media_detail.get_metadata_provider_map")
+    def test_exception_handling(self, mock_provider_map):
         """异常时返回 found=False"""
-        from routes.media_info import _try_tmdb_detail_by_id
+        from routes.media_detail import _try_tmdb_detail_by_id
 
-        mock_get_clients.side_effect = Exception("连接超时")
+        mock_provider_map.side_effect = Exception("连接超时")
         result = _try_tmdb_detail_by_id(27205, "movie")
         self.assertFalse(result["found"])
 
