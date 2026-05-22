@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from routes import library
+from routes import library_tree as library
 
 
 def test_get_library_tree_avoids_live_nfo_reads(monkeypatch):

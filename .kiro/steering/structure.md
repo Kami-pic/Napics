@@ -11,7 +11,9 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── main.py             # FastAPI 入口（薄壳），只注册路由
 │   ├── shared.py           # 全局单例 + 共享辅助函数
 │   ├── routes/             # 路由层（按业务域拆分）— 只做参数校验和调用业务层
-│   │   ├── library.py      # /library/* /scan /sync
+│   │   ├── library.py      # /scan /sync（扫描与同步）
+│   │   ├── library_tree.py # /library/tree（目录树构建）
+│   │   ├── library_crud.py # /library /library/* CRUD + completeness + quality + clean-name
 │   │   ├── scrape.py       # /scrape /scrape/select /scrape/read /scrape/execute /media/shadow-name
 │   │   ├── media_info.py   # /scrape/candidates /scrape/douban /scrape/bangumi /media/info（候选搜索+详情多源）
 │   │   ├── poster.py       # /scrape/poster /proxy/image /scrape/upload-poster /scrape/poster-url /scrape/delete-poster
@@ -53,8 +55,8 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   ├── bt_scraper_*.py      # BT 直搜源爬虫（继承 ScraperBase）
 │   ├── pan_scraper_*.py     # 网盘爬虫（继承 ScraperBase）
 │   ├── rss_source_*.py      # RSS 源（继承 RSSSourceBase，订阅系统用）
-│   ├── _*.py               # 一次性脚本（调试/批处理/迁移），不属于核心代码
-│   └── test_*.py           # 测试脚本
+│   ├── _*.py               # 一次性脚本（调试/批处理/迁移），已移入 _scripts/ 目录
+│   └── test_*.py           # 测试脚本，已移入 tests/ 目录
 ├── frontend/               # Next.js 前端
 │   ├── app/                # 页面路由（page.tsx、layout.tsx、manage/）
 │   ├── components/         # UI 组件（ai/detail/download/layout/manage/media/search/settings）

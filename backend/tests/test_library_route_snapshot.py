@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from routes import library
+from routes import library_tree as library
 from test_support.route_response_snapshot import RouteResponseSnapshot
 
 

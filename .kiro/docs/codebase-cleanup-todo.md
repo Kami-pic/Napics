@@ -8,11 +8,11 @@
 
 | 行数 | 文件 | 拆分方案 |
 |------|------|----------|
-| 530 | `components/search/BatchUpgradePanel.tsx` | 拆出 BatchUpgradeItem / BatchUpgradeProgress 子组件 |
-| 481 | `components/detail/FolderDetail.tsx` | 拆出 FolderActions（操作按钮区）/ FolderScrapeSection（刮削区） |
-| 445 | `components/settings/SettingsModal.tsx` | 拆出 MediaPathsSection / AISettingsSection / FieldGroupRenderer |
-| 443 | `components/media/CardGrid.tsx` | 拆出 FolderCard / VideoCard / TvCard / CollectionCard 独立渲染组件 |
-| 427 | `components/media/DoubanRecommend.tsx` | 拆出 DoubanCard / DoubanCategoryRow 子组件 |
+| 530 | `components/search/BatchUpgradePanel.tsx` | 逻辑自洽的全屏弹窗，内部按 phase 切换视图，暂不拆 |
+| 481 | `components/detail/FolderDetail.tsx` | 已拆出多个子组件（DetailComponents/CandidatePicker/ShadowNameSection/PosterUpload/CompletenessBar），剩余逻辑自洽，暂不拆 |
+| 445→346 | `components/settings/SettingsModal.tsx` | ✅ 拆出 `AISettingsSection.tsx`（134 行） |
+| 443→388 | `components/media/CardGrid.tsx` | ✅ 拆出 `cardGridUtils.ts`（工具函数+类型定义，34 行） |
+| 427 | `components/media/DoubanRecommend.tsx` | 已废弃（.gitignore 排除），跳过 |
 | 421 | `app/page.tsx` | 拆出 usePageModals（弹窗状态管理 hook）/ ScanController（扫描逻辑） |
 | 395 | `components/download/DownloadManagerPanel.tsx` | 拆出 DownloadTaskItem / DownloadProgress 子组件 |
 | 377 | `components/media/ExpandDetail.tsx` | 拆出 ExpandEpisodeList / ExpandSeasonTabs |
@@ -26,7 +26,7 @@
 
 | 行数 | 文件 | 拆分方案 |
 |------|------|----------|
-| 1235 | `routes/library.py` | **最优先**。拆出 `routes/library_tree.py`（get_library_tree + finalize + post_process，约 600 行）、`routes/library_crud.py`（add/update/delete/list/reset，约 200 行） |
+| 1235 | `routes/library.py` | ✅ **已完成**。拆出 `routes/library_tree.py`（目录树构建，431 行）、`routes/library_crud.py`（CRUD+完整度+质量分，352 行），library.py 保留扫描同步（246 行） |
 | 842 | `routes/media_info.py` | 拆出候选搜索逻辑到 `routes/media_candidates.py` |
 | 671 | `routes/scrape.py` | 拆出批量刮削到 `routes/scrape_batch.py` |
 | 660 | `routes/relocate.py` | 拆出 dry-run 推演逻辑到业务层 `file_relocator.py`（已有，检查是否下沉完全） |
@@ -43,11 +43,11 @@
 当前 `backend/` 根目录有 **107 个 test_*.py** 文件，混在业务代码中。
 
 ### 方案
-- [ ] 创建 `backend/tests/` 目录
-- [ ] 所有 `test_*.py` 移入 `backend/tests/`
-- [ ] 更新 pytest 配置（`pytest.ini` 或 `pyproject.toml`）指定 `testpaths = ["tests"]`
-- [ ] 确认 `python -m pytest tests/` 能正常运行
-- [ ] `.gitignore` 中确认 `__pycache__` 已排除
+- [x] 创建 `backend/tests/` 目录
+- [x] 所有 `test_*.py` 移入 `backend/tests/`
+- [x] 更新 pytest 配置（`pytest.ini` 或 `pyproject.toml`）指定 `testpaths = ["tests"]`
+- [x] 确认 `python -m pytest tests/` 能正常运行
+- [x] `.gitignore` 中确认 `__pycache__` 已排除
 
 ---
 
@@ -56,9 +56,9 @@
 当前 `backend/` 根目录有 **87 个 _*.py** 一次性脚本（调试/批处理/迁移/验证）。
 
 ### 方案
-- [ ] 创建 `backend/_scripts/` 目录（或 `scripts/debug/`）
-- [ ] 所有 `_*.py` 移入该目录
-- [ ] 在 `.gitignore` 中添加 `backend/_scripts/`（公开版不发布）
+- [x] 创建 `backend/_scripts/` 目录（或 `scripts/debug/`）
+- [x] 所有 `_*.py` 移入该目录
+- [x] 在 `.gitignore` 中添加 `backend/_scripts/`（公开版不发布）
 - [ ] 或者直接删除（已归档到 git 历史，随时可恢复）
 
 ---

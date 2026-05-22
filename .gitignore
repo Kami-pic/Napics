@@ -94,6 +94,7 @@ frontend/components/media/DoubanRecommend.tsx
 community-plugins/
 
 # 一次性测试/调试脚本
+backend/_scripts/
 backend/_*.py
 backend/_*.txt
 frontend/_*.txt
