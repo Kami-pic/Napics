@@ -22,7 +22,7 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   ├── organize.py     # /organize/rename /organize/full /organize/rollback（整理+重命名+历史）
 │   │   ├── rename.py       # /rename（手动重命名，从 organize.py 拆分）
 │   │   ├── organize_stream.py # /organize/full-stream（SSE 流式整理，从 organize.py 拆分）
-│   │   ├── relocate.py     # /organize/dry-run /organize/execute /organize/archive-both /organize/purge-old（归位替换）
+│   │   ├── relocate.py     # /organize/dry-run /organize/execute /organize/archive-both /organize/purge-old（归位替换路由，树构建已下沉）
 │   │   ├── analyze.py      # /analyze/folder /analyze/library /organize/classify（分析诊断）
 │   │   ├── search.py       # /api/search /api/search/stream /search/pan /alist/* /search/sources（主搜索+流式+网盘+源管理）
 │   │   ├── search_single.py # /api/search/source /search/single（单源搜索+单关键词搜索）

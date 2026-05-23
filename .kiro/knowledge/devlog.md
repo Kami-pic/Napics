@@ -5,6 +5,36 @@
 
 ---
 
+## 2026-05-23 代码整理与文件拆分（面向公开发布）
+
+**变更**:
+- **测试归档**：116 个 `test_*.py` 从 `backend/` 根目录移入 `backend/tests/`，新增 `pytest.ini`（`testpaths = ["tests"]`, `pythonpath = .`）
+- **一次性脚本清理**：90 个 `_*.py` 移入 `backend/_scripts/`，`.gitignore` 排除该目录
+- **后端路由拆分**（5 个超标文件）：
+  - `routes/library.py` 1235行 → `library.py`(246) + `library_tree.py`(431) + `library_crud.py`(352)
+  - `routes/media_info.py` 842行 → `media_info.py`(321) + `media_detail.py`(436)
+  - `routes/scrape.py` 636行 → `scrape.py`(406) + `scrape_execute.py`(218)
+  - `routes/search.py` 524行 → `search.py`(302) + `search_single.py`(233)
+  - `routes/relocate.py` 617行 → `relocate.py`(232) + `relocate_tree_builder.py`(~400，业务层)
+- **前端组件拆分**：
+  - `SettingsModal.tsx` 445行 → 拆出 `AISettingsSection.tsx`(134行)，降至 346 行
+  - `CardGrid.tsx` 443行 → 拆出 `cardGridUtils.ts`(34行，工具函数+类型定义)，降至 388 行
+- **过时测试修复**：
+  - `test_detail_match_fix.py`：8 个测试从 mock `get_clients` 改为 mock `get_metadata_provider_map`（适配 provider 模式）
+  - `test_search_route_snapshots.py`：4 个测试更新 monkeypatch 目标 + 添加 `plugin_guard` mock
+  - `test_metadata_select_route_snapshots.py` / `test_metadata_info_route_snapshots.py` / `test_final_features.py`：import 路径更新
+
+**决策**:
+- 路由拆分原则：按职责切分（搜索/执行/详情），路由路径不变，前端无感
+- `routes/organize.py`(578行) 暂不拆：核心编排已通过 `organize_executor`/`renamer`/`structure_organizer` 做了业务层分离
+- `discover.py`(477) / `download.py`(468) / `tools.py`(425)：轻微超标，逻辑自洽不拆
+- 前端 `BatchUpgradePanel`(530) / `FolderDetail`(481) / `page.tsx`(421)：逻辑自洽的大组件，强拆增加 props 复杂度
+- `relocate.py` 的树构建逻辑（纯数据处理）下沉到独立业务层模块 `relocate_tree_builder.py`，而非塞入已有的 `file_relocator.py`（避免循环依赖）
+
+**验证**: 161 routes 正常加载，140+ tests passed，前端 build 通过
+
+---
+
 ## 2026-05-20 媒体文件夹功能修复（添加/删除/显示/交互）
 
 **变更**:
