@@ -2,6 +2,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
+// ── mock useInstalledPlugins（模拟已安装订阅插件）──
+vi.mock("@/hooks/useInstalledPlugins", () => ({
+  useInstalledPlugins: () => ({
+    installed: new Set(["feature-subscribe"]),
+    ready: true,
+    refresh: vi.fn(),
+    hasSearch: true,
+    hasPanSearch: true,
+    hasDiscover: true,
+    hasSubscribe: true,
+    hasDownload: true,
+    hasCompleteness: true,
+    hasProwlarr: false,
+  }),
+}));
+
 // ── mock api 模块 ──
 vi.mock("@/lib/api", () => ({
   api: {
@@ -69,7 +85,7 @@ describe("SubscribeInline 列表/日历切换", () => {
     const { default: SubscribeInline } = await import("@/components/media/SubscribeInline");
     render(<SubscribeInline subscriptions={[]} onRefresh={vi.fn()} />);
     // 空订阅时列表视图显示"暂无订阅"
-    expect(screen.getByText("暂无订阅")).toBeInTheDocument();
+    expect(screen.getByText(/暂无订阅/)).toBeInTheDocument();
   });
 
   it("view='calendar' 时切换到日历视图", async () => {

@@ -136,10 +136,11 @@ describe("FolderDetail tree refresh", () => {
     render(
       <FolderDetail
         node={{
-          name: "军火女王",
-          path: "\\\\NAS\\视频\\动画番\\军火女王",
+          name: "动画番",
+          path: "\\\\NAS\\视频\\动画番",
           folder_type: "tv",
           category_tag: "tv",
+          is_virtual_library: true,
           videos: [],
           children: [],
           video_count: 0,
@@ -186,7 +187,7 @@ describe("FolderDetail tree refresh", () => {
     );
 
     const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[1], { target: { value: "season" } });
+    fireEvent.change(selects[0], { target: { value: "season" } });
 
     await waitFor(() => {
       expect(onTreeRefresh).toHaveBeenCalledTimes(1);
