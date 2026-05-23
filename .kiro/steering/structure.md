@@ -14,7 +14,8 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   ├── library.py      # /scan /sync（扫描与同步）
 │   │   ├── library_tree.py # /library/tree（目录树构建）
 │   │   ├── library_crud.py # /library /library/* CRUD + completeness + quality + clean-name
-│   │   ├── scrape.py       # /scrape /scrape/select /scrape/read /scrape/execute /media/shadow-name
+│   │   ├── scrape.py       # /scrape /scrape/select /scrape/read /media/shadow-name（刮削搜索/读取/选择）
+│   │   ├── scrape_execute.py # /scrape/execute /scrape/batch /scrape/delete-scrape（刮削执行）
 │   │   ├── media_info.py   # /scrape/candidates /scrape/douban /scrape/bangumi（候选搜索+选择确认）
 │   │   ├── media_detail.py # /media/info（详情多源获取：TMDB/豆瓣/Bangumi）
 │   │   ├── poster.py       # /scrape/poster /proxy/image /scrape/upload-poster /scrape/poster-url /scrape/delete-poster
@@ -23,7 +24,8 @@ fileMatchPattern: "**/*.{py,tsx,ts,js}"
 │   │   ├── organize_stream.py # /organize/full-stream（SSE 流式整理，从 organize.py 拆分）
 │   │   ├── relocate.py     # /organize/dry-run /organize/execute /organize/archive-both /organize/purge-old（归位替换）
 │   │   ├── analyze.py      # /analyze/folder /analyze/library /organize/classify（分析诊断）
-│   │   ├── search.py       # /api/search /search/* /alist/*
+│   │   ├── search.py       # /api/search /api/search/stream /search/pan /alist/* /search/sources（主搜索+流式+网盘+源管理）
+│   │   ├── search_single.py # /api/search/source /search/single（单源搜索+单关键词搜索）
 │   │   ├── download.py     # /download* /batch-search /batch-download
 │   │   ├── config.py       # /config/* /no-scrape /cache/*
 │   │   ├── discover.py     # /douban/* /movie/poster /add-media /discover/*

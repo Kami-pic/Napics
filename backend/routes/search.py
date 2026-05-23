@@ -3,7 +3,6 @@
 """
 import json
 import logging
-import re
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -13,10 +12,6 @@ from shared import (
     get_clients,
 )
 import searcher, douban_client, bangumi_client
-from bt_search_provider_factory import (
-    LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES,
-    get_direct_bt_provider_map,
-)
 from prowlarr_search_provider_factory import get_prowlarr_provider_map
 from storage_provider_factory import get_storage_provider_map
 from global_filter import GlobalFilter
@@ -158,112 +153,6 @@ def search_resources_stream(
     return StreamingResponse(_generate(), media_type="text/event-stream")
 
 
-@router.get("/api/search/source")
-def search_single_source(
-    source: str,
-    keyword: str,
-    fallback_keywords: str = "",
-):
-    """单源搜索端点：搜指定源，支持回退链。返回普通 JSON。
-
-    参数：
-    - source: 源名称（prowlarr/bitsearch/cilixiong/xl720/nyaa/mikan/yts/limetorrents/acgrip/bangumi_moe）
-    - keyword: 主搜索词
-    - fallback_keywords: 逗号分隔的回退词列表（可选，用户手动改词后不传）
-    """
-    from plugin_guard import is_bt_source_allowed
-    if not is_bt_source_allowed(source):
-        return {"error": f"搜索源 {source} 未安装对应插件", "results": [], "search_keywords": [], "hit_keyword": ""}
-    # 构造搜索词列表
-    kw_list = [keyword.strip()]
-    if fallback_keywords:
-        for fb in fallback_keywords.split(","):
-            fb = fb.strip()
-            if fb and fb.lower() not in {k.lower() for k in kw_list}:
-                kw_list.append(fb)
-
-    # 获取源的搜索函数
-    direct_providers = get_direct_bt_provider_map()
-    source_getters = {"prowlarr": None, **direct_providers}
-
-    # 加入第三方插件注册的搜索源
-    try:
-        from plugin_context import get_plugin_providers
-        from search_service import _PluginScraperAdapter, _PluginSearchAdapter
-        for pid, info in get_plugin_providers().items():
-            if info["type"] == "scraper_search":
-                source_getters[pid] = _PluginScraperAdapter(pid, info)
-            elif info["type"] == "search":
-                source_getters[pid] = _PluginSearchAdapter(pid, info)
-    except Exception:
-        pass
-
-    if source not in source_getters:
-        return {"error": f"未知源: {source}", "results": [], "search_keywords": [], "hit_keyword": ""}
-
-    searched = []
-    hit_kw = ""
-    all_results = []
-
-    try:
-        if source == "prowlarr":
-            clients = get_clients()
-            provider = get_prowlarr_provider_map(client_factory=lambda: clients["search"])["prowlarr"]
-            for kw in kw_list:
-                searched.append(kw)
-                candidates = provider.search(SearchRequest(query=kw, limit=0))
-                raw = [_candidate_to_search_result(candidate) for candidate in candidates]
-                if raw:
-                    if not hit_kw:
-                        hit_kw = kw
-                    seen = set()
-                    for r in raw:
-                        if r.download_url and r.download_url not in seen:
-                            seen.add(r.download_url)
-                            all_results.append(r)
-                    break
-        else:
-            provider = source_getters[source]
-            for kw in kw_list:
-                searched.append(kw)
-                candidates = provider.search(SearchRequest(query=kw, limit=40))
-                if candidates:
-                    if not hit_kw:
-                        hit_kw = kw
-                    all_results.extend(_candidate_to_search_result(candidate) for candidate in candidates)
-                    break
-    except Exception as e:
-        return {
-            "error": str(e), "results": [],
-            "search_keywords": searched, "hit_keyword": hit_kw,
-        }
-
-    # 去重 + enrich（用命中的搜索词做匹配，构造 match_names）
-    deduped = []
-    hashes = set()
-    for r in all_results:
-        h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-        if h:
-            hu = h.group(1).upper()
-            if hu in hashes:
-                continue
-            hashes.add(hu)
-        deduped.append(r)
-
-    # 构造 match_names：搜索词 + 回退词 + 命中词
-    match_names = list(dict.fromkeys([keyword] + kw_list + ([hit_kw] if hit_kw else [])))
-    enrich_query = hit_kw or keyword  # 用命中的搜索词做主匹配
-    enriched = [_enrich_result(r, enrich_query, match_names=match_names) for r in deduped]
-
-    return {
-        "source": source,
-        "results": enriched,
-        "count": len(enriched),
-        "search_keywords": searched,
-        "hit_keyword": hit_kw,
-    }
-
-
 @router.get("/search/pan")
 def search_pan(keyword: str, media_type: str = ""):
     """网盘搜索聚合接口。"""
@@ -340,144 +229,6 @@ def transfer_pan_resource(req: dict):
         import traceback
         traceback.print_exc()
         return {"success": False, "error_code": "server_error", "error_message": str(e)}
-
-@router.get("/search/single")
-def search_single_keyword(
-    keyword: str,
-    media_type: str = "",
-    skip_filter: bool = False,
-):
-    """单关键词搜索。
-
-    skip_filter=False（默认）：含二次匹配+全局过滤（不含年份匹配）
-    skip_filter=True：Prowlarr 裸搜，不做任何过滤
-    """
-    clients = get_clients()
-    prowlarr_provider = get_prowlarr_provider_map(client_factory=lambda: clients["search"])["prowlarr"]
-
-    # 搜索 Prowlarr
-    try:
-        candidates = prowlarr_provider.search(SearchRequest(query=keyword, limit=0))
-        raw_results = [_candidate_to_search_result(candidate) for candidate in candidates]
-    except Exception as e:
-        logger.error(f"[Search/Single] Prowlarr error: {e}")
-        return {"keyword": keyword, "bt_count": 0, "bt_results": [], "total_raw": 0, "total_filtered": 0}
-
-    total_raw = len(raw_results)
-    if not raw_results:
-        return {"keyword": keyword, "bt_count": 0, "bt_results": [], "total_raw": 0, "total_filtered": 0}
-
-    # 去重
-    seen = set()
-    deduped = []
-    for r in raw_results:
-        if r.download_url and r.download_url not in seen:
-            seen.add(r.download_url)
-            deduped.append(r)
-
-    # 裸搜模式：跳过所有过滤，合并直搜源（后台线程，不阻塞返回）
-    if skip_filter:
-        # 先返回 Prowlarr 结果，直搜源结果通过 /api/search 接口获取
-        all_results = list(deduped)
-        # 尝试快速合并直搜源（有缓存时秒返回）
-        try:
-            bt_overrides = config_m.config.bt_search_sources or {}
-            direct_providers = get_direct_bt_provider_map()
-            providers = [
-                (name, direct_providers[name])
-                for name in LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES
-                if name in direct_providers
-            ]
-            existing_hashes = set()
-            for r in all_results:
-                h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-                if h:
-                    existing_hashes.add(h.group(1).upper())
-
-            import concurrent.futures
-            def _search_source(name_provider):
-                name, provider = name_provider
-                if not bt_overrides.get(name, True):
-                    return []
-                try:
-                    candidates = provider.search(SearchRequest(query=keyword, limit=20))
-                    return [_candidate_to_search_result(candidate) for candidate in candidates]
-                except:
-                    return []
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-                futures = {pool.submit(_search_source, sg): sg[0] for sg in providers}
-                for future in concurrent.futures.as_completed(futures, timeout=30):
-                    try:
-                        results = future.result(timeout=5)
-                        for r in results:
-                            h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
-                            if h:
-                                hash_upper = h.group(1).upper()
-                                if hash_upper not in existing_hashes:
-                                    existing_hashes.add(hash_upper)
-                                    all_results.append(r)
-                    except:
-                        pass
-        except Exception as e:
-            logger.error(f"[Search/Single] 直搜源合并失败: {e}")
-
-        return {
-            "keyword": keyword,
-            "bt_count": len(all_results),
-            "bt_results": [_enrich_result(r, keyword) for r in all_results],
-            "total_raw": total_raw,
-            "total_filtered": len(all_results),
-        }
-
-    # 智能过滤模式
-    conf = config_m.config
-    gf = GlobalFilter(
-        must_include=conf.search_filter.must_include,
-        must_exclude=conf.search_filter.must_exclude if conf.search_filter.must_exclude else None,
-    )
-
-    try:
-        from alias_resolver import AliasResolver, AliasSet
-        from secondary_matcher import SecondaryMatcher
-
-
-        # 二次匹配（仅标题匹配，不含年份）
-        if media_type:
-            resolver = AliasResolver(douban_client, bangumi_client)
-            aliases = resolver.resolve(keyword, "", media_type)
-            target_titles = [keyword]
-            if aliases:
-                target_titles.extend(aliases.cn_names or [])
-                target_titles.extend(aliases.en_names or [])
-            target_titles = list(dict.fromkeys(t for t in target_titles if t))
-
-            matcher = SecondaryMatcher()
-            passed = matcher.batch_filter(
-                bt_titles=[r.title for r in deduped],
-                target_titles=target_titles,
-                target_year="",
-                media_type=media_type,
-            )
-            deduped = [deduped[i] for i in passed]
-
-        # 全局过滤
-        if deduped:
-            filter_passed = gf.apply([r.title for r in deduped])
-            deduped = [deduped[i] for i in filter_passed]
-
-        return {
-            "keyword": keyword,
-            "bt_count": len(deduped),
-            "bt_results": [r.dict() for r in deduped],
-            "total_raw": total_raw,
-            "total_filtered": len(deduped),
-        }
-    except Exception as e:
-        logger.error(f"[Search/Single] error: {e}")
-        # fallback 到裸搜
-        raw = clients["search"].search(keyword)
-        return {"keyword": keyword, "bt_count": len(raw), "bt_results": [r.dict() for r in raw], "total_raw": len(raw), "total_filtered": len(raw)}
 
 
 # ── 搜索源管理（配置数据从 search_service 导入）──

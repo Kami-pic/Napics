@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from fastapi.responses import StreamingResponse
 
 from routes import search as search_routes
+from routes import search_single as search_single_routes
 from searcher import SearchResult
 from test_support.route_response_snapshot import RouteResponseSnapshot
 from bt_search_provider_adapter import DirectBTSearchProviderAdapter, build_direct_bt_search_metadata
@@ -39,9 +40,22 @@ def test_search_single_source_snapshot_keeps_keyword_chain_shape(monkeypatch):
         }
     )
 
-    monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": client})
+    # FakeSearchClient 适配为 provider 接口
+    from provider_models import SearchCandidate
+    class FakeProwlarrProvider:
+        def search(self, request):
+            raw = client.search(request.query)
+            return [SearchCandidate(
+                providerId="prowlarr", externalId="", title=r.title,
+                downloadUrl=r.download_url, infoUrl=r.info_url, sizeGb=r.size_gb,
+                seeders=r.seeders, leechers=r.leechers, indexer=r.indexer, rawQuality=r.quality_tag,
+            ) for r in raw]
+
+    monkeypatch.setattr(search_single_routes, "get_prowlarr_provider_map", lambda client_factory=None: {"prowlarr": FakeProwlarrProvider()})
+    monkeypatch.setattr(search_single_routes, "get_clients", lambda: {"search": client})
+    monkeypatch.setattr("plugin_guard.is_bt_source_allowed", lambda source: True)
     monkeypatch.setattr(
-        search_routes,
+        search_single_routes,
         "_enrich_result",
         lambda result, query, match_names=None: {
             "title": result.title,
@@ -53,7 +67,7 @@ def test_search_single_source_snapshot_keeps_keyword_chain_shape(monkeypatch):
         },
     )
 
-    body = search_routes.search_single_source(
+    body = search_single_routes.search_single_source(
         source="prowlarr",
         keyword="进击的巨人",
         fallback_keywords="Attack on Titan,進撃の巨人",
@@ -99,9 +113,10 @@ def test_search_single_direct_source_uses_provider_adapter(monkeypatch):
         build_direct_bt_search_metadata("bitsearch", "Bitsearch"),
         lambda: scraper,
     )
-    monkeypatch.setattr(search_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
+    monkeypatch.setattr(search_single_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
+    monkeypatch.setattr("plugin_guard.is_bt_source_allowed", lambda source: True)
     monkeypatch.setattr(
-        search_routes,
+        search_single_routes,
         "_enrich_result",
         lambda result, query, match_names=None: {
             "title": result.title,
@@ -110,7 +125,7 @@ def test_search_single_direct_source_uses_provider_adapter(monkeypatch):
         },
     )
 
-    body = search_routes.search_single_source(source="bitsearch", keyword="Attack on Titan")
+    body = search_single_routes.search_single_source(source="bitsearch", keyword="Attack on Titan")
 
     assert scraper.calls == [("Attack on Titan", 40)]
     assert body["source"] == "bitsearch"
@@ -159,20 +174,20 @@ def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
         build_direct_bt_search_metadata("bitsearch", "Bitsearch"),
         lambda: scraper,
     )
-    monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": client})
-    monkeypatch.setattr(search_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
+    monkeypatch.setattr(search_single_routes, "get_clients", lambda: {"search": client})
+    monkeypatch.setattr(search_single_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
     monkeypatch.setattr(
-        search_routes,
+        search_single_routes,
         "LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES",
         ("bitsearch",),
     )
     monkeypatch.setattr(
-        search_routes,
+        search_single_routes,
         "config_m",
         SimpleNamespace(config=SimpleNamespace(bt_search_sources={})),
     )
     monkeypatch.setattr(
-        search_routes,
+        search_single_routes,
         "_enrich_result",
         lambda result, query, match_names=None: {
             "title": result.title,
@@ -180,7 +195,7 @@ def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
         },
     )
 
-    body = search_routes.search_single_keyword(keyword="Attack on Titan", skip_filter=True)
+    body = search_single_routes.search_single_keyword(keyword="Attack on Titan", skip_filter=True)
 
     assert scraper.calls == [("Attack on Titan", 20)]
     assert body["bt_count"] == 2
@@ -188,6 +203,7 @@ def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
 
 
 def test_search_stream_snapshot_emits_source_done_event(monkeypatch):
+    monkeypatch.setattr("plugin_guard.get_allowed_bt_sources", lambda: {"prowlarr"})
     monkeypatch.setattr(search_routes, "build_keywords", lambda **kwargs: {"query": kwargs["query"]})
     monkeypatch.setattr(search_routes, "get_clients", lambda: {"search": object()})
     monkeypatch.setattr(

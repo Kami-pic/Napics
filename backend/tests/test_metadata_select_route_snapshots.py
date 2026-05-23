@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from provider_models import AliasSet, ArtworkInfo, MetadataDetail
 from routes import scrape as scrape_routes
+from routes import scrape_execute as scrape_execute_routes
 from test_support.route_response_snapshot import RouteResponseSnapshot
 from tmdb_client import ScrapeResult
 
@@ -135,17 +136,17 @@ def test_execute_scrape_douban_uses_metadata_provider_and_keeps_shape(monkeypatc
     downloads = []
     clean_updates = []
 
-    monkeypatch.setattr(scrape_routes, "get_metadata_provider_map", lambda: {"douban": provider})
-    monkeypatch.setattr(scrape_routes.os.path, "isdir", lambda path: True)
-    monkeypatch.setattr(scrape_routes.os.path, "isfile", lambda path: False)
-    monkeypatch.setattr(scrape_routes.os.path, "exists", lambda path: False)
-    monkeypatch.setattr(scrape_routes.os.path, "basename", lambda path: "进击的巨人")
-    monkeypatch.setattr(scrape_routes.scraper, "write_tvshow_nfo", lambda path, result: writes.append(("tv", path, result)))
-    monkeypatch.setattr(scrape_routes.scraper, "write_movie_nfo", lambda path, result: writes.append(("movie", path, result)))
-    monkeypatch.setattr(scrape_routes.scraper, "download_poster", lambda path, url, *args, **kwargs: downloads.append((path, url)))
-    monkeypatch.setattr(scrape_routes, "_update_clean_names_after_scrape", lambda path, result: clean_updates.append((path, result)))
+    monkeypatch.setattr(scrape_execute_routes, "get_metadata_provider_map", lambda: {"douban": provider})
+    monkeypatch.setattr(scrape_execute_routes.os.path, "isdir", lambda path: True)
+    monkeypatch.setattr(scrape_execute_routes.os.path, "isfile", lambda path: False)
+    monkeypatch.setattr(scrape_execute_routes.os.path, "exists", lambda path: False)
+    monkeypatch.setattr(scrape_execute_routes.os.path, "basename", lambda path: "进击的巨人")
+    monkeypatch.setattr(scrape_execute_routes.scraper, "write_tvshow_nfo", lambda path, result: writes.append(("tv", path, result)))
+    monkeypatch.setattr(scrape_execute_routes.scraper, "write_movie_nfo", lambda path, result: writes.append(("movie", path, result)))
+    monkeypatch.setattr(scrape_execute_routes.scraper, "download_poster", lambda path, url, *args, **kwargs: downloads.append((path, url)))
+    monkeypatch.setattr(scrape_execute_routes, "_update_clean_names_after_scrape", lambda path, result: clean_updates.append((path, result)))
 
-    body = scrape_routes._execute_scrape_douban("D:/Media/Anime")
+    body = scrape_execute_routes._execute_scrape_douban("D:/Media/Anime")
     snapshot = RouteResponseSnapshot.from_body(200, body)
 
     assert provider.search_calls[0].query == "进击的巨人"
