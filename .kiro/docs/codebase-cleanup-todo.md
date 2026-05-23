@@ -29,8 +29,8 @@
 | 1235 | `routes/library.py` | ✅ **已完成**。拆出 `routes/library_tree.py`（目录树构建，431 行）、`routes/library_crud.py`（CRUD+完整度+质量分，352 行），library.py 保留扫描同步（246 行） |
 | 842 | `routes/media_info.py` | ✅ **已完成**。拆出 `routes/media_detail.py`（详情多源获取，436 行），media_info.py 保留候选搜索+选择（321 行） |
 | 671 | `routes/scrape.py` | ✅ **已完成**。拆出 `routes/scrape_execute.py`（执行/批量/删除，218 行），scrape.py 保留搜索/读取/选择（406 行） |
-| 660 | `routes/relocate.py` | 拆出 dry-run 推演逻辑到业务层 `file_relocator.py`（已有，检查是否下沉完全） |
-| 634 | `routes/organize.py` | 拆出 action plan 构建到业务层 |
+| 660 | `routes/relocate.py` | ✅ **已完成**。树构建逻辑（_build_old_tree/_build_new_tree/_build_plan_tree，约 400 行）下沉到 `relocate_tree_builder.py`，relocate.py 保留路由（232 行） |
+| 634 | `routes/organize.py` | 暂不拆。核心编排逻辑已通过 organize_executor/renamer/structure_organizer 做了业务层分离，路由层剩余 578 行是编排+参数处理 |
 | 595 | `routes/search.py` | ✅ **已完成**。拆出 `routes/search_single.py`（单源搜索+单关键词搜索，233 行），search.py 保留主搜索/流式/网盘/源管理（302 行） |
 | 477 | `routes/discover.py` | 轻微超标，暂不拆 |
 | 468 | `routes/download.py` | 轻微超标，暂不拆 |
