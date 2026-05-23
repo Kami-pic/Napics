@@ -277,12 +277,12 @@ class PathMapping(BaseModel):
 
     用于转存完成后自动触发"拉回本地"的闭环流程。
     示例：
-      smb_root = "\\\\DS218play\\share\\视频"
+      smb_root = "\\\\NAS\\share\\视频"
       alist_root = "/视频"
-      → SMB 路径 "\\\\DS218play\\share\\视频\\电影\\流浪地球"
+      → SMB 路径 "\\\\NAS\\share\\视频\\电影\\流浪地球"
         对应 Alist 路径 "/视频/电影/流浪地球"
     """
-    smb_root: str                       # SMB 挂载根路径（如 \\DS218play\share\视频）
+    smb_root: str                       # SMB 挂载根路径（如 \\NAS\share\视频）
     alist_root: str                     # Alist 对应的虚拟根路径（如 /视频）
 
     def smb_to_alist(self, smb_path: str) -> Optional[str]:

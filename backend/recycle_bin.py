@@ -205,7 +205,7 @@ class RecycleBin:
 
     def _build_default_recycle_dir_from_root(self, library_root: str) -> str:
         r"""回收站放在媒体库根的上级目录（共享文件夹根）下的 #recycle。
-        如 媒体库 \\DS218play\share\视频 → 回收站 \\DS218play\share\#recycle
+        如 媒体库 \\NAS\share\视频 → 回收站 \\NAS\share\#recycle
         """
         normalized_root = os.path.normpath(library_root)
         parent_dir = os.path.dirname(normalized_root.rstrip("\\/"))

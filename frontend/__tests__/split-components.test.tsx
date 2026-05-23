@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import type { PanResult, VideoInfo, FolderNode } from "@/types";
+import type { PanFilterState } from "@/components/search/PanFilterBar";
 
 // ── 测试数据工厂 ──
 
@@ -63,7 +64,7 @@ describe("PanFilterBar 筛选逻辑", () => {
       makePanResult({ pan_type: "quark" }),
       makePanResult({ pan_type: "pan115" }),
     ];
-    const filtered = applyPanFilters(results, { panType: "quark", source: "", resolution: "", completeOnly: false });
+    const filtered = applyPanFilters(results, { panType: ["quark"], resolution: [], chineseSubOnly: false, completeOnly: false });
     expect(filtered).toHaveLength(2);
     filtered.forEach(r => expect(r.pan_type).toBe("quark"));
   });
@@ -89,7 +90,7 @@ describe("PanFilterBar 筛选逻辑", () => {
       makePanResult({ resolution: "1080p" }),
       makePanResult({ resolution: "2160p" }),
     ];
-    const filtered = applyPanFilters(results, { panType: "", source: "", resolution: "2160p", completeOnly: false });
+    const filtered = applyPanFilters(results, { panType: [], resolution: ["2160p"], chineseSubOnly: false, completeOnly: false });
     expect(filtered).toHaveLength(2);
   });
 
@@ -100,7 +101,7 @@ describe("PanFilterBar 筛选逻辑", () => {
       makePanResult({ is_complete: false, title: "单集碎片" }),
       makePanResult({ is_complete: true, title: "另一个整季" }),
     ];
-    const filtered = applyPanFilters(results, { panType: "", source: "", resolution: "", completeOnly: true });
+    const filtered = applyPanFilters(results, { panType: [], resolution: [], chineseSubOnly: false, completeOnly: true });
     expect(filtered).toHaveLength(2);
     filtered.forEach(r => expect(r.is_complete).toBe(true));
   });
@@ -113,7 +114,7 @@ describe("PanFilterBar 筛选逻辑", () => {
       makePanResult({ pan_type: "aliyun", resolution: "2160p", is_complete: true }),
       makePanResult({ pan_type: "quark", resolution: "2160p", is_complete: false }),
     ];
-    const filtered = applyPanFilters(results, { panType: "quark", source: "", resolution: "2160p", completeOnly: true });
+    const filtered = applyPanFilters(results, { panType: ["quark"], resolution: ["2160p"], chineseSubOnly: false, completeOnly: true });
     expect(filtered).toHaveLength(1);
     expect(filtered[0].pan_type).toBe("quark");
     expect(filtered[0].resolution).toBe("2160p");
@@ -185,7 +186,7 @@ describe("PanFilterBar 筛选逻辑", () => {
 // ══════════════════════════════════════════
 
 describe("PanResultsView 场景测试", () => {
-  const defaultFilters = { panType: "", source: "", resolution: "", completeOnly: false };
+  const defaultFilters: PanFilterState = { panType: [], resolution: [], chineseSubOnly: false, completeOnly: false };
 
   it("搜索中 — 显示 loading 动画", async () => {
     const { default: PanResultsView } = await import("@/components/search/PanResultsView");
@@ -223,7 +224,7 @@ describe("PanResultsView 场景测试", () => {
     const { default: PanResultsView } = await import("@/components/search/PanResultsView");
     const groups = { quark: [makePanResult({ resolution: "1080p" })] };
     render(<PanResultsView searching={false} groups={groups} total={1} sourceStatuses={[]} keyword="test"
-      filters={{ panType: "", source: "", resolution: "2160p", completeOnly: false }}
+      filters={{ panType: [], resolution: ["2160p"], chineseSubOnly: false, completeOnly: false }}
       onRetry={vi.fn()} onTransfer={vi.fn()} />);
     expect(screen.getByText("当前筛选条件无匹配结果")).toBeInTheDocument();
   });
@@ -457,7 +458,7 @@ describe("EpisodeList 场景测试", () => {
       <EpisodeList videos={[video]} selectedPaths={new Set()} onToggleSelect={vi.fn()}
         onPlay={vi.fn()} onSearch={vi.fn()} onVideoDetail={vi.fn()} />
     );
-    const warn = container.querySelector('[title="刮削失败"]');
+    const warn = container.querySelector('[title="识别失败"]');
     expect(warn).toBeTruthy();
   });
 

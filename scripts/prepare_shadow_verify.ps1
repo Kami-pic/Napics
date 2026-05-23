@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$SampleName,
 
-    [string]$ShadowRoot = "C:\Users\shenq\nas-video-upgrader\shadow-verify"
+    [string]$ShadowRoot = (Join-Path $PSScriptRoot "..\shadow-verify")
 )
 
 $ErrorActionPreference = "Stop"

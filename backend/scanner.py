@@ -1,5 +1,6 @@
 import os
 import logging
+import shutil
 import subprocess
 import json
 from typing import List, Dict, Optional
@@ -28,8 +29,8 @@ class VideoInfo(BaseModel):
 def get_video_metadata(file_path: str) -> Optional[VideoInfo]:
     """使用 ffprobe 获取视频元数据"""
     try:
-        # 定义 ffprobe 绝对路径
-        ffprobe_path = r"C:\Users\shenq\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1-full_build\bin\ffprobe.exe"
+        # ffprobe 路径：优先使用 PATH 中的 ffprobe，找不到则用配置的绝对路径
+        ffprobe_path = shutil.which("ffprobe") or "ffprobe"
         
         cmd = [
             ffprobe_path,
@@ -185,7 +186,7 @@ def scan_directory(path: str, exclude_str: str = "", extensions=[".mp4", ".mkv",
 
 if __name__ == "__main__":
     # 测试代码
-    test_dir = r"C:\Users\shenq\Videos" # 示例路径
+    test_dir = r"C:\Videos"  # 修改为你的本地视频目录
     if os.path.exists(test_dir):
         logger.info(f"Scanning {test_dir}...")
         videos = scan_directory(test_dir)

@@ -8,8 +8,8 @@ if not "%HIDDEN%"=="1" (
 
 cd /d %~dp0
 
-:: Alist
-start /b cmd /c "cd /d C:\Users\shenq\Downloads\Alist && alist.exe server >nul 2>&1"
+:: Alist（修改为你的 Alist 安装路径）
+start /b cmd /c "cd /d %~dp0..\Alist && alist.exe server >nul 2>&1"
 timeout /t 2 /nobreak >nul
 
 :: qBittorrent

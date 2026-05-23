@@ -43,7 +43,7 @@ function normalizePathLike(path: string): string {
 function getDefaultRecycleBinPlaceholder(paths: string[]): string {
   const firstPath = normalizePathLike(paths.find((path) => path.trim()) || "");
   if (!firstPath) {
-    return "默认：媒体库同级隐藏目录，如 \\\\DS218play\\share\\.recycle_bins\\Movies";
+    return "默认：媒体库同级隐藏目录，如 \\\\NAS\\share\\.recycle_bins\\Movies";
   }
 
   const parts = firstPath.split("\\").filter(Boolean);
