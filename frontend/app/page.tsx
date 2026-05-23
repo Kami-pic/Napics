@@ -24,6 +24,7 @@ import EmptyLibraryGuide from "@/components/media/EmptyLibraryGuide";
 import AddLibraryModal from "@/components/media/AddLibraryModal";
 import AddScanPathModal from "@/components/media/AddScanPathModal";
 import SetupWizardModal from "@/components/settings/SetupWizardModal";
+import ScanSummaryModal from "@/components/media/ScanSummaryModal";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { api } from "@/lib/api";
 import type { VideoInfo, FolderNode } from "@/types";
@@ -112,6 +113,7 @@ export default function Home() {
   const [showPlugins, setShowPlugins] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const [showScanSummary, setShowScanSummary] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -127,6 +129,12 @@ export default function Home() {
       const setupDone = localStorage.getItem("napics_setup_done");
       if (!setupDone && !config.tmdb_api_key) {
         setShowSetupWizard(true);
+      }
+      // 首次扫描完成弹摘要（每次扫描只弹一次）
+      const summaryShown = sessionStorage.getItem("napics_scan_summary_shown");
+      if (!summaryShown) {
+        setShowScanSummary(true);
+        sessionStorage.setItem("napics_scan_summary_shown", "1");
       }
     }
     prevScanningRef.current = scanning;
@@ -415,6 +423,11 @@ export default function Home() {
       <SetupWizardModal open={showSetupWizard} config={config}
         onClose={() => { setShowSetupWizard(false); localStorage.setItem("napics_setup_done", "1"); }}
         onSaved={(newConfig) => { setConfig(newConfig); setShowSetupWizard(false); localStorage.setItem("napics_setup_done", "1"); }} />
+
+      <ScanSummaryModal open={showScanSummary && !showSetupWizard} onClose={() => setShowScanSummary(false)}
+        tree={fileTree} totalVideos={stats.total}
+        hasMetadataPlugin={plugins.installed.has("metadata-tmdb")}
+        onOpenSettings={() => { setShowScanSummary(false); setShowSettings(true); }} />
 
       {batchMode && selectedPaths.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40">
