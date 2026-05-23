@@ -104,3 +104,8 @@ backend/init_sandbox_real.py
 backend/tests/
 frontend/_*.txt
 _*.txt
+
+# 灰色源代码（BT/网盘/RSS 爬虫，公开仓库不发布，本地保留运行）
+backend/bt_scraper_*.py
+backend/pan_scraper_*.py
+backend/rss_source_*.py
