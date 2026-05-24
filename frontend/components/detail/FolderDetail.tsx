@@ -12,6 +12,7 @@ import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
 import { CompletenessBar } from "./CompletenessBar";
+import FeatureTip from "@/components/media/FeatureTip";
 
 export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, currentCategoryTag }: { node: FolderNode; onRefresh: () => void; onTreeRefresh?: () => void; onSearch: (q: string, ctx?: any) => void; currentCategoryTag: string }) {
   const [actionResult, setActionResult] = useState(() => getCached(node.path).actionResult || "");
@@ -234,6 +235,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <div className="absolute top-2 right-2 z-10">
             <PosterUpload path={node.path} hideDeleteScrape={isAggregate} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); if (!isAggregate) setScrapeData(null); } else { setPosterDeleted(false); } if (!isAggregate) reload(); refreshFolderTree(); }} />
           </div>
+          <FeatureTip tipKey="poster_upload" message="💡 点击右上角按钮可更换封面" />
         </div>
       )}
       {/* 媒体文件夹：分类标签选择器（仅 is_virtual_library） */}
