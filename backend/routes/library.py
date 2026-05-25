@@ -192,6 +192,16 @@ def quick_sync():
             added = fs_files - lib_paths
             removed = lib_paths - fs_files
 
+            # 额外清理：不属于任何已配置路径的孤立条目
+            if nas_paths:
+                orphaned = set()
+                for fp in lib_paths:
+                    if not fp:
+                        continue
+                    if not any(fp.startswith(base) for base in nas_paths):
+                        orphaned.add(fp)
+                removed = removed | orphaned
+
             yield "data: " + json.dumps({"type": "status", "message": f"发现 {len(added)} 个新增，{len(removed)} 个移除"}) + "\n\n"
 
             current_lib = [v for v in library if v.get("file_path", "") not in removed]

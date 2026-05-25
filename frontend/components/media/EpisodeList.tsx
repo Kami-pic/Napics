@@ -35,7 +35,7 @@ export default function EpisodeList({ videos, selectedPaths, onToggleSelect, onP
   }, [videos, sortAsc]);
 
   return (
-    <div className="space-y-1 max-h-[400px] overflow-y-auto no-scrollbar">
+    <div className="space-y-1 overflow-y-auto no-scrollbar">
         {sorted.map((v, idx) => (
           <div key={v.file_path}
             className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all cursor-pointer ${selectedPaths.has(v.file_path) ? "bg-blue-500/10" : "hover:bg-white/[0.03]"}`}

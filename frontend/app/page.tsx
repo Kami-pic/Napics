@@ -258,7 +258,8 @@ export default function Home() {
     <main className="min-h-screen bg-[#0f0f0f] text-white font-sans flex overflow-hidden">
       <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={navigateTo}
         collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onOpenPlugins={() => setShowPlugins(true)} />
+        onOpenPlugins={() => setShowPlugins(true)}
+        onOpenSettings={() => setShowSettings(true)} />
 
       <div ref={scrollContainerRef} className="flex-1 h-screen overflow-y-auto no-scrollbar" onClick={(e) => {
         const target = e.target as HTMLElement;
@@ -440,7 +441,7 @@ export default function Home() {
       )}
 
       {scanning && (
-        <div className="fixed bottom-6 left-6 bg-[#1a1a1a] border border-white/[0.06] px-5 py-3.5 rounded-xl shadow-2xl z-50 flex items-center gap-4 animate-in slide-in-from-left duration-300">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1a1a1a] border border-white/[0.06] px-5 py-3.5 rounded-xl shadow-2xl z-50 flex items-center gap-4 animate-in slide-in-from-bottom duration-300">
           <div className="relative w-11 h-11 flex items-center justify-center">
             <svg className="w-full h-full -rotate-90">
               <circle cx="22" cy="22" r="18" stroke="currentColor" strokeWidth="3" fill="transparent" className="text-slate-800" />

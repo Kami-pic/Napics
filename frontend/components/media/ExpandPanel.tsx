@@ -94,7 +94,7 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
             <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
           </div>
         </div>
-        <div className="space-y-1.5 max-h-[400px] overflow-y-auto no-scrollbar">
+        <div className="space-y-1.5 overflow-y-auto no-scrollbar">
           {listItems.map((child) => (
             <div key={child.path} className="flex gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] cursor-pointer transition-all"
               onClick={() => { if (child.video) onVideoDetail(child.video); }}>
@@ -133,7 +133,7 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
             <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">✕</button>
           </div>
         </div>
-        <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 max-h-[400px] overflow-y-auto no-scrollbar">
+        <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 overflow-y-auto no-scrollbar">
           {gridItems.map((child) => (
             <div key={child.path} className="group rounded-xl overflow-hidden bg-[#1a1a1a] border border-white/[0.06] hover:border-slate-500 cursor-pointer transition-all"
               onClick={() => { if (child.video) onVideoDetail(child.video); }}>
