@@ -90,8 +90,20 @@ class AppConfig(BaseModel):
     # 刮削配置
     default_scrape_source: str = "tmdb"           # 默认刮削源 "tmdb" | "douban"
     # 插件系统
-    installed_plugins: List[str] = []             # 已安装的插件 ID 列表
-    plugin_sources: List[PluginSourceConfig] = [] # 外部插件源列表
+    installed_plugins: List[str] = [              # 已安装的插件 ID 列表（预装，仅低风险内置插件）
+        "metadata-tmdb",
+        "metadata-bangumi",
+        "download-qbittorrent",
+        "feature-completeness",
+        "feature-discover",
+        "feature-local-match",
+    ]
+    plugin_sources: List[PluginSourceConfig] = [  # 外部插件源列表（预置官方社区源）
+        PluginSourceConfig(
+            name="Napics 社区插件源",
+            url="https://github.com/icatmiumiu/plugins-of-napics",
+        ),
+    ]
     # 下载监控目录（无下载器插件时的兜底方案）
     download_watch_dirs: List[str] = []           # 监控目录列表，新文件自动触发整理
 
@@ -116,9 +128,14 @@ class ConfigManager:
                     elif "nas_path" in data and data["nas_path"]:
                         migrated = [data["nas_path"]]
                     data["scan_paths"] = migrated
+                # 迁移逻辑：预装插件（旧配置 installed_plugins 为空时注入默认值）
+                if not data.get("installed_plugins") and not data.get("_plugins_migrated"):
+                    data["installed_plugins"] = AppConfig.model_fields["installed_plugins"].default
+                    data["_plugins_migrated"] = True
                 # 清理旧字段避免 Pydantic 校验问题
                 data.pop("nas_path", None)
                 data.pop("nas_paths", None)
+                data.pop("_plugins_migrated", None)
                 return AppConfig(**data)
         return AppConfig()
 
@@ -138,7 +155,7 @@ class ConfigManager:
                     return json.load(f)
             except json.JSONDecodeError:
                 # JSON 损坏，尝试备份
-                bak = lib_path + ".bak"
+                bak = self.lib_path + ".bak"
                 if os.path.exists(bak):
                     with open(bak, "r", encoding="utf-8") as f:
                         return json.load(f)

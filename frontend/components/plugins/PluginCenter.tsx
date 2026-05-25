@@ -14,6 +14,7 @@ interface PluginCenterProps {
 
 const CATEGORIES = [
   { key: "all", label: "全部" },
+  { key: "installed", label: "已安装" },
   { key: "metadata", label: "元数据" },
   { key: "search", label: "搜索" },
   { key: "rss", label: "订阅" },
@@ -78,9 +79,28 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
     }
   };
 
+  // 已迁出到社区源的插件，不在内置 Tab 中显示
+  const COMMUNITY_ONLY_PLUGINS = new Set([
+    "search-bt-direct", "search-pan", "search-example",
+    "search-prowlarr", "search-nyaa", "search-yts", "search-eztv",
+    "rss-anime", "rss-tv-movie",
+    "metadata-douban",
+    "download-openlist", "storage-openlist",
+    "feature-subscribe",
+  ]);
+
   const filtered = activeCategory === "all"
-    ? plugins
-    : plugins.filter(p => p.category === activeCategory);
+    ? plugins.filter(p => !p.id.includes("deprecated") && !COMMUNITY_ONLY_PLUGINS.has(p.id))
+    : activeCategory === "installed"
+    ? plugins.filter(p => p.installed)
+    : plugins.filter(p => p.category === activeCategory && !p.id.includes("deprecated") && !COMMUNITY_ONLY_PLUGINS.has(p.id));
+
+  // 排序：已安装在前，同组内按 category → name 排序
+  const sorted = [...filtered].sort((a, b) => {
+    if (a.installed !== b.installed) return a.installed ? -1 : 1;
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    return a.name.localeCompare(b.name);
+  });
 
   if (!open) return null;
 
@@ -156,7 +176,7 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
               ) : filtered.length === 0 ? (
                 <div className="text-center py-12 text-slate-600 text-sm">暂无插件</div>
               ) : (
-                filtered.map(plugin => (
+                sorted.map(plugin => (
                   <PluginCard
                     key={plugin.id}
                     plugin={plugin}
