@@ -58,7 +58,7 @@ export default function CardGrid({
     if (!expandedId) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('[data-card]') || target.closest('[data-expand-panel]') || 
+      if (target.closest('[data-card]') || target.closest('[data-add-card]') || target.closest('[data-expand-panel]') || 
           target.closest('[data-detail-drawer]') || target.closest('button') || 
           target.closest('input') || target.closest('textarea')) {
         return;
@@ -193,7 +193,7 @@ export default function CardGrid({
       <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 pb-20">
         {/* 常驻添加卡片：仅根目录第一张 */}
         {isRootLevel && onAddLibrary && (
-          <div data-card>
+          <div data-add-card>
             <button onClick={onAddLibrary}
               className="group w-full aspect-[2/3] rounded-xl border-2 border-dashed border-white/[0.08] hover:border-blue-500/30 bg-white/[0.02] hover:bg-blue-500/[0.03] flex flex-col items-center justify-center gap-3 transition-all cursor-pointer">
               <div className="w-10 h-10 rounded-full bg-white/[0.04] group-hover:bg-blue-500/10 flex items-center justify-center transition-all">
@@ -266,7 +266,7 @@ export default function CardGrid({
                     )}
                     {ft === "movie" && !folder.is_virtual_library && folder.videos[0] && (
                       <div className="absolute top-3 right-3 flex flex-col gap-1 z-10">
-                        {folder.videos[0].is_low_res && <span className="bg-orange-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">低画质</span>}
+                        {folder.videos[0].is_low_res && <span title="分辨率较低，可搜索更高画质版本替换" className="bg-orange-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium cursor-help">低画质</span>}
                         {folder.videos[0].hdr_type && folder.videos[0].hdr_type !== "SDR" && <span className="bg-purple-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">{folder.videos[0].hdr_type}</span>}
                       </div>
                     )}
@@ -380,8 +380,8 @@ export default function CardGrid({
                     </div>
                   )}
                   <div className="absolute top-3 right-3 flex flex-col gap-1 z-10">
-                    {v.is_low_res && <span className="bg-orange-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">低画质</span>}
-                    {v.hdr_type !== "SDR" && <span className="bg-purple-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">{v.hdr_type}</span>}
+                    {v.is_low_res && <span title="分辨率较低，可搜索更高画质版本替换" className="bg-orange-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium cursor-help">低画质</span>}
+                    {v.hdr_type && v.hdr_type !== "SDR" && <span className="bg-purple-500/90 text-white text-[11px] px-2 py-0.5 rounded-md font-medium">{v.hdr_type}</span>}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <p className="text-[15px] font-semibold text-white truncate flex items-center gap-1.5">

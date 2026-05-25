@@ -20,6 +20,16 @@ const FALLBACK_TABS: { id: string; name: string }[] = [
   { id: "bangumi", name: "Bangumi" },
 ];
 
+/** 根据错误类型生成友好提示 */
+function getSearchErrorHint(e: any): string {
+  const msg = e?.message || String(e) || "";
+  if (msg.includes("429") || msg.includes("限频") || msg.includes("rate")) return "请求过于频繁，请稍后重试";
+  if (msg.includes("timeout") || msg.includes("超时")) return "请求超时，请检查网络或代理配置";
+  if (msg.includes("proxy") || msg.includes("ECONNREFUSED") || msg.includes("网络")) return "网络连接失败，请检查代理配置";
+  if (msg.includes("401") || msg.includes("api_key")) return "API Key 无效，请在设置中检查";
+  return "搜索失败，请稍后重试";
+}
+
 export function CandidatePicker({ name, path, onSelected }: { name: string; path: string; onSelected: (data?: any) => void }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("tmdb");
@@ -29,6 +39,7 @@ export function CandidatePicker({ name, path, onSelected }: { name: string; path
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchError, setSearchError] = useState("");
   const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
 
   // 加载 metadata provider 列表
@@ -49,18 +60,21 @@ export function CandidatePicker({ name, path, onSelected }: { name: string; path
   }, [metadataProviders]);
 
   const searchTmdb = async (q?: string) => {
-    setLoading(true);
-    try { const r = await api.scrapeCandidates(q || searchQuery || name); setCandidates(r.candidates || []); } catch { setCandidates([]); }
+    setLoading(true); setSearchError("");
+    try { const r = await api.scrapeCandidates(q || searchQuery || name); setCandidates(r.candidates || []); }
+    catch (e: any) { setCandidates([]); setSearchError(getSearchErrorHint(e)); }
     setLoading(false);
   };
   const searchDouban = async (q?: string) => {
-    setLoading(true);
-    try { const r = await api.scrapeDoubanCandidates(q || searchQuery || name); setDoubanCandidates(r.candidates || []); } catch { setDoubanCandidates([]); }
+    setLoading(true); setSearchError("");
+    try { const r = await api.scrapeDoubanCandidates(q || searchQuery || name); setDoubanCandidates(r.candidates || []); }
+    catch (e: any) { setDoubanCandidates([]); setSearchError(getSearchErrorHint(e)); }
     setLoading(false);
   };
   const searchBangumi = async (q?: string) => {
-    setLoading(true);
-    try { const r = await api.scrapeBangumiCandidates(q || searchQuery || name); setBangumiCandidates(r.candidates || []); } catch { setBangumiCandidates([]); }
+    setLoading(true); setSearchError("");
+    try { const r = await api.scrapeBangumiCandidates(q || searchQuery || name); setBangumiCandidates(r.candidates || []); }
+    catch (e: any) { setBangumiCandidates([]); setSearchError(getSearchErrorHint(e)); }
     setLoading(false);
   };
 
@@ -140,7 +154,8 @@ export function CandidatePicker({ name, path, onSelected }: { name: string; path
         })}
       </div>
       {loading && <div className="flex justify-center py-4"><div className="w-5 h-5 border-2 border-slate-700 border-t-blue-400 rounded-full animate-spin" /></div>}
-      {!loading && currentList.length === 0 && <p className="text-xs text-slate-600 py-2">未找到候选</p>}
+      {!loading && currentList.length === 0 && !searchError && <p className="text-xs text-slate-600 py-2">未找到候选</p>}
+      {!loading && searchError && <p className="text-xs text-amber-400/80 py-2">⚠️ {searchError}</p>}
       <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
         {tab === "tmdb" && candidates.map(c => (
           <CandidateCardTmdb key={`tmdb-${c.tmdb_id}`} c={c} selecting={selecting} onSelect={selectTmdb} />

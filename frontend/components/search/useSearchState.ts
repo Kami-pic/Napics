@@ -351,7 +351,7 @@ export function useSearchState({
         setResults(sseResults);
         setHitKeyword(q);
       }
-    } catch {
+    } catch (e: any) {
       // SSE 失败，fallback 到普通搜索（仅当前搜索仍有效时）
       if (searchIdRef.current !== thisSearchId) return;
       try {
@@ -368,9 +368,18 @@ export function useSearchState({
           setResults(raw);
           setHitKeyword(q);
         }
-      } catch {
+      } catch (e: any) {
         if (searchIdRef.current === thisSearchId) {
-          setError("搜索失败，请检查 Prowlarr 配置后重试");
+          const msg = e?.message || "";
+          if (msg.includes("timeout") || msg.includes("超时")) {
+            setError("搜索超时，请检查网络连接或代理配置");
+          } else if (msg.includes("proxy") || msg.includes("ECONNREFUSED")) {
+            setError("网络连接失败，请检查代理配置是否正确");
+          } else if (msg.includes("429") || msg.includes("限频")) {
+            setError("请求过于频繁，请稍后重试");
+          } else {
+            setError("搜索失败，请检查搜索源配置后重试");
+          }
         }
       }
     }
