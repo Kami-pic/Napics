@@ -454,3 +454,124 @@ class PluginManager:
             url = url.replace("github.com", "raw.githubusercontent.com")
             url += "/main/index.json"
         return url
+
+    def install_from_github_url(
+        self,
+        github_url: str,
+        installed_plugins: List[str],
+        proxy: str = "",
+    ) -> Dict[str, Any]:
+        """从 GitHub 仓库 URL 直接安装插件。
+
+        流程：解析 URL → 下载仓库 zip → 解压 → 校验 manifest → 注册
+        支持格式：
+        - https://github.com/user/repo（默认 main 分支）
+        - https://github.com/user/repo/tree/branch
+        """
+        url = github_url.strip().rstrip("/")
+
+        # 解析 GitHub URL
+        if "github.com" not in url:
+            return {"success": False, "error": "invalid_url", "message": "仅支持 GitHub 仓库 URL"}
+
+        # 提取 user/repo 和 branch
+        import re
+        match = re.match(r"https?://github\.com/([^/]+)/([^/]+)(?:/tree/([^/]+))?", url)
+        if not match:
+            return {"success": False, "error": "invalid_url", "message": "无法解析 GitHub 仓库地址"}
+
+        user, repo, branch = match.group(1), match.group(2), match.group(3) or "main"
+        repo = repo.rstrip(".git")
+
+        # 先尝试获取 manifest.json 确认是有效插件
+        manifest_url = f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/manifest.json"
+        try:
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+            resp = requests.get(manifest_url, timeout=15, proxies=proxies)
+            if resp.status_code == 404:
+                return {"success": False, "error": "no_manifest", "message": "仓库中未找到 manifest.json（确认仓库根目录有此文件）"}
+            resp.raise_for_status()
+            manifest_data = resp.json()
+            plugin_id = manifest_data.get("id", "")
+            if not plugin_id:
+                return {"success": False, "error": "invalid_manifest", "message": "manifest.json 缺少 id 字段"}
+        except requests.RequestException as e:
+            return {"success": False, "error": "network_error", "message": f"获取 manifest.json 失败: {str(e)}"}
+        except Exception as e:
+            return {"success": False, "error": "parse_error", "message": f"解析 manifest.json 失败: {str(e)}"}
+
+        # 检查是否已安装
+        if plugin_id in installed_plugins:
+            return {"success": False, "error": "already_installed", "message": f"插件 {plugin_id} 已安装"}
+
+        # 下载仓库 zip
+        zip_url = f"https://github.com/{user}/{repo}/archive/refs/heads/{branch}.zip"
+        try:
+            resp = requests.get(zip_url, timeout=60, proxies=proxies)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            return {"success": False, "error": "download_failed", "message": f"下载仓库失败: {str(e)}"}
+
+        # 解压到 plugins/ 目录
+        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        try:
+            if os.path.isdir(plugin_dir):
+                backup_dir = plugin_dir + ".bak"
+                if os.path.isdir(backup_dir):
+                    shutil.rmtree(backup_dir)
+                os.rename(plugin_dir, backup_dir)
+
+            zip_buffer = io.BytesIO(resp.content)
+            with zipfile.ZipFile(zip_buffer, "r") as zf:
+                # GitHub zip 内有 repo-branch/ 根目录
+                top_dirs = set()
+                for name in zf.namelist():
+                    parts = name.split("/")
+                    if len(parts) > 1:
+                        top_dirs.add(parts[0])
+
+                if len(top_dirs) == 1:
+                    zf.extractall(PLUGINS_DIR)
+                    extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
+                    if extracted_dir != plugin_dir:
+                        if os.path.isdir(plugin_dir):
+                            shutil.rmtree(plugin_dir)
+                        os.rename(extracted_dir, plugin_dir)
+                else:
+                    os.makedirs(plugin_dir, exist_ok=True)
+                    zf.extractall(plugin_dir)
+
+            # 清理备份
+            backup_dir = plugin_dir + ".bak"
+            if os.path.isdir(backup_dir):
+                shutil.rmtree(backup_dir)
+
+        except Exception as e:
+            backup_dir = plugin_dir + ".bak"
+            if os.path.isdir(backup_dir):
+                if os.path.isdir(plugin_dir):
+                    shutil.rmtree(plugin_dir)
+                os.rename(backup_dir, plugin_dir)
+            return {"success": False, "error": "extract_failed", "message": f"解压失败: {str(e)}"}
+
+        # 校验并加载
+        manifest_path = os.path.join(plugin_dir, "manifest.json")
+        if not os.path.isfile(manifest_path):
+            shutil.rmtree(plugin_dir)
+            return {"success": False, "error": "no_manifest", "message": "解压后未找到 manifest.json"}
+
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            manifest = PluginManifest(**data)
+            self._manifests[manifest.id] = manifest
+        except Exception as e:
+            shutil.rmtree(plugin_dir)
+            return {"success": False, "error": "invalid_manifest", "message": f"manifest.json 无效: {str(e)}"}
+
+        load_err = self._load_plugin_module(plugin_id)
+        if load_err:
+            logger.warning(f"[PluginManager] GitHub 插件 {plugin_id} 模块加载失败: {load_err}")
+
+        logger.info(f"[PluginManager] 从 GitHub 安装插件成功: {plugin_id} ({github_url})")
+        return {"success": True, "plugin_id": plugin_id, "name": manifest.name}

@@ -5,6 +5,7 @@ import { fetchPlugins, installPlugin, uninstallPlugin, type PluginInfo } from "@
 import PluginCard from "./PluginCard";
 import PluginConfigModal from "./PluginConfigModal";
 import RemotePluginList from "./RemotePluginList";
+import InstallFromUrl from "./InstallFromUrl";
 import AddSourceModal from "./AddSourceModal";
 
 interface PluginCenterProps {
@@ -30,7 +31,7 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
   const [configPlugin, setConfigPlugin] = useState<PluginInfo | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [showRemote, setShowRemote] = useState(false);
+  const [activeTab, setActiveTab] = useState<"builtin" | "remote" | "url">("builtin");
   const [showAddSource, setShowAddSource] = useState(false);
 
   const loadPlugins = useCallback(async () => {
@@ -127,23 +128,29 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
           </button>
         </div>
 
-        {/* 内置/第三方 切换 */}
+        {/* 内置/第三方/URL 切换 */}
         <div className="flex items-center gap-1 px-6 py-2 border-b border-white/[0.06]">
-          <button onClick={() => setShowRemote(false)}
+          <button onClick={() => setActiveTab("builtin")}
             className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-              !showRemote ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+              activeTab === "builtin" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
             }`}>
             内置插件
           </button>
-          <button onClick={() => setShowRemote(true)}
+          <button onClick={() => setActiveTab("remote")}
             className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-              showRemote ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+              activeTab === "remote" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
             }`}>
             第三方插件源
           </button>
+          <button onClick={() => setActiveTab("url")}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+              activeTab === "url" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+            }`}>
+            从 URL 安装
+          </button>
         </div>
 
-        {!showRemote && (
+        {activeTab === "builtin" && (
           <>
             {/* 分类 Tab */}
             <div className="flex gap-1 px-6 py-3 border-b border-white/[0.06] overflow-x-auto no-scrollbar">
@@ -191,10 +198,18 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
           </>
         )}
 
-        {showRemote && (
+        {activeTab === "remote" && (
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <RemotePluginList
               onAddSource={() => setShowAddSource(true)}
+              onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
+            />
+          </div>
+        )}
+
+        {activeTab === "url" && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <InstallFromUrl
               onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
             />
           </div>

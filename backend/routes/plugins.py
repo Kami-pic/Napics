@@ -52,6 +52,11 @@ class InstallRemoteRequest(BaseModel):
     plugin_id: str   # 要安装的插件 ID
 
 
+class InstallFromUrlRequest(BaseModel):
+    """从 GitHub URL 直接安装插件"""
+    url: str  # GitHub 仓库 URL
+
+
 # ── 插件列表与安装/卸载 ──
 
 
@@ -292,3 +297,25 @@ def install_remote_plugin(req: InstallRemoteRequest):
 
     logger.info(f"[Plugins] 已安装远程插件: {req.plugin_id} (来源: {req.source_url})")
     return {"success": True, "installed_plugins": installed}
+
+
+@router.post("/install-from-url")
+def install_from_url(req: InstallFromUrlRequest):
+    """从 GitHub 仓库 URL 直接安装插件"""
+    pm = _get_plugin_manager()
+    proxy = config_m.config.http_proxy or ""
+    installed = list(config_m.config.installed_plugins)
+
+    result = pm.install_from_github_url(req.url, installed, proxy=proxy)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result)
+
+    # 更新配置
+    plugin_id = result["plugin_id"]
+    installed.append(plugin_id)
+    conf = config_m.config.model_copy()
+    conf.installed_plugins = installed
+    config_m.save(conf)
+
+    logger.info(f"[Plugins] 从 URL 安装插件: {plugin_id} ({req.url})")
+    return {"success": True, "plugin_id": plugin_id, "name": result.get("name", ""), "installed_plugins": installed}

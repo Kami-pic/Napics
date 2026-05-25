@@ -143,3 +143,16 @@ export async function installRemotePlugin(sourceUrl: string, pluginId: string): 
   }
   return res.json();
 }
+
+export async function installFromUrl(url: string): Promise<{ success: boolean; plugin_id: string; name: string; installed_plugins: string[] }> {
+  const res = await fetch(`${BASE_URL}/api/plugins/install-from-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) {
+    const detail = await res.json();
+    throw detail.detail || detail;
+  }
+  return res.json();
+}
