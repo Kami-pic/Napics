@@ -92,12 +92,13 @@ async def scan_path(path: str, library_name: str = ""):
                 if not item.get("clean_name"):
                     fn = item.get("file_name", "")
                     if fn:
-                        result = clean_from_filename(fn, source="parsed")
+                        result = clean_from_filename(fn)
                         if result.display:
                             item["clean_name"] = result.display
                             item["clean_name_cn"] = result.cn
                             item["clean_name_en"] = result.en
                             item["clean_name_original"] = result.original
+                            item["clean_name_source"] = "parsed"
                             item["clean_name_source"] = "parsed"
 
             config_m.save_library(final)

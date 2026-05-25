@@ -5,8 +5,8 @@ import type { VideoInfo, FolderNode } from "@/types";
 import { formatSize } from "@/lib/utils";
 import CardPoster from "./CardPoster";
 import EpisodeList from "./EpisodeList";
-import { getSeasonLabel } from "./CardGrid";
-import type { CardItem } from "./CardGrid";
+import { getSeasonLabel } from "./cardGridUtils";
+import type { CardItem } from "./cardGridUtils";
 
 export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPaths, onToggleSelect, onToggleFolderSelect, onPlay, onSearch, onVideoDetail, onFolderDetail, onClose, batchMode, refreshKey = 0 }: {
   item: CardItem; seasonTab: number; setSeasonTab: (n: number) => void;

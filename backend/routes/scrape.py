@@ -18,6 +18,13 @@ from provider_models import MetadataSearchRequest
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+class ShadowNameRequest(BaseModel):
+    path: str
+    shadow_name: str
+    source: str = "manual"
+
+
 @router.post("/media/shadow-name")
 def set_shadow_name(req: ShadowNameRequest):
     """设置影子名"""
