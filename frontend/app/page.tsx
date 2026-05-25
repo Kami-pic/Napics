@@ -94,6 +94,7 @@ export default function Home() {
   const libraryContentRef = useRef<HTMLDivElement>(null);
   const [discoverVisible, setDiscoverVisible] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<"library" | "discover">("library");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [searchContext, setSearchContext] = useState<{
@@ -212,9 +213,12 @@ export default function Home() {
 
   // ── 发现区域懒加载：IntersectionObserver 检测进入视口 ──
   useEffect(() => {
-    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); return; }
+    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); setActiveSection("library"); return; }
     const observer = new IntersectionObserver(
-      ([entry]) => setDiscoverVisible(entry.isIntersecting),
+      ([entry]) => {
+        setDiscoverVisible(entry.isIntersecting);
+        setActiveSection(entry.isIntersecting ? "discover" : "library");
+      },
       { threshold: 0.05 }
     );
     observer.observe(discoverRef.current);
@@ -259,7 +263,12 @@ export default function Home() {
       <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={navigateTo}
         collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenPlugins={() => setShowPlugins(true)}
-        onOpenSettings={() => setShowSettings(true)} />
+        onOpenSettings={() => setShowSettings(true)}
+        showDiscover={showDiscover}
+        activeSection={activeSection}
+        onScrollToLibrary={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+        onScrollToDiscover={() => discoverRef.current && scrollContainerRef.current?.scrollTo({ top: discoverRef.current.offsetTop - 8, behavior: "smooth" })}
+      />
 
       <div ref={scrollContainerRef} className="flex-1 h-screen overflow-y-auto no-scrollbar" onClick={(e) => {
         const target = e.target as HTMLElement;

@@ -11,9 +11,13 @@ interface SidebarProps {
   onToggle: () => void;
   onOpenPlugins?: () => void;
   onOpenSettings?: () => void;
+  showDiscover?: boolean;
+  onScrollToLibrary?: () => void;
+  onScrollToDiscover?: () => void;
+  activeSection?: "library" | "discover";
 }
 
-export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins, onOpenSettings }: SidebarProps) {
+export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins, onOpenSettings, showDiscover, onScrollToLibrary, onScrollToDiscover, activeSection }: SidebarProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -125,6 +129,26 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
           </div>
         )}
       </div>
+
+      {/* 区域导航（发现插件安装时显示） */}
+      {showDiscover && (
+        <div className="border-t border-white/[0.06] p-2 flex gap-1">
+          <button onClick={onScrollToLibrary}
+            className={`flex-1 flex items-center gap-2 py-2 rounded-lg transition-all ${collapsed ? "justify-center px-2" : "px-3"} ${
+              activeSection === "library" ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+            }`}>
+            <span className="text-sm">📚</span>
+            {!collapsed && <span className="text-xs">媒体库</span>}
+          </button>
+          <button onClick={onScrollToDiscover}
+            className={`flex-1 flex items-center gap-2 py-2 rounded-lg transition-all ${collapsed ? "justify-center px-2" : "px-3"} ${
+              activeSection === "discover" ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+            }`}>
+            <span className="text-sm">🎬</span>
+            {!collapsed && <span className="text-xs">发现</span>}
+          </button>
+        </div>
+      )}
 
       {/* 插件中心 + 设置入口 */}
       <div className="border-t border-white/[0.06] p-2 flex gap-1">
