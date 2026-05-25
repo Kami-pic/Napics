@@ -15,9 +15,9 @@
 **原因**：`media_library.json` 中的残留数据（之前测试写入后未清理）
 
 **修复方案**：
-- [ ] 检查 `media_library.json` 中是否有不存在于磁盘的文件条目
-- [ ] 快速同步（`/sync`）时应自动清理磁盘上不存在的条目（现有逻辑已有 `removed = lib_paths - fs_files`，但可能没覆盖到"无 scan_paths 时"的场景）
-- [ ] 或者：添加"清空媒体库"按钮，直接清空 `media_library.json`
+- [x] 检查 `media_library.json` 中是否有不存在于磁盘的文件条目
+- [x] 快速同步（`/sync`）时应自动清理磁盘上不存在的条目（现有逻辑已有 `removed = lib_paths - fs_files`，但可能没覆盖到"无 scan_paths 时"的场景）
+- [x] 新增：sync 时清理不属于任何已配置路径的孤立条目
 
 ---
 
@@ -58,64 +58,47 @@
 
 ## 3. 设置入口位置调整
 
-**现状**：设置按钮在右上角 Header 中
-
-**目标**：设置入口移到侧边栏底部，和插件按钮放在一起
+**现状**：~~设置按钮在右上角 Header 中~~ ✅ 已移至侧边栏底部
 
 **改动**：
-- [ ] 从 `Header` 组件中移除设置按钮
-- [ ] 在 `Sidebar` 底部添加设置按钮（在插件 🧩 按钮下方或旁边）
-- [ ] 保持 `SettingsModal` 的打开逻辑不变，只是触发入口换位置
-- [ ] 侧边栏底部布局：`🧩 插件` + `⚙️ 设置`（水平排列或垂直堆叠）
+- [x] 从 `Header` 组件中移除设置按钮
+- [x] 在 `Sidebar` 底部添加设置按钮（在插件 🧩 按钮旁边）
+- [x] 保持 `SettingsModal` 的打开逻辑不变，只是触发入口换位置
+- [x] 侧边栏底部布局：`🧩 插件` + `⚙️ 设置`（水平排列）
 
 ---
 
 ## 4. 扫描进度组件位置调整
 
-**现状**：扫描进度浮窗在屏幕左下角（`fixed bottom-6 left-6`）
-
-**目标**：移到屏幕底部居中，避免遮挡侧边栏底部的插件和设置按钮
+**现状**：~~扫描进度浮窗在屏幕左下角~~ ✅ 已改为底部居中
 
 **改动**：
-- [ ] 将 `page.tsx` 中扫描进度组件的定位从 `fixed bottom-6 left-6` 改为 `fixed bottom-6 left-1/2 -translate-x-1/2`
-- [ ] 或者用 `inset-x-0 flex justify-center` 实现居中
-- [ ] 确认不会和批量搜索升级按钮（`fixed bottom-6 right-6`）重叠
+- [x] 将 `page.tsx` 中扫描进度组件的定位从 `fixed bottom-6 left-6` 改为 `fixed bottom-6 left-1/2 -translate-x-1/2`
+- [x] 确认不会和批量搜索升级按钮（`fixed bottom-6 right-6`）重叠
 
 ---
 
 ## 5. 首页展开面板不应被页面高度限制
 
-**现象**：首页现在会出现散装电影、tv、合集、系列卡片，点击展开后展开面板被页面容器高度限制住，内容被截断。
-
-**原因**：之前首页只有文件夹卡片（进入后才看到内容），现在 `CardGrid` 直接渲染 `tv`/`collection`/`series`/`movie` 类型的卡片，展开面板（ExpandPanel）插入到网格中时，如果内容很多（如 8 季 × 10 集），面板高度超出可视区域。
-
-**目标**：展开面板不限高，推荐区域（发现页）无限往下推。
+**现象**：~~展开面板被 max-h-[400px] 限制~~ ✅ 已移除限高
 
 **改动**：
-- [ ] `ExpandPanel` 中的 `max-h-[400px]` 限制去掉或改为自适应（series/collection 的列表和网格不限高）
-- [ ] 确认 `CardGrid` 的父容器没有 `overflow: hidden` 截断展开面板
-- [ ] 展开面板展开时，发现页区域自然被推下去（当前已是 DOM 流式布局，应该自动生效）
-- [ ] 如果展开内容过长，考虑加 "收起" 按钮而不是限高截断
+- [x] `ExpandPanel` 中的 `max-h-[400px]` 限制去掉（series/collection 的列表和网格不限高）
+- [x] `EpisodeList` 中的 `max-h-[400px]` 同步去掉
+- [x] 展开面板展开时，发现页区域自然被推下去（DOM 流式布局自动生效）
 
 ---
 
 ## 6. 侧边栏导航：发现 / 媒体库快速切换
 
-**目标**：安装发现推荐插件后，侧边栏底部（插件和设置上方）出现两个导航入口：
-- **媒体库**：点击滚动到页面顶部（媒体库区域）
-- **发现**：点击滚动到发现页顶部
-
-**交互**：
-- 点击后快速滚动动画（smooth scroll）到对应区域
-- 当前所在区域高亮显示（类似锚点导航）
-- 位置在侧边栏底部，插件/设置按钮的上方
+**目标**：✅ 已实现
 
 **改动**：
-- [ ] `Sidebar` 底部添加"媒体库"和"发现"两个导航按钮（仅在 `feature-discover` 插件安装时显示"发现"）
-- [ ] 点击"发现"时调用 `scrollContainerRef.current.scrollTo({ top: discoverRef.offsetTop, behavior: 'smooth' })`
-- [ ] 点击"媒体库"时调用 `scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })`
-- [ ] 根据当前滚动位置高亮对应按钮（用 IntersectionObserver 或 scroll 事件判断）
-- [ ] 需要把 `scrollContainerRef` 和 `discoverRef` 的引用传给 `Sidebar`（或通过 context/事件通信）
+- [x] `Sidebar` 底部添加"媒体库"和"发现"两个导航按钮（仅在 `feature-discover` 插件安装时显示"发现"）
+- [x] 点击"发现"时 smooth scroll 到发现区域
+- [x] 点击"媒体库"时 smooth scroll 到顶部
+- [x] 根据当前滚动位置高亮对应按钮（用 IntersectionObserver 判断）
+- [x] 导航按钮位于插件/设置按钮上方
 
 ---
 
