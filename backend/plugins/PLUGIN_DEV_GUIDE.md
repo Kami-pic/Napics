@@ -202,3 +202,158 @@ def register(ctx):
 4. 空结果不要缓存，避免临时故障导致长时间无结果
 5. `provider_id` 必须全局唯一，建议用 `作者名_源名` 格式
 6. 插件目录名和 manifest.id 保持一致
+
+
+## 方式四：注册 RSS 源
+
+RSS 源插件用于订阅追更功能，定时拉取新内容。
+
+```python
+import importlib
+import os
+import sys
+
+# 将 sources/ 目录加入 sys.path（如果有多个源文件）
+_SOURCES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sources")
+if _SOURCES_DIR not in sys.path:
+    sys.path.insert(0, _SOURCES_DIR)
+
+def register(ctx):
+    """注册 RSS 源到 plugin registry。"""
+    from plugin_context import _plugin_providers
+
+    # 方式 A：直接注册源类
+    from my_rss_source import MyRSSSource
+
+    _plugin_providers["rss_my_source"] = {
+        "type": "rss_source",
+        "source_id": "my_source",
+        "source_class": MyRSSSource,
+        "plugin_id": "my-rss-plugin",
+    }
+
+    ctx.logger.info("我的 RSS 源已注册")
+
+
+def unregister():
+    pass
+```
+
+### RSS 源类实现
+
+RSS 源需要继承 `RSSSourceBase`：
+
+```python
+# sources/my_rss_source.py
+from rss_source_base import RSSSourceBase
+
+class MyRSSSource(RSSSourceBase):
+    """我的 RSS 源"""
+
+    source_id = "my_source"
+    source_name = "我的源"
+    base_url = "https://example.com/rss"
+
+    def fetch_items(self, keyword: str, limit: int = 50) -> list:
+        """拉取 RSS 条目。
+
+        返回字典列表，每个字典包含：
+        - title: 标题
+        - download_url: 下载链接（magnet 或 torrent URL）
+        - published_at: 发布时间（datetime 或 ISO 字符串）
+        - size_gb: 文件大小（GB）
+        - episode: 集数（可选）
+        - season: 季数（可选）
+        """
+        import requests
+        resp = requests.get(f"{self.base_url}?q={keyword}", timeout=15)
+        # 解析 RSS XML 或 JSON...
+        items = []
+        for entry in self._parse_feed(resp.text):
+            items.append({
+                "title": entry["title"],
+                "download_url": entry["link"],
+                "published_at": entry.get("pubDate"),
+                "size_gb": entry.get("size", 0) / (1024**3),
+            })
+        return items[:limit]
+```
+
+---
+
+## 插件发布与分发
+
+### 打包为 zip
+
+```bash
+# 在插件目录的父目录执行
+zip -r my-plugin.zip my-plugin/
+```
+
+zip 包结构：
+```
+my-plugin.zip
+└── my-plugin/
+    ├── manifest.json
+    ├── __init__.py
+    └── sources/          # 可选：多文件时放这里
+        └── scraper.py
+```
+
+### 创建插件源 index.json
+
+```json
+{
+    "name": "我的插件源",
+    "version": "1.0.0",
+    "description": "自定义插件集合",
+    "homepage": "https://github.com/你的用户名/my-plugins",
+    "plugins": [
+        {
+            "id": "my-plugin",
+            "name": "我的插件",
+            "version": "1.0.0",
+            "description": "一个自定义搜索源",
+            "category": "search",
+            "icon": "🔍",
+            "risk_level": "low",
+            "depends_on": [],
+            "download_url": "https://github.com/你的用户名/my-plugins/releases/download/v1.0.0/my-plugin.zip",
+            "sha256": "用 sha256sum my-plugin.zip 计算",
+            "min_napics_version": "1.0.0"
+        }
+    ]
+}
+```
+
+### 发布到 GitHub
+
+1. 创建 GitHub 仓库，放入 `index.json` 和插件源代码
+2. 创建 Release，上传 zip 包
+3. 用户在 napics 插件中心 → 第三方插件源 → 添加你的仓库 URL
+
+### 使用 napics-plugin-sdk 开发
+
+```bash
+pip install napics-plugin-sdk
+```
+
+SDK 提供类型提示和数据模型，方便 IDE 自动补全：
+
+```python
+from napics_sdk import SearchCandidate, PanSearchCandidate, RSSCandidate
+from napics_sdk import ProviderKind, ProviderMetadata
+```
+
+---
+
+## 插件模板
+
+快速开始：使用 [napics-plugin-template](https://github.com/nicq/napics-plugin-template) 模板仓库。
+
+```bash
+# 克隆模板
+git clone https://github.com/nicq/napics-plugin-template my-plugin
+# 修改 manifest.json 和 __init__.py
+# 打包发布
+```
