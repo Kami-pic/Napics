@@ -25,30 +25,61 @@ def is_plugin_installed(plugin_id: str) -> bool:
 
 # ── 插件 ID → 功能映射 ──
 
-# BT 搜索源：search-prowlarr 控制 Prowlarr，search-bt-direct 控制所有直搜源
-BT_DIRECT_SOURCES = {
-    "bitsearch", "cilixiong", "xl720", "nyaa", "mikan",
-    "yts", "limetorrents", "acgrip", "bangumi_moe", "eztv", "dmhy", "1337x",
+# BT 搜索源：每个源一个独立插件，也兼容旧的 search-bt-direct 捆绑包
+BT_SOURCE_PLUGIN_MAP = {
+    "bitsearch": "search-bitsearch",
+    "cilixiong": "search-cilixiong",
+    "xl720": "search-xl720",
+    "nyaa": "search-nyaa",
+    "mikan": "search-mikan",
+    "yts": "search-yts",
+    "limetorrents": "search-limetorrents",
+    "acgrip": "search-acgrip",
+    "bangumi_moe": "search-bangumi-moe",
+    "eztv": "search-eztv",
+    "dmhy": "search-dmhy",
+    "1337x": "search-1337x",
 }
 
-# 网盘搜索源：search-pan 控制所有网盘源
-PAN_SOURCES = {"pansearch", "gogopanso", "github", "rrdynb", "ddys", "pansou"}
+# 网盘搜索源：每个源一个独立插件，也兼容旧的 search-pan 捆绑包
+PAN_SOURCE_PLUGIN_MAP = {
+    "pansearch": "search-pansearch",
+    "rrdynb": "search-rrdynb",
+    "ddys": "search-ddys",
+    "pansou": "search-pansou",
+    "sites": "search-sites",
+    "slowread": "search-slowread",
+    "wnsearch": "search-wnsearch",
+    "gogopanso": "search-gogopanso",
+    "github": "search-github-pan",
+}
 
 
 def get_allowed_bt_sources() -> Set[str]:
     """根据已安装插件返回允许使用的 BT 搜索源名称集合。
 
+    支持两种模式：
+    - 旧模式：search-bt-direct 捆绑包（兼容）
+    - 新模式：每个源一个独立插件
     Prowlarr 需要安装 search-prowlarr 插件。
-    直搜源需要安装 search-bt-direct 插件。
     """
     installed = get_installed_plugins()
     allowed = set()
+
+    # Prowlarr
     if "search-prowlarr" in installed:
         allowed.add("prowlarr")
-    if "search-bt-direct" in installed:
-        allowed.update(BT_DIRECT_SOURCES)
 
-    # 第三方插件注册的搜索源：只要对应插件已安装就允许
+    # 旧捆绑包兼容
+    if "search-bt-direct" in installed:
+        allowed.update(BT_SOURCE_PLUGIN_MAP.keys())
+
+    # 新独立插件
+    for source_id, plugin_id in BT_SOURCE_PLUGIN_MAP.items():
+        if plugin_id in installed:
+            allowed.add(source_id)
+
+    # 第三方插件注册的搜索源
     try:
         from plugin_context import get_plugin_providers
         for pid, info in get_plugin_providers().items():
@@ -67,8 +98,16 @@ def is_bt_source_allowed(source_name: str) -> bool:
 
 
 def is_pan_search_allowed() -> bool:
-    """网盘搜索是否可用"""
-    return is_plugin_installed("search-pan")
+    """网盘搜索是否可用（任意网盘源插件已安装）"""
+    installed = get_installed_plugins()
+    # 旧捆绑包兼容
+    if "search-pan" in installed:
+        return True
+    # 新独立插件：任意一个网盘源安装即可
+    for plugin_id in PAN_SOURCE_PLUGIN_MAP.values():
+        if plugin_id in installed:
+            return True
+    return False
 
 
 def is_metadata_allowed(provider: str) -> bool:
@@ -113,6 +152,41 @@ def is_feature_allowed(feature: str) -> bool:
         "local_match": "feature-local-match",
     }
     plugin_id = mapping.get(feature)
+    if not plugin_id:
+        return False
+    return is_plugin_installed(plugin_id)
+
+
+# ── RSS 源守卫 ──
+
+# RSS 源 ID → 所属插件 ID
+RSS_ANIME_SOURCES = {"mikan", "nyaa", "acgrip", "bangumi_moe", "dmhy"}
+RSS_TV_MOVIE_SOURCES = {"eztv", "yts", "prowlarr"}
+
+
+def get_allowed_rss_sources() -> Set[str]:
+    """根据已安装插件返回允许使用的 RSS 源名称集合。"""
+    installed = get_installed_plugins()
+    allowed = set()
+    if "rss-anime" in installed:
+        allowed.update(RSS_ANIME_SOURCES)
+    if "rss-tv-movie" in installed:
+        allowed.update(RSS_TV_MOVIE_SOURCES)
+    return allowed
+
+
+def is_rss_source_allowed(source_name: str) -> bool:
+    """检查指定 RSS 源是否被允许"""
+    return source_name in get_allowed_rss_sources()
+
+
+def is_storage_allowed(provider: str = "openlist") -> bool:
+    """存储浏览是否可用"""
+    mapping = {
+        "openlist": "storage-openlist",
+        "alist": "storage-openlist",
+    }
+    plugin_id = mapping.get(provider)
     if not plugin_id:
         return False
     return is_plugin_installed(plugin_id)

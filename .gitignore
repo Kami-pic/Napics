@@ -95,6 +95,9 @@ community-plugins/
 
 # AI 协作配置（内部工作流，不公开）
 .kiro/
+AGENTS.md
+frontend/AGENTS.md
+frontend/CLAUDE.md
 
 # 一次性测试/调试脚本
 backend/_scripts/
@@ -105,7 +108,14 @@ backend/tests/
 frontend/_*.txt
 _*.txt
 
-# 灰色源代码（BT/网盘/RSS 爬虫，公开仓库不发布，本地保留运行）
-backend/bt_scraper_*.py
-backend/pan_scraper_*.py
-backend/rss_source_*.py
+# 灰色源代码已移入 plugins/*/sources/，根目录不再保留
+# （保留注释供追溯，下方规则可在确认无残留后删除）
+# backend/bt_scraper_*.py
+# backend/pan_scraper_*.py
+# backend/rss_source_*.py
+
+# 插件源代码（灰色爬虫，公开仓库不发布）
+backend/plugins/search-bt-direct/sources/
+backend/plugins/search-pan/sources/
+backend/plugins/rss-anime/sources/
+backend/plugins/rss-tv-movie/sources/

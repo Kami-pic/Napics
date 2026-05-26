@@ -72,43 +72,31 @@ class PanSearchService:
         pansou_api_url: str,
         scraper_proxy: str,
     ) -> Dict[str, ScraperBase]:
-        from pan_scraper_ddys import DdysScraper
-        from pan_scraper_github import GitHubPanScraper
-        from pan_scraper_gogopanso import GogoPansoScraper
-        from pan_scraper_pansearch import PanSearchScraper
-        from pan_scraper_pansou import PanSouClient
-        from pan_scraper_rrdynb import RrdynbScraper
-        from pan_scraper_sites import MultiSiteScraper
-        from pan_scraper_slowread import SlowreadScraper
-        from pan_scraper_wnsearch import WnSearchScraper
-
+        """构建网盘 scraper 实例。优先从 plugin registry 获取类，fallback 到直接 import。"""
         scrapers: Dict[str, ScraperBase] = {}
-        # pansearch — 国内可直连，优先启用
-        if sources.get("pansearch", True):
-            scrapers["pansearch"] = PanSearchScraper(proxy=scraper_proxy or None)
-        if sources.get("rrdynb"):
-            scrapers["rrdynb"] = RrdynbScraper(proxy=scraper_proxy or None)
-        if sources.get("ddys"):
-            scrapers["ddys"] = DdysScraper(proxy=scraper_proxy or None)
-        if sources.get("pansou") and pansou_api_url:
-            scrapers["pansou"] = PanSouClient(
-                api_url=pansou_api_url, proxy=scraper_proxy or None
-            )
-        # 通用网盘搜索站（凌风云/盘搜搜/小白盘/趣盘搜）
-        if sources.get("sites"):
-            scrapers["sites"] = MultiSiteScraper(proxy=scraper_proxy or None)
-        # 慢读搜索（16 种网盘类型）
-        if sources.get("slowread"):
-            scrapers["slowread"] = SlowreadScraper(proxy=scraper_proxy or None)
-        # 我能搜（夸克/百度/迅雷/UC）
-        if sources.get("wnsearch"):
-            scrapers["wnsearch"] = WnSearchScraper(proxy=scraper_proxy or None)
-        # 狗狗盘搜（aliyunpanshare 搜索前端，每日更新）
-        if sources.get("gogopanso", True):
-            scrapers["gogopanso"] = GogoPansoScraper(proxy=scraper_proxy or None)
-        # GitHub 资源仓库（QuarkShare + quark-share，本地索引）
-        if sources.get("github", True):
-            scrapers["github"] = GitHubPanScraper(proxy=scraper_proxy or None)
+
+        # 从 plugin registry 获取 scraper 类
+        scraper_classes: Dict[str, type] = {}
+        try:
+            from plugin_context import get_plugin_providers
+            for pid, info in get_plugin_providers().items():
+                if info.get("type") == "pan_search" and "scraper_class" in info:
+                    scraper_classes[pid] = info["scraper_class"]
+        except Exception:
+            pass
+
+        # fallback：源文件已移入插件目录，无法直接 import
+        if not scraper_classes:
+            logger.debug("[PanSearch] plugin registry 中无网盘源，可能未安装 search-pan 插件")
+
+        # 根据 sources 配置实例化
+        for name, cls in scraper_classes.items():
+            if name == "pansou":
+                if sources.get("pansou") and pansou_api_url:
+                    scrapers["pansou"] = cls(api_url=pansou_api_url, proxy=scraper_proxy or None)
+            elif sources.get(name, name in ("pansearch", "gogopanso", "github")):
+                scrapers[name] = cls(proxy=scraper_proxy or None)
+
         return scrapers
 
     async def search(

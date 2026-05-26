@@ -1,0 +1,14 @@
+{
+    "id": "search-xl720",
+    "name": "XL720",
+    "version": "1.0.0",
+    "description": "中文磁力聚合搜索（国内直连，响应较慢）",
+    "category": "search",
+    "icon": "🧲",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:xl720"
+    ],
+    "risk_level": "high"
+}

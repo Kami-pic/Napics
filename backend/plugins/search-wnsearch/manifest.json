@@ -1,0 +1,14 @@
+{
+    "id": "search-wnsearch",
+    "name": "我能搜",
+    "version": "1.0.0",
+    "description": "夸克/百度/迅雷/UC 网盘搜索",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:wnsearch"
+    ],
+    "risk_level": "high"
+}

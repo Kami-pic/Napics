@@ -254,19 +254,21 @@ def get_library_tree():
             node["is_category"] = False
         # 添加 folder_type
         if node["path"] and node["path"] != base_path:
+            # 优先读取用户手动覆盖
+            _ft_override = None
+            try:
+                _ft_override = organizer._load_folder_type_override(node["path"])
+            except Exception:
+                pass
+
             if node["path"] in top_category_paths:
                 node["category_tag"] = category_tag
                 node["is_top_category"] = True
                 node["is_virtual_library"] = node["name"] in _lib_category_tags
-                node["folder_type"] = _infer_folder_type_from_tree(node, category_tag)
+                node["folder_type"] = _ft_override or _infer_folder_type_from_tree(node, category_tag)
             else:
                 node["category_tag"] = ""
                 node["is_top_category"] = False
-                _ft_override = None
-                try:
-                    _ft_override = organizer._load_folder_type_override(node["path"])
-                except Exception:
-                    pass
                 if _ft_override:
                     node["folder_type"] = _ft_override
                 else:

@@ -1,8 +1,10 @@
 """BT 直搜 SearchProvider 工厂清单。
 
-此模块是 Phase 3 的兼容桥：集中现有 shared.py scraper getter，但不改旧搜索调用链。
+优先从 plugin registry 获取 scraper 类（插件自加载模式），
+fallback 到 shared.py getter（兼容旧模式，过渡期保留）。
 """
 
+import logging
 from typing import Mapping
 
 from bt_search_provider_adapter import (
@@ -12,6 +14,8 @@ from bt_search_provider_adapter import (
 )
 from provider_builtin_metadata import build_builtin_provider_metadata
 from provider_models import ProviderKind, ProviderMetadata
+
+logger = logging.getLogger(__name__)
 
 
 DIRECT_BT_SOURCE_ORDER = (
@@ -42,37 +46,49 @@ LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES = (
 )
 
 
-def get_direct_bt_scraper_factories() -> Mapping[str, ScraperFactory]:
-    from shared import (
-        _get_1337x_scraper,
-        _get_acgrip_scraper,
-        _get_bangumi_moe_scraper,
-        _get_bitsearch_scraper,
-        _get_cilixiong_scraper,
-        _get_dmhy_scraper,
-        _get_eztv_scraper,
-        _get_limetorrents_scraper,
-        _get_mikan_scraper,
-        _get_nyaa_scraper,
-        _get_xl720_scraper,
-        _get_yts_scraper,
-    )
+def _build_factory_from_registry(provider_id: str, scraper_class) -> ScraperFactory:
+    """从 plugin registry 的 scraper_class 构造工厂函数（懒加载单例）。"""
+    _instance = {}
 
-    factories = {
-        "bitsearch": _get_bitsearch_scraper,
-        "cilixiong": _get_cilixiong_scraper,
-        "xl720": _get_xl720_scraper,
-        "nyaa": _get_nyaa_scraper,
-        "mikan": _get_mikan_scraper,
-        "yts": _get_yts_scraper,
-        "limetorrents": _get_limetorrents_scraper,
-        "acgrip": _get_acgrip_scraper,
-        "bangumi_moe": _get_bangumi_moe_scraper,
-        "eztv": _get_eztv_scraper,
-        "dmhy": _get_dmhy_scraper,
-        "1337x": _get_1337x_scraper,
-    }
-    return {name: factories[name] for name in DIRECT_BT_SOURCE_ORDER}
+    def _factory():
+        if "inst" not in _instance:
+            from search_service import get_source_proxy
+            proxy = get_source_proxy(provider_id)
+            _instance["inst"] = scraper_class(proxy=proxy)
+        return _instance["inst"]
+
+    return _factory
+
+
+def get_direct_bt_scraper_factories() -> Mapping[str, ScraperFactory]:
+    """获取 BT 直搜源工厂映射。
+
+    优先从 plugin registry 获取（search-bt-direct 插件注册的 scraper_class），
+    未注册的源 fallback 到 shared.py getter（兼容旧模式）。
+    """
+    factories: dict[str, ScraperFactory] = {}
+
+    # 1. 从 plugin registry 获取
+    try:
+        from plugin_context import get_plugin_providers
+        plugin_providers = get_plugin_providers()
+        for source_id in DIRECT_BT_SOURCE_ORDER:
+            if source_id in plugin_providers:
+                info = plugin_providers[source_id]
+                if info.get("type") == "scraper_search" and "scraper_class" in info:
+                    factories[source_id] = _build_factory_from_registry(
+                        source_id, info["scraper_class"]
+                    )
+    except Exception as e:
+        logger.warning(f"[BT Factory] 从 plugin registry 获取失败: {e}")
+
+    # 2. 未从 registry 获取到的源时，搜索不可用（源文件已移入插件目录）
+    if len(factories) < len(DIRECT_BT_SOURCE_ORDER):
+        missing = [s for s in DIRECT_BT_SOURCE_ORDER if s not in factories]
+        if missing:
+            logger.debug(f"[BT Factory] 以下源未从 plugin registry 获取: {missing}")
+
+    return {name: factories[name] for name in DIRECT_BT_SOURCE_ORDER if name in factories}
 
 
 def build_direct_bt_providers_from_metadata(

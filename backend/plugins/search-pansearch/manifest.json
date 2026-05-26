@@ -1,0 +1,14 @@
+{
+    "id": "search-pansearch",
+    "name": "PanSearch",
+    "version": "1.0.0",
+    "description": "网盘资源搜索（国内直连）",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:pansearch"
+    ],
+    "risk_level": "high"
+}

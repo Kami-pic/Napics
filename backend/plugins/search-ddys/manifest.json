@@ -1,0 +1,14 @@
+{
+    "id": "search-ddys",
+    "name": "低端影视",
+    "version": "1.0.0",
+    "description": "网盘资源搜索（JSON API）",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:ddys"
+    ],
+    "risk_level": "high"
+}

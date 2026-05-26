@@ -1,12 +1,13 @@
 {
     "id": "search-bt-direct",
-    "name": "BT 直搜源包",
+    "name": "BT 直搜源包（已拆分）",
     "version": "1.0.0",
-    "description": "12 个 BT 直搜源（Bitsearch/Nyaa/蜜柑/磁力熊/YTS 等）",
+    "description": "已拆分为独立插件，建议卸载后安装单独的搜索源",
     "category": "search",
     "icon": "🧲",
     "requires_config": [],
     "depends_on": [],
     "provides": ["SearchProvider:bt_direct"],
-    "risk_level": "high"
+    "risk_level": "high",
+    "deprecated": true
 }

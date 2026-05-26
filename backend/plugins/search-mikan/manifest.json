@@ -1,0 +1,14 @@
+{
+    "id": "search-mikan",
+    "name": "蜜柑计划",
+    "version": "1.0.0",
+    "description": "中文动画 BT 搜索（需代理）",
+    "category": "search",
+    "icon": "🍊",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:mikan"
+    ],
+    "risk_level": "high"
+}

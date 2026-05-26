@@ -31,7 +31,7 @@ export default function Header({ stats, onOpenSettings, scanning, onStartScan, o
     setRefreshing(false);
   };
   return (
-    <header className="flex justify-between items-center py-5 px-1">
+    <header className="flex justify-between items-center py-5">
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
           onClick={onNavigateHome}>Napics Media Manager</h1>

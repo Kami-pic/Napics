@@ -1,0 +1,14 @@
+{
+    "id": "search-sites",
+    "name": "通用网盘站",
+    "version": "1.0.0",
+    "description": "凌风云/盘搜搜/小白盘/趣盘搜",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:sites"
+    ],
+    "risk_level": "high"
+}

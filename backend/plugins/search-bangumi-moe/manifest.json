@@ -1,0 +1,14 @@
+{
+    "id": "search-bangumi-moe",
+    "name": "Bangumi Moe",
+    "version": "1.0.0",
+    "description": "动画 BT 搜索（萌番组，国内直连）",
+    "category": "search",
+    "icon": "🌸",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:bangumi_moe"
+    ],
+    "risk_level": "high"
+}

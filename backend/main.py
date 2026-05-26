@@ -90,7 +90,17 @@ def read_root():
 
 @app.on_event("startup")
 def startup_event():
-    """后端启动时初始化订阅调度器和文件夹监控"""
+    """后端启动时初始化插件系统、订阅调度器和文件夹监控"""
+    # 加载已安装的插件（注册 provider 到 plugin_context）
+    try:
+        from routes.plugins import _get_plugin_manager
+        from shared import config_m
+        pm = _get_plugin_manager()
+        pm.load_installed_plugins(config_m.config.installed_plugins)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"[Main] 插件加载失败: {e}")
+
     try:
         from routes.subscribe import _get_scheduler
         _get_scheduler()  # 懒加载 + start()
