@@ -88,18 +88,24 @@ async def scan_path(path: str, library_name: str = ""):
             final = kept + results
 
             from clean_name_system import clean_from_filename, safe_update_clean_name as _safe_update
-            for item in final:
-                if not item.get("clean_name"):
-                    fn = item.get("file_name", "")
-                    if fn:
-                        result = clean_from_filename(fn)
-                        if result.display:
-                            item["clean_name"] = result.display
-                            item["clean_name_cn"] = result.cn
-                            item["clean_name_en"] = result.en
-                            item["clean_name_original"] = result.original
-                            item["clean_name_source"] = "parsed"
-                            item["clean_name_source"] = "parsed"
+            for item in results:
+                fn = item.get("file_name", "")
+                if fn:
+                    result_cn = clean_from_filename(fn)
+                    if result_cn.display:
+                        item["clean_name"] = result_cn.display
+                        item["clean_name_cn"] = result_cn.cn
+                        item["clean_name_en"] = result_cn.en
+                        item["clean_name_original"] = result_cn.original
+                        item["clean_name_source"] = "parsed"
+
+            # 清理不属于任何已配置路径的孤立条目
+            _all_configured_paths = list(config_m.config.scan_paths or [])
+            for lib in (config_m.config.media_libraries or []):
+                _all_configured_paths.extend(lib.paths)
+            if _all_configured_paths:
+                final = [v for v in final if not v.get("file_path") or
+                         any(v["file_path"].startswith(p) for p in _all_configured_paths)]
 
             config_m.save_library(final)
             yield "data: " + json.dumps({"type": "done", "total": len(results)}) + "\n\n"

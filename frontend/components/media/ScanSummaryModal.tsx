@@ -60,8 +60,8 @@ export default function ScanSummaryModal({ open, onClose, tree, totalVideos, has
         {stats.unidentified > 0 && (
           <div className="text-xs text-slate-400 bg-white/[0.03] rounded-lg p-3 mb-4">
             {hasMetadataPlugin
-              ? "💡 点击待识别的文件夹，可以手动匹配或自动识别"
-              : "💡 安装 TMDB 元数据插件后可自动识别影片信息"}
+              ? "💡 点击待识别的文件夹，可以手动匹配或自动刮削"
+              : "💡 安装元数据插件后可自动刮削影片信息"}
           </div>
         )}
 

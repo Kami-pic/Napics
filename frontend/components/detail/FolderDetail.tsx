@@ -104,29 +104,9 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         const res = await api.scrapeSupplement(node.path);
         setActionResult(res.status === "supplemented" ? "已补充缺少的字段" : res.status === "complete" ? "数据已完整" : "未找到匹配");
         onRefresh();
-      } else if (action === "rename") {
-        // 自动命名：预览
-        const res = await api.renameVideos(node.path, true);
-        const items = res.items || (Array.isArray(res) ? res : []);
-        const changed = items.filter((o: any) => !o.unchanged);
-        const unchanged = items.filter((o: any) => o.unchanged);
-        if (changed.length > 0) {
-          const truncName = (n: string) => n.length > 30 ? n.slice(0, 12) + "..." + n.slice(-12) : n;
-          let msg = "预览-rename " + changed.length + " 项需要重命名";
-          if (unchanged.length > 0) msg += `，${unchanged.length} 项已是标准格式`;
-          msg += "\n" + changed.map((o: any) => "• " + truncName(o.old_name || "") + "\n  → " + (o.new_name || "")).join("\n");
-          setActionResult(msg);
-        } else {
-          setActionResult("当前命名已是标准格式，无需修改");
-        }
       } else if (action === "rename_shadow") {
         const res = await api.renameVideos(node.path, false, true);
         setActionResult(`已更新标准名：${res.filled || res.shadow_filled || 0} 项`);
-        setTimeout(() => onRefresh(), 300);
-      } else if (action === "rename_real") {
-        const res = await api.renameVideos(node.path, false, false);
-        setLastSnapshotId(res.snapshot_id || null);
-        setActionResult("替换原始名完成");
         setTimeout(() => onRefresh(), 300);
       } else if (action === "organize") {
         // V3 一键整理 = 两段式（先推演后执行）
@@ -382,12 +362,12 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         return isAggregate ? (
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
-            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">自动识别</button>
+            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">自动刮削</button>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
             <button onClick={() => onSearch(defaultQuery, ctx)} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">搜索升级</button>
-            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">自动识别</button>
+            <button onClick={rescrape} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-slate-300">自动刮削</button>
             <CandidatePicker name={node.clean_name || node.videos[0]?.clean_name || node.name} path={node.path} onSelected={(d) => { if (d) setScrapeData(d); setPosterKey(k => k + 1); refreshFolderTree(); }} />
           </div>
         );
@@ -417,10 +397,10 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
         </div>
       )}
-      {/* 第三行：自动命名 / 标准结构 / 一键整理 + AI开关（虚拟文件夹不显示） */}
+      {/* 第三行：自动刮削名 / 标准结构 / 一键整理 + AI开关（虚拟文件夹不显示） */}
       {!node.is_virtual_library && (
       <div className="space-y-2">
-        <button onClick={() => doAction("rename")} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">自动命名</button>
+        <button onClick={() => doAction("rename_shadow", false)} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">生成标准名</button>
         <button onClick={async () => { setActionLoading(true); setActionResult(""); try { const res = await api.structureOrganize(node.path, true); const ops = res.ops || []; const videoExts = ['.mp4','.mkv','.avi','.rmvb','.rm','.flv','.ts','.m4v','.mov','.wmv']; const videoOps = ops.filter((o: any) => { const p = o.old || o.path || o.desc || ''; return videoExts.some(ext => p.toLowerCase().endsWith(ext)) || o.action === 'rename_dir' || o.action === 'rmdir'; }); const moveOps = videoOps.filter((o: any) => o.action === 'move'); const renameOps = videoOps.filter((o: any) => o.action === 'rename_dir'); if (ops.length) { let msg = `预览-structure ${moveOps.length} 个视频`; if (renameOps.length) msg += `，${renameOps.length} 个目录重命名`; moveOps.slice(0, 8).forEach((o: any) => { msg += `\n📦 ${o.desc || ''}`; }); renameOps.slice(0, 3).forEach((o: any) => { msg += `\n✏️ ${o.desc || ''}`; }); if (moveOps.length > 8) msg += `\n  ... 还有 ${moveOps.length - 8} 个视频`; setActionResult(msg); } else { setActionResult("结构已标准，无需调整"); } } catch (e: any) { setActionResult("操作失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">标准结构</button>
         <div className="flex gap-2">
           {actionLoading && abortController ? (
@@ -448,14 +428,6 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
             if (line.startsWith("• ")) return <div key={i} className="text-slate-500 mt-1.5">{line}</div>;
             return <div key={i}>{line}</div>;
           })}
-          {actionResult.includes("预览-rename") && (
-            <div className="flex gap-2 mt-3">
-              <button onClick={() => doAction("rename_shadow", false)} disabled={actionLoading}
-                className="flex-1 py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">更新标准名</button>
-              <button onClick={() => doAction("rename_real", false)} disabled={actionLoading}
-                className="flex-1 py-2 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-sm font-medium disabled:opacity-50">替换原始名</button>
-            </div>
-          )}
           {actionResult.startsWith("预览-organize") && (
             <button onClick={() => doAction("organize", false)} disabled={actionLoading}
               className="mt-2 w-full py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">确认执行</button>
@@ -464,7 +436,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
             <button onClick={async () => { setActionLoading(true); try { const res = await api.structureOrganize(node.path, false); setActionResult("结构整理完成: " + (res.count || 0) + " 项操作"); onRefresh(); } catch (e: any) { setActionResult("执行失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading}
               className="mt-2 w-full py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">确认执行</button>
           )}
-          {actionResult.startsWith("预览") && !actionResult.includes("预览-rename") && !actionResult.includes("预览-organize") && !actionResult.includes("预览-structure") && (
+          {actionResult.startsWith("预览") && !actionResult.includes("预览-organize") && !actionResult.includes("预览-structure") && (
             <button onClick={() => doAction(lastAction, false)} disabled={actionLoading}
               className="mt-2 w-full py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-sm font-medium disabled:opacity-50">确认执行</button>
           )}

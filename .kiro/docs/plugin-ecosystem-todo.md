@@ -37,53 +37,48 @@
 | 插件 ID | 说明 | 理由 |
 |---------|------|------|
 | metadata-tmdb | TMDB 元数据 | 合法 API，核心体验 |
-| metadata-bangumi | Bangumi 元数据 | 合法 API，动画用户需要 |
-| metadata-douban | 豆瓣元数据 | 隔壁拿的 API，封了就下掉 |
-| search-prowlarr | Prowlarr 对接 | 合法软件对接，核心搜索 |
-| search-nyaa | Nyaa BT 搜索 | 公开站，动画核心 |
-| search-yts | YTS BT 搜索 | 公开 API，电影核心 |
-| search-eztv | EZTV BT 搜索 | 公开站，美剧核心 |
+| metadata-douban | 豆瓣元数据 | 中文用户核心体验 |
 | download-qbittorrent | qB 对接 | 工具本身合法 |
-| feature-completeness | 季集完整性检测 | 纯本地计算 |
 | feature-discover | 发现推荐 | 合法数据源 |
 | feature-local-match | 本地媒体感知 | 纯本地 |
 
-### 外部社区插件（灰色，另一个账号）
+### 大号仓库非预装插件（用户在插件中心手动安装）
 
-**BT 搜索源（独立插件）：**
-| 插件 ID | 说明 | 风险 |
+| 插件 ID | 说明 | 理由 |
 |---------|------|------|
-| search-1337x | 1337x 综合搜索 | 镜像站不稳定 |
-| search-bitsearch | Bitsearch 综合搜索 | 429 限频 + CF |
-| search-limetorrents | LimeTorrents | TLS 报错，默认禁用 |
-| search-cilixiong | 磁力熊 | 中国特色 |
-| search-xl720 | XL720 | 中国特色，极慢 |
-| search-mikan | 蜜柑计划 | 中文动画，需代理 |
-| search-acgrip | ACG.RIP | 被墙，默认禁用 |
-| search-bangumi-moe | Bangumi Moe | 日本动画 |
-| search-dmhy | 动漫花园 | CF + 需代理 |
+| metadata-bangumi | Bangumi 元数据 | 合法 API，动画用户按需 |
+| feature-completeness | 季集完整性检测 | 依赖 TMDB，按需 |
+| feature-subscribe | 订阅追更 | 依赖 RSS 源，按需 |
+| search-prowlarr | Prowlarr 对接 | 需自建服务，按需 |
+| storage-openlist | OpenList 浏览 | 需自建服务，按需 |
 
-**网盘搜索源（独立插件）：**
-| 插件 ID | 说明 |
-|---------|------|
-| search-pansearch | PanSearch 网盘搜索 |
-| search-rrdynb | 人人电影 |
-| search-ddys | 低端影视 |
-| search-gogopanso | 狗狗盘搜 |
-| search-github-pan | GitHub 网盘仓库 |
-| search-pansou | 盘搜 |
-| search-sites | 通用网盘站 |
-| search-slowread | 慢读搜索 |
-| search-wnsearch | 我能搜 |
+### 外部社区插件（小号仓库，灰色/高风险）
+
+**BT 搜索源（按风险特征拆分）：**
+
+| 插件 ID | 包含源 | 特征 |
+|---------|--------|------|
+| search-bt-mirror | Bitsearch/1337x/LimeTorrents | 英文综合，镜像站+CF 风险 |
+| search-bt-movie-tv | YTS/EZTV | 影视公开站，相对稳定 |
+| search-bt-anime-jp | Nyaa/Bangumi Moe | 日本动画源 |
+| search-bt-anime-cn | 蜜柑/ACG.RIP/动漫花园 | 中文动画源，需代理+CF |
+| search-bt-cn | 磁力熊/XL720 | 中文磁力站，直连 |
+
+**网盘搜索源（按数据源拆分）：**
+
+| 插件 ID | 包含源 | 特征 |
+|---------|--------|------|
+| search-pan-main | PanSearch/PanSou | 聚合搜索引擎 |
+| search-pan-github | 狗狗盘搜/GitHub | 同源数据 |
+| search-pan-resource | 人人电影/低端影视 | 资源站直搜 |
 
 **其他：**
+
 | 插件 ID | 说明 |
 |---------|------|
 | rss-anime | 动画 RSS 源包 |
 | rss-tv-movie | 影视 RSS 源包 |
-| download-openlist | OpenList/Alist 对接 |
-| feature-subscribe | 订阅追更 |
-| storage-openlist | 网盘挂载浏览 |
+| download-openlist | OpenList 离线下载 |
 
 ### 付费插件（闭源）
 

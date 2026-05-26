@@ -1,12 +1,13 @@
 // 展开面板 — 从 CardGrid.tsx 拆分
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { VideoInfo, FolderNode } from "@/types";
 import { formatSize } from "@/lib/utils";
 import CardPoster from "./CardPoster";
 import EpisodeList from "./EpisodeList";
 import { getSeasonLabel } from "./cardGridUtils";
 import type { CardItem } from "./cardGridUtils";
+import { api } from "@/lib/api";
 
 export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPaths, onToggleSelect, onToggleFolderSelect, onPlay, onSearch, onVideoDetail, onFolderDetail, onClose, batchMode, refreshKey = 0 }: {
   item: CardItem; seasonTab: number; setSeasonTab: (n: number) => void;
@@ -14,6 +15,13 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
   onPlay: (p: string) => void; onSearch: (q: string) => void; onVideoDetail: (v: VideoInfo) => void; onFolderDetail: (n: FolderNode) => void; onClose: () => void; batchMode?: boolean; refreshKey?: number;
 }) {
   const [sortAsc, setSortAsc] = useState(true);
+  // 完整度数据（tv 类型用）
+  const tvPath = item.type === "tv" ? (item.parentNode?.path || "") : "";
+  const [completeness, setCompleteness] = useState<any>(null);
+  useEffect(() => {
+    if (!tvPath) { setCompleteness(null); return; }
+    api.getCompleteness(tvPath).then(res => { if (res.status === "ok") setCompleteness(res); }).catch(() => {});
+  }, [tvPath]);
   const sortBtn = (
     <button onClick={() => setSortAsc(p => !p)}
       className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
@@ -45,6 +53,13 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
     // 扁平 tv 或只有一季：直接展开集列表，不需要点季
     const directExpand = isFlatTv || isSingleSeason;
     const displayVideos = directExpand ? (item.seasons[0]?.videos || []) : (activeSeason?.videos || []);
+    // 构建季号→完整度状态映射
+    const seasonStatus: Record<number, { status: string; local: number; total: number }> = {};
+    if (completeness?.seasons) {
+      for (const s of completeness.seasons) {
+        seasonStatus[s.season_number] = { status: s.status, local: s.local_count, total: s.episode_count };
+      }
+    }
     return (
       <>
         <div className="flex items-center justify-between mb-4">
@@ -58,19 +73,31 @@ export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPat
         {/* 多季：季小卡片网格（扁平/单季时跳过） */}
         {!directExpand && (
           <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 mb-4">
-            {item.seasons.map((s, idx) => (
+            {item.seasons.map((s, idx) => {
+              // 从季文件夹名提取季号
+              const CN_NUM: Record<string, number> = { "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10 };
+              const sMatch = s.name.match(/(?:Season|S)\s*(\d+)/i) || s.name.match(/第(\d+)季/);
+              let sNum: number | undefined;
+              if (sMatch) { sNum = parseInt(sMatch[1]); }
+              else { const cnMatch = s.name.match(/第([一二三四五六七八九十]+)季/); if (cnMatch) { const c = cnMatch[1]; if (c.length === 1) sNum = CN_NUM[c]; else if (c === "十") sNum = 10; else if (c.startsWith("十")) sNum = 10 + (CN_NUM[c[1]] || 0); else if (c.endsWith("十")) sNum = (CN_NUM[c[0]] || 0) * 10; } }
+              const sInfo = sNum != null ? seasonStatus[sNum] : undefined;
+              return (
               <div key={s.path} className={`group rounded-xl overflow-hidden bg-[#1a1a1a] border cursor-pointer transition-all ${seasonTab === idx ? "border-blue-500/50 ring-1 ring-blue-500/20" : "border-white/[0.06] hover:border-slate-500"}`}
                 onClick={() => { setSeasonTab(seasonTab === idx ? -1 : idx); onFolderDetail(s); }}>
                 <div className="relative aspect-[2/3] bg-[#111]">
                   <CardPoster name={s.name} path={s.path} cacheKey={refreshKey} />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
-                  <div className="absolute top-2 left-2 bg-green-600/80 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold">{s.video_count} 集</div>
+                  <div className={`absolute top-2 left-2 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold ${sInfo?.status === "complete" ? "bg-emerald-600/80" : sInfo?.status === "partial" ? "bg-amber-600/80" : "bg-green-600/80"}`}>
+                    {sInfo ? `${sInfo.local}/${sInfo.total}` : `${s.video_count} 集`}
+                  </div>
+                  {sInfo?.status === "complete" && <div className="absolute top-2 right-2 text-emerald-400 text-[10px]">✓</div>}
                   <div className="absolute bottom-0 left-0 right-0 p-2">
                     <p className="text-[12px] font-semibold text-white truncate">{getSeasonLabel(s.name)}</p>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
         {/* 集列表：直接展开模式 或 选中了某个季 */}

@@ -32,7 +32,7 @@ function getSearchErrorHint(e: any): string {
 
 export function CandidatePicker({ name, path, onSelected }: { name: string; path: string; onSelected: (data?: any) => void }) {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState("tmdb");
+  const [tab, setTab] = useState("");
   const [candidates, setCandidates] = useState<any[]>([]);
   const [doubanCandidates, setDoubanCandidates] = useState<any[]>([]);
   const [bangumiCandidates, setBangumiCandidates] = useState<any[]>([]);
@@ -41,23 +41,38 @@ export function CandidatePicker({ name, path, onSelected }: { name: string; path
   const [searchQuery, setSearchQuery] = useState("");
   const [searchError, setSearchError] = useState("");
   const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
+  const [defaultSource, setDefaultSource] = useState("tmdb");
 
-  // 加载 metadata provider 列表
+  // 加载 metadata provider 列表 + 默认刮削源配置
   useEffect(() => {
     api.getProviders()
       .then((catalog: ProviderCatalog) => {
         if (catalog.metadata?.length > 0) setMetadataProviders(catalog.metadata);
       })
       .catch(() => { /* 使用 fallback */ });
+    api.getConfig()
+      .then((config: any) => {
+        if (config.default_scrape_source) setDefaultSource(config.default_scrape_source);
+      })
+      .catch(() => {});
   }, []);
 
-  // 从 provider metadata 构建 Tab 列表
+  // 从 provider metadata 构建 Tab 列表，默认刮削源排第一
   const tabs = useMemo(() => {
+    let list: { id: string; name: string }[];
     if (metadataProviders.length > 0) {
-      return metadataProviders.map(p => ({ id: p.id, name: p.name }));
+      list = metadataProviders.map(p => ({ id: p.id, name: p.name }));
+    } else {
+      list = [...FALLBACK_TABS];
     }
-    return FALLBACK_TABS;
-  }, [metadataProviders]);
+    // 将默认刮削源排到第一位
+    const idx = list.findIndex(t => t.id === defaultSource);
+    if (idx > 0) {
+      const [item] = list.splice(idx, 1);
+      list.unshift(item);
+    }
+    return list;
+  }, [metadataProviders, defaultSource]);
 
   const searchTmdb = async (q?: string) => {
     setLoading(true); setSearchError("");
@@ -93,9 +108,26 @@ export function CandidatePicker({ name, path, onSelected }: { name: string; path
   };
 
   const openPanel = async () => {
-    setOpen(true); setTab("tmdb"); setSearchQuery(name);
+    const initialTab = defaultSource || "tmdb";
+    setOpen(true); setTab(initialTab); setSearchQuery(name);
     setLoading(true);
-    try { const r = await api.scrapeCandidates(name); setCandidates(r.candidates || []); if (r.query) setSearchQuery(r.query); } catch { setCandidates([]); }
+    try {
+      if (initialTab === "douban") {
+        const r = await api.scrapeDoubanCandidates(name);
+        setDoubanCandidates(r.candidates || []);
+      } else if (initialTab === "bangumi") {
+        const r = await api.scrapeBangumiCandidates(name);
+        setBangumiCandidates(r.candidates || []);
+      } else {
+        const r = await api.scrapeCandidates(name);
+        setCandidates(r.candidates || []);
+        if (r.query) setSearchQuery(r.query);
+      }
+    } catch {
+      if (initialTab === "douban") setDoubanCandidates([]);
+      else if (initialTab === "bangumi") setBangumiCandidates([]);
+      else setCandidates([]);
+    }
     setLoading(false);
   };
 

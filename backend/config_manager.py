@@ -89,13 +89,12 @@ class AppConfig(BaseModel):
     bt_search_sources: dict = {}                  # BT 源开关 {"bitsearch": true, "cilixiong": true, ...}
     pan_search_sources: dict = {}                 # 网盘源开关 {"pansearch": true, "rrdynb": true, ...}
     # 刮削配置
-    default_scrape_source: str = "tmdb"           # 默认刮削源 "tmdb" | "douban"
+    default_scrape_source: str = "douban"          # 默认刮削源 "tmdb" | "douban"
     # 插件系统
     installed_plugins: List[str] = [              # 已安装的插件 ID 列表（预装，仅低风险内置插件）
         "metadata-tmdb",
-        "metadata-bangumi",
+        "metadata-douban",
         "download-qbittorrent",
-        "feature-completeness",
         "feature-discover",
         "feature-local-match",
     ]
