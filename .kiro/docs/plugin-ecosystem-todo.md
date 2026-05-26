@@ -199,11 +199,14 @@
 
 ### Phase 4：付费插件基础设施
 
-- [ ] 后端：支持带 License Key 的插件源（请求 index.json 时带 auth header）
-- [ ] 后端：License Key 配置项（设置页）
-- [ ] 前端：设置页 License Key 输入 + 验证状态显示
+- [x] 后端：支持带 License Key 的插件源（请求 index.json 时带 auth header）
+- [x] 后端：License Key 配置项（设置页）
+- [x] 后端：License Key 验证服务（对接 LemonSqueezy License API）
+- [x] 前端：设置页 License Key 输入 + 验证状态显示
+- [x] PluginSourceConfig 支持 `requires_license` 标记
 - [ ] 创建 `napics-pro` 私有仓库
-- [ ] 接入支付平台（LemonSqueezy / Gumroad）
+- [ ] 注册 LemonSqueezy 账号 + 创建产品
+- [ ] 接入支付平台（LemonSqueezy）
 - [ ] 第一个付费插件上线（napics-pro-ai 或 napics-pro-automation）
 
 ### Phase 5：生态完善（后续）
