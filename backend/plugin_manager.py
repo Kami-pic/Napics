@@ -292,16 +292,20 @@ class PluginManager:
 
     # ── 远程插件源管理 ──
 
-    def fetch_remote_index(self, source_url: str, proxy: str = "") -> Dict[str, Any]:
+    def fetch_remote_index(self, source_url: str, proxy: str = "", license_key: str = "") -> Dict[str, Any]:
         """拉取远程插件源的 index.json。
 
         返回 {"success": True, "index": PluginSourceIndex} 或 {"success": False, "error": ...}
+        license_key: 付费插件源需要带 License Key 作为 auth header
         """
         try:
             proxies = {"http": proxy, "https": proxy} if proxy else None
             # 支持 GitHub 仓库 URL 自动转换为 raw index.json
             url = self._normalize_source_url(source_url)
-            resp = requests.get(url, timeout=15, proxies=proxies)
+            headers = {}
+            if license_key:
+                headers["Authorization"] = f"Bearer {license_key}"
+            resp = requests.get(url, timeout=15, proxies=proxies, headers=headers)
             resp.raise_for_status()
             data = resp.json()
             index = PluginSourceIndex(**data)

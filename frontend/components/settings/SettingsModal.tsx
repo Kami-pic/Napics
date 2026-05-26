@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import PathInput from "./PathInput";
 import { AISettingsSection } from "./AISettingsSection";
+import LicenseSection from "./LicenseSection";
 import type { AppConfig, ProviderMetadata } from "@/types";
 
 interface SettingsModalProps {
@@ -269,6 +270,11 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
           ))}
 
           {/* 播放器路径 */}
+          <div className="pt-3 border-t border-white/[0.06]">
+            <LicenseSection />
+          </div>
+
+          {/* 高级设置 */}
           <div className="pt-3 border-t border-white/[0.06]">
             <button onClick={() => setAdvancedExpanded(!advancedExpanded)}
               className="flex items-center gap-2 w-full text-left">

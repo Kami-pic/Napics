@@ -270,3 +270,67 @@ def save_sort_weights(req: SortWeightsUpdateRequest):
 
 
 # ── 种子黑名单 ──
+
+
+# ── License Key 授权管理 ──
+
+
+class LicenseKeyRequest(BaseModel):
+    license_key: str
+
+
+@router.get("/config/license")
+def get_license_status():
+    """获取当前 License 授权状态（本地读取，不联网）"""
+    conf = config_m.config
+    return {
+        "license_key": conf.license_key[:8] + "..." if len(conf.license_key) > 8 else conf.license_key,
+        "status": conf.license_status,
+        "email": conf.license_email,
+        "plan": conf.license_plan,
+        "validated_at": conf.license_validated_at,
+        "is_pro": conf.license_status == "valid" and bool(conf.license_key),
+    }
+
+
+@router.post("/config/license/validate")
+def validate_license(req: LicenseKeyRequest):
+    """验证并激活 License Key（联网验证）"""
+    from license_service import validate_license_key, activate_license_key, save_license_to_config
+
+    key = req.license_key.strip()
+    if not key:
+        raise HTTPException(status_code=400, detail={"error": "empty_key", "message": "License Key 不能为空"})
+
+    # 先尝试验证
+    info = validate_license_key(key)
+
+    # 如果验证失败且不是"已过期"，尝试激活（首次使用）
+    if not info.valid and info.status != "expired":
+        info = activate_license_key(key)
+
+    if info.valid:
+        save_license_to_config(config_m, info, key)
+        return {
+            "success": True,
+            "status": info.status,
+            "email": info.email,
+            "plan": info.plan,
+            "product_name": info.product_name,
+            "message": "授权验证成功",
+        }
+    else:
+        return {
+            "success": False,
+            "status": info.status,
+            "error": info.error or "验证失败",
+            "message": info.error or "License Key 无效或已过期",
+        }
+
+
+@router.post("/config/license/clear")
+def clear_license():
+    """清除 License Key 授权"""
+    from license_service import clear_license_from_config
+    clear_license_from_config(config_m)
+    return {"success": True, "message": "已清除授权信息"}

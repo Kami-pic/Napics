@@ -223,15 +223,17 @@ def list_remote_plugins(source_url: str = ""):
 
     sources_to_fetch = []
     if source_url:
-        sources_to_fetch = [source_url]
+        sources_to_fetch = [(source_url, False)]
     else:
-        sources_to_fetch = [s.url for s in config_m.config.plugin_sources]
+        sources_to_fetch = [(s.url, s.requires_license) for s in config_m.config.plugin_sources]
 
     all_plugins = []
     errors = []
+    license_key = config_m.config.license_key or ""
 
-    for url in sources_to_fetch:
-        result = pm.fetch_remote_index(url, proxy=proxy)
+    for url, requires_license in sources_to_fetch:
+        key = license_key if requires_license else ""
+        result = pm.fetch_remote_index(url, proxy=proxy, license_key=key)
         if result["success"]:
             index = result["index"]
             for p in index.plugins:
