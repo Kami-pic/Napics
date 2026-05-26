@@ -266,7 +266,6 @@ export default function Home() {
         onOpenSettings={() => setShowSettings(true)}
         showDiscover={showDiscover}
         activeSection={activeSection}
-        onScrollToLibrary={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
         onScrollToDiscover={() => discoverRef.current && scrollContainerRef.current?.scrollTo({ top: discoverRef.current.offsetTop - 8, behavior: "smooth" })}
       />
 
