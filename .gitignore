@@ -93,18 +93,11 @@ frontend/components/media/DoubanRecommend.tsx
 # 社区插件仓库（独立仓库，不跟踪）
 community-plugins/
 
-# AI 协作配置（内部工作流，不公开）
-.kiro/
-AGENTS.md
-frontend/AGENTS.md
-frontend/CLAUDE.md
-
 # 一次性测试/调试脚本
 backend/_scripts/
 backend/_*.py
 backend/_*.txt
 backend/init_sandbox_real.py
-backend/tests/
 frontend/_*.txt
 _*.txt
 
