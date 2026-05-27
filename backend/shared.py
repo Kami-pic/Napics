@@ -65,8 +65,8 @@ config_m = config_manager.ConfigManager()
 shadow_m = ShadowNameManager()
 indexer_m = IndexerPriorityManager()
 indexer_m.load()
-torrent_bl = TorrentBlacklist()
-analysis_cache = AnalysisCache()
+torrent_bl = TorrentBlacklist(path=os.path.join(config_m.data_dir, "torrent_blacklist.json"))
+analysis_cache = AnalysisCache(path=os.path.join(config_m.data_dir, "analysis_cache.json"))
 media_matcher = LocalMediaMatcher()
 
 # 启动时构建媒体库索引

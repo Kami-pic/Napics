@@ -31,7 +31,7 @@ router = APIRouter()
 def rollback_rename(snapshot_id: int):
     """回滚重命名操作，同时更新媒体库路径"""
     # 先读快照拿到 old/new 映射
-    snapshot_path = os.path.join("organize_snapshots", f"snapshot_{snapshot_id}.json")
+    snapshot_path = os.path.join(config_m.data_dir, "organize_snapshots", f"snapshot_{snapshot_id}.json")
     if not os.path.exists(snapshot_path):
         raise HTTPException(status_code=404, detail="Snapshot not found")
     with open(snapshot_path, "r", encoding="utf-8") as f:

@@ -12,5 +12,6 @@ posters/
 scrape_cache/
 *.json
 !requirements.txt
+!plugins/**/manifest.json
 venv/
 .venv/

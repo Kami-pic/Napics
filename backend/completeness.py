@@ -320,7 +320,10 @@ import json
 import time
 import threading as _cache_threading
 
-CACHE_FILE = os.path.join(os.path.dirname(__file__), "completeness_cache.json")
+CACHE_FILE = os.path.join(
+    os.environ.get("NAPICS_DATA_DIR") or os.path.dirname(__file__),
+    "completeness_cache.json"
+)
 _cache_lock = _cache_threading.Lock()
 
 

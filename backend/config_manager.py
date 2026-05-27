@@ -187,7 +187,7 @@ class ConfigManager:
                     v["quality_score"] = compute_quality_score_from_video(v)
         except Exception:
             pass
-        lib_path = "media_library.json"
+        lib_path = self.lib_path
         with open(lib_path, "w", encoding="utf-8") as f:
             json.dump(deduped, f, indent=4, ensure_ascii=False)
         # 通知媒体库索引刷新
@@ -199,7 +199,7 @@ class ConfigManager:
 
     # 排除列表：移除的文件/文件夹路径，同步时跳过
     def _excluded_path(self):
-        return "excluded_paths.json"
+        return os.path.join(self.data_dir, "excluded_paths.json")
 
     def load_excluded(self) -> set:
         p = self._excluded_path()
@@ -222,7 +222,7 @@ class ConfigManager:
 
     # 禁止刮削列表
     def _no_scrape_path(self):
-        return "no_scrape.json"
+        return os.path.join(self.data_dir, "no_scrape.json")
 
     def load_no_scrape(self) -> set:
         p = self._no_scrape_path()

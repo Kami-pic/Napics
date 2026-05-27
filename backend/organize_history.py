@@ -5,7 +5,10 @@ import shutil
 from typing import List, Dict
 from datetime import datetime
 
-HISTORY_DIR = "organize_snapshots"
+HISTORY_DIR = os.path.join(
+    os.environ.get("NAPICS_DATA_DIR") or os.path.dirname(os.path.abspath(__file__)),
+    "organize_snapshots"
+)
 MAX_SNAPSHOTS = 100  # 最大保留数量
 
 

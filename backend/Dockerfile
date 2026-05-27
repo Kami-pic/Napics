@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 安装系统依赖（ffprobe 用于视频分析）
+# 安装系统依赖（ffprobe 用于视频分析，libcurl 用于 curl_cffi）
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg curl && \
+    apt-get install -y --no-install-recommends ffmpeg curl libcurl4-openssl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖

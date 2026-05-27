@@ -150,13 +150,39 @@ start_all.bat
 ### Docker
 
 ```bash
-# 修改 docker-compose.yml 中的媒体路径挂载后：
+# 1. 克隆项目
+git clone https://github.com/Kami-pic/napics.git
+cd napics
+
+# 2. 编辑 docker-compose.yml：
+#    - 取消注释媒体库挂载，改为你的实际路径
+#    - 如果非本机访问（如 NAS 局域网），修改 NEXT_PUBLIC_API_URL 为 NAS IP
+
+# 3. 启动
 docker compose up -d
 ```
 
-访问 `http://localhost:3031`
+访问 `http://localhost:3031`（或 `http://<NAS-IP>:3031`）
 
-> 如需修改后端地址（如部署在 NAS 上供局域网访问），在 `docker-compose.yml` 中修改 `NEXT_PUBLIC_API_URL` 为实际 IP，如 `http://192.168.1.100:8000`，然后重新构建前端镜像。
+<details>
+<summary>NAS 局域网部署说明</summary>
+
+如果你在 NAS 上部署，需要从其他设备（手机/电脑）通过局域网访问，修改 `docker-compose.yml`：
+
+```yaml
+frontend:
+  build:
+    args:
+      - NEXT_PUBLIC_API_URL=http://192.168.1.100:8000  # 改为你的 NAS IP
+```
+
+修改后需要重新构建前端镜像：
+
+```bash
+docker compose up -d --build frontend
+```
+
+</details>
 ---
 
 ## 配置
