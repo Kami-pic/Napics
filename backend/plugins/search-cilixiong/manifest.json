@@ -1,0 +1,14 @@
+{
+    "id": "search-cilixiong",
+    "name": "磁力熊",
+    "version": "1.0.0",
+    "description": "中文磁力聚合搜索（国内直连）",
+    "category": "search",
+    "icon": "🧲",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:cilixiong"
+    ],
+    "risk_level": "high"
+}

@@ -1,0 +1,12 @@
+{
+    "id": "my-plugin",
+    "name": "我的插件",
+    "version": "1.0.0",
+    "description": "一个自定义 napics 插件",
+    "category": "search",
+    "icon": "🔍",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["SearchProvider:my_source"],
+    "risk_level": "low"
+}

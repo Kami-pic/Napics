@@ -1,0 +1,136 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+dist/
+.next/
+out/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project generated caches & temp files
+backend/sandbox/
+backend/sandbox_real/
+backend/posters/
+backend/*_report.txt
+*.log
+pytest-cache-files-*/
+tmp*/
+backend/.pytest_cache/
+backend/pytest-cache-files-*/
+backend/pytest-of-*/
+backend/tmp*/
+backend/relocator_conflict_*/
+screenshot/
+
+# 数据库/缓存文件（运行时生成，不入库）
+backend/scrape_cache/
+backend/download_tasks.json
+backend/completeness_cache.json
+backend/download_tasks.json.tmp
+backend/analysis_cache.json
+backend/media_library.json
+backend/config.json
+backend/config.json.bak
+backend/config.json.refactor.bak
+backend/media_library.json.bak
+backend/media_library.json.refactor.bak
+backend/torrent_blacklist.json
+backend/excluded_paths.json
+backend/no_scrape.json
+backend/folder_types.json
+backend/subscriptions.json
+backend/subscriptions.json.tmp
+backend/id_mapping_cache.json
+backend/organize_snapshots/
+backend/recycle_bin/
+backend/recycle_bin.json
+backend/download_deleted_hashes.json
+backend/sandbox_name_results.json
+
+# 一次性脚本产出（报告/日志）
+backend/_batch_report.json
+backend/_batch_steps*_report.json
+backend/_batch_log.txt
+
+# 测试沙盒数据（运行时生成）
+backend/test_sandbox/
+
+# 备份文件
+backend/main.py.old
+backend/main.py.refactor_backup
+backend/config_manager.py.old
+
+# Gemini 废弃的重构目录
+backend/app/
+
+# 私有 Provider 实现（公开仓库只保留 SDK / example / 低风险 provider）
+backend/plugins/**/private_*/
+
+# 根目录临时文件
+scrape_cache/
+media_library.json
+black_lagoon_report.txt
+debug_log.txt
+
+# 归档目录（废弃文件暂存）
+_archived_*/
+backend/routes/folder_types.json
+
+# 已废弃组件（被 DiscoverPage 替代，保留供参考但不入库）
+frontend/components/media/DoubanRecommend.tsx
+
+# 社区插件仓库（独立仓库，不跟踪）
+community-plugins/
+
+# 一次性测试/调试脚本
+backend/_scripts/
+backend/_*.py
+backend/_*.txt
+backend/init_sandbox_real.py
+frontend/_*.txt
+_*.txt
+
+# 灰色源代码已移入 plugins/*/sources/，根目录不再保留
+# （保留注释供追溯，下方规则可在确认无残留后删除）
+# backend/bt_scraper_*.py
+# backend/pan_scraper_*.py
+# backend/rss_source_*.py
+
+# 插件源代码（灰色爬虫，公开仓库不发布）
+backend/plugins/search-bt-direct/sources/
+backend/plugins/search-pan/sources/
+backend/plugins/rss-anime/sources/
+backend/plugins/rss-tv-movie/sources/
+# 单独拆分的灰色搜索源（应通过社区插件仓库分发）
+backend/plugins/search-1337x/sources/
+backend/plugins/search-acgrip/sources/
+backend/plugins/search-bangumi-moe/sources/
+backend/plugins/search-bitsearch/sources/
+backend/plugins/search-cilixiong/sources/
+backend/plugins/search-ddys/sources/
+backend/plugins/search-dmhy/sources/
+backend/plugins/search-eztv/sources/
+backend/plugins/search-github-pan/sources/
+backend/plugins/search-gogopanso/sources/
+backend/plugins/search-limetorrents/sources/
+backend/plugins/search-mikan/sources/
+backend/plugins/search-nyaa/sources/
+backend/plugins/search-pansearch/sources/
+backend/plugins/search-pansou/sources/
+backend/plugins/search-rrdynb/sources/
+backend/plugins/search-sites/sources/
+backend/plugins/search-slowread/sources/
+backend/plugins/search-wnsearch/sources/
+backend/plugins/search-xl720/sources/
+backend/plugins/search-yts/sources/

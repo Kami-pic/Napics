@@ -1,0 +1,14 @@
+{
+    "id": "search-nyaa",
+    "name": "Nyaa",
+    "version": "1.0.0",
+    "description": "日本动画/日剧 BT 搜索（公开站，需代理）",
+    "category": "search",
+    "icon": "🟣",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:nyaa"
+    ],
+    "risk_level": "low"
+}

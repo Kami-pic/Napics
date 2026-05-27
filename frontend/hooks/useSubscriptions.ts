@@ -1,0 +1,130 @@
+// 订阅状态管理 hook：启动时拉取订阅列表，提供订阅/取消/检查方法
+"use client";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { api } from "@/lib/api";
+
+export interface SubscriptionItem {
+  id: string;
+  title: string;
+  year: string;
+  type: string;
+  tmdb_id?: number;
+  douban_id?: string;
+  season?: number;
+  state: string;
+  mode: string;
+  quality: string;
+  poster: string;
+  total_episode: number;
+  downloaded_episodes: Record<string, EpisodeInfo>;
+  found_resources: any[];
+  created_at: string;
+  last_search?: string;
+  search_count?: number;
+  save_path?: string;
+  // Phase 1a 新增字段
+  purpose?: string;              // "follow" | "upgrade"
+  target_quality?: string;
+  current_quality_score?: number;
+  local_file_path?: string;
+  search_interval_hours?: number;
+  last_results_summary?: string;
+  imdb_id?: string;
+  sources?: string[];
+  best_version?: boolean;
+  search_keyword?: string;
+  // Phase 4b 新增字段
+  search_logs?: SearchLogEntry[];
+  notifications?: NotificationEntry[];
+}
+
+export interface EpisodeInfo {
+  info_hash?: string;
+  title?: string;
+  quality_tag?: string;
+  source?: string;
+  channel?: string;
+  task_id?: string;
+  timestamp?: string;
+}
+
+export interface SearchLogEntry {
+  timestamp: string;
+  channel: string;       // "rss" | "search"
+  total: number;
+  matched: number;
+  downloaded: number;
+  best_quality: string;
+  sources_ok: string[];
+  sources_fail: string[];
+  summary: string;
+}
+
+export interface NotificationEntry {
+  timestamp: string;
+  type: string;          // "download_complete" | "upgrade_complete" | "found_resource" | "auto_paused"
+  message: string;
+  read: boolean;
+}
+
+export function useSubscriptions() {
+  const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const loadedRef = useRef(false);
+
+  // 启动时拉取一次
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.getSubscriptions();
+      setSubscriptions(data || []);
+    } catch (e) {
+      console.error("[useSubscriptions] 拉取失败:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      refresh();
+    }
+  }, [refresh]);
+
+  // 检查某个影片是否已订阅（本地缓存判断，不发请求）
+  const isSubscribed = useCallback((tmdbId?: number, title?: string, year?: string, season?: number): boolean => {
+    return subscriptions.some(s => {
+      if (s.state === "completed") return false;
+      if (tmdbId && s.tmdb_id === tmdbId && s.season === season) return true;
+      if (title && s.title === title && s.year === (year || "") && s.season === season) return true;
+      return false;
+    });
+  }, [subscriptions]);
+
+  // 新增订阅
+  const subscribe = useCallback(async (data: Record<string, any>): Promise<{ status: string; message?: string; warning?: string }> => {
+    try {
+      const result = await api.addSubscription(data);
+      if (result.status === "ok") {
+        // 刷新列表
+        await refresh();
+      }
+      return result;
+    } catch (e: any) {
+      return { status: "error", message: e.message || "订阅失败" };
+    }
+  }, [refresh]);
+
+  // 删除订阅
+  const unsubscribe = useCallback(async (id: string) => {
+    try {
+      await api.deleteSubscription(id);
+      await refresh();
+    } catch (e) {
+      console.error("[useSubscriptions] 删除失败:", e);
+    }
+  }, [refresh]);
+
+  return { subscriptions, loading, refresh, isSubscribed, subscribe, unsubscribe };
+}

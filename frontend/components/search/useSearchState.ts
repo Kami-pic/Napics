@@ -1,0 +1,662 @@
+// 搜索弹窗状态管理 hook — 从 SearchModal.tsx 拆分
+"use client";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus, ProviderCatalog, ProviderMetadata } from "@/types";
+import { api } from "@/lib/api";
+import { DEFAULT_FILTERS, applyFilters, type SourceStatus } from "./FilterBar";
+import { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
+
+export type SearchTab = "bt" | "pan";
+
+export interface SourceTabState {
+  keyword: string;
+  results: EnhancedSearchResult[];
+  searchedKeywords: string[];
+  hitKeyword: string;
+  searching: boolean;
+}
+
+function normalizeResolution(raw?: string): string {
+  if (!raw) return "";
+  const l = raw.toLowerCase();
+  if (l.includes("2160") || l.includes("4k")) return "2160p";
+  if (l.includes("1080")) return "1080p";
+  if (l.includes("720")) return "720p";
+  return "SD";
+}
+
+export interface UseSearchStateParams {
+  open: boolean;
+  query: string;
+  defaultSavePath: string;
+  currentResolution?: string;
+  mediaType?: string;
+  cnName?: string;
+  enName?: string;
+  originalName?: string;
+  folderType?: string;
+  seasonNumber?: number;
+  episodeTag?: string;
+  qbConfigured?: boolean;
+}
+
+export function useSearchState({
+  open, query, defaultSavePath, currentResolution, mediaType,
+  cnName, enName, originalName, folderType, seasonNumber, episodeTag,
+}: UseSearchStateParams) {
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<EnhancedSearchResult[]>([]);
+  const [keyword, setKeyword] = useState(query);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState<{msg: string; ok: boolean} | null>(null);
+  const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
+  const [hitKeyword, setHitKeyword] = useState("");
+  const [smartFilter, setSmartFilter] = useState(false);  // 默认关闭过滤
+  const [savePath, setSavePath] = useState("");
+  // AI 推荐
+  const [aiRecommended, setAiRecommended] = useState<Map<number, string>>(new Map());
+  const [aiRecommendEnabled, setAiRecommendEnabled] = useState(false); // AI 推荐开关（默认关，需用户主动开）
+  const [aiAvailable, setAiAvailable] = useState(false); // AI 是否可用（后端配置了且 search_recommend 开启）
+
+  // 搜索标签系统（按确认的规则生成）
+  const searchTags = useMemo(() => {
+    const tags: { label: string; keyword: string }[] = [];
+    const cn = (cnName || "").trim();
+    const en = (enName || "").trim();
+    const sNum = seasonNumber;
+    const sTag = sNum ? `S${String(sNum).padStart(2, "0")}` : "";
+    // cn 和 en 实质相同判断（忽略大小写和空格）
+    const isSame = cn.toLowerCase() === en.toLowerCase();
+
+    if (folderType === "season" && sNum) {
+      if (cn) tags.push({ label: `${cn} 第${sNum}季`, keyword: `${cn} 第${sNum}季` });
+      if (en && sTag && !isSame) tags.push({ label: `${en} ${sTag}`, keyword: `${en} ${sTag}` });
+      if (cn && en && !isSame) tags.push({ label: `${cn} ${en}`, keyword: `${cn} ${en}` });
+      if (cn) tags.push({ label: cn, keyword: cn });
+      if (en && !isSame) tags.push({ label: en, keyword: en });
+    } else if ((folderType === "tv" || folderType === "series") && sNum) {
+      if (cn) tags.push({ label: `${cn} 第${sNum}季`, keyword: `${cn} 第${sNum}季` });
+      if (en && sTag && !isSame) tags.push({ label: `${en} ${sTag}`, keyword: `${en} ${sTag}` });
+      if (cn) tags.push({ label: cn, keyword: cn });
+      if (en && !isSame) tags.push({ label: en, keyword: en });
+    } else if (episodeTag) {
+      if (cn) tags.push({ label: `${cn} ${episodeTag}`, keyword: `${cn} ${episodeTag}` });
+      if (en && !isSame) tags.push({ label: `${en} ${episodeTag}`, keyword: `${en} ${episodeTag}` });
+      if (cn && en && !isSame) tags.push({ label: `${cn} ${en}`, keyword: `${cn} ${en}` });
+      if (cn) tags.push({ label: cn, keyword: cn });
+      if (en && !isSame) tags.push({ label: en, keyword: en });
+    } else {
+      if (cn) tags.push({ label: cn, keyword: cn });
+      if (cn && en && !isSame) tags.push({ label: `${cn} ${en}`, keyword: `${cn} ${en}` });
+      if (en && !isSame) tags.push({ label: en, keyword: en });
+    }
+
+    // 去重
+    const seen = new Set<string>();
+    return tags.filter(t => {
+      const k = t.keyword.trim();
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [cnName, enName, folderType, seasonNumber, episodeTag]);
+
+  // 搜索结果缓存（弹窗关闭清除）
+  const searchCache = useRef<Map<string, { results: EnhancedSearchResult[]; totalRaw: number }>>(new Map());
+  const curRes = normalizeResolution(currentResolution);
+
+  // ── 网盘搜索状态 ──
+  const [activeTab, setActiveTab] = useState<SearchTab>("bt");
+  const [panResults, setPanResults] = useState<PanResult[]>([]);
+  const [panGroups, setPanGroups] = useState<Record<string, PanResult[]>>({});
+  const [panSourceStatuses, setPanSourceStatuses] = useState<PanSourceStatus[]>([]);
+  const [panSearching, setPanSearching] = useState(false);
+  const [panTotal, setPanTotal] = useState(0);
+  const panCache = useRef<Map<string, { results: PanResult[]; groups: Record<string, PanResult[]>; statuses: PanSourceStatus[]; total: number }>>(new Map());
+  const [panFilters, setPanFilters] = useState<PanFilterState>(DEFAULT_PAN_FILTERS);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // ── 源 Tab 切换状态 ──
+  const [btActiveSource, setBtActiveSource] = useState("all");
+  const [panActiveSource, setPanActiveSource] = useState("all");
+  // 每个单源 Tab 的独立状态
+  const [sourceTabStates, setSourceTabStates] = useState<Record<string, SourceTabState>>({});
+  // ── 固定源列表（打开时加载一次）──
+  const [btSources, setBtSources] = useState<SearchSourceView[]>([]);
+  const [panSources, setPanSources] = useState<SearchSourceView[]>([]);
+  const [disabledSources, setDisabledSources] = useState<Set<string>>(new Set());
+
+  // 源→默认搜索词映射（从 provider capabilities 派生，用于切换 Tab 时填入搜索框）
+  const sourceDefaultKeywords = useMemo(() => {
+    const cn = (cnName || "").trim();
+    const en = (enName || "").trim();
+    const original = (originalName || "").trim();
+    const sNum = seasonNumber || 0;
+    const map: Record<string, string> = {};
+    for (const source of btSources) {
+      map[source.name] = buildDefaultKeyword(source.capabilities, { cn, en, original, query, seasonNumber: sNum });
+    }
+    return map;
+  }, [btSources, cnName, enName, originalName, query, seasonNumber]);
+
+  // 源搜索词回显信息（从 SSE source_done 事件收集）
+  const [sourceKeywordInfo, setSourceKeywordInfo] = useState<Record<string, { searched: string[]; hit: string }>>({});
+
+  // 网盘源状态转为 Record 供 SourceTabs 使用
+  const panSourceStatusMap = useMemo(() => {
+    const m: Record<string, SourceStatus> = {};
+    for (const s of panSourceStatuses) {
+      m[s.name] = { status: s.status === "success" ? "done" : s.status === "failed" ? "failed" : "idle", count: s.count ?? 0 };
+    }
+    return m;
+  }, [panSourceStatuses]);
+
+  useEffect(() => {
+    if (open) {
+      api.getProviders()
+        .then((catalog: ProviderCatalog) => {
+          setBtSources(toSearchSources(catalog.search.filter(p => p.type === "bt")));
+          setPanSources(toSearchSources(catalog.panSearch));
+        })
+        .catch(() => {
+          api.getSearchSources().then((d: any) => {
+            const sources = d.sources || [];
+            setBtSources(sources.filter((s: any) => s.type === "bt").map(toLegacySearchSource));
+            setPanSources(sources.filter((s: any) => s.type === "pan").map(toLegacySearchSource));
+          }).catch(() => {});
+        });
+    }
+  }, [open]);
+  const toggleSource = useCallback((name: string) => {
+    setDisabledSources(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  }, []);
+
+  // Prowlarr 索引器（仅从 Prowlarr 来源的结果中提取，排除直搜源）
+  const availableIndexers = useMemo(() => {
+    const s = new Set<string>();
+    const indexerProviderSources = new Set(btSources.filter(src => src.capabilities.includes("indexers")).map(src => src.name));
+    const directSources = new Set(btSources.filter(src => !indexerProviderSources.has(src.name)).map(src => src.name));
+    results.forEach(r => {
+      const src = (r as any)._source || r.indexer;
+      // 只有带 indexers 能力的聚合 provider 才提取索引器名
+      if (indexerProviderSources.has(src) && r.indexer && !directSources.has(r.indexer)) {
+        s.add(r.indexer);
+      }
+    });
+    return Array.from(s);
+  }, [results, btSources]);
+
+  const indexerProviderSources = useMemo(() => new Set(
+    btSources.filter(source => source.capabilities.includes("indexers")).map(source => source.name)
+  ), [btSources]);
+
+  const noSeederInfoSources = useMemo(() => new Set(
+    btSources.filter(source => !source.capabilities.includes("seeders")).map(source => source.name)
+  ), [btSources]);
+
+  useEffect(() => { setKeyword(query); }, [query]);
+
+  useEffect(() => {
+    if (open && query) doSearch(query);
+    if (open) {
+      // 检查 AI 推荐是否可用
+      api.getAIStatus().then(s => setAiAvailable(s.enabled && s.features?.search_recommend)).catch(() => setAiAvailable(false));
+    }
+    if (!open) {
+      setResults([]); setError(""); setToast(null); setHitKeyword("");
+      setFilters(DEFAULT_FILTERS); setDownloadingUrl(null);
+      setSearchingStep(""); setSearching(false); setSavePath("");
+      searchCache.current.clear(); userEditedRef.current = false;
+      // 关闭 SSE 并递增搜索 ID，确保残留消息被丢弃
+      searchIdRef.current++;
+      if (activeEsRef.current) { activeEsRef.current.close(); activeEsRef.current = null; }
+      setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
+      panCache.current.clear();
+      setActiveTab("bt");
+      setBtActiveSource("all"); setPanActiveSource("all"); setSourceTabStates({}); setSourceKeywordInfo({});
+      setAiRecommended(new Map()); setAiRecommendEnabled(false);
+    }
+  }, [open, query]);
+
+  const [searchingStep, setSearchingStep] = useState("");
+  // 搜索源状态（SSE 实时更新）
+  const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({});
+
+  // 跟踪用户是否手动修改过搜索词
+  const userEditedRef = useRef(false);
+  // 跟踪当前 SSE 连接，新搜索开始时关闭旧的（防止结果混入）
+  const activeEsRef = useRef<EventSource | null>(null);
+  // 搜索 ID：每次搜索递增，onmessage 中检查是否匹配当前搜索，防止旧结果混入
+  const searchIdRef = useRef(0);
+
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim()) return;
+
+    // 检查缓存
+    const cacheKey = q;
+    const cached = searchCache.current.get(cacheKey);
+    if (cached) {
+      setResults(cached.results);
+      setHitKeyword(q);
+      setKeyword(q);
+      return;
+    }
+
+    // 关闭上一次未完成的 SSE 连接
+    if (activeEsRef.current) {
+      activeEsRef.current.close();
+      activeEsRef.current = null;
+    }
+    // 递增搜索 ID，后续 onmessage 中检查是否匹配
+    const thisSearchId = ++searchIdRef.current;
+
+    setSearching(true); setResults([]); setError(""); setToast(null);
+    setHitKeyword(""); setSourceStatuses({}); setSourceKeywordInfo({});
+    // 手动搜索时清除单源 tab 缓存（结果会被全量搜索覆盖）
+    if (userEditedRef.current) {
+      setSourceTabStates({});
+    }
+
+    try {
+      setKeyword(q);
+      setSearchingStep(`搜索：${q}`);
+
+      // 用户手动输入的搜索词不传 cn_name/en_name，让后端用 query 自行分词
+      // 点击标签或自动搜索时才传 cn_name/en_name 辅助后端选词
+      const isUserEdited = userEditedRef.current;
+      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName, original_name: originalName, season_number: seasonNumber });
+      const es = new EventSource(sseUrl);
+      activeEsRef.current = es;
+      let sseResults: EnhancedSearchResult[] = [];
+      let sseDone = false;
+
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, 90000);
+
+        es.onmessage = (event) => {
+          // 搜索 ID 不匹配 → 旧搜索的残留消息，丢弃
+          if (searchIdRef.current !== thisSearchId) { es.close(); activeEsRef.current = null; return; }
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "status") {
+              if (searchIdRef.current !== thisSearchId) return;
+              setSourceStatuses(prev => ({
+                ...prev,
+                [data.source]: { status: data.status as SourceStatus["status"], count: data.count ?? 0 },
+              }));
+              setSearchingStep(`${data.source}: 搜索中...`);
+            } else if (data.type === "source_done") {
+              if (searchIdRef.current !== thisSearchId) return;
+              setSourceStatuses(prev => ({
+                ...prev,
+                [data.source]: { status: (data.status === "done" ? "done" : "failed") as SourceStatus["status"], count: data.count ?? 0 },
+              }));
+              if (data.search_keywords || data.hit_keyword) {
+                setSourceKeywordInfo(prev => ({
+                  ...prev,
+                  [data.source]: { searched: data.search_keywords || [], hit: data.hit_keyword || "" },
+                }));
+              }
+              if (data.results && data.results.length > 0) {
+                const newItems: EnhancedSearchResult[] = data.results.map((r: any) => ({
+                  ...r,
+                  _source: data.source,
+                  quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+                  quality_rank: r.quality_rank ?? 0,
+                }));
+                sseResults = [...sseResults, ...newItems];
+                if (searchIdRef.current === thisSearchId) {
+                  setResults([...sseResults]);
+                  setSearching(false);
+                  setSearchingStep("");
+                }
+              }
+            } else if (data.type === "done") {
+              sseDone = true;
+              clearTimeout(timeout);
+              es.close();
+              activeEsRef.current = null;
+              resolve();
+            }
+          } catch { /* 忽略解析错误 */ }
+        };
+        es.onerror = () => { clearTimeout(timeout); es.close(); activeEsRef.current = null; reject(new Error("sse_error")); };
+      });
+
+      if (sseDone && sseResults.length > 0) {
+        searchCache.current.set(cacheKey, { results: sseResults, totalRaw: sseResults.length });
+        // 异步 AI 推荐（仅用户开启时调用）
+        if (searchIdRef.current === thisSearchId) {
+          setAiRecommended(new Map());
+          if (aiRecommendEnabled) {
+            api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
+              .then(r => {
+                if (searchIdRef.current !== thisSearchId) return;
+                if (r.recommended?.length) {
+                  const m = new Map<number, string>();
+                  r.recommended.forEach((item: any) => m.set(item.index, item.reason));
+                  setAiRecommended(m);
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      }
+      if (searchIdRef.current === thisSearchId) {
+        setResults(sseResults);
+        setHitKeyword(q);
+      }
+    } catch (e: any) {
+      // SSE 失败，fallback 到普通搜索（仅当前搜索仍有效时）
+      if (searchIdRef.current !== thisSearchId) return;
+      try {
+        const d = await api.searchSingle(q, { skip_filter: true });
+        const raw: EnhancedSearchResult[] = (d.bt_results || []).map((r: any) => ({
+          ...r,
+          quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+          quality_rank: r.quality_rank ?? 0,
+        }));
+        if (raw.length > 0) {
+          searchCache.current.set(q, { results: raw, totalRaw: d.total_raw || raw.length });
+        }
+        if (searchIdRef.current === thisSearchId) {
+          setResults(raw);
+          setHitKeyword(q);
+        }
+      } catch (e: any) {
+        if (searchIdRef.current === thisSearchId) {
+          const msg = e?.message || "";
+          if (msg.includes("timeout") || msg.includes("超时")) {
+            setError("搜索超时，请检查网络连接或代理配置");
+          } else if (msg.includes("proxy") || msg.includes("ECONNREFUSED")) {
+            setError("网络连接失败，请检查代理配置是否正确");
+          } else if (msg.includes("429") || msg.includes("限频")) {
+            setError("请求过于频繁，请稍后重试");
+          } else {
+            setError("搜索失败，请检查搜索源配置后重试");
+          }
+        }
+      }
+    }
+    if (searchIdRef.current === thisSearchId) {
+      setSearching(false);
+      setSearchingStep("");
+    }
+  }, [cnName, enName, originalName, seasonNumber]);
+
+  // ── 网盘搜索 ──
+  const doPanSearch = useCallback(async (q: string) => {
+    if (!q.trim()) return;
+    const cached = panCache.current.get(q);
+    if (cached) {
+      setPanResults(cached.results); setPanGroups(cached.groups);
+      setPanSourceStatuses(cached.statuses); setPanTotal(cached.total);
+      return;
+    }
+    setPanSearching(true); setPanResults([]); setPanGroups({});
+    try {
+      const d = await api.searchPan(q, mediaType);
+      const results: PanResult[] = d.results || [];
+      const groups: Record<string, PanResult[]> = d.groups || {};
+      const statuses: PanSourceStatus[] = d.source_statuses || [];
+      const total = d.total || 0;
+      setPanResults(results); setPanGroups(groups);
+      setPanSourceStatuses(statuses); setPanTotal(total);
+      if (results.length > 0) {
+        panCache.current.set(q, { results, groups, statuses, total });
+      }
+    } catch { setPanResults([]); }
+    setPanSearching(false);
+  }, [mediaType]);
+
+  // ── 单源搜索（BT Tab 切换到具体源时使用）──
+  const doSourceSearch = useCallback(async (source: string, kw: string) => {
+    if (!kw.trim() || !source) return;
+    // 更新该源 Tab 状态为搜索中
+    setSourceTabStates(prev => ({
+      ...prev,
+      [source]: { keyword: kw, results: [], searchedKeywords: [], hitKeyword: "", searching: true },
+    }));
+    try {
+      // 构造回退词（如果用户没手动改过词）
+      const defaultKw = sourceDefaultKeywords[source] || "";
+      const isUserEdited = kw !== defaultKw;
+      const fallbacks = isUserEdited ? "" : (() => {
+        const cn = (cnName || "").trim();
+        const en = (enName || "").trim();
+        const candidates = [cn, en, query].filter(Boolean);
+        return candidates.filter(c => c.toLowerCase() !== kw.toLowerCase()).join(",");
+      })();
+
+      const d = await api.searchSource(source, kw, fallbacks || undefined);
+      const items: EnhancedSearchResult[] = (d.results || []).map((r: any) => ({
+        ...r,
+        _source: source,
+        quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
+        quality_rank: r.quality_rank ?? 0,
+      }));
+      setSourceTabStates(prev => ({
+        ...prev,
+        [source]: {
+          keyword: kw,
+          results: items,
+          searchedKeywords: d.search_keywords || [kw],
+          hitKeyword: d.hit_keyword || "",
+          searching: false,
+        },
+      }));
+      if (d.search_keywords || d.hit_keyword) {
+        setSourceKeywordInfo(prev => ({
+          ...prev,
+          [source]: { searched: d.search_keywords || [], hit: d.hit_keyword || "" },
+        }));
+      }
+    } catch {
+      setSourceTabStates(prev => ({
+        ...prev,
+        [source]: { keyword: kw, results: [], searchedKeywords: [kw], hitKeyword: "", searching: false },
+      }));
+    }
+  }, [cnName, enName, query, sourceDefaultKeywords]);
+
+  // 切换源 Tab 时的处理
+  // 保存"全部"模式下的搜索词，切回时恢复
+  const allKeywordRef = useRef(query);
+
+  const handleBtSourceSelect = useCallback((source: string) => {
+    if (btActiveSource === "all") {
+      allKeywordRef.current = keyword;
+    }
+    setBtActiveSource(source);
+    if (source === "all") {
+      setKeyword(allKeywordRef.current);
+      return;
+    }
+    // 切到单源：优先从 SSE 全量结果中提取该源的结果
+    const existing = sourceTabStates[source];
+    if (existing && existing.results.length > 0) {
+      setKeyword(existing.keyword);
+      return;
+    }
+    // 从 SSE 全量结果中过滤该源的结果
+    const sseSourceResults = results.filter((r: any) => r._source === source);
+    if (sseSourceResults.length > 0) {
+      const sseKw = sourceKeywordInfo[source]?.hit || keyword || query;
+      setKeyword(sseKw);
+      setSourceTabStates(prev => ({
+        ...prev,
+        [source]: {
+          keyword: sseKw,
+          results: sseSourceResults,
+          searchedKeywords: sourceKeywordInfo[source]?.searched || [sseKw],
+          hitKeyword: sourceKeywordInfo[source]?.hit || "",
+          searching: false,
+        },
+      }));
+      return;
+    }
+    // SSE 中也没有该源的结果，触发单源搜索
+    const defaultKw = sourceDefaultKeywords[source] || keyword || query;
+    setKeyword(defaultKw);
+    doSourceSearch(source, defaultKw);
+  }, [sourceTabStates, sourceDefaultKeywords, keyword, query, doSourceSearch, results, sourceKeywordInfo]);
+
+  // 网盘源 Tab 切换处理
+  const panAllKeywordRef = useRef(query);
+  const handlePanSourceSelect = useCallback((source: string) => {
+    if (panActiveSource === "all") {
+      panAllKeywordRef.current = keyword;
+    }
+    setPanActiveSource(source);
+    if (source === "all") {
+      setKeyword(panAllKeywordRef.current);
+      return;
+    }
+    // 单源网盘：填入默认搜索词（中文优先）
+    const cn = (cnName || "").trim();
+    const en = (enName || "").trim();
+    const defaultKw = cn || en || keyword || query;
+    setKeyword(defaultKw);
+    // TODO: 单源网盘搜索端点（当前网盘搜索是聚合的，暂时用全量搜索结果按源筛选）
+  }, [panActiveSource, keyword, query, cnName, enName]);
+
+  // 前端过滤：FilterBar 筛选 + 智能过滤（L2 匹配 + L3 软过滤）
+  // 当前展示的结果：全部模式用 results，单源模式用该源的 results
+  const activeResults = useMemo(() => {
+    if (btActiveSource === "all") return results;
+    return sourceTabStates[btActiveSource]?.results || [];
+  }, [btActiveSource, results, sourceTabStates]);
+
+  const displayResults = useMemo(() => {
+    let list = activeResults;
+    // 智能过滤开启时：排除后端标记的垃圾版本（枪版+低匹配度+死种）
+    if (smartFilter) {
+      list = list.filter(r => !(r as any).is_junk);
+    }
+    // 排序：有做种 > 无做种 > 磁力链接，同层内按 quality_score > match_score > seeders > size
+    list = [...list].sort((a, b) => {
+      const tier = (r: EnhancedSearchResult) => {
+        if (r.seeders === 0 && r.size_gb === 0) return 2;
+        if (r.seeders === 0) {
+          const src = (r as any)._source || "";
+          if (noSeederInfoSources.has(src)) return 0;
+          return 1;
+        }
+        return 0;
+      };
+      const ta = tier(a), tb = tier(b);
+      if (ta !== tb) return ta - tb;
+      const sa = (a as any).quality_score ?? 0;
+      const sb = (b as any).quality_score ?? 0;
+      if (sb !== sa) return sb - sa;
+      const aMatch = (a as any).match_score ?? 0;
+      const bMatch = (b as any).match_score ?? 0;
+      if (bMatch !== aMatch) return bMatch - aMatch;
+      if (b.seeders !== a.seeders) return b.seeders - a.seeders;
+      return b.size_gb - a.size_gb;
+    });
+    return list;
+  }, [activeResults, smartFilter, noSeederInfoSources]);
+  const filtered = applyFilters(displayResults, filters, disabledSources, noSeederInfoSources, indexerProviderSources);
+
+  const handleDownload = async (res: EnhancedSearchResult, channel: "qb" | "alist") => {
+    setDownloadingUrl(res.download_url); setToast(null);
+    try {
+      const d = await api.submitDownload({
+        media_name: query, download_url: res.download_url,
+        save_path: savePath || defaultSavePath, channel,
+      });
+      if (d.success) { setToast({ msg: "任务已提交到下载队列", ok: true }); }
+      else { setToast({ msg: "失败: " + (d.error || d.task?.error || "未知错误"), ok: false }); }
+    } catch { setToast({ msg: "通信失败，请检查网络", ok: false }); }
+    finally { setDownloadingUrl(null); }
+  };
+
+  return {
+    // 搜索状态
+    searching, results, keyword, setKeyword, filters, setFilters,
+    error, toast, setToast, downloadingUrl, hitKeyword,
+    smartFilter, setSmartFilter, savePath, setSavePath,
+    // AI
+    aiRecommended, aiRecommendEnabled, setAiRecommendEnabled, aiAvailable,
+    // 标签
+    searchTags, curRes,
+    // Tab
+    activeTab, setActiveTab,
+    // 网盘
+    panResults, panGroups, panSourceStatuses, panSearching, panTotal, panFilters, setPanFilters,
+    // 设置
+    showSettings, setShowSettings,
+    // 源 Tab
+    btActiveSource, panActiveSource,
+    sourceTabStates, sourceKeywordInfo,
+    panSourceStatusMap,
+    // 源列表
+    btSources, panSources, disabledSources, toggleSource,
+    noSeederInfoSources,
+    indexerProviderSources,
+    availableIndexers,
+    // 搜索步骤
+    searchingStep, sourceStatuses,
+    // ref
+    userEditedRef,
+    // 搜索函数
+    doSearch, doPanSearch, doSourceSearch,
+    handleBtSourceSelect, handlePanSourceSelect,
+    handleDownload,
+    // 计算结果
+    activeResults, displayResults, filtered,
+  };
+}
+
+interface SearchSourceView {
+  name: string;
+  label: string;
+  enabled: boolean;
+  capabilities: string[];
+}
+
+function toSearchSources(providers: ProviderMetadata[]) {
+  return providers.map(provider => ({
+    name: provider.id,
+    label: provider.name,
+    enabled: provider.enabled,
+    capabilities: provider.capabilities,
+  }));
+}
+
+function toLegacySearchSource(source: { name: string; label: string; enabled: boolean }) {
+  return {
+    name: source.name,
+    label: source.label,
+    enabled: source.enabled,
+    capabilities: ["search", "magnet", "torrent", "size", "seeders"],
+  };
+}
+
+function buildDefaultKeyword(
+  capabilities: string[],
+  values: { cn: string; en: string; original: string; query: string; seasonNumber: number },
+) {
+  const priority = capabilities
+    .filter(capability => capability.startsWith("keyword_"))
+    .map(capability => capability.replace("keyword_", ""));
+  const langs = priority.length > 0 ? priority : ["en", "cn", "query"];
+  const keyword = langs
+    .map(lang => {
+      if (lang === "cn") return values.cn;
+      if (lang === "en") return values.en;
+      if (lang === "original") return values.original;
+      return values.query;
+    })
+    .find(Boolean) || values.query;
+
+  if (!keyword || values.seasonNumber <= 0) return keyword;
+  if (capabilities.includes("season_cn")) return `${keyword} 第${values.seasonNumber}季`;
+  return `${keyword} S${String(values.seasonNumber).padStart(2, "0")}`;
+}

@@ -1,0 +1,14 @@
+{
+    "id": "search-eztv",
+    "name": "EZTV",
+    "version": "1.0.0",
+    "description": "欧美剧集 BT 搜索（公开站，需代理）",
+    "category": "search",
+    "icon": "🔵",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:eztv"
+    ],
+    "risk_level": "low"
+}

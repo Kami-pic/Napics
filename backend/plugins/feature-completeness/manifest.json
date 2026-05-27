@@ -1,0 +1,12 @@
+{
+    "id": "feature-completeness",
+    "name": "季集完整性检测",
+    "version": "1.0.0",
+    "description": "基于 TMDB 的缺集分析，检测每季是否完整（需配置 TMDB API Key）",
+    "category": "feature",
+    "icon": "📊",
+    "requires_config": ["tmdb_api_key"],
+    "depends_on": ["metadata-tmdb"],
+    "provides": ["Feature:completeness"],
+    "risk_level": "low"
+}

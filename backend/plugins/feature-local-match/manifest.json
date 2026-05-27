@@ -1,0 +1,12 @@
+{
+    "id": "feature-local-match",
+    "name": "本地媒体感知",
+    "version": "1.0.0",
+    "description": "推荐/搜索中标记已有资源",
+    "category": "feature",
+    "icon": "🏠",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": ["Feature:local_match"],
+    "risk_level": "low"
+}

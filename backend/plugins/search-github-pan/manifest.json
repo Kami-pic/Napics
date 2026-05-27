@@ -1,0 +1,14 @@
+{
+    "id": "search-github-pan",
+    "name": "GitHub 网盘仓库",
+    "version": "1.0.0",
+    "description": "GitHub 夸克/阿里资源仓库索引",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:github"
+    ],
+    "risk_level": "high"
+}

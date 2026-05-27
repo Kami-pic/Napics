@@ -1,0 +1,14 @@
+{
+    "id": "search-1337x",
+    "name": "1337x",
+    "version": "1.0.0",
+    "description": "综合 BT 搜索（镜像站，需代理）",
+    "category": "search",
+    "icon": "🟠",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "SearchProvider:1337x"
+    ],
+    "risk_level": "medium"
+}

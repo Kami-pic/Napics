@@ -1,0 +1,14 @@
+{
+    "id": "search-rrdynb",
+    "name": "人人电影",
+    "version": "1.0.0",
+    "description": "网盘资源搜索（有 CF 限频）",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:rrdynb"
+    ],
+    "risk_level": "high"
+}

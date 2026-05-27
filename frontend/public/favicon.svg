@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#141414"/>
+  <rect x="4" y="4" width="24" height="24" rx="3" fill="#1a1a1a" stroke="#3b82f6" stroke-width="1.5"/>
+  <!-- Film strip holes -->
+  <rect x="6" y="7" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="6" y="12" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="6" y="17" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="6" y="22" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="23" y="7" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="23" y="12" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="23" y="17" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <rect x="23" y="22" width="3" height="2.5" rx="0.5" fill="#3b82f6" opacity="0.6"/>
+  <!-- Play triangle -->
+  <path d="M13 10.5L21 16L13 21.5V10.5Z" fill="#3b82f6"/>
+</svg>

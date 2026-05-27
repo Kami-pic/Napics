@@ -1,0 +1,14 @@
+{
+    "id": "search-slowread",
+    "name": "慢读搜索",
+    "version": "1.0.0",
+    "description": "16 种网盘类型搜索",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:slowread"
+    ],
+    "risk_level": "high"
+}

@@ -1,0 +1,14 @@
+{
+    "id": "search-gogopanso",
+    "name": "狗狗盘搜",
+    "version": "1.0.0",
+    "description": "阿里云盘资源搜索",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:gogopanso"
+    ],
+    "risk_level": "high"
+}

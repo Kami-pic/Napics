@@ -1,0 +1,14 @@
+{
+    "id": "search-pansou",
+    "name": "盘搜",
+    "version": "1.0.0",
+    "description": "多插件网盘聚合搜索",
+    "category": "search",
+    "icon": "☁️",
+    "requires_config": [],
+    "depends_on": [],
+    "provides": [
+        "PanSearchProvider:pansou"
+    ],
+    "risk_level": "high"
+}
