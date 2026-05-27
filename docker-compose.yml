@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: napics-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # 配置与数据持久化
+      - napics-data:/app/data
+      # 媒体库挂载（按需修改为你的实际路径）
+      # - /volume1/video:/media
+    environment:
+      - NAPICS_DATA_DIR=/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # 构建时注入后端地址（用户浏览器需要能访问到的地址）
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: napics-frontend
+    ports:
+      - "3031:3000"
+    environment:
+      - HOSTNAME=0.0.0.0
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  napics-data:

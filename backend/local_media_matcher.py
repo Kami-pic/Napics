@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 _FUZZY_THRESHOLD = 0.80  # 片名模糊匹配阈值
 _YEAR_TOLERANCE = 1      # 年份允许 ±1 误差
 _ASYNC_INTERVAL = 1.5    # 异步补全每条间隔（秒），避免 TMDB 限频
-_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "id_mapping_cache.json")
+_CACHE_FILE = os.path.join(
+    os.environ.get("NAPICS_DATA_DIR") or os.path.dirname(os.path.abspath(__file__)),
+    "id_mapping_cache.json"
+)
 _QUALITY_THRESHOLDS = {"high": 720, "low": 0}  # height >= 720 算高画质
 
 

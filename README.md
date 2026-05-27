@@ -149,12 +149,14 @@ start_all.bat
 
 ### Docker
 
-Docker support is under active development.
-预计近期提供 beta compose。
+```bash
+# 修改 docker-compose.yml 中的媒体路径挂载后：
+docker compose up -d
+```
 
-Current recommendation:
-- Windows: `start_all.bat`
-- Developers: manual setup
+访问 `http://localhost:3031`
+
+> 如需修改后端地址（如部署在 NAS 上供局域网访问），在 `docker-compose.yml` 中修改 `NEXT_PUBLIC_API_URL` 为实际 IP，如 `http://192.168.1.100:8000`，然后重新构建前端镜像。
 ---
 
 ## 配置
@@ -181,6 +183,8 @@ Current recommendation:
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！详见 [贡献指南](CONTRIBUTING.md)。
+
+> 肯定有很多bug...一个人测不过来... 独自出工，我的agent 牛马出的力。 特别想赚钱给他把饲料升级成咖啡 :p
 
 ---
 

@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+_scripts/
+_*.py
+*.log
+*.bak
+sandbox*/
+downloads/
+posters/
+scrape_cache/
+*.json
+!requirements.txt
+venv/
+.venv/

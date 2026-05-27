@@ -117,10 +117,12 @@ class AppConfig(BaseModel):
 
 class ConfigManager:
     def __init__(self, config_path: str = None):
-        # 强制使用绝对路径锁定 backend 目录
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.config_path = config_path or os.path.join(base_dir, "config.json")
-        self.lib_path = os.path.join(base_dir, "media_library.json")
+        # 数据目录：优先环境变量 NAPICS_DATA_DIR，否则回退到 backend/ 目录
+        data_dir = os.environ.get("NAPICS_DATA_DIR") or os.path.dirname(os.path.abspath(__file__))
+        self.data_dir = os.path.abspath(data_dir)
+        os.makedirs(self.data_dir, exist_ok=True)
+        self.config_path = config_path or os.path.join(self.data_dir, "config.json")
+        self.lib_path = os.path.join(self.data_dir, "media_library.json")
         self._config = self.load()
         self._on_library_save_callbacks = []  # save_library 后的回调列表
 

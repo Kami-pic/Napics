@@ -162,7 +162,7 @@ def _get_sub_manager() -> SubscriptionManager:
     global _sub_manager
     if _sub_manager is None:
         _sub_manager = SubscriptionManager(
-            base_path=os.path.dirname(os.path.abspath(__file__))
+            base_path=config_m.data_dir
         )
     return _sub_manager
 
@@ -171,7 +171,7 @@ def _get_download_manager() -> DownloadManager:
     global _download_manager
     if _download_manager is None:
         _download_manager = DownloadManager(
-            base_path=os.path.dirname(os.path.abspath(__file__)),
+            base_path=config_m.data_dir,
         )
         # 根据已安装插件注册下载后端
         _register_download_backends(_download_manager)
@@ -215,13 +215,12 @@ def _get_recycle_bin() -> RecycleBin:
     global _recycle_bin
     if _recycle_bin is None:
         conf = config_m.config
-        backend_dir = os.path.dirname(os.path.abspath(__file__))
         recycle_dir = (conf.recycle_bin_path or "").strip()
         _recycle_bin = RecycleBin(
             recycle_dir=recycle_dir,
             retention_days=conf.recycle_bin_retention_days,
             library_roots=conf.scan_paths,
-            meta_path=os.path.join(backend_dir, "recycle_bin.json"),
+            meta_path=os.path.join(config_m.data_dir, "recycle_bin.json"),
         )
     return _recycle_bin
 
