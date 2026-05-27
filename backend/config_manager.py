@@ -97,6 +97,8 @@ class AppConfig(BaseModel):
         "download-qbittorrent",
         "feature-discover",
         "feature-local-match",
+        "search-bt-movie-tv",
+        "search-pan-github",
     ]
     plugin_sources: List[PluginSourceConfig] = [  # 外部插件源列表（预置官方社区源）
         PluginSourceConfig(

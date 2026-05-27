@@ -58,9 +58,10 @@ PAN_SOURCE_PLUGIN_MAP = {
 def get_allowed_bt_sources() -> Set[str]:
     """根据已安装插件返回允许使用的 BT 搜索源名称集合。
 
-    支持两种模式：
+    支持三种模式：
     - 旧模式：search-bt-direct 捆绑包（兼容）
     - 新模式：每个源一个独立插件
+    - 第三方分组模式：search-bt-mirror / search-bt-movie-tv / search-bt-anime-jp 等
     Prowlarr 需要安装 search-prowlarr 插件。
     """
     installed = get_installed_plugins()
@@ -78,6 +79,18 @@ def get_allowed_bt_sources() -> Set[str]:
     for source_id, plugin_id in BT_SOURCE_PLUGIN_MAP.items():
         if plugin_id in installed:
             allowed.add(source_id)
+
+    # 第三方分组插件（社区仓库按风险特征分组）
+    if "search-bt-mirror" in installed:
+        allowed.update(["bitsearch", "1337x", "limetorrents"])
+    if "search-bt-movie-tv" in installed:
+        allowed.update(["yts", "eztv"])
+    if "search-bt-anime-jp" in installed:
+        allowed.update(["nyaa", "bangumi_moe"])
+    if "search-bt-anime-cn" in installed:
+        allowed.update(["mikan", "acgrip", "dmhy"])
+    if "search-bt-cn" in installed:
+        allowed.update(["cilixiong", "xl720"])
 
     # 第三方插件注册的搜索源
     try:
@@ -107,7 +120,37 @@ def is_pan_search_allowed() -> bool:
     for plugin_id in PAN_SOURCE_PLUGIN_MAP.values():
         if plugin_id in installed:
             return True
+    # 第三方分组插件
+    pan_group_plugins = ["search-pan-main", "search-pan-github", "search-pan-resource"]
+    for plugin_id in pan_group_plugins:
+        if plugin_id in installed:
+            return True
     return False
+
+
+def get_allowed_pan_sources() -> Set[str]:
+    """根据已安装插件返回允许使用的网盘搜索源名称集合。"""
+    installed = get_installed_plugins()
+    allowed = set()
+
+    # 旧捆绑包兼容
+    if "search-pan" in installed:
+        allowed.update(PAN_SOURCE_PLUGIN_MAP.keys())
+
+    # 新独立插件
+    for source_id, plugin_id in PAN_SOURCE_PLUGIN_MAP.items():
+        if plugin_id in installed:
+            allowed.add(source_id)
+
+    # 第三方分组插件
+    if "search-pan-main" in installed:
+        allowed.update(["pansearch", "pansou"])
+    if "search-pan-github" in installed:
+        allowed.update(["gogopanso", "github"])
+    if "search-pan-resource" in installed:
+        allowed.update(["rrdynb", "ddys", "sites", "slowread", "wnsearch"])
+
+    return allowed
 
 
 def is_metadata_allowed(provider: str) -> bool:

@@ -118,6 +118,10 @@ export default function Home() {
   const [syncMsg, setSyncMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
+  const [discoverGuideDismissed, setDiscoverGuideDismissed] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("napics_discover_guide_dismissed") === "1";
+    return false;
+  });
 
   useEffect(() => {
     if (!currentFolder || currentFolder.path === "") closeDetail();
@@ -260,7 +264,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white font-sans flex overflow-hidden">
-      <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={navigateTo}
+      <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={(node) => { navigateTo(node); if (scrollContainerRef.current) scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" }); }}
         collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenPlugins={() => setShowPlugins(true)}
         onOpenSettings={() => setShowSettings(true)}
@@ -342,8 +346,13 @@ export default function Home() {
             </div>
           )}
           {/* 发现区域空状态：无 discover 插件时引导 */}
-          {(!currentFolder || currentFolder.path === "") && !plugins.hasDiscover && stats.total > 0 && (
-            <div className="mt-10 flex flex-col items-center py-12 border border-dashed border-white/[0.06] rounded-2xl">
+          {(!currentFolder || currentFolder.path === "") && !plugins.hasDiscover && stats.total > 0 && !discoverGuideDismissed && (
+            <div className="mt-10 flex flex-col items-center py-12 border border-dashed border-white/[0.06] rounded-2xl relative">
+              <button onClick={() => { setDiscoverGuideDismissed(true); localStorage.setItem("napics_discover_guide_dismissed", "1"); }}
+                className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-white/10 transition-all"
+                title="关闭引导">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
               <span className="text-3xl mb-3">🎬</span>
               <p className="text-sm text-slate-300 mb-1">发现更多影视内容</p>
               <p className="text-xs text-slate-500">安装「发现推荐」插件解锁热门推荐、探索筛选和订阅追更</p>

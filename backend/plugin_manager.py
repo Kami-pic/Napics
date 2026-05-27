@@ -322,31 +322,48 @@ class PluginManager:
         plugin_info: RemotePluginInfo,
         installed_plugins: List[str],
         proxy: str = "",
+        source_url: str = "",
     ) -> Dict[str, Any]:
         """从远程源下载并安装插件。
 
         流程：下载 zip → 解压到 plugins/ → 校验 manifest → 注册
+        如果 download_url 下载失败（如 release 未发布），回退到从源仓库下载整个 zip 并提取子目录。
         """
         plugin_id = plugin_info.id
 
         if plugin_id in self._manifests and plugin_id in installed_plugins:
             return {"success": False, "error": "already_installed", "message": f"插件 {plugin_id} 已安装"}
 
-        if not plugin_info.download_url:
+        if not plugin_info.download_url and not source_url:
             return {"success": False, "error": "no_download_url", "message": "插件缺少下载地址"}
 
-        # 下载 zip
-        try:
-            proxies = {"http": proxy, "https": proxy} if proxy else None
-            resp = requests.get(plugin_info.download_url, timeout=60, proxies=proxies)
-            resp.raise_for_status()
-        except requests.RequestException as e:
-            return {"success": False, "error": "download_failed", "message": f"下载失败: {str(e)}"}
+        proxies = {"http": proxy, "https": proxy} if proxy else None
+        zip_content = None
+
+        # 尝试从 download_url 下载 zip
+        if plugin_info.download_url:
+            try:
+                resp = requests.get(plugin_info.download_url, timeout=60, proxies=proxies)
+                resp.raise_for_status()
+                zip_content = resp.content
+            except requests.RequestException as e:
+                logger.warning(f"[PluginManager] download_url 下载失败，尝试回退: {e}")
+
+        # 回退：从源仓库下载整个 zip 并提取子目录
+        if zip_content is None and source_url:
+            fallback_result = self._fallback_install_from_repo(plugin_id, source_url, installed_plugins, proxies)
+            if fallback_result is not None:
+                return fallback_result
+            # fallback_result 为 None 表示回退也失败了
+            return {"success": False, "error": "download_failed", "message": f"下载失败，release 和仓库源码均不可用"}
+
+        if zip_content is None:
+            return {"success": False, "error": "download_failed", "message": "下载失败"}
 
         # SHA256 校验（如果提供了）
         if plugin_info.sha256:
             import hashlib
-            actual_hash = hashlib.sha256(resp.content).hexdigest()
+            actual_hash = hashlib.sha256(zip_content).hexdigest()
             if actual_hash != plugin_info.sha256:
                 return {
                     "success": False,
@@ -365,7 +382,7 @@ class PluginManager:
                 os.rename(plugin_dir, backup_dir)
 
             # 解压
-            zip_buffer = io.BytesIO(resp.content)
+            zip_buffer = io.BytesIO(zip_content)
             with zipfile.ZipFile(zip_buffer, "r") as zf:
                 # 检测 zip 内是否有单层根目录
                 top_dirs = set()
@@ -425,6 +442,115 @@ class PluginManager:
             logger.warning(f"[PluginManager] 远程插件 {plugin_id} 模块加载失败（可能是纯声明式）: {load_err}")
 
         logger.info(f"[PluginManager] 远程插件 {plugin_id} 安装成功")
+        return {"success": True, "plugin_id": plugin_id}
+
+    def _fallback_install_from_repo(
+        self,
+        plugin_id: str,
+        source_url: str,
+        installed_plugins: List[str],
+        proxies: Optional[Dict[str, str]],
+    ) -> Optional[Dict[str, Any]]:
+        """回退方案：从源仓库下载整个 zip，提取对应插件子目录。
+
+        返回安装结果 dict，或 None 表示回退失败。
+        """
+        import re
+        # 从 source_url 解析 GitHub user/repo
+        clean_url = source_url.strip().rstrip("/")
+        match = re.match(r"https?://github\.com/([^/]+)/([^/]+)", clean_url)
+        if not match:
+            return None
+
+        user, repo = match.group(1), match.group(2)
+        repo = repo.rstrip(".git")
+        branch = "main"
+
+        # 下载仓库 zip
+        zip_url = f"https://github.com/{user}/{repo}/archive/refs/heads/{branch}.zip"
+        try:
+            resp = requests.get(zip_url, timeout=60, proxies=proxies)
+            resp.raise_for_status()
+        except requests.RequestException:
+            return None
+
+        # 解压并提取子目录
+        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        try:
+            if os.path.isdir(plugin_dir):
+                backup_dir = plugin_dir + ".bak"
+                if os.path.isdir(backup_dir):
+                    shutil.rmtree(backup_dir)
+                os.rename(plugin_dir, backup_dir)
+
+            zip_buffer = io.BytesIO(resp.content)
+            with zipfile.ZipFile(zip_buffer, "r") as zf:
+                # GitHub zip 内有 repo-branch/ 根目录，子目录为 repo-branch/plugin_id/
+                prefix = f"{repo}-{branch}/{plugin_id}/"
+                members = [m for m in zf.namelist() if m.startswith(prefix)]
+                if not members:
+                    # 尝试不带 branch 的前缀（有些仓库用不同命名）
+                    for name in zf.namelist():
+                        if f"/{plugin_id}/" in name:
+                            prefix = name[:name.index(f"/{plugin_id}/") + len(f"/{plugin_id}/")]
+                            members = [m for m in zf.namelist() if m.startswith(prefix)]
+                            break
+
+                if not members:
+                    # 恢复备份
+                    backup_dir = plugin_dir + ".bak"
+                    if os.path.isdir(backup_dir):
+                        os.rename(backup_dir, plugin_dir)
+                    return None
+
+                # 提取子目录内容到 plugin_dir
+                os.makedirs(plugin_dir, exist_ok=True)
+                for member in members:
+                    rel_path = member[len(prefix):]
+                    if not rel_path:
+                        continue
+                    target_path = os.path.join(plugin_dir, rel_path)
+                    if member.endswith("/"):
+                        os.makedirs(target_path, exist_ok=True)
+                    else:
+                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                        with zf.open(member) as src, open(target_path, "wb") as dst:
+                            dst.write(src.read())
+
+            # 清理备份
+            backup_dir = plugin_dir + ".bak"
+            if os.path.isdir(backup_dir):
+                shutil.rmtree(backup_dir)
+
+        except Exception as e:
+            backup_dir = plugin_dir + ".bak"
+            if os.path.isdir(backup_dir):
+                if os.path.isdir(plugin_dir):
+                    shutil.rmtree(plugin_dir)
+                os.rename(backup_dir, plugin_dir)
+            logger.error(f"[PluginManager] 回退安装失败: {e}")
+            return None
+
+        # 校验 manifest
+        manifest_path = os.path.join(plugin_dir, "manifest.json")
+        if not os.path.isfile(manifest_path):
+            shutil.rmtree(plugin_dir)
+            return None
+
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            manifest = PluginManifest(**data)
+            self._manifests[manifest.id] = manifest
+        except Exception as e:
+            shutil.rmtree(plugin_dir)
+            return None
+
+        load_err = self._load_plugin_module(plugin_id)
+        if load_err:
+            logger.warning(f"[PluginManager] 回退安装插件 {plugin_id} 模块加载失败: {load_err}")
+
+        logger.info(f"[PluginManager] 回退从仓库源码安装插件成功: {plugin_id}")
         return {"success": True, "plugin_id": plugin_id}
 
     def uninstall_remote_plugin(self, plugin_id: str, installed_plugins: List[str]) -> Dict[str, Any]:

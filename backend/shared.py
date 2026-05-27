@@ -137,21 +137,24 @@ _file_relocator: Optional[FileRelocator] = None
 def _get_pan_search_service() -> PanSearchService:
     global _pan_search_service
     if _pan_search_service is None:
+        # 根据已安装插件过滤可用的网盘源
+        from plugin_guard import get_allowed_pan_sources
+        allowed = get_allowed_pan_sources()
+        sources = {name: (name in allowed) for name in [
+            "pansearch", "pansou", "gogopanso", "github",
+            "sites", "slowread", "wnsearch", "rrdynb", "ddys",
+        ]}
         _pan_search_service = PanSearchService(
-            search_sources={
-                "pansearch": True,
-                "pansou": True,
-                "gogopanso": True,   # 狗狗盘搜：公开 API，每日更新，无反爬
-                "github": True,      # GitHub 资源仓库：QuarkShare + quark-share
-                "sites": False,      # 通用站点：大多需登录或被反爬，暂关
-                "slowread": False,   # 慢读：纯 JS 渲染，需逆向 API，暂关
-                "wnsearch": False,   # 我能搜：纯 JS 渲染，需逆向 API，暂关
-                "rrdynb": True,      # 人人电影：搜索+详情页提取，多次请求后限频
-                "ddys": True,        # 低端影视：JSON API，单次100+条
-            },
+            search_sources=sources,
             pansou_api_url="https://pansou.app",
         )
     return _pan_search_service
+
+
+def reset_pan_search_service():
+    """插件安装/卸载后重置网盘搜索服务单例"""
+    global _pan_search_service
+    _pan_search_service = None
 
 
 def _get_sub_manager() -> SubscriptionManager:

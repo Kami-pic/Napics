@@ -5,8 +5,6 @@ import { fetchPlugins, installPlugin, uninstallPlugin, type PluginInfo } from "@
 import PluginCard from "./PluginCard";
 import PluginConfigModal from "./PluginConfigModal";
 import RemotePluginList from "./RemotePluginList";
-import InstallFromUrl from "./InstallFromUrl";
-import AddSourceModal from "./AddSourceModal";
 
 interface PluginCenterProps {
   open: boolean;
@@ -31,8 +29,7 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
   const [configPlugin, setConfigPlugin] = useState<PluginInfo | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"builtin" | "remote" | "url">("builtin");
-  const [showAddSource, setShowAddSource] = useState(false);
+  const [activeTab, setActiveTab] = useState<"builtin" | "remote">("builtin");
 
   const loadPlugins = useCallback(async () => {
     setLoading(true);
@@ -80,20 +77,32 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
     }
   };
 
-  // 已迁出到社区源的插件，不在内置 Tab 中显示
+  // 社区仓库插件（第三方 Tab 展示）+ 旧的废弃单源插件，不在内置 Tab 中显示
+  // 内置 Tab 保留：预装 5 个 + 主仓库非预装 5 个（bangumi/completeness/subscribe/prowlarr/storage-openlist）
   const COMMUNITY_ONLY_PLUGINS = new Set([
-    "search-bt-direct", "search-pan", "search-example",
-    "search-prowlarr", "search-nyaa", "search-yts", "search-eztv",
+    // 社区仓库 11 个（小号仓库分发）
+    "search-bt-mirror", "search-bt-movie-tv", "search-bt-anime-jp",
+    "search-bt-anime-cn", "search-bt-cn",
+    "search-pan-main", "search-pan-github", "search-pan-resource",
     "rss-anime", "rss-tv-movie",
-    "metadata-douban",
-    "download-openlist", "storage-openlist",
-    "feature-subscribe",
+    "download-openlist",
+    // 旧的聚合包 / 废弃 / 示例插件
+    "search-bt-direct", "search-pan", "search-example",
+    // 旧的单独 scraper 插件（已拆分到社区源的独立包中）
+    "search-nyaa", "search-yts", "search-eztv", "search-mikan",
+    "search-bitsearch", "search-1337x", "search-limetorrents",
+    "search-cilixiong", "search-xl720", "search-dmhy",
+    "search-acgrip", "search-bangumi-moe",
+    "search-pansearch", "search-pansou", "search-gogopanso",
+    "search-github-pan", "search-rrdynb", "search-ddys",
+    "search-slowread", "search-wnsearch", "search-sites",
+    "search", "search-1337x",
   ]);
 
   const filtered = activeCategory === "all"
     ? plugins.filter(p => !p.id.includes("deprecated") && !COMMUNITY_ONLY_PLUGINS.has(p.id))
     : activeCategory === "installed"
-    ? plugins.filter(p => p.installed)
+    ? plugins.filter(p => p.installed && !COMMUNITY_ONLY_PLUGINS.has(p.id))
     : plugins.filter(p => p.category === activeCategory && !p.id.includes("deprecated") && !COMMUNITY_ONLY_PLUGINS.has(p.id));
 
   // 排序：已安装在前，同组内按 category → name 排序
@@ -112,41 +121,26 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
 
       {/* 面板 */}
       <div className="relative ml-auto w-full max-w-lg h-full bg-[#141414] border-l border-white/[0.06] flex flex-col animate-in slide-in-from-right duration-300">
-        {/* 头部 */}
+        {/* 头部：插件中心 / 第三方插件 并列 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🧩</span>
-            <h2 className="text-base font-semibold text-slate-200">插件中心</h2>
-            <span className="text-xs text-slate-500">
-              {plugins.filter(p => p.installed).length}/{plugins.length} 已安装
-            </span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setActiveTab("builtin")}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                activeTab === "builtin" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+              }`}>
+              🧩 插件中心
+            </button>
+            <button onClick={() => setActiveTab("remote")}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                activeTab === "remote" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
+              }`}>
+              🌐 第三方插件
+            </button>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/5">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
-        </div>
-
-        {/* 内置/第三方/URL 切换 */}
-        <div className="flex items-center gap-1 px-6 py-2 border-b border-white/[0.06]">
-          <button onClick={() => setActiveTab("builtin")}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-              activeTab === "builtin" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
-            }`}>
-            内置插件
-          </button>
-          <button onClick={() => setActiveTab("remote")}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-              activeTab === "remote" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
-            }`}>
-            第三方插件源
-          </button>
-          <button onClick={() => setActiveTab("url")}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-              activeTab === "url" ? "bg-white/[0.08] text-slate-200 font-medium" : "text-slate-500 hover:text-slate-300"
-            }`}>
-            从 URL 安装
           </button>
         </div>
 
@@ -201,15 +195,6 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
         {activeTab === "remote" && (
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <RemotePluginList
-              onAddSource={() => setShowAddSource(true)}
-              onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
-            />
-          </div>
-        )}
-
-        {activeTab === "url" && (
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <InstallFromUrl
               onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
             />
           </div>
@@ -222,14 +207,6 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
           plugin={configPlugin}
           onClose={() => setConfigPlugin(null)}
           onSaved={() => { setConfigPlugin(null); loadPlugins(); }}
-        />
-      )}
-
-      {/* 添加插件源弹窗 */}
-      {showAddSource && (
-        <AddSourceModal
-          onClose={() => setShowAddSource(false)}
-          onAdded={() => { setShowAddSource(false); }}
         />
       )}
     </div>

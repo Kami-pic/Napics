@@ -11,6 +11,15 @@ from shared import config_m
 
 logger = logging.getLogger(__name__)
 
+
+def _reset_services_on_plugin_change():
+    """插件变更后重置依赖插件状态的服务单例"""
+    try:
+        from shared import reset_pan_search_service
+        reset_pan_search_service()
+    except Exception:
+        pass
+
 router = APIRouter(prefix="/api/plugins", tags=["plugins"])
 
 # 单例
@@ -85,6 +94,7 @@ def install_plugin(req: InstallRequest):
     config_m.save(conf)
 
     logger.info(f"[Plugins] 已安装插件: {req.id}")
+    _reset_services_on_plugin_change()
     return {"success": True, "installed_plugins": installed}
 
 
@@ -110,6 +120,7 @@ def uninstall_plugin(req: UninstallRequest):
     config_m.save(conf)
 
     logger.info(f"[Plugins] 已卸载插件: {req.id}")
+    _reset_services_on_plugin_change()
     return {"success": True, "installed_plugins": installed}
 
 
@@ -287,7 +298,7 @@ def install_remote_plugin(req: InstallRemoteRequest):
         })
 
     # 下载并安装
-    install_result = pm.install_remote_plugin(target_plugin, installed, proxy=proxy)
+    install_result = pm.install_remote_plugin(target_plugin, installed, proxy=proxy, source_url=req.source_url)
     if not install_result["success"]:
         raise HTTPException(status_code=400, detail=install_result)
 
@@ -298,6 +309,7 @@ def install_remote_plugin(req: InstallRemoteRequest):
     config_m.save(conf)
 
     logger.info(f"[Plugins] 已安装远程插件: {req.plugin_id} (来源: {req.source_url})")
+    _reset_services_on_plugin_change()
     return {"success": True, "installed_plugins": installed}
 
 
@@ -320,4 +332,5 @@ def install_from_url(req: InstallFromUrlRequest):
     config_m.save(conf)
 
     logger.info(f"[Plugins] 从 URL 安装插件: {plugin_id} ({req.url})")
+    _reset_services_on_plugin_change()
     return {"success": True, "plugin_id": plugin_id, "name": result.get("name", ""), "installed_plugins": installed}
