@@ -296,7 +296,7 @@ class PluginManager:
         """拉取远程插件源的 index.json。
 
         返回 {"success": True, "index": PluginSourceIndex} 或 {"success": False, "error": ...}
-        license_key: 付费插件源需要带 License Key 作为 auth header
+        license_key: 需要授权的插件源带 License Key 作为 auth header
         """
         try:
             proxies = {"http": proxy, "https": proxy} if proxy else None

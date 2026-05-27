@@ -105,9 +105,30 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
         setActionResult(res.status === "supplemented" ? "已补充缺少的字段" : res.status === "complete" ? "数据已完整" : "未找到匹配");
         onRefresh();
       } else if (action === "rename_shadow") {
-        const res = await api.renameVideos(node.path, false, true);
-        setActionResult(`已更新标准名：${res.filled || res.shadow_filled || 0} 项`);
-        setTimeout(() => onRefresh(), 300);
+        if (dryRun) {
+          // 预览模式：显示将要重命名的文件
+          const res = await api.renameVideos(node.path, true);
+          const items = res.items || (Array.isArray(res) ? res : []);
+          const changed = items.filter((o: any) => !o.unchanged);
+          if (changed.length > 0) {
+            const truncName = (n: string) => n.length > 30 ? n.slice(0, 12) + "..." + n.slice(-12) : n;
+            let msg = `预览-rename_shadow ${changed.length} 项将重命名`;
+            msg += "\n" + changed.slice(0, 8).map((o: any) => "• " + truncName(o.old_name || "") + "\n  → " + (o.new_name || "")).join("\n");
+            if (changed.length > 8) msg += `\n  ... 还有 ${changed.length - 8} 项`;
+            setActionResult(msg);
+          } else {
+            setActionResult("当前命名已是标准格式，无需修改");
+          }
+        } else {
+          // 执行模式：物理重命名（带二次确认）
+          if (!confirm("确定要重命名这些文件？此操作会修改物理文件名。")) {
+            setActionLoading(false);
+            return;
+          }
+          const res = await api.renameVideos(node.path, false, false);
+          setActionResult(`重命名完成：${res.items?.filter((o: any) => !o.unchanged).length || 0} 项`);
+          setTimeout(() => onRefresh(), 300);
+        }
       } else if (action === "organize") {
         // V3 一键整理 = 两段式（先推演后执行）
         if (dryRun) {
@@ -400,7 +421,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
       {/* 第三行：自动刮削名 / 标准结构 / 一键整理 + AI开关（虚拟文件夹不显示） */}
       {!node.is_virtual_library && (
       <div className="space-y-2">
-        <button onClick={() => doAction("rename_shadow", false)} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">生成标准名</button>
+        <button onClick={() => doAction("rename_shadow")} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">自动重命名</button>
         <button onClick={async () => { setActionLoading(true); setActionResult(""); try { const res = await api.structureOrganize(node.path, true); const ops = res.ops || []; const videoExts = ['.mp4','.mkv','.avi','.rmvb','.rm','.flv','.ts','.m4v','.mov','.wmv']; const videoOps = ops.filter((o: any) => { const p = o.old || o.path || o.desc || ''; return videoExts.some(ext => p.toLowerCase().endsWith(ext)) || o.action === 'rename_dir' || o.action === 'rmdir'; }); const moveOps = videoOps.filter((o: any) => o.action === 'move'); const renameOps = videoOps.filter((o: any) => o.action === 'rename_dir'); if (ops.length) { let msg = `预览-structure ${moveOps.length} 个视频`; if (renameOps.length) msg += `，${renameOps.length} 个目录重命名`; moveOps.slice(0, 8).forEach((o: any) => { msg += `\n📦 ${o.desc || ''}`; }); renameOps.slice(0, 3).forEach((o: any) => { msg += `\n✏️ ${o.desc || ''}`; }); if (moveOps.length > 8) msg += `\n  ... 还有 ${moveOps.length - 8} 个视频`; setActionResult(msg); } else { setActionResult("结构已标准，无需调整"); } } catch (e: any) { setActionResult("操作失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">标准结构</button>
         <div className="flex gap-2">
           {actionLoading && abortController ? (

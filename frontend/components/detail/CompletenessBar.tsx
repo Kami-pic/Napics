@@ -19,13 +19,21 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const fetchData = (refresh = false) => {
     if (!path || (folderType !== "tv" && folderType !== "season")) return;
     if (refresh) setRefreshing(true); else setLoading(true);
+    setErrorMsg("");
     api.getCompleteness(path, tmdbId, refresh)
-      .then(res => { if (res.status === "ok") setData(res); })
-      .catch(() => {})
+      .then(res => {
+        if (res.status === "ok") { setData(res); setErrorMsg(""); }
+        else if (res.status === "no_tmdb_id") setErrorMsg("未刮削，无法检测完整度");
+        else if (res.status === "plugin_not_installed") setErrorMsg("需安装「季集完整性检测」插件");
+        else if (res.status === "no_tmdb_client") setErrorMsg("需在设置中配置 TMDB API Key");
+        else setErrorMsg(res.message || "");
+      })
+      .catch(() => { setErrorMsg("接口请求失败"); })
       .finally(() => { setLoading(false); setRefreshing(false); });
   };
 
@@ -40,6 +48,11 @@ export function CompletenessBar({ path, folderType, tmdbId, onSearch, cnName, en
     <div className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-white/[0.03]">
       <div className="w-3 h-3 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
       <span className="text-[11px] text-slate-500">检查完整度...</span>
+    </div>
+  );
+  if (errorMsg) return (
+    <div className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-white/[0.03]">
+      <span className="text-[11px] text-slate-500">📊 {errorMsg}</span>
     </div>
   );
   if (!data || !data.seasons) return null;

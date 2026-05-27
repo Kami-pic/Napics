@@ -1,13 +1,10 @@
-"""License Key 验证服务 — 对接 LemonSqueezy License API。
+"""License Key 验证服务 — 对接外部授权平台。
 
 验证流程：
 1. 用户在设置页填入 License Key
-2. 后端调用 LemonSqueezy validate API 验证
-3. 验证通过 → 保存状态到 config.json → 解锁付费插件源
-4. 下载付费插件后本地运行，不再验证（离线友好）
-
-LemonSqueezy License API 文档：
-https://docs.lemonsqueezy.com/api/license-api
+2. 后端调用验证 API
+3. 验证通过 → 保存状态到 config.json → 解锁扩展插件源
+4. 下载插件后本地运行，不再验证（离线友好）
 """
 
 import logging
@@ -32,7 +29,7 @@ class LicenseInfo(BaseModel):
     email: str = ""           # 购买者邮箱
     plan: str = ""            # lifetime / yearly（从 variant_name 推断）
     product_name: str = ""    # 产品名称
-    expires_at: str = ""      # 过期时间（订阅制）
+    expires_at: str = ""      # 过期时间
     error: str = ""           # 错误信息
 
 

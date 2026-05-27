@@ -1,4 +1,4 @@
-// License Key 授权管理区域 — 设置页中的 Pro 授权模块
+// License Key 授权管理区域
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { fetchLicenseStatus, validateLicenseKey, clearLicense, type LicenseStatus } from "@/lib/api/license";

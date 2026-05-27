@@ -47,7 +47,7 @@ class PluginSourceConfig(BaseModel):
     """外部插件源配置"""
     name: str = ""                    # 源名称
     url: str = ""                     # 源 index.json 的 URL
-    requires_license: bool = False    # 是否需要 License Key（付费源）
+    requires_license: bool = False    # 是否需要授权验证
 
 
 class AppConfig(BaseModel):
@@ -106,11 +106,11 @@ class AppConfig(BaseModel):
             url="https://github.com/icatmiumiu/plugins-of-napics",
         ),
     ]
-    # 付费授权
-    license_key: str = ""                         # LemonSqueezy License Key
+    # 授权
+    license_key: str = ""                         # License Key
     license_status: str = ""                      # 验证状态：valid / expired / invalid / ""
-    license_email: str = ""                       # 授权邮箱（验证成功后回填）
-    license_plan: str = ""                        # 授权计划：lifetime / yearly
+    license_email: str = ""                       # 授权邮箱
+    license_plan: str = ""                        # 授权计划
     license_validated_at: str = ""                # 最后验证时间（ISO 格式）
     # 下载监控目录（无下载器插件时的兜底方案）
     download_watch_dirs: List[str] = []           # 监控目录列表，新文件自动触发整理

@@ -66,7 +66,7 @@ export interface CompletenessResult {
   total_episodes?: number;
   local_total?: number;
   completeness_pct?: number;
-  status: "ok" | "no_tmdb_id" | "no_tmdb_client" | "tmdb_error";
+  status: "ok" | "no_tmdb_id" | "no_tmdb_client" | "tmdb_error" | "plugin_not_installed";
   message?: string;
 }
 

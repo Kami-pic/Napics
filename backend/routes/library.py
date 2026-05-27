@@ -53,42 +53,102 @@ async def scan_path(path: str, library_name: str = ""):
 
             yield "data: " + json.dumps({"type": "start", "total": len(all_files), "message": f"找到 {len(all_files)} 个视频"}) + "\n\n"
 
-            # 2. 逐个识别阶段
-            for i, f in enumerate(all_files):
+            # 2. 增量识别：已有记录且文件大小没变的直接复用，跳过 ffprobe
+            existing = config_m.load_library()
+            existing_map = {}  # file_path → item dict
+            for v in existing:
+                fp = v.get("file_path", "")
+                if fp:
+                    existing_map[fp] = v
+
+            reused = []
+            need_probe = []
+            for f in all_files:
+                old = existing_map.get(f)
+                if old and old.get("height", 0) > 0:
+                    # 检查文件大小是否变化
+                    try:
+                        actual_size = round(os.path.getsize(f) / (1024**3), 2)
+                        if abs(actual_size - old.get("size_gb", 0)) < 0.01:
+                            reused.append((f, old))
+                            continue
+                    except OSError:
+                        pass
+                need_probe.append(f)
+
+            if reused:
+                yield "data: " + json.dumps({"type": "status", "message": f"复用 {len(reused)} 个已有记录，{len(need_probe)} 个需要分析"}) + "\n\n"
+
+            # 复用的直接加入结果
+            for f, old_item in reused:
+                rel_dir = os.path.relpath(os.path.dirname(f), path)
+                rel_dir = "" if rel_dir == "." else rel_dir
+                item = dict(old_item)
+                if library_name:
+                    item["folder_name"] = os.path.join(library_name, rel_dir) if rel_dir else library_name
+                else:
+                    item["folder_name"] = rel_dir
+                results.append(item)
+
+            # 3. 并发 ffprobe 识别新增/变更文件
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import threading
+
+            progress_count = len(reused)
+            total_count = len(all_files)
+
+            def _probe_one(fp):
+                """单个文件的 ffprobe 处理"""
                 try:
-                    info = scanner.get_video_metadata(f)
+                    info = scanner.get_video_metadata(fp)
                     if info:
-                        rel_dir = os.path.relpath(os.path.dirname(f), path)
+                        rel_dir = os.path.relpath(os.path.dirname(fp), path)
                         rel_dir = "" if rel_dir == "." else rel_dir
                         if library_name:
                             info.folder_name = os.path.join(library_name, rel_dir) if rel_dir else library_name
                         else:
                             info.folder_name = rel_dir
-                        results.append(info.dict())
-                        yield "data: " + json.dumps({"type": "progress", "file": info.dict()}) + "\n\n"
-                    else:
-                        yield "data: " + json.dumps({"type": "progress", "raw_file_name": os.path.basename(f)}) + "\n\n"
+                        return ("ok", fp, info.dict())
+                    return ("empty", fp, None)
                 except Exception as e:
-                    logger.error(f"[scan] 文件处理失败: {f} — {e}")
-                    fallback = scanner._fallback_info(f)
+                    logger.error(f"[scan] 文件处理失败: {fp} — {e}")
+                    fallback = scanner._fallback_info(fp)
                     if fallback:
-                        rel_dir = os.path.relpath(os.path.dirname(f), path)
+                        rel_dir = os.path.relpath(os.path.dirname(fp), path)
                         rel_dir = "" if rel_dir == "." else rel_dir
                         if library_name:
                             fallback.folder_name = os.path.join(library_name, rel_dir) if rel_dir else library_name
                         else:
                             fallback.folder_name = rel_dir
-                        results.append(fallback.dict())
-                    yield "data: " + json.dumps({"type": "progress", "raw_file_name": os.path.basename(f)}) + "\n\n"
+                        return ("fallback", fp, fallback.dict())
+                    return ("error", fp, None)
 
-            # 3. 保存阶段
-            scanned_paths = set(r.get("file_path") for r in results)
-            existing = config_m.load_library()
+            # 并发度：NAS SMB 路径用 6，本地路径用 12
+            max_workers = 6 if path.startswith("\\\\") else 12
+
+            if need_probe:
+                with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                    futures = {pool.submit(_probe_one, fp): fp for fp in need_probe}
+                    for future in as_completed(futures):
+                        progress_count += 1
+                        status, fp, item_dict = future.result()
+                        if item_dict:
+                            results.append(item_dict)
+                            yield "data: " + json.dumps({"type": "progress", "file": item_dict, "current": progress_count, "total": total_count}) + "\n\n"
+                        else:
+                            yield "data: " + json.dumps({"type": "progress", "raw_file_name": os.path.basename(fp), "current": progress_count, "total": total_count}) + "\n\n"
+
+            # 4. 保存阶段
             kept = [v for v in existing if not v.get("file_path", "").startswith(path)]
             final = kept + results
 
             from clean_name_system import clean_from_filename, safe_update_clean_name as _safe_update
+            # 只对新扫描的文件生成清洗名 + 标准名（复用的已有）
+            reused_paths = set(f for f, _ in reused)
+            shadow_filled = 0
             for item in results:
+                if item.get("file_path") in reused_paths:
+                    continue  # 复用的已有清洗名
                 fn = item.get("file_name", "")
                 if fn:
                     result_cn = clean_from_filename(fn)
@@ -98,6 +158,11 @@ async def scan_path(path: str, library_name: str = ""):
                         item["clean_name_en"] = result_cn.en
                         item["clean_name_original"] = result_cn.original
                         item["clean_name_source"] = "parsed"
+                        # 同时生成标准名（shadow_name）
+                        fp = item.get("file_path", "")
+                        if fp and result_cn.display:
+                            if shadow_m.auto_fill(fp, result_cn.display, source="parsed"):
+                                shadow_filled += 1
 
             # 清理不属于任何已配置路径的孤立条目
             _all_configured_paths = list(config_m.config.scan_paths or [])
@@ -108,7 +173,7 @@ async def scan_path(path: str, library_name: str = ""):
                          any(v["file_path"].startswith(p) for p in _all_configured_paths)]
 
             config_m.save_library(final)
-            yield "data: " + json.dumps({"type": "done", "total": len(results)}) + "\n\n"
+            yield "data: " + json.dumps({"type": "done", "total": len(results), "shadow_filled": shadow_filled}) + "\n\n"
 
         except Exception as e:
             logger.info(f"[scan] 扫描异常: {e}")
