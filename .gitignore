@@ -93,6 +93,13 @@ frontend/components/media/DoubanRecommend.tsx
 # 社区插件仓库（独立仓库，不跟踪）
 community-plugins/
 
+# AI 协作配置与开发文件（不同步到远程）
+.kiro/
+AGENTS.md
+frontend/AGENTS.md
+frontend/CLAUDE.md
+backend/tests/
+
 # 一次性测试/调试脚本
 backend/_scripts/
 backend/_*.py
