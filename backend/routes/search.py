@@ -265,7 +265,11 @@ def get_search_sources():
         })
 
     if is_pan_search_allowed():
+        from plugin_guard import get_allowed_pan_sources
+        allowed_pan = get_allowed_pan_sources()
         for name, info in _PAN_SOURCE_DEFAULTS.items():
+            if name not in allowed_pan:
+                continue
             sources.append({
                 "name": name, "label": info["label"], "type": info["type"],
                 "enabled": pan_overrides.get(name, info["enabled"]),

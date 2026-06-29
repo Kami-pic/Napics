@@ -47,6 +47,9 @@ PAN_SOURCE_DEFAULTS = {
     "github": {"label": "GitHub", "enabled": True, "type": "pan"},
     "rrdynb": {"label": "人人电影", "enabled": True, "type": "pan"},
     "ddys": {"label": "低端影视", "enabled": True, "type": "pan"},
+    "sites": {"label": "Sites", "enabled": True, "type": "pan"},
+    "slowread": {"label": "慢读", "enabled": True, "type": "pan"},
+    "wnsearch": {"label": "万能搜索", "enabled": True, "type": "pan"},
     "pansou": {"label": "PanSou", "enabled": False, "type": "pan"},
 }
 
