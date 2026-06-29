@@ -226,7 +226,7 @@ function CandidateCardTmdb({ c, selecting, onSelect }: { c: any; selecting: stri
 }
 
 function CandidateCardDouban({ c, selecting, onSelect }: { c: any; selecting: string | null; onSelect: (c: any) => void }) {
-  const posterUrl = c.poster_url?.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${c.poster_url}` : c.poster_url;
+  const posterUrl = c.poster_url?.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}${c.poster_url}` : c.poster_url;
   return (
     <button onClick={() => onSelect(c)} disabled={selecting !== null}
       className={`w-full flex gap-2.5 p-2 rounded-lg text-left transition-all ${selecting === `douban-${c.douban_id}` ? "bg-green-500/20 border border-green-500/30" : "bg-white/[0.03] hover:bg-white/[0.06] border border-transparent"}`}>

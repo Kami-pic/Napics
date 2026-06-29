@@ -246,7 +246,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <select value={node.category_tag || "movie"} onChange={async (e) => {
             const newTag = e.target.value;
             try {
-              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/category-tag`, {
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/library/category-tag`, {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, tag: newTag})
               });
@@ -272,7 +272,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <select value={folderType} onChange={async (e) => {
             const newType = e.target.value;
             try {
-              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/library/folder-type`, {
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/library/folder-type`, {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, folder_type: newType})
               });

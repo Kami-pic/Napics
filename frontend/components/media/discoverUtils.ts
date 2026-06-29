@@ -1,7 +1,7 @@
 // 发现页工具函数：代理 URL、数据标准化、详情缓存
 import type { DoubanHotItem } from "@/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 /** 图片代理 URL 转换 */
 export function proxyUrl(url: string): string {

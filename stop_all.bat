@@ -10,7 +10,7 @@ taskkill /f /im node.exe >nul 2>&1
 echo     Done
 
 echo [2/5] Stopping Backend (uvicorn/python)...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000" ^| findstr "LISTENING"') do taskkill /f /pid %%a >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8001" ^| findstr "LISTENING"') do taskkill /f /pid %%a >nul 2>&1
 echo     Done
 
 echo [3/5] Stopping Alist...

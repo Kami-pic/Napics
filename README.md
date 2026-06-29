@@ -131,7 +131,7 @@ cd napics
 # 后端
 cd backend
 pip install -r requirements.txt
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --host 0.0.0.0 --port 8001
 
 # 前端（新终端）
 cd frontend
@@ -139,7 +139,7 @@ npm install
 npm run dev
 ```
 
-访问 `http://localhost:3031`
+访问 `http://localhost:3032`
 
 ### Windows 一键启动
 
@@ -162,7 +162,7 @@ cd napics
 docker compose up -d
 ```
 
-访问 `http://localhost:3031`（或 `http://<NAS-IP>:3031`）
+访问 `http://localhost:3032`（或 `http://<NAS-IP>:3032`）
 
 <details>
 <summary>NAS 局域网部署说明</summary>
@@ -173,7 +173,7 @@ docker compose up -d
 frontend:
   build:
     args:
-      - NEXT_PUBLIC_API_URL=http://192.168.1.100:8000  # 改为你的 NAS IP
+      - NEXT_PUBLIC_API_URL=http://192.168.1.100:8001  # 改为你的 NAS IP
 ```
 
 修改后需要重新构建前端镜像：

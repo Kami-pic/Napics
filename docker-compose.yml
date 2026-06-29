@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: napics-backend
     ports:
-      - "8000:8000"
+      - "8001:8001"
     volumes:
       # 配置与数据持久化
       - napics-data:/app/data
@@ -21,10 +21,10 @@ services:
       dockerfile: Dockerfile
       args:
         # 构建时注入后端地址（用户浏览器需要能访问到的地址）
-        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_API_URL=http://localhost:8001
     container_name: napics-frontend
     ports:
-      - "3031:3000"
+      - "3032:3000"
     environment:
       - HOSTNAME=0.0.0.0
     depends_on:

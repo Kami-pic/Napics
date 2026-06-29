@@ -32,7 +32,7 @@ export function AISettingsSection({ config, setConfig }: AISettingsSectionProps)
   const [aiExpanded, setAiExpanded] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:8000/ai/status").then(r => r.json()).then(data => {
+    fetch("http://localhost:8001/ai/status").then(r => r.json()).then(data => {
       setAiUsage(data.usage || {});
     }).catch(() => {});
     setAiTestResult(null);

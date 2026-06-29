@@ -78,7 +78,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
       api.getProviders()
         .then(catalog => setMetadataProviders(catalog.metadata || []))
         .catch(() => setMetadataProviders([]));
-      fetch("http://localhost:8000/cache/info").then(r => r.json()).then(setCacheInfo).catch(() => {});
+      fetch("http://localhost:8001/cache/info").then(r => r.json()).then(setCacheInfo).catch(() => {});
     }
   }, [open]);
 
@@ -158,7 +158,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                     const hasMediaLibraries = (latestConfig.media_libraries || []).length > 0;
                     if (remaining.length === 0 && !hasMediaLibraries) {
                       if (!confirm("删除最后一个路径将清空媒体库，确定继续？")) return;
-                      try { await fetch("http://localhost:8000/library/reset", { method: "POST" }); } catch {}
+                      try { await fetch("http://localhost:8001/library/reset", { method: "POST" }); } catch {}
                       setPaths([""]);
                       const resetConfig = { ...latestConfig, scan_paths: [] };
                       await api.saveConfig(resetConfig);
@@ -167,7 +167,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                       window.location.reload();
                     } else {
                       if (!confirm(`确定删除路径 "${p}" ？删除后该路径下的媒体数据也会被清除。`)) return;
-                      try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) }); } catch {}
+                      try { await fetch("http://localhost:8001/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) }); } catch {}
                       const newPaths = remaining.length > 0 ? remaining : [""];
                       setPaths(newPaths);
                       // 立即保存 scan_paths 变更
@@ -209,7 +209,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                     const libPath = lib.paths[0] || "";
                     if (!confirm(`确定删除媒体文件夹 "${lib.name}" ？该文件夹下的媒体数据也会被清除。`)) return;
                     if (libPath) {
-                      try { await fetch("http://localhost:8000/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: libPath }) }); } catch {}
+                      try { await fetch("http://localhost:8001/library/remove-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: libPath }) }); } catch {}
                     }
                     const newLibs = (config.media_libraries || []).filter((_, j) => j !== i);
                     const newConfig = { ...config, media_libraries: newLibs };
@@ -316,7 +316,7 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               </div>
               <button onClick={async () => {
                 if (!confirm("确定清空所有缓存？")) return;
-                try { await fetch("http://localhost:8000/cache/clear", { method: "POST" }); setCacheInfo({ size_mb: 0, file_count: 0 }); } catch { alert("清空失败"); }
+                try { await fetch("http://localhost:8001/cache/clear", { method: "POST" }); setCacheInfo({ size_mb: 0, file_count: 0 }); } catch { alert("清空失败"); }
               }} className="px-3 py-1.5 bg-white/[0.04] hover:bg-red-500/10 hover:text-red-400 rounded-lg text-[10px] text-slate-500 transition-all">清空缓存</button>
             </div>
           </div>

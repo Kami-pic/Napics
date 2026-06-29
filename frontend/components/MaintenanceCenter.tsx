@@ -11,7 +11,7 @@ export default function MaintenanceCenter() {
   const handleRestart = async () => {
     setIsRestarting(true);
     setMessage("正在发送重启指令...");
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
     try {
       await fetch(`${backendUrl}/api/system/restart`, { method: "POST" }).catch(() => {});
       

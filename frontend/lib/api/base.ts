@@ -1,6 +1,6 @@
 // API 基础设施：request 函数 + BASE_URL
 
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 export async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
