@@ -49,11 +49,15 @@ def list_providers() -> ProviderCatalog:
         return ProviderCatalog()
 
     # 根据插件安装状态过滤
-    from plugin_guard import get_allowed_bt_sources, is_pan_search_allowed
+    from plugin_guard import get_allowed_bt_sources, is_pan_search_allowed, get_allowed_pan_sources
     allowed_bt = get_allowed_bt_sources()
 
     filtered_search = [p for p in catalog.search if p.id in allowed_bt]
-    filtered_pan = catalog.pan_search if is_pan_search_allowed() else []
+    if is_pan_search_allowed():
+        allowed_pan = get_allowed_pan_sources()
+        filtered_pan = [p for p in catalog.pan_search if p.id in allowed_pan]
+    else:
+        filtered_pan = []
     filtered_metadata = [p for p in catalog.metadata if f"metadata-{p.id}" in installed]
     filtered_rss = catalog.rss if any(pid.startswith("rss-") for pid in installed) else []
     filtered_download = [p for p in catalog.download if f"download-{p.id}" in installed]

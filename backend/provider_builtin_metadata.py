@@ -84,8 +84,7 @@ def build_builtin_provider_metadata(
 ) -> list[ProviderMetadata]:
     providers: list[ProviderMetadata] = []
     providers.extend(_build_search_metadata(bt_overrides or {}))
-    if include_private_pan:
-        providers.extend(_build_pan_search_metadata(pan_overrides or {}))
+    providers.extend(_build_pan_search_metadata(pan_overrides or {}))
     providers.extend(_build_metadata_metadata())
     providers.extend(_build_rss_metadata())
     providers.extend(_build_download_metadata())
@@ -138,7 +137,7 @@ def _build_pan_search_metadata(pan_overrides: Mapping[str, Any]) -> list[Provide
                 enabled=enabled,
                 defaultEnabled=bool(info.get("enabled", False)),
                 capabilities=["search", "share_link"],
-                riskLevel=ProviderRiskLevel.PRIVATE,
+                riskLevel=ProviderRiskLevel.HIGH,
                 supportsProxy=False,
             )
         )
