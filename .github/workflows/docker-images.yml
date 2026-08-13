@@ -180,11 +180,43 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Docker Hub 是可选的：配置了 secrets 才登录并推送。
+      # 国内 NAS 大多配了 Docker Hub 加速器，拉取比 ghcr.io 快很多。
+      - name: 登录 Docker Hub（已配置 secrets 时）
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 组装镜像名列表
+        id: images
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          # GHCR 要求镜像名全小写
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          # 逐行输出，避免多行字符串带上前导空格导致镜像名解析错误
+          {
+            echo "list<<__EOF__"
+            echo "${{ env.REGISTRY }}/${OWNER_LC}/napics"
+            if [ -n "$DOCKERHUB_USERNAME" ]; then
+              echo "${DOCKERHUB_USERNAME}/napics"
+            fi
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ -n "$DOCKERHUB_USERNAME" ]; then
+            echo "Docker Hub 已配置，将同时推送到 ${DOCKERHUB_USERNAME}/napics"
+          else
+            echo "未配置 Docker Hub secrets，仅推送 GHCR"
+          fi
+
       - name: 生成镜像标签
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.images.outputs.list }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}

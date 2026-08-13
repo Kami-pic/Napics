@@ -151,11 +151,15 @@ start_all.bat
 
 前后端打包在同一个镜像里，**一个容器、一个端口**就能跑起来。
 
-镜像地址：
+镜像地址（任选其一，国内建议用加速地址）：
 
-```
-ghcr.io/kami-pic/napics:latest
-```
+| 来源 | 地址 | 说明 |
+|---|---|---|
+| Docker Hub | `kamipic/napics:latest` | 国内 NAS 通常已配加速器，最快 |
+| GHCR 加速 | `ghcr.nju.edu.cn/kami-pic/napics:latest` | 教育网镜像站代理 |
+| GHCR 原始 | `ghcr.io/kami-pic/napics:latest` | 国内可能很慢或超时 |
+
+拉不动的话还可以下载离线镜像包导入，见下方「离线安装」。
 
 #### 方式一：NAS 图形界面（飞牛 / 群晖 / 威联通）
 
@@ -225,6 +229,22 @@ docker compose up -d
 
 配置和媒体库索引都在 `/app/data`，只要这个目录挂载出来，
 更新镜像不会丢数据。
+
+</details>
+
+<details>
+<summary>离线安装（网络拉不动镜像时）</summary>
+
+1. 打开仓库的 Actions 页面，点最近一次成功的构建
+2. 滚到页面底部 `Artifacts`，下载 `napics-docker-image-tar`
+3. 解压得到 `napics-image.tar.gz`，传到 NAS
+4. NAS 的 Docker 界面 → 镜像 → 导入，选择该文件
+
+命令行方式：
+
+```bash
+gunzip -c napics-image.tar.gz | docker load
+```
 
 </details>
 
