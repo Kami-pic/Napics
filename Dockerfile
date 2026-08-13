@@ -32,9 +32,10 @@ RUN apt-get update && \
         tzdata && \
     rm -rf /var/lib/apt/lists/*
 
+# 注意：这里刻意不设 HOSTNAME。Docker 运行时会把 HOSTNAME 覆盖成容器 ID，
+# 而 Next.js standalone 用它决定监听地址，所以改由 entrypoint 在启动命令上强制指定。
 ENV TZ=Asia/Shanghai \
     NODE_ENV=production \
-    HOSTNAME=0.0.0.0 \
     PORT=3000 \
     NAPICS_DATA_DIR=/app/data \
     NAPICS_BACKEND_ORIGIN=http://127.0.0.1:8001 \

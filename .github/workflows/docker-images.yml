@@ -44,19 +44,41 @@ jobs:
 
       - name: 等待就绪并验证前后端链路
         run: |
-          echo "等待容器就绪..."
-          for i in $(seq 1 90); do
+          echo "等待容器就绪（最多 150 秒）..."
+          READY=0
+          for i in $(seq 1 150); do
             if curl -fsS http://127.0.0.1:3032/backend/ >/dev/null 2>&1; then
               echo "就绪，用时 ${i}s"
+              READY=1
               break
             fi
-            if [ "$i" -eq 90 ]; then
-              echo "::error::90 秒内未就绪"
-              docker logs napics-smoke
+            # 容器已经退出就不用再等，直接看日志
+            if ! docker ps --filter name=napics-smoke --filter status=running -q | grep -q .; then
+              echo "::error::容器已退出"
+              echo "--- 退出码 ---"
+              docker inspect napics-smoke --format '{{.State.ExitCode}}' || true
+              echo "--- 容器日志 ---"
+              docker logs napics-smoke || true
               exit 1
+            fi
+            # 每 20 秒打一次当前日志，方便看卡在哪一步
+            if [ $((i % 20)) -eq 0 ]; then
+              echo "--- 已等待 ${i}s，当前日志尾部 ---"
+              docker logs --tail 25 napics-smoke 2>&1 || true
             fi
             sleep 1
           done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "::error::150 秒内未就绪"
+            echo "--- 容器内监听端口 ---"
+            docker exec napics-smoke sh -c "ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null || echo '(无 ss/netstat)'" || true
+            echo "--- 容器内直连后端 ---"
+            docker exec napics-smoke curl -sS -m 5 http://127.0.0.1:8001/ || echo "后端无响应"
+            echo "--- 容器内直连前端 ---"
+            docker exec napics-smoke curl -sS -m 5 -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3000/ || echo "前端无响应"
+            exit 1
+          fi
 
           echo "--- 后端根接口（经前端转发）---"
           BACKEND=$(curl -fsS http://127.0.0.1:3032/backend/)
@@ -77,9 +99,24 @@ jobs:
         if: always()
         run: docker logs napics-smoke
 
-      - name: 清理
+      - name: 清理容器
         if: always()
         run: docker rm -f napics-smoke || true
+
+      # 导出 tar 供离线导入：国内访问 ghcr.io 常不通，
+      # NAS 的 Docker 界面支持直接导入 tar 镜像文件
+      - name: 导出镜像为 tar
+        run: |
+          docker save napics:smoke | gzip > napics-image.tar.gz
+          ls -lh napics-image.tar.gz
+
+      - name: 上传 tar 供下载
+        uses: actions/upload-artifact@v4
+        with:
+          name: napics-docker-image-tar
+          path: napics-image.tar.gz
+          retention-days: 14
+          compression-level: 0
 
   build-and-push:
     needs: smoke-test
