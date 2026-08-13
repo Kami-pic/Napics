@@ -3,9 +3,7 @@ uvicorn
 pydantic
 python-multipart
 requests
-ffprobe-python
 beautifulsoup4
 cloudscraper
 curl_cffi
-send2trash
 pytest
