@@ -1,5 +1,9 @@
 // 后端 API 流式代理
 //
+// 路由用可选 catch-all（双方括号）而不是 [...path]：
+// 单方括号不匹配空路径段，导致 /backend 本身（对应后端根接口 GET /）转发不到。
+// 双方括号能同时匹配 /backend 与 /backend/任意路径。
+//
 // 为什么不用 next.config 的 rewrites：rewrites 会把响应整个缓冲下来再返回，
 // 实测扫描接口的 10 个进度事件全部在同一时刻到达（等扫描完才一起吐出来），
 // 进度条会完全不动。这里手动透传上游的 ReadableStream，保证 SSE 实时推送。
@@ -91,26 +95,18 @@ async function proxy(req: NextRequest, pathSegments: string[]): Promise<Response
   });
 }
 
-type Ctx = { params: Promise<{ path: string[] }> };
+// 可选 catch-all 在访问 /backend 时 path 为 undefined
+type Ctx = { params: Promise<{ path?: string[] }> };
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
+async function handle(req: NextRequest, ctx: Ctx) {
+  const { path } = await ctx.params;
+  return proxy(req, path ?? []);
 }
-export async function POST(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
-}
-export async function PUT(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
-}
-export async function PATCH(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
-}
-export async function DELETE(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
-}
-export async function HEAD(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
-}
-export async function OPTIONS(req: NextRequest, ctx: Ctx) {
-  return proxy(req, (await ctx.params).path);
-}
+
+export const GET = handle;
+export const POST = handle;
+export const PUT = handle;
+export const PATCH = handle;
+export const DELETE = handle;
+export const HEAD = handle;
+export const OPTIONS = handle;
