@@ -17,7 +17,7 @@ interface RemotePluginListProps {
   onInstalled: () => void;
 }
 
-// 合作插件源（小号仓库）
+// 社区插件源
 const PARTNER_SOURCE = {
   name: "Napics 社区插件源",
   url: "https://github.com/icatmiumiu/plugins-of-napics",

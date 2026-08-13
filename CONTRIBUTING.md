@@ -38,8 +38,9 @@ npm run dev
 
 # 测试
 cd backend && python -X utf8 -m pytest tests/
-cd frontend && npx vitest --run
 ```
+
+> 注：前端测试用例与 vitest 配置暂缺，欢迎贡献。
 
 ### 代码规范
 

@@ -17,10 +17,12 @@ cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8001
 # 前端
 cd frontend && npm run dev
 
-# 测试
+# 测试（后端）
 cd backend && python -X utf8 -m pytest tests/
-cd frontend && npx vitest --run
 ```
+
+前端测试用例与 vitest 配置已被 commit `7971abb` 误删，当前 `npx vitest --run` 会因找不到测试文件而失败。
+后端测试基建（`conftest.py` / `pytest.ini` / `test_support/`）同批被删，已恢复到本地工作区但仍被 `.gitignore` 排除。
 
 ## 目录结构
 

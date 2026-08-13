@@ -80,7 +80,7 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
   // 社区仓库插件（第三方 Tab 展示）+ 旧的废弃单源插件，不在内置 Tab 中显示
   // 内置 Tab 保留：预装 5 个 + 主仓库非预装 5 个（bangumi/completeness/subscribe/prowlarr/storage-openlist）
   const COMMUNITY_ONLY_PLUGINS = new Set([
-    // 社区仓库 11 个（小号仓库分发）
+    // 社区插件（通过社区插件源分发）
     "search-bt-mirror", "search-bt-movie-tv", "search-bt-anime-jp",
     "search-bt-anime-cn", "search-bt-cn",
     "search-pan-main", "search-pan-github", "search-pan-resource",
