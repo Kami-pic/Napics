@@ -1,9 +1,14 @@
-fastapi
-uvicorn
-pydantic
-python-multipart
-requests
-beautifulsoup4
-cloudscraper
-curl_cffi
-pytest
+# 版本已锁定：不锁的话每次构建都装当天最新版，撞上不兼容组合会出现
+# 诸如 "NameError: name 'JsonValue' is not defined"（FastAPI 与 Pydantic 版本错配）
+# 这类问题。以下组合已在开发环境验证可用。
+# 升级时请同时更新并重新验证 fastapi / pydantic / starlette 三者。
+fastapi==0.135.2
+starlette==1.0.0
+pydantic==2.12.5
+uvicorn==0.42.0
+python-multipart==0.0.22
+requests==2.32.5
+beautifulsoup4==4.14.3
+cloudscraper==1.2.71
+curl_cffi==0.15.0
+pytest==9.0.2

@@ -50,6 +50,16 @@ RUN python3 -m venv /opt/venv && \
     rm /tmp/requirements.txt
 ENV PATH="/opt/venv/bin:$PATH"
 
+# 构建期就验证依赖可用：fastapi.openapi.models 正是 FastAPI 与 Pydantic
+# 版本错配时报 "NameError: name 'JsonValue' is not defined" 的地方。
+# 放在这里能让问题在构建阶段暴露，而不是等容器启动后才崩。
+RUN python3 -c "\
+import fastapi, pydantic, uvicorn, starlette, requests, bs4, cloudscraper, curl_cffi; \
+import fastapi.openapi.models; \
+from fastapi import FastAPI; \
+FastAPI().openapi(); \
+print('依赖自检通过: fastapi', fastapi.__version__, '/ pydantic', pydantic.VERSION, '/ starlette', starlette.__version__)"
+
 # 后端源码
 COPY backend/ /app/backend/
 
