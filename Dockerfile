@@ -90,7 +90,8 @@ VOLUME ["/app/data"]
 EXPOSE 3000
 
 # 探测前端→后端的转发链路，一次覆盖两个进程
+# URL 不带尾斜杠：/backend/ 会被 Next.js 308 重定向，curl 需要 -L 才能跟随
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:3000/backend/ || exit 1
+    CMD curl -fsSL http://127.0.0.1:3000/backend || exit 1
 
 CMD ["/app/entrypoint.sh"]

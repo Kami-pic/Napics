@@ -78,10 +78,13 @@ jobs:
 
       - name: 等待就绪并验证前后端链路
         run: |
+          # 注意 URL 不要带尾斜杠：/backend/ 会被 Next.js 308 重定向到 /backend，
+          # curl 不加 -L 就会停在重定向响应上（响应体是 "/backend"）。
+          # 这里同时去掉尾斜杠并加 -L 双重保险。
           echo "等待容器就绪（最多 150 秒）..."
           READY=0
           for i in $(seq 1 150); do
-            if curl -fsS http://127.0.0.1:3032/backend/ >/dev/null 2>&1; then
+            if curl -fsSL http://127.0.0.1:3032/backend >/dev/null 2>&1; then
               echo "就绪，用时 ${i}s"
               READY=1
               break
@@ -110,21 +113,26 @@ jobs:
             echo "--- 容器内直连后端 ---"
             docker exec napics-smoke curl -sS -m 5 http://127.0.0.1:8001/ || echo "后端无响应"
             echo "--- 容器内直连前端 ---"
-            docker exec napics-smoke curl -sS -m 5 -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3000/ || echo "前端无响应"
+            docker exec napics-smoke curl -sSL -m 5 -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3000/ || echo "前端无响应"
+            echo "--- 容器内经前端转发 ---"
+            docker exec napics-smoke curl -sSL -m 5 http://127.0.0.1:3000/backend || echo "转发无响应"
             exit 1
           fi
 
           echo "--- 后端根接口（经前端转发）---"
-          BACKEND=$(curl -fsS http://127.0.0.1:3032/backend/)
+          BACKEND=$(curl -fsSL http://127.0.0.1:3032/backend)
           echo "$BACKEND"
           echo "$BACKEND" | grep -q "is running" || { echo "::error::后端响应异常"; exit 1; }
 
           echo "--- 前端页面 ---"
-          curl -fsS -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3032/ || exit 1
+          curl -fsSL -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3032/ || exit 1
 
           echo "--- 插件接口（验证插件系统已加载）---"
-          curl -fsS http://127.0.0.1:3032/backend/api/providers >/dev/null \
+          curl -fsSL http://127.0.0.1:3032/backend/api/providers >/dev/null \
             && echo "providers 接口正常" || echo "::warning::providers 接口异常"
+
+          echo "--- 媒体库接口 ---"
+          curl -fsSL -o /dev/null -w "library HTTP %{http_code}\n" http://127.0.0.1:3032/backend/library || exit 1
 
           echo "--- ffprobe 是否可用 ---"
           docker exec napics-smoke ffprobe -version | head -n 1
