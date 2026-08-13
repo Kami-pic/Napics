@@ -52,14 +52,20 @@ def test_if_none_match_no_request():
 # ── 端到端：真实海报文件 ──
 
 @pytest.fixture
-def poster_dir():
+def poster_dir(monkeypatch):
+    """临时海报目录，并把它注册进媒体库白名单（路由层有路径校验）"""
     d = tempfile.mkdtemp(prefix="napics_poster_")
     # 造一个够大的假图片，确保能观察到 body 差异
     with open(os.path.join(d, "poster.jpg"), "wb") as f:
         f.write(b"\xff\xd8\xff\xe0" + b"x" * 5000)
+
+    import shared
+    monkeypatch.setattr(shared.config_m.config, "scan_paths", [d])
+    shared.invalidate_allowed_roots_cache()
     try:
         yield d
     finally:
+        shared.invalidate_allowed_roots_cache()
         shutil.rmtree(d, ignore_errors=True)
 
 
@@ -121,14 +127,18 @@ def test_poster_etag_changes_after_file_rewrite(poster_dir):
     assert len(second.content) == 8004
 
 
-def test_missing_poster_still_404():
+def test_missing_poster_still_404(monkeypatch):
     """没有海报的目录行为不变，仍是 404"""
     from main import app
+    import shared
     client = TestClient(app)
 
     d = tempfile.mkdtemp(prefix="napics_empty_")
+    monkeypatch.setattr(shared.config_m.config, "scan_paths", [d])
+    shared.invalidate_allowed_roots_cache()
     try:
         resp = client.get("/scrape/poster", params={"path": d})
         assert resp.status_code == 404
     finally:
+        shared.invalidate_allowed_roots_cache()
         shutil.rmtree(d, ignore_errors=True)

@@ -14,6 +14,8 @@ import threading
 import time
 from typing import List, Optional, Dict
 
+from core import path_guard
+
 # ── 统一 logging 配置 ──
 logging.basicConfig(
     level=logging.INFO,
@@ -396,3 +398,95 @@ def _update_clean_names_after_scrape(path: str, scrape_result: dict):
             config_m.save_library(library)
     except Exception:
         pass
+
+
+# ── 路径访问白名单 ──
+# 后端有大量路由接受用户传入的 path 参数后直接读写/删除文件。由于后端不做鉴权
+# 且 CORS 全开，任何网页都能调用这些接口。没有白名单的话，构造一个 path 就能
+# 让后端往任意位置写文件或删除任意目录。
+#
+# 白名单必须覆盖所有"正常功能会碰到"的路径，否则会把自己挡在外面。
+# 覆盖范围见 _collect_allowed_roots 内注释。
+
+_allowed_roots_cache: Dict[str, object] = {"roots": None, "at": 0.0}
+# 白名单缓存存活时间：足够挡掉高频接口的重复组装，又能让设置页改完很快生效
+_ALLOWED_ROOTS_TTL = 5.0
+
+
+def _collect_allowed_roots() -> List[str]:
+    """组装当前允许操作的根路径列表（带短期缓存）。
+
+    /scrape/poster 这类接口一屏要调几十次，每次重新组装列表是浪费；
+    但也不能永久缓存，否则用户在设置页改了媒体库路径后要重启才生效。
+    """
+    now = time.time()
+    cached = _allowed_roots_cache.get("roots")
+    if cached is not None and now - float(_allowed_roots_cache["at"]) < _ALLOWED_ROOTS_TTL:
+        return cached  # type: ignore[return-value]
+
+    conf = config_m.config
+    roots: List[str] = []
+
+    # 1. 媒体库根：自动识别模式的 scan_paths + 分类模式的 media_libraries
+    roots.extend([p for p in (conf.scan_paths or []) if p])
+    for lib in (conf.media_libraries or []):
+        roots.extend([p for p in (lib.paths or []) if p])
+
+    library_roots = list(roots)
+
+    # 2. 回收站：显式配置的路径，以及默认位置（媒体库根的上一级 + #recycle）
+    if (conf.recycle_bin_path or "").strip():
+        roots.append(conf.recycle_bin_path.strip())
+    for root in library_roots:
+        parent = os.path.dirname(os.path.normpath(root).rstrip("\\/"))
+        if parent:
+            roots.append(os.path.join(parent, "#recycle"))
+
+    # 3. 下载监控目录
+    roots.extend([p for p in (conf.download_watch_dirs or []) if p])
+
+    # 4. 后端自管目录：data_dir 覆盖 downloads/ 沙盒、organize_snapshots/ 与各 JSON
+    roots.append(config_m.data_dir)
+
+    # 5. 海报与刮削缓存：历史实现分别用了进程 CWD 和模块目录，两者都要放行
+    _backend_dir = os.path.dirname(os.path.abspath(__file__))
+    for base in {os.getcwd(), _backend_dir}:
+        roots.append(os.path.join(base, "posters"))
+        roots.append(os.path.join(base, "scrape_cache"))
+
+    result = [r for r in roots if r]
+    _allowed_roots_cache["roots"] = result
+    _allowed_roots_cache["at"] = now
+    return result
+
+
+def invalidate_allowed_roots_cache() -> None:
+    """配置变更后立即失效白名单缓存（设置页保存路径时调用）。"""
+    _allowed_roots_cache["roots"] = None
+    _allowed_roots_cache["at"] = 0.0
+
+
+def is_path_allowed(path: str) -> bool:
+    """判断路径是否落在允许操作的范围内。"""
+    if not path:
+        return False
+    return path_guard.is_within_any(path, _collect_allowed_roots())
+
+
+def guard_path(path: str, action: str = "访问") -> str:
+    """校验路径合法性，非法则抛 403。合法时返回原路径便于链式调用。
+
+    说明：这里直接抛 HTTPException 是为了让各路由一行接入。校验只加在路由层，
+    不下沉到业务层 —— 业务层函数被大量单元测试以临时目录直接调用。
+    """
+    from fastapi import HTTPException
+
+    if not path:
+        raise HTTPException(status_code=400, detail="路径不能为空")
+    if not is_path_allowed(path):
+        logger.warning(f"[PathGuard] 拒绝{action}媒体库范围外的路径: {path}")
+        raise HTTPException(
+            status_code=403,
+            detail="路径不在已配置的媒体库范围内，操作被拒绝",
+        )
+    return path

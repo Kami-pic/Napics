@@ -10,15 +10,24 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import StreamingResponse, FileResponse, Response
 
-from shared import config_m
+from shared import config_m, guard_path
+from core.url_guard import check_external_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# 海报上传允许的扩展名
+_ALLOWED_POSTER_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 @router.get("/proxy/image")
 def proxy_image(url: str):
     """代理外部图片请求（绕过防盗链 + 走 HTTP 代理）"""
+    # 拒绝内网/环回地址：响应体会原样回显，否则可被当作内网探测跳板
+    ok, reason = check_external_url(url)
+    if not ok:
+        logger.warning(f"[ProxyImage] 拒绝非公网地址: {reason}")
+        raise HTTPException(status_code=400, detail="URL 不被允许")
     try:
         # 豆瓣图片需要 Referer，TMDB 图片不需要
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -61,6 +70,8 @@ def get_local_poster(path: str, cover: bool = False, request: Request = None):
     from fastapi import HTTPException
     import os
     import re
+
+    guard_path(path, "读取")
 
 
     def _poster_response(file_path: str):
@@ -174,11 +185,16 @@ def get_local_poster(path: str, cover: bool = False, request: Request = None):
 @router.post("/scrape/upload-poster")
 async def upload_poster(path: str, file: UploadFile = File(...), cover: bool = False):
     """手动上传海报到指定文件夹。cover=True 时写入 cover.jpg（聚合容器独立封面）"""
+    guard_path(path, "写入")
     folder = path if os.path.isdir(path) else os.path.dirname(path)
     if not os.path.isdir(folder):
         raise HTTPException(status_code=404, detail="Folder not found")
     
-    ext = os.path.splitext(file.filename or "poster.jpg")[1] or ".jpg"
+    # 扩展名来自用户上传的文件名，必须限制为图片格式，
+    # 否则可以往媒体库里写入 .py / .sh 等可执行文件
+    ext = (os.path.splitext(file.filename or "poster.jpg")[1] or ".jpg").lower()
+    if ext not in _ALLOWED_POSTER_EXTS:
+        raise HTTPException(status_code=400, detail="只支持 jpg / jpeg / png / webp 格式")
     # 视频文件：写同名 poster
     if not os.path.isdir(path) and os.path.isfile(path):
         base = os.path.splitext(path)[0]
@@ -195,6 +211,11 @@ async def upload_poster(path: str, file: UploadFile = File(...), cover: bool = F
 @router.post("/scrape/poster-url")
 def set_poster_from_url(path: str, url: str, cover: bool = False):
     """通过 URL 拉取海报保存到本地。cover=True 时写入 cover.jpg（聚合容器独立封面）"""
+    guard_path(path, "写入")
+    ok, reason = check_external_url(url)
+    if not ok:
+        logger.warning(f"[PosterUrl] 拒绝非公网地址: {reason}")
+        raise HTTPException(status_code=400, detail="URL 不被允许")
     try:
         resp = requests.get(url, stream=True, timeout=15)
         resp.raise_for_status()
@@ -225,6 +246,7 @@ def set_poster_from_url(path: str, url: str, cover: bool = False):
 @router.post("/scrape/delete-poster")
 def delete_poster(path: str):
     """删除本地海报 — 模拟 get_local_poster 的查找逻辑，找到实际显示的封面并删除"""
+    guard_path(path, "删除")
     deleted = []
     errors = []
     

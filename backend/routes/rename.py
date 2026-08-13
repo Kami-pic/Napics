@@ -6,7 +6,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from core.file_ops.sidecars import move_sidecars
-from shared import config_m
+from shared import config_m, guard_path
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,6 +15,7 @@ router = APIRouter()
 @router.post("/rename")
 def rename_item(old_path: str, new_name: str):
     """手动重命名文件或文件夹"""
+    guard_path(old_path, "重命名")
     logger.info(f"[rename] old_path={old_path}")
     logger.info(f"[rename] new_name={new_name}")
     logger.info(f"[rename] exists={os.path.exists(old_path)}")

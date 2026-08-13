@@ -23,6 +23,7 @@ from shared import (
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
     _tmdb_client, get_clients,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
+    guard_path,
 )
 import scanner, searcher, downloader, tmdb_client, config_manager
 import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
@@ -41,6 +42,13 @@ router = APIRouter()
 
 @router.post("/batch_manage")
 def batch_manage(req: BatchRequest):
+    # 批量删除/移动/复制的入口：paths 与 target_dir 全部来自请求体，
+    # 不校验的话可以对任意目录执行删除与移动
+    for _p in (req.paths or []):
+        guard_path(_p, req.action)
+    if req.target_dir:
+        guard_path(req.target_dir, f"{req.action} 目标目录")
+
     success = []
     failed = []
     
@@ -404,6 +412,8 @@ def rollback_ai_history(snapshot_id: int):
 
 @router.get("/play")
 def play_video(path: str):
+    # 不校验的话这个接口等于"以后端进程权限启动任意本地可执行文件"
+    guard_path(path, "播放")
     try:
         conf = config_m.config
         player = conf.player_path if hasattr(conf, 'player_path') and conf.player_path else r'C:\Program Files\DAUM\PotPlayer\PotPlayerMini64.exe'

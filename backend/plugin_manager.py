@@ -21,6 +21,13 @@ from typing import Any, Dict, List, Optional
 import requests
 from pydantic import BaseModel, Field
 
+from core.path_guard import (
+    UnsafeArchiveError,
+    assert_safe_archive_members,
+    safe_extract_all,
+)
+from core.url_guard import check_external_url, is_https_url
+
 logger = logging.getLogger(__name__)
 
 # plugins/ 目录位于 backend/ 下
@@ -302,9 +309,19 @@ class PluginManager:
             proxies = {"http": proxy, "https": proxy} if proxy else None
             # 支持 GitHub 仓库 URL 自动转换为 raw index.json
             url = self._normalize_source_url(source_url)
+            # 插件源地址由用户输入，先挡掉内网/环回目标，避免被当作内网探测跳板
+            ok, reason = check_external_url(url)
+            if not ok:
+                logger.warning(f"[PluginManager] 拒绝非公网插件源: {reason}")
+                return {"success": False, "error": "unsafe_url", "message": "插件源地址不被允许"}
             headers = {}
+            # License Key 只在 https 下发送，避免明文经过中间网络。
+            # TODO: 进一步限制为仅发送给官方授权服务器域名，当前会发给用户添加的任意源。
             if license_key:
-                headers["Authorization"] = f"Bearer {license_key}"
+                if is_https_url(url):
+                    headers["Authorization"] = f"Bearer {license_key}"
+                else:
+                    logger.warning("[PluginManager] 插件源为非 https，已跳过 License Key 发送")
             resp = requests.get(url, timeout=15, proxies=proxies, headers=headers)
             resp.raise_for_status()
             data = resp.json()
@@ -342,6 +359,10 @@ class PluginManager:
 
         # 尝试从 download_url 下载 zip
         if plugin_info.download_url:
+            ok, reason = check_external_url(plugin_info.download_url)
+            if not ok:
+                logger.warning(f"[PluginManager] 拒绝非公网下载地址: {reason}")
+                return {"success": False, "error": "unsafe_url", "message": "插件下载地址不被允许"}
             try:
                 resp = requests.get(plugin_info.download_url, timeout=60, proxies=proxies)
                 resp.raise_for_status()
@@ -395,7 +416,7 @@ class PluginManager:
 
                 if len(top_dirs) == 1 and "" not in top_dirs:
                     # zip 内有单层根目录，解压后重命名
-                    zf.extractall(PLUGINS_DIR)
+                    safe_extract_all(zf, PLUGINS_DIR)
                     extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
                     if extracted_dir != plugin_dir:
                         if os.path.isdir(plugin_dir):
@@ -403,8 +424,7 @@ class PluginManager:
                         os.rename(extracted_dir, plugin_dir)
                 else:
                     # zip 内无根目录，直接解压到目标目录
-                    os.makedirs(plugin_dir, exist_ok=True)
-                    zf.extractall(plugin_dir)
+                    safe_extract_all(zf, plugin_dir)
 
             # 清理备份
             backup_dir = plugin_dir + ".bak"
@@ -505,6 +525,11 @@ class PluginManager:
 
                 # 提取子目录内容到 plugin_dir
                 os.makedirs(plugin_dir, exist_ok=True)
+                # 先整体校验剥掉前缀后的相对路径，任一成员越界则整包拒绝
+                assert_safe_archive_members(
+                    [m[len(prefix):] for m in members if m[len(prefix):]],
+                    plugin_dir,
+                )
                 for member in members:
                     rel_path = member[len(prefix):]
                     if not rel_path:
@@ -661,15 +686,14 @@ class PluginManager:
                         top_dirs.add(parts[0])
 
                 if len(top_dirs) == 1:
-                    zf.extractall(PLUGINS_DIR)
+                    safe_extract_all(zf, PLUGINS_DIR)
                     extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
                     if extracted_dir != plugin_dir:
                         if os.path.isdir(plugin_dir):
                             shutil.rmtree(plugin_dir)
                         os.rename(extracted_dir, plugin_dir)
                 else:
-                    os.makedirs(plugin_dir, exist_ok=True)
-                    zf.extractall(plugin_dir)
+                    safe_extract_all(zf, plugin_dir)
 
             # 清理备份
             backup_dir = plugin_dir + ".bak"
