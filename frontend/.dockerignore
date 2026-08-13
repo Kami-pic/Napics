@@ -1,6 +1,0 @@
-node_modules/
-.next/
-out/
-__tests__/
-*.log
-.env*.local

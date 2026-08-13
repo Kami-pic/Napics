@@ -1,46 +1,26 @@
+# 前后端已合并为单镜像，只需一个服务。
+# 也可以完全不用这个文件，直接在 NAS 的 Docker 图形界面里建容器（见 README）。
 services:
-  backend:
-    # 预构建镜像；如需从源码构建，把 image 换成下面注释里的 build 段
-    image: ghcr.io/kami-pic/napics-backend:${NAPICS_TAG:-latest}
+  napics:
+    image: ghcr.io/kami-pic/napics:${NAPICS_TAG:-latest}
+    # 需要改代码时改用本地构建：注释掉上面的 image，取消下面两行注释
     # build:
-    #   context: ./backend
-    container_name: napics-backend
-    # 后端不再映射端口到宿主机：浏览器只访问前端，前端在容器网络内转发。
-    # 需要直接调后端接口调试时再打开（注意后端目前无鉴权）。
-    # ports:
-    #   - "8001:8001"
+    #   context: .
+    container_name: napics
+    ports:
+      # 只需要这一个端口。后端在容器内监听 127.0.0.1，不对外暴露
+      - "${FRONTEND_PORT:-3032}:3000"
     volumes:
+      # 配置与媒体库数据
       - napics-data:/app/data
-      # 媒体库挂载：MEDIA_PATH 为宿主机媒体目录，容器内固定为 /media
+      # 媒体库：宿主机目录 → 容器内固定为 /media
+      # 设置页填扫描路径时要填 /media/...
       - ${MEDIA_PATH:-./_media}:/media
     environment:
-      - NAPICS_DATA_DIR=/app/data
       - TZ=${TZ:-Asia/Shanghai}
-    # 容器内访问宿主机上的 qBittorrent / OpenList 时用 host.docker.internal
+    # 容器内访问宿主机上的 qBittorrent / OpenList 时填 host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    restart: unless-stopped
-
-  frontend:
-    image: ghcr.io/kami-pic/napics-frontend:${NAPICS_TAG:-latest}
-    # build:
-    #   context: ./frontend
-    container_name: napics-frontend
-    ports:
-      - "${FRONTEND_PORT:-3032}:3000"
-    environment:
-      - HOSTNAME=0.0.0.0
-      - TZ=${TZ:-Asia/Shanghai}
-      # 后端地址在运行时读取，不编译进前端产物，所以镜像可以通用
-      - NAPICS_BACKEND_ORIGIN=http://backend:8001
-    depends_on:
-      - backend
     restart: unless-stopped
 
 volumes:

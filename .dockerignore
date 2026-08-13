@@ -1,0 +1,55 @@
+# 单镜像构建的上下文是整个仓库根目录，这里统一排除不该进镜像的内容。
+# 注意：Docker 的 * 不跨越 /，所以 backend/*.json 只匹配 backend 下第一层，
+# 插件的 backend/plugins/<id>/manifest.json 不受影响。
+
+# ── 版本控制与协作配置 ──
+.git/
+.github/
+.kiro/
+AGENTS.md
+CONTRIBUTING.md
+CLAUDE.md
+*.md
+!backend/plugins/**/*.md
+
+# ── 前端 ──
+frontend/node_modules/
+frontend/.next/
+frontend/.env*.local
+frontend/AGENTS.md
+frontend/CLAUDE.md
+
+# ── 后端 ──
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/pytest-cache-files-*/
+backend/tests/
+backend/test_support/
+backend/conftest.py
+backend/pytest.ini
+backend/_scripts/
+backend/_*.py
+backend/sandbox*/
+backend/downloads/
+backend/posters/
+backend/scrape_cache/
+backend/organize_snapshots/
+backend/*.log
+backend/*.bak
+backend/venv/
+backend/.venv/
+# 运行时数据文件（配置与媒体库由数据卷提供，不进镜像）
+backend/*.json
+!backend/requirements.txt
+
+# ── 其他 ──
+community-plugins/
+scripts/
+_media/
+.env
+*.bat
+*.vbs
+docker-compose.yml

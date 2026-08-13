@@ -149,64 +149,99 @@ start_all.bat
 
 ### Docker
 
-用预构建镜像部署，不需要在 NAS 上编译。只要两个文件：
+前后端打包在同一个镜像里，**一个容器、一个端口**就能跑起来。
+
+镜像地址：
+
+```
+ghcr.io/kami-pic/napics:latest
+```
+
+#### 方式一：NAS 图形界面（飞牛 / 群晖 / 威联通）
+
+不需要 SSH，在 NAS 的 Docker 管理界面里操作：
+
+1. **镜像** → 添加/拉取 → 填 `ghcr.io/kami-pic/napics:latest`
+2. 等下载完成 → **创建容器**
+3. 按下表填三项配置，其余保持默认
+
+| 配置项 | 填什么 |
+|---|---|
+| 端口映射 | 本地 `3032` → 容器 `3000` |
+| 目录挂载 | 你的视频目录 → 容器内 `/media` |
+| 目录挂载 | 一个空目录（存配置）→ 容器内 `/app/data` |
+
+4. 启动，访问 `http://<NAS-IP>:3032`
+
+可选环境变量：`TZ`（默认 `Asia/Shanghai`）。
+
+#### 方式二：命令行
 
 ```bash
-# 1. 建目录并下载配置
+docker run -d \
+  --name napics \
+  -p 3032:3000 \
+  -v /vol1/1000/视频:/media \
+  -v napics-data:/app/data \
+  --add-host host.docker.internal:host-gateway \
+  --restart unless-stopped \
+  ghcr.io/kami-pic/napics:latest
+```
+
+#### 方式三：Docker Compose
+
+```bash
 mkdir -p napics && cd napics
 curl -O https://raw.githubusercontent.com/Kami-pic/napics/release/docker-compose.yml
 curl -o .env https://raw.githubusercontent.com/Kami-pic/napics/release/.env.example
-
-# 2. 编辑 .env，把 MEDIA_PATH 改成你的媒体目录
-nano .env
-
-# 3. 启动
+nano .env          # 把 MEDIA_PATH 改成你的媒体目录
 docker compose up -d
 ```
 
-访问 `http://<NAS-IP>:3032`
-
-只需要开放一个端口。后端不暴露到宿主机，浏览器的请求由前端在容器网络内转发。
-
 <details>
-<summary>NAS 部署注意事项</summary>
+<summary>部署后的几个要点</summary>
 
 **1. 扫描路径要填容器内路径**
 
-`MEDIA_PATH` 是宿主机路径，容器内固定挂载到 `/media`。
-所以在设置页填扫描路径时要填 `/media/...`，不是宿主机路径。
-
-常见位置：飞牛 OS `/vol1/1000/`，群晖 `/volume1/`，威联通 `/share/`。
+你挂载的宿主机目录在容器里是 `/media`，所以设置页里填 `/media/电影` 这样的路径，
+不要填 `/vol1/1000/视频`。
 
 **2. 必须先配好扫描路径**
 
-出于安全考虑，文件操作限制在已配置的媒体库范围内。没配路径时，
-封面、重命名、删除等操作会返回「路径不在媒体库范围内」。
+出于安全考虑，文件操作被限制在已配置的媒体库范围内。没配路径时，
+封面、重命名、删除等操作会提示「路径不在媒体库范围内」。
 
-**3. 访问宿主机上的 qBittorrent / OpenList**
+**3. 访问 NAS 上的 qBittorrent / OpenList**
 
-容器内的 `127.0.0.1` 指向容器自己。配置这些服务地址时用 `host.docker.internal` 代替，
-例如 `http://host.docker.internal:8080`（compose 已配好 `host-gateway` 映射）。
+容器内的 `127.0.0.1` 指向容器自己。这些服务的地址要填
+`http://host.docker.internal:8080` 这种形式。
+用图形界面创建容器时，如果没有「添加主机」选项，改填 NAS 的局域网 IP 也可以。
 
-**4. 「浏览文件夹」按钮在容器内不可用**
+**4. 「浏览文件夹」按钮不可用**
 
-该功能依赖桌面环境，Docker 部署时请直接手动输入路径。
+该功能依赖桌面环境，容器里请直接手动输入路径。
 
-**5. 从源码构建（可选）**
+**5. 数据存放位置**
 
-需要改代码时，把 `docker-compose.yml` 里的 `image:` 注释掉、`build:` 取消注释，
-然后 `docker compose up -d --build`。
+配置和媒体库索引都在 `/app/data`，只要这个目录挂载出来，
+更新镜像不会丢数据。
 
 </details>
 
 <details>
-<summary>更新到新版本</summary>
+<summary>更新与本地构建</summary>
+
+更新：拉新镜像后重建容器即可，`/app/data` 里的数据不受影响。
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-配置与媒体库数据存在名为 `napics-data` 的数据卷里，更新不会丢失。
+从源码构建：
+
+```bash
+docker build -t napics:local .
+```
 
 </details>
 ---

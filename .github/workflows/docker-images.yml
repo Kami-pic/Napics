@@ -1,7 +1,7 @@
 name: 构建并发布 Docker 镜像
 
-# 推送到 dev / release 分支或打 tag 时自动构建多架构镜像并推送到 GHCR。
-# 用户在 NAS 上只需 docker compose up -d，不必在本地构建。
+# 推送到 dev / release 分支或打 tag 时自动构建镜像并推送到 GHCR。
+# 前后端合并为单镜像，用户在 NAS 图形界面里拉一个镜像、建一个容器即可。
 on:
   push:
     branches: [release, dev]
@@ -10,22 +10,83 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/napics
 
 jobs:
-  build:
+  # 先在 CI 里验证镜像能构建、能启动、前后端链路通，再推送
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 构建镜像（仅本机，用于测试）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: napics:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 启动容器
+        run: |
+          mkdir -p /tmp/napics-media
+          docker run -d --name napics-smoke \
+            -p 3032:3000 \
+            -v /tmp/napics-media:/media \
+            napics:smoke
+
+      - name: 等待就绪并验证前后端链路
+        run: |
+          echo "等待容器就绪..."
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3032/backend/ >/dev/null 2>&1; then
+              echo "就绪，用时 ${i}s"
+              break
+            fi
+            if [ "$i" -eq 90 ]; then
+              echo "::error::90 秒内未就绪"
+              docker logs napics-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+
+          echo "--- 后端根接口（经前端转发）---"
+          BACKEND=$(curl -fsS http://127.0.0.1:3032/backend/)
+          echo "$BACKEND"
+          echo "$BACKEND" | grep -q "is running" || { echo "::error::后端响应异常"; exit 1; }
+
+          echo "--- 前端页面 ---"
+          curl -fsS -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3032/ || exit 1
+
+          echo "--- 插件接口（验证插件系统已加载）---"
+          curl -fsS http://127.0.0.1:3032/backend/api/providers >/dev/null \
+            && echo "providers 接口正常" || echo "::warning::providers 接口异常"
+
+          echo "--- ffprobe 是否可用 ---"
+          docker exec napics-smoke ffprobe -version | head -n 1
+
+      - name: 输出容器日志
+        if: always()
+        run: docker logs napics-smoke
+
+      - name: 清理
+        if: always()
+        run: docker rm -f napics-smoke || true
+
+  build-and-push:
+    needs: smoke-test
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: backend
-            context: ./backend
-          - name: frontend
-            context: ./frontend
-
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -47,7 +108,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/napics-${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -57,10 +118,10 @@ jobs:
       - name: 构建并推送
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
+          context: .
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
