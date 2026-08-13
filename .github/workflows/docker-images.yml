@@ -128,9 +128,6 @@ jobs:
       - name: 拉取代码
         uses: actions/checkout@v4
 
-      - name: 设置 QEMU（用于 arm64 交叉构建）
-        uses: docker/setup-qemu-action@v3
-
       - name: 设置 Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -156,7 +153,10 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # 暂时只构建 amd64：飞牛/群晖等 x86 NAS 都是 amd64，
+          # arm64 需要 QEMU 交叉编译，慢且容易引入额外问题。
+          # 等 amd64 稳定后再加回 linux/arm64。
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

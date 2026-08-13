@@ -6,6 +6,12 @@
 # 容器内结构：
 #   后端 FastAPI  监听 127.0.0.1:8001（不对外）
 #   前端 Next.js  监听 0.0.0.0:3000（唯一对外端口），把 /backend/* 转发给后端
+#
+# 基础镜像选 python 官方镜像而不是 Debian 自带的 python3：
+# Debian bookworm 的 python3 是 3.11，而依赖版本是在 3.13+ 上验证的。
+# Python 3.12/3.14 之间类型注解的求值时机有变化（PEP 649/563），
+# 版本不一致会出现 pydantic 相关的 NameError。前端只需要 node 运行时，
+# 直接从官方 node 镜像复制二进制即可（standalone 产物自带 node_modules）。
 
 # ── 阶段 1：构建前端 ──
 FROM node:20-bookworm-slim AS frontend-builder
@@ -20,46 +26,47 @@ COPY frontend/ ./
 RUN npm run build
 
 # ── 阶段 2：运行镜像 ──
-FROM node:20-bookworm-slim
+FROM python:3.13-slim-bookworm
 
-# python3：跑后端；ffmpeg：提供 ffprobe 做视频分析；curl：健康检查与就绪探测
+# 从官方 node 镜像取运行时（两者同为 bookworm，二进制兼容）
+COPY --from=node:20-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+
+# ffmpeg 提供 ffprobe 做视频分析；curl 用于健康检查
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        python3 \
-        python3-venv \
         ffmpeg \
         curl \
         tzdata && \
     rm -rf /var/lib/apt/lists/*
 
-# 注意：这里刻意不设 HOSTNAME。Docker 运行时会把 HOSTNAME 覆盖成容器 ID，
+# 注意：刻意不设 HOSTNAME。Docker 运行时会把它覆盖成容器 ID，
 # 而 Next.js standalone 用它决定监听地址，所以改由 entrypoint 在启动命令上强制指定。
 ENV TZ=Asia/Shanghai \
     NODE_ENV=production \
     PORT=3000 \
     NAPICS_DATA_DIR=/app/data \
     NAPICS_BACKEND_ORIGIN=http://127.0.0.1:8001 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Debian 12 起 pip 不允许直接装到系统环境（PEP 668），用 venv
+# python 官方镜像本身就是隔离环境，不需要再套 venv
 COPY backend/requirements.txt /tmp/requirements.txt
-RUN python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
-    /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt && \
-    rm /tmp/requirements.txt
-ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
-# 构建期就验证依赖可用：fastapi.openapi.models 正是 FastAPI 与 Pydantic
-# 版本错配时报 "NameError: name 'JsonValue' is not defined" 的地方。
-# 放在这里能让问题在构建阶段暴露，而不是等容器启动后才崩。
-RUN python3 -c "\
-import fastapi, pydantic, uvicorn, starlette, requests, bs4, cloudscraper, curl_cffi; \
-import fastapi.openapi.models; \
-from fastapi import FastAPI; \
-FastAPI().openapi(); \
-print('依赖自检通过: fastapi', fastapi.__version__, '/ pydantic', pydantic.VERSION, '/ starlette', starlette.__version__)"
+# 构建期依赖自检：版本组合有问题时在这里就失败，并打印实际装到的版本，
+# 不用等容器启动后才崩。
+RUN python -c "\
+import sys, fastapi, pydantic, uvicorn, starlette, requests, bs4, cloudscraper, curl_cffi; \
+from pydantic import JsonValue; \
+print('依赖自检通过'); \
+print('  python    ', sys.version.split()[0]); \
+print('  fastapi   ', fastapi.__version__); \
+print('  pydantic  ', pydantic.VERSION); \
+print('  starlette ', starlette.__version__)" && \
+    node --version && \
+    ffprobe -version | head -n 1
 
 # 后端源码
 COPY backend/ /app/backend/
