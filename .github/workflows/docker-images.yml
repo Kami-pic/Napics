@@ -166,6 +166,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    # secrets 不能直接用在 step 的 if 条件里，必须先转成 env
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -183,7 +186,7 @@ jobs:
       # Docker Hub 是可选的：配置了 secrets 才登录并推送。
       # 国内 NAS 大多配了 Docker Hub 加速器，拉取比 ghcr.io 快很多。
       - name: 登录 Docker Hub（已配置 secrets 时）
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: env.DOCKERHUB_USERNAME != ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -191,8 +194,6 @@ jobs:
 
       - name: 组装镜像名列表
         id: images
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           # GHCR 要求镜像名全小写
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
