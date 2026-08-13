@@ -242,10 +242,6 @@ def get_no_scrape_list():
     """获取不刮削列表"""
     return config_m.load_no_scrape()
 
-class ConfirmReplaceRequest(BaseModel):
-    task_id: str
-    action_plan: Optional[dict] = None
-
 @router.get("/config/sort-weights")
 def get_sort_weights():
     """获取种子排序权重配置"""

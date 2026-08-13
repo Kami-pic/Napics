@@ -18,7 +18,7 @@ import threading
 import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, unquote_plus, urlparse
 from pydantic import BaseModel
 

@@ -13,8 +13,42 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/napics
 
 jobs:
-  # 先在 CI 里验证镜像能构建、能启动、前后端链路通，再推送
+  # 静态检查：揪出「用了但没导入」的名字。
+  # 这类问题在 Python 3.14 上因注解延迟求值而不报错，但在容器里（3.13）
+  # 会导入即崩。放在最前面，几秒就能跑完。
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: 检查 undefined name
+        run: |
+          pip install pyflakes
+          # 只把 undefined name 当作失败，未使用的导入等仅作提示
+          FILES=$(find backend -name '*.py' \
+            -not -path '*/__pycache__/*' \
+            -not -path '*/_scripts/*' \
+            -not -path '*/sandbox_real/*' \
+            -not -name '_*.py')
+          pyflakes $FILES > flakes.txt 2>&1 || true
+          echo "--- 全部提示条数 ---"
+          wc -l < flakes.txt
+          echo "--- undefined name ---"
+          if grep 'undefined name' flakes.txt; then
+            echo "::error::存在 undefined name，容器内会导入即崩"
+            exit 1
+          fi
+          echo "没有 undefined name"
+
+  # 验证镜像能构建、能启动、前后端链路通，再推送
   smoke-test:
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: 拉取代码

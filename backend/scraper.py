@@ -453,9 +453,12 @@ def _ai_fallback_scrape(folder_path: str, tmdb_client_instance) -> Optional[Dict
             detail = tmdb_client_instance.get_tv_detail(tmdb_id)
 
         if detail and detail.tmdb_id:
-            # 写 NFO
+            # 写 NFO（按媒体类型选对应写入函数）
             proxy = getattr(tmdb_client_instance, 'proxy', '') or ''
-            write_nfo(folder_path, detail, proxy)
+            if media_type == "movie":
+                write_movie_nfo(folder_path, detail)
+            else:
+                write_tvshow_nfo(folder_path, detail)
             # 下载海报
             if detail.poster_url:
                 download_poster(folder_path, detail.poster_url, proxy)

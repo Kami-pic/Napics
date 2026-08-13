@@ -71,6 +71,11 @@ print('  starlette ', starlette.__version__)" && \
 # 后端源码
 COPY backend/ /app/backend/
 
+# 导入自检：把「启动时才崩」的问题提前到构建阶段。
+# 低版本 Python 会在导入时立即求值类型注解，注解里引用了未导入的名字就会
+# NameError —— 而开发机若是 Python 3.14（注解延迟求值）则不会暴露。
+RUN cd /app/backend && python -c "import main; print('后端模块导入自检通过')"
+
 # 前端 standalone 产物
 COPY --from=frontend-builder /build/.next/standalone /app/frontend/
 COPY --from=frontend-builder /build/.next/static /app/frontend/.next/static

@@ -432,6 +432,12 @@ def recommend_download_channel(seeders: int = 0, size_gb: float = 0):
     channel = dm.recommend_channel(seeders, size_gb)
     return {"channel": channel}
 
+class ConfirmReplaceRequest(BaseModel):
+    """确认替换请求（原先误留在 routes/config.py，那里并没有使用它）"""
+    task_id: str
+    action_plan: Optional[dict] = None
+
+
 @router.post("/download-manager/confirm-replace")
 def confirm_replace(req: ConfirmReplaceRequest):
     """确认替换：旧文件入回收站 → V3 落盘。"""
