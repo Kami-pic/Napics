@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { DoubanHotItem } from "@/types";
 import { api } from "@/lib/api";
+import { BASE_URL } from "@/lib/api/base";
 
 type HotTab = "movie" | "tv" | "anime";
 const TAB_CONFIG: { key: HotTab; label: string; type: "movie" | "tv"; tag: string }[] = [
@@ -23,8 +24,6 @@ interface MediaDetail {
 interface DoubanRecommendProps {
   onSelectMedia: (item: DoubanHotItem) => void;
 }
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /** 豆瓣代理 URL 需要拼上后端地址 */
 function proxyUrl(url: string): string {

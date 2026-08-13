@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { api } from "@/lib/api";
+import { BASE_URL } from "@/lib/api/base";
 
 export default function MaintenanceCenter() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +12,7 @@ export default function MaintenanceCenter() {
   const handleRestart = async () => {
     setIsRestarting(true);
     setMessage("正在发送重启指令...");
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+    const backendUrl = BASE_URL;
     try {
       await fetch(`${backendUrl}/api/system/restart`, { method: "POST" }).catch(() => {});
       

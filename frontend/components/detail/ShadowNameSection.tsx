@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
+import { BASE_URL } from "@/lib/api/base";
 
 export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, cleanNameEn, onRefresh, onTreeRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; cleanNameEn?: string; onRefresh?: () => void; onTreeRefresh?: () => void }) {
   // 文件夹模式：用 folderName/folderShadowName/folderCleanName；视频模式：用 video 字段
@@ -61,12 +62,12 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
     try {
       if (isFolder) {
         // 文件夹标准名：通过 shadow-name API 保存（用 path 作为 key）
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/media/shadow-name`, {
+        await fetch(`${BASE_URL}/media/shadow-name`, {
           method: "POST", headers: {"Content-Type": "application/json"},
           body: JSON.stringify({file_path: path, shadow_name: newShadow.trim(), source: "manual"})
         });
       } else if (video?.file_path) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/media/shadow-name`, {
+        await fetch(`${BASE_URL}/media/shadow-name`, {
           method: "POST", headers: {"Content-Type": "application/json"},
           body: JSON.stringify({file_path: video.file_path, shadow_name: newShadow.trim(), source: "manual"})
         });
@@ -85,7 +86,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
     const filePath = video?.file_path || path;
     if (!newClean.trim() || !filePath) { setEditingClean(false); return; }
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/library/clean-name`, {
+      await fetch(`${BASE_URL}/library/clean-name`, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({file_path: filePath, clean_name: newClean.trim(), is_folder: isFolder})
       });
@@ -98,7 +99,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
     const filePath = video?.file_path || path;
     if (!filePath) { setEditingEn(false); return; }
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/library/clean-name`, {
+      await fetch(`${BASE_URL}/library/clean-name`, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({file_path: filePath, clean_name_en: newEn.trim(), is_folder: isFolder})
       });

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { ScrapeResult, MatchConfidence } from "@/types";
 import { api } from "@/lib/api";
+import { BASE_URL } from "@/lib/api/base";
 
 // ── 可编辑标题 ──
 export function EditableTitle({ name, path, onRenamed }: { name: string; path: string; onRenamed: () => void }) {
@@ -76,7 +77,7 @@ export function Poster({ url, fallbackName, localPath, aspect = "video", posterD
             api.readScrape(localPath, true).then(r => {
               if (r.status === "ok" && r.data?.poster_url) {
                 // 通过后端代理加载远程封面（走 HTTP 代理）
-                const proxyUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/proxy/image?url=${encodeURIComponent(r.data.poster_url)}`;
+                const proxyUrl = `${BASE_URL}/proxy/image?url=${encodeURIComponent(r.data.poster_url)}`;
                 setRemoteSrc(proxyUrl);
                 setStage("remote"); setLoaded(false); setError(false);
               }

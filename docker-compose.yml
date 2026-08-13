@@ -1,20 +1,22 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    # 预构建镜像；如需从源码构建，把 image 换成下面注释里的 build 段
+    image: ghcr.io/kami-pic/napics-backend:${NAPICS_TAG:-latest}
+    # build:
+    #   context: ./backend
     container_name: napics-backend
-    ports:
-      - "${BACKEND_PORT:-8001}:8001"
+    # 后端不再映射端口到宿主机：浏览器只访问前端，前端在容器网络内转发。
+    # 需要直接调后端接口调试时再打开（注意后端目前无鉴权）。
+    # ports:
+    #   - "8001:8001"
     volumes:
-      # 配置与数据持久化
       - napics-data:/app/data
-      # 媒体库挂载：MEDIA_PATH 为宿主机媒体目录，容器内路径为 /media
+      # 媒体库挂载：MEDIA_PATH 为宿主机媒体目录，容器内固定为 /media
       - ${MEDIA_PATH:-./_media}:/media
     environment:
       - NAPICS_DATA_DIR=/app/data
       - TZ=${TZ:-Asia/Shanghai}
-    # 让容器内可用 host.docker.internal 访问宿主机上的 qBittorrent / OpenList / 代理
+    # 容器内访问宿主机上的 qBittorrent / OpenList 时用 host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -26,19 +28,17 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        # 构建时注入后端地址（必须是用户浏览器能访问到的地址）
-        # NAS 部署改成 http://<NAS-IP>:8001，在 .env 里设置 NAPICS_API_URL
-        - NEXT_PUBLIC_API_URL=${NAPICS_API_URL:-http://localhost:8001}
+    image: ghcr.io/kami-pic/napics-frontend:${NAPICS_TAG:-latest}
+    # build:
+    #   context: ./frontend
     container_name: napics-frontend
     ports:
       - "${FRONTEND_PORT:-3032}:3000"
     environment:
       - HOSTNAME=0.0.0.0
       - TZ=${TZ:-Asia/Shanghai}
+      # 后端地址在运行时读取，不编译进前端产物，所以镜像可以通用
+      - NAPICS_BACKEND_ORIGIN=http://backend:8001
     depends_on:
       - backend
     restart: unless-stopped

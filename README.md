@@ -149,15 +149,16 @@ start_all.bat
 
 ### Docker
 
-```bash
-# 1. 克隆项目
-git clone https://github.com/Kami-pic/napics.git
-cd napics
+用预构建镜像部署，不需要在 NAS 上编译。只要两个文件：
 
-# 2. 创建配置文件并填入你的 NAS IP 和媒体目录
-cp .env.example .env
-# 编辑 .env：NAPICS_API_URL 改成 http://<你的NAS-IP>:8001
-#            MEDIA_PATH 改成宿主机媒体目录
+```bash
+# 1. 建目录并下载配置
+mkdir -p napics && cd napics
+curl -O https://raw.githubusercontent.com/Kami-pic/napics/release/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/Kami-pic/napics/release/.env.example
+
+# 2. 编辑 .env，把 MEDIA_PATH 改成你的媒体目录
+nano .env
 
 # 3. 启动
 docker compose up -d
@@ -165,24 +166,22 @@ docker compose up -d
 
 访问 `http://<NAS-IP>:3032`
 
+只需要开放一个端口。后端不暴露到宿主机，浏览器的请求由前端在容器网络内转发。
+
 <details>
 <summary>NAS 部署注意事项</summary>
 
-**1. `NAPICS_API_URL` 必须填 NAS 的局域网 IP，不能填 `localhost`**
-
-前端是浏览器端直连后端的，`localhost` 会指向你自己的电脑而不是 NAS，所有接口都会失败。
-这个值在构建时被编译进前端产物，改动后必须重新构建：
-
-```bash
-docker compose up -d --build frontend
-```
-
-**2. 媒体目录路径**
+**1. 扫描路径要填容器内路径**
 
 `MEDIA_PATH` 是宿主机路径，容器内固定挂载到 `/media`。
-在设置页填扫描路径时要填**容器内路径**（`/media/...`），不是宿主机路径。
+所以在设置页填扫描路径时要填 `/media/...`，不是宿主机路径。
 
 常见位置：飞牛 OS `/vol1/1000/`，群晖 `/volume1/`，威联通 `/share/`。
+
+**2. 必须先配好扫描路径**
+
+出于安全考虑，文件操作限制在已配置的媒体库范围内。没配路径时，
+封面、重命名、删除等操作会返回「路径不在媒体库范围内」。
 
 **3. 访问宿主机上的 qBittorrent / OpenList**
 
@@ -192,6 +191,22 @@ docker compose up -d --build frontend
 **4. 「浏览文件夹」按钮在容器内不可用**
 
 该功能依赖桌面环境，Docker 部署时请直接手动输入路径。
+
+**5. 从源码构建（可选）**
+
+需要改代码时，把 `docker-compose.yml` 里的 `image:` 注释掉、`build:` 取消注释，
+然后 `docker compose up -d --build`。
+
+</details>
+
+<details>
+<summary>更新到新版本</summary>
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+配置与媒体库数据存在名为 `napics-data` 的数据卷里，更新不会丢失。
 
 </details>
 ---

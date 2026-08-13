@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { FolderNode } from "@/types";
 import { api } from "@/lib/api";
+import { BASE_URL } from "@/lib/api/base";
 import { formatSize } from "@/lib/utils";
 import { FOLDER_TYPE_LABELS, isAggregate as isAggregateType } from "@/lib/folderTypes";
 import { getCached, setCached } from "./detailCache";
@@ -246,7 +247,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <select value={node.category_tag || "movie"} onChange={async (e) => {
             const newTag = e.target.value;
             try {
-              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/library/category-tag`, {
+              await fetch(`${BASE_URL}/library/category-tag`, {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, tag: newTag})
               });
@@ -272,7 +273,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <select value={folderType} onChange={async (e) => {
             const newType = e.target.value;
             try {
-              await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"}/library/folder-type`, {
+              await fetch(`${BASE_URL}/library/folder-type`, {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({path: node.path, folder_type: newType})
               });

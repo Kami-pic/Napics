@@ -2,6 +2,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { api } from "@/lib/api";
+import { BASE_URL } from "@/lib/api/base";
 
 export default function CardPoster({ name, path, cacheKey = 0, cover = false }: { name: string; path?: string; cacheKey?: number; cover?: boolean }) {
   const [loaded, setLoaded] = useState(false);
@@ -11,7 +12,7 @@ export default function CardPoster({ name, path, cacheKey = 0, cover = false }: 
   const everLoadedRef = useRef(false); // 曾经加载成功过就不再显示 spinner
   const bust = cacheKey ? `&_t=${cacheKey}` : "";
   const coverParam = cover ? "&cover=true" : "";
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+  const API_BASE = BASE_URL;
   const localSrc = path ? `${API_BASE}/scrape/poster?path=${encodeURIComponent(path)}${coverParam}${bust}` : null;
 
   // cacheKey 变化时重置状态（刮削/删除后刷新）
