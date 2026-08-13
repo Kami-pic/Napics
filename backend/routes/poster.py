@@ -7,7 +7,7 @@ import logging
 import re
 import requests
 from typing import Optional
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import StreamingResponse, FileResponse, Response
 
 from shared import config_m
@@ -38,8 +38,24 @@ def proxy_image(url: str):
         raise HTTPException(status_code=404, detail="Image fetch failed")
 
 
+def _if_none_match_hit(request: Optional[Request], etag: str) -> bool:
+    """判断请求的 If-None-Match 是否命中给定 ETag（支持逗号分隔与 W/ 弱校验前缀）"""
+    if request is None:
+        return False
+    header = request.headers.get("if-none-match", "")
+    if not header:
+        return False
+    for candidate in header.split(","):
+        candidate = candidate.strip()
+        if candidate.startswith("W/"):
+            candidate = candidate[2:]
+        if candidate == etag or candidate == "*":
+            return True
+    return False
+
+
 @router.get("/scrape/poster")
-def get_local_poster(path: str, cover: bool = False):
+def get_local_poster(path: str, cover: bool = False, request: Request = None):
     """返回本地海报文件或回跳到在线 TMDB 海报"""
     from fastapi.responses import Response, RedirectResponse
     from fastapi import HTTPException
@@ -48,15 +64,20 @@ def get_local_poster(path: str, cover: bool = False):
 
 
     def _poster_response(file_path: str):
+        # 先用 stat 算 ETag：命中条件请求时直接返 304，不读文件内容。
+        # 一屏几十张卡片的场景下能省掉同样数量的整文件读（NAS/SMB 上开销显著）。
+        st = os.stat(file_path)
+        etag = f'"{int(st.st_mtime)}-{st.st_size}"'
+        # no-cache：浏览器每次都向服务器验证，前端通过 _t= 参数做缓存失效
+        headers = {"Cache-Control": "no-cache", "ETag": etag}
+        if _if_none_match_hit(request, etag):
+            return Response(status_code=304, headers=headers)
+
         with open(file_path, "rb") as f:
             content = f.read()
         ext = os.path.splitext(file_path)[1].lower()
         mt = "image/png" if ext == ".png" else "image/jpeg"
-        # no-cache：浏览器每次都向服务器验证，前端通过 _t= 参数做缓存失效
-        mtime = os.path.getmtime(file_path)
-        etag = f'"{int(mtime)}-{len(content)}"'
-        return Response(content=content, media_type=mt,
-                        headers={"Cache-Control": "no-cache", "ETag": etag})
+        return Response(content=content, media_type=mt, headers=headers)
 
     # 1. 聚合容器模式
     if cover:

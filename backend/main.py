@@ -22,6 +22,7 @@ if sys.platform == 'win32':
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from routes.config import router as config_router
 from routes.discover import router as discover_router
@@ -48,6 +49,29 @@ from providers import router as providers_router
 from routes.plugins import router as plugins_router
 
 app = FastAPI(title='NAS Video Upgrader API')
+
+# SSE 流式路由：gzip 会缓冲输出、破坏实时进度推送，必须排除。
+# 新增 StreamingResponse(media_type="text/event-stream") 的路由时要同步加到这里。
+_SSE_PATHS = (
+    '/scan',
+    '/sync',
+    '/batch-search',
+    '/organize/full-stream',
+    '/api/search/stream',
+)
+
+
+class ConditionalGZipMiddleware(GZipMiddleware):
+    """按路径条件启用 gzip：媒体库等大 JSON 响应压缩，SSE 流式响应透传"""
+
+    async def __call__(self, scope, receive, send):
+        if scope.get('type') == 'http' and scope.get('path', '').startswith(_SSE_PATHS):
+            return await self.app(scope, receive, send)
+        return await super().__call__(scope, receive, send)
+
+
+# 先注册 gzip，再注册 CORS，使 CORS 处于最外层
+app.add_middleware(ConditionalGZipMiddleware, minimum_size=1024)
 
 app.add_middleware(
     CORSMiddleware,

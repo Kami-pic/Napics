@@ -320,47 +320,89 @@ import json
 import time
 import threading as _cache_threading
 
+from core.json_store import atomic_write_json
+
 CACHE_FILE = os.path.join(
     os.environ.get("NAPICS_DATA_DIR") or os.path.dirname(__file__),
     "completeness_cache.json"
 )
 _cache_lock = _cache_threading.Lock()
+# 缓存内容常驻内存，避免每读一条都反序列化整个文件（大媒体库下该文件可达数百 KB）。
+# _cache_stat 记录落盘文件的 (mtime_ns, size)，文件被外部改动时自动重载。
+_cache_data: Optional[Dict] = None
+_cache_stat = None
+
+
+def _cache_file_stat():
+    """返回缓存文件的 (mtime_ns, size)，文件不存在返回 None"""
+    try:
+        st = os.stat(CACHE_FILE)
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
 
 
 def _load_cache() -> Dict:
-    """加载完整度缓存"""
-    if os.path.exists(CACHE_FILE):
-        try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    """加载完整度缓存（进程内常驻，仅在文件被外部改动时重新读盘）"""
+    global _cache_data, _cache_stat
+    stat = _cache_file_stat()
+    if _cache_data is not None and stat == _cache_stat:
+        return _cache_data
+
+    if stat is None:
+        _cache_data = {}
+        _cache_stat = None
+        return _cache_data
+
+    try:
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            _cache_data = json.load(f)
+    except Exception:
+        _cache_data = {}
+    _cache_stat = stat
+    return _cache_data
 
 
 def _save_cache(cache: Dict):
-    """保存完整度缓存"""
+    """保存完整度缓存（原子写，避免写入中断导致文件损坏）"""
+    global _cache_data, _cache_stat
     try:
-        with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(cache, f, ensure_ascii=False, indent=2)
+        atomic_write_json(CACHE_FILE, cache, indent=2)
+        _cache_data = cache
+        _cache_stat = _cache_file_stat()
     except Exception as e:
         logger.warning(f"[completeness] 缓存写入失败: {e}")
+
+
+def _set_cache_entry(folder_path: str, data: Dict, persist: bool = True):
+    """写入一条缓存。persist=False 时只更新内存，由调用方稍后统一落盘"""
+    with _cache_lock:
+        cache = _load_cache()
+        data["_cached_at"] = time.time()
+        cache[folder_path] = data
+        if persist:
+            _save_cache(cache)
+
+
+def _flush_cache():
+    """把内存中的缓存落盘（配合 persist=False 的批量写入使用）"""
+    with _cache_lock:
+        if _cache_data is not None:
+            _save_cache(_cache_data)
 
 
 def get_cached_completeness(folder_path: str) -> Optional[Dict]:
     """读取缓存的完整度数据"""
     with _cache_lock:
         cache = _load_cache()
-        return cache.get(folder_path)
+        entry = cache.get(folder_path)
+        # 返回浅拷贝，避免调用方无意修改常驻缓存
+        return dict(entry) if isinstance(entry, dict) else entry
 
 
 def save_completeness_to_cache(folder_path: str, data: Dict):
     """保存完整度数据到缓存"""
-    with _cache_lock:
-        cache = _load_cache()
-        data["_cached_at"] = time.time()
-        cache[folder_path] = data
-        _save_cache(cache)
+    _set_cache_entry(folder_path, data, persist=True)
 
 
 def remove_from_cache(folder_path: str):
@@ -439,21 +481,33 @@ def batch_refresh_all(tmdb_client, nas_paths: List[str], category_tags: Dict[str
     total = len(tv_folders)
     success = 0
     skipped = 0
-    for i, folder in enumerate(tv_folders):
-        tmdb_id = get_tmdb_id_from_folder(folder)
-        if not tmdb_id:
-            skipped += 1
-            continue
-        try:
-            local_eps = collect_local_episodes(folder)
-            result = compute_completeness(tmdb_client, tmdb_id, local_eps)
-            if result.get("status") == "ok":
-                save_completeness_to_cache(folder, result)
-                success += 1
-                pct_str = f"{result['completeness_pct']}%"
-                logger.info(f"[completeness] [{i+1}/{total}] {os.path.basename(folder)} → {pct_str}")
-        except Exception as e:
-            logger.warning(f"[completeness] [{i+1}/{total}] {os.path.basename(folder)} 失败: {e}")
+    # 批量写入：只更新内存，每 20 条落盘一次，避免 N 次全文件重写（原来是 O(N²)）
+    _FLUSH_EVERY = 20
+    pending = 0
+    try:
+        for i, folder in enumerate(tv_folders):
+            tmdb_id = get_tmdb_id_from_folder(folder)
+            if not tmdb_id:
+                skipped += 1
+                continue
+            try:
+                local_eps = collect_local_episodes(folder)
+                result = compute_completeness(tmdb_client, tmdb_id, local_eps)
+                if result.get("status") == "ok":
+                    _set_cache_entry(folder, result, persist=False)
+                    pending += 1
+                    success += 1
+                    if pending >= _FLUSH_EVERY:
+                        _flush_cache()
+                        pending = 0
+                    pct_str = f"{result['completeness_pct']}%"
+                    logger.info(f"[completeness] [{i+1}/{total}] {os.path.basename(folder)} → {pct_str}")
+            except Exception as e:
+                logger.warning(f"[completeness] [{i+1}/{total}] {os.path.basename(folder)} 失败: {e}")
+    finally:
+        # 无论正常结束还是中途异常，已算出的结果都要落盘
+        if pending:
+            _flush_cache()
 
     logger.info(f"[completeness] 批量预计算完成: {success} 成功, {skipped} 跳过（无 TMDB ID）, {total} 总计")
     return {"success": success, "skipped": skipped, "total": total}

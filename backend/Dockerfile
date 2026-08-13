@@ -2,10 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 安装系统依赖（ffprobe 用于视频分析，libcurl 用于 curl_cffi）
+# 安装系统依赖（ffprobe 用于视频分析，libcurl 用于 curl_cffi，tzdata 用于本地时区）
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg curl libcurl4-openssl-dev && \
+    apt-get install -y --no-install-recommends ffmpeg curl libcurl4-openssl-dev tzdata && \
     rm -rf /var/lib/apt/lists/*
+
+ENV TZ=Asia/Shanghai
 
 # 安装 Python 依赖
 COPY requirements.txt .

@@ -169,9 +169,12 @@ def save_config(new_config: dict):
 
 @router.post("/api/system/restart")
 async def restart_system():
-    """重启后端服务 — 启动新的 uvicorn 进程后退出当前进程"""
+    """重启后端服务 — 容器内直接退出交给 Docker 重启策略，本地则拉起新进程后退出"""
     def do_restart():
         time.sleep(0.3)  # 让响应先发回前端
+        # Docker 容器内不自己拉进程，退出后由 restart: unless-stopped 接管
+        if os.path.exists("/.dockerenv"):
+            os._exit(0)
         backend_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.dirname(backend_dir)  # routes/ → backend/
         log_path = os.path.join(backend_dir, "backend.log")
@@ -181,7 +184,7 @@ async def restart_system():
         if sys.platform == "win32":
             flags = subprocess.CREATE_NEW_PROCESS_GROUP
         subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"],
+            [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"],
             cwd=backend_dir,
             stdout=log_file,
             stderr=log_file,

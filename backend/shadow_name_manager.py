@@ -18,6 +18,36 @@ class ShadowNameEntry:
     tmdb_id: Optional[int] = None
 
 
+# 影子名来源优先级（和 shared.py 的 NAME_SOURCE_PRIORITY 保持一致）
+# manual(4) > nfo(3) = tmdb(3) > douban/bangumi/scrape(2) > parsed(1)
+_SOURCE_PRIORITY = {
+    "manual": 4, "nfo": 3, "tmdb": 3,
+    "douban": 2, "bangumi": 2, "scrape": 2,
+    "parsed": 1, "": 0,
+}
+
+
+def apply_auto_fill(item: dict, shadow_name: str, source: str,
+                    tmdb_id: Optional[int] = None,
+                    organize_status: str = "ok") -> bool:
+    """在内存中的媒体条目 dict 上应用影子名自动填充，不落盘。
+
+    优先级规则与 ShadowNameManager.auto_fill 完全一致。供批量场景使用：
+    调用方在自己已持有的 library 列表上逐条应用，最后统一落盘一次，
+    避免每条都做一次全库读 + 全库写（大媒体库下是 O(N²)）。
+
+    返回 True 表示已填充，False 表示被更高优先级的已有值跳过。
+    """
+    existing_source = item.get("shadow_name_source", "")
+    if _SOURCE_PRIORITY.get(existing_source, 0) > _SOURCE_PRIORITY.get(source, 0):
+        return False
+    item["shadow_name"] = shadow_name
+    item["shadow_name_source"] = source
+    item["shadow_tmdb_id"] = tmdb_id
+    item["organize_status"] = organize_status
+    return True
+
+
 class ShadowNameManager:
     def __init__(self, library_path: str = "media_library.json"):
         self.library_path = library_path
@@ -74,19 +104,12 @@ class ShadowNameManager:
         优先级：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1)
         返回 True 表示填充成功，False 表示已有更高优先级被跳过
         organize_status: "ok" | "scrape_failed" """
-        # 优先级表（和 shared.py 的 NAME_SOURCE_PRIORITY 保持一致）
-        _PRIORITY = {"manual": 4, "nfo": 3, "tmdb": 3, "douban": 2, "bangumi": 2, "scrape": 2, "parsed": 1, "": 0}
         library = self._load_library()
         item = self._find_item(library, file_path)
         if item is None:
             return False
-        existing_source = item.get("shadow_name_source", "")
-        if _PRIORITY.get(existing_source, 0) > _PRIORITY.get(source, 0):
+        if not apply_auto_fill(item, shadow_name, source, tmdb_id, organize_status):
             return False
-        item["shadow_name"] = shadow_name
-        item["shadow_name_source"] = source
-        item["shadow_tmdb_id"] = tmdb_id
-        item["organize_status"] = organize_status
         self._save_library(library)
         return True
 

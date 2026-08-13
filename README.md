@@ -154,33 +154,44 @@ start_all.bat
 git clone https://github.com/Kami-pic/napics.git
 cd napics
 
-# 2. 编辑 docker-compose.yml：
-#    - 取消注释媒体库挂载，改为你的实际路径
-#    - 如果非本机访问（如 NAS 局域网），修改 NEXT_PUBLIC_API_URL 为 NAS IP
+# 2. 创建配置文件并填入你的 NAS IP 和媒体目录
+cp .env.example .env
+# 编辑 .env：NAPICS_API_URL 改成 http://<你的NAS-IP>:8001
+#            MEDIA_PATH 改成宿主机媒体目录
 
 # 3. 启动
 docker compose up -d
 ```
 
-访问 `http://localhost:3032`（或 `http://<NAS-IP>:3032`）
+访问 `http://<NAS-IP>:3032`
 
 <details>
-<summary>NAS 局域网部署说明</summary>
+<summary>NAS 部署注意事项</summary>
 
-如果你在 NAS 上部署，需要从其他设备（手机/电脑）通过局域网访问，修改 `docker-compose.yml`：
+**1. `NAPICS_API_URL` 必须填 NAS 的局域网 IP，不能填 `localhost`**
 
-```yaml
-frontend:
-  build:
-    args:
-      - NEXT_PUBLIC_API_URL=http://192.168.1.100:8001  # 改为你的 NAS IP
-```
-
-修改后需要重新构建前端镜像：
+前端是浏览器端直连后端的，`localhost` 会指向你自己的电脑而不是 NAS，所有接口都会失败。
+这个值在构建时被编译进前端产物，改动后必须重新构建：
 
 ```bash
 docker compose up -d --build frontend
 ```
+
+**2. 媒体目录路径**
+
+`MEDIA_PATH` 是宿主机路径，容器内固定挂载到 `/media`。
+在设置页填扫描路径时要填**容器内路径**（`/media/...`），不是宿主机路径。
+
+常见位置：飞牛 OS `/vol1/1000/`，群晖 `/volume1/`，威联通 `/share/`。
+
+**3. 访问宿主机上的 qBittorrent / OpenList**
+
+容器内的 `127.0.0.1` 指向容器自己。配置这些服务地址时用 `host.docker.internal` 代替，
+例如 `http://host.docker.internal:8080`（compose 已配好 `host-gateway` 映射）。
+
+**4. 「浏览文件夹」按钮在容器内不可用**
+
+该功能依赖桌面环境，Docker 部署时请直接手动输入路径。
 
 </details>
 ---

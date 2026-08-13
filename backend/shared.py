@@ -62,8 +62,8 @@ logger = logging.getLogger(__name__)
 # ── 全局单例 ──
 
 config_m = config_manager.ConfigManager()
-shadow_m = ShadowNameManager()
-indexer_m = IndexerPriorityManager()
+shadow_m = ShadowNameManager(library_path=config_m.lib_path)
+indexer_m = IndexerPriorityManager(config_path=config_m.config_path)
 indexer_m.load()
 torrent_bl = TorrentBlacklist(path=os.path.join(config_m.data_dir, "torrent_blacklist.json"))
 analysis_cache = AnalysisCache(path=os.path.join(config_m.data_dir, "analysis_cache.json"))

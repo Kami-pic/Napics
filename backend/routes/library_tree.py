@@ -458,11 +458,17 @@ def get_library_tree():
                         parent_original=cur_original,
                     )
                     if result.display:
-                        v["clean_name"] = result.display
-                        v["clean_name_cn"] = result.cn
-                        v["clean_name_en"] = result.en
-                        v["clean_name_original"] = result.original
-                        library_dirty[0] = True
+                        # 只有算出来的值和已存的不同才写回并置脏标记。
+                        # 否则每次请求目录树都会触发一次全库落盘 + 索引重建 + 完整度刷新。
+                        if (v.get("clean_name") != result.display
+                                or v.get("clean_name_cn") != result.cn
+                                or v.get("clean_name_en") != result.en
+                                or v.get("clean_name_original") != result.original):
+                            v["clean_name"] = result.display
+                            v["clean_name_cn"] = result.cn
+                            v["clean_name_en"] = result.en
+                            v["clean_name_original"] = result.original
+                            library_dirty[0] = True
 
         for child in node.get("children", []):
             post_process(child, cat, cur_cn, cur_en, cur_original)

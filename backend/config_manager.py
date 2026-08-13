@@ -3,6 +3,8 @@ import os
 from pydantic import BaseModel
 from typing import Optional, List
 
+from core.json_store import atomic_write_json
+
 class IndexerPriorityConfig(BaseModel):
     """索引器优先级配置（用于 AppConfig 序列化）"""
     indexer_id: int = 0
@@ -91,7 +93,9 @@ class AppConfig(BaseModel):
     # 刮削配置
     default_scrape_source: str = "douban"          # 默认刮削源 "tmdb" | "douban"
     # 插件系统
-    installed_plugins: List[str] = [              # 已安装的插件 ID 列表（预装，仅低风险内置插件）
+    # 已安装的插件 ID 列表（默认预装）。前 5 个为内置低风险插件，
+    # 后 2 个是保证"开箱能搜到东西"的第三方搜索源，属于有意保留的产品决策。
+    installed_plugins: List[str] = [
         "metadata-tmdb",
         "metadata-douban",
         "download-qbittorrent",
@@ -150,8 +154,8 @@ class ConfigManager:
         return AppConfig()
 
     def save(self, config: AppConfig):
-        with open(self.config_path, "w", encoding="utf-8") as f:
-            json.dump(config.dict(), f, indent=4)
+        # config.json 需要人工可读，保留缩进；原子写避免损坏
+        atomic_write_json(self.config_path, config.dict(), indent=4)
         self._config = config
 
     @property
@@ -187,9 +191,9 @@ class ConfigManager:
                     v["quality_score"] = compute_quality_score_from_video(v)
         except Exception:
             pass
-        lib_path = self.lib_path
-        with open(lib_path, "w", encoding="utf-8") as f:
-            json.dump(deduped, f, indent=4, ensure_ascii=False)
+        # 原子写入 + 紧凑序列化：大媒体库下显著减少序列化耗时与落盘体积，
+        # 且避免写入过程中断电导致 media_library.json 截断损坏
+        atomic_write_json(self.lib_path, deduped, compact=True)
         # 通知媒体库索引刷新
         for cb in self._on_library_save_callbacks:
             try:
