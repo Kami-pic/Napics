@@ -26,7 +26,9 @@ export default function CardPoster({ name, path, cacheKey = 0, cover = false }: 
     <>
       {!loaded && !everLoadedRef.current && !error && stage !== "done" && src && <div className="absolute inset-0 flex items-center justify-center bg-[#111]"><div className="w-6 h-6 border-2 border-slate-800 border-t-slate-500 rounded-full animate-spin" /></div>}
       {(error || stage === "done" || !src) && <div className="absolute inset-0 bg-[#111] flex items-center justify-center"><span className="text-slate-700 text-3xl">🎬</span></div>}
-      {src && stage !== "done" && <img src={src} alt="" loading="eager" decoding="sync"
+      {/* lazy + async 解码：一屏几十张卡片时，eager/sync 会强制同时发起全部请求
+          并阻塞渲染，NAS 上尤其明显。改为只加载进入视口的封面。 */}
+      {src && stage !== "done" && <img src={src} alt="" loading="lazy" decoding="async"
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${(loaded || everLoadedRef.current) ? "opacity-100" : "opacity-0"}`}
         onLoad={() => { setLoaded(true); everLoadedRef.current = true; }}
         onError={() => {

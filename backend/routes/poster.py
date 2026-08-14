@@ -2,6 +2,7 @@
 路由模块：poster — 海报管理 + 图片代理
 从 routes/scrape.py 拆分而来
 """
+import hashlib
 import os
 import logging
 import re
@@ -20,30 +21,89 @@ router = APIRouter()
 _ALLOWED_POSTER_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
+def _guess_image_type(content: bytes) -> str:
+    """按文件头判断图片类型（缓存文件不带扩展名）"""
+    if content.startswith(b"\x89PNG"):
+        return "image/png"
+    if content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "image/webp"
+    if content.startswith(b"GIF8"):
+        return "image/gif"
+    return "image/jpeg"
+
+
+def _image_cache_dir() -> str:
+    """远程图片的磁盘缓存目录（放在数据卷内，容器重启不丢）"""
+    d = os.path.join(config_m.data_dir, "image_cache")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _image_cache_path(url: str) -> str:
+    key = hashlib.sha256(url.encode("utf-8")).hexdigest()
+    return os.path.join(_image_cache_dir(), f"{key}.img")
+
+
 @router.get("/proxy/image")
-def proxy_image(url: str):
-    """代理外部图片请求（绕过防盗链 + 走 HTTP 代理）"""
+def proxy_image(url: str, request: Request = None):
+    """代理外部图片请求（绕过防盗链 + 走 HTTP 代理），带磁盘缓存。
+
+    没有缓存时每张封面都要重新走外网，NAS 上（尤其 TMDB 需要代理）会非常慢。
+    这里把抓到的图片落到数据卷，之后任何客户端、任何时候都直接读本地。
+    """
     # 拒绝内网/环回地址：响应体会原样回显，否则可被当作内网探测跳板
     ok, reason = check_external_url(url)
     if not ok:
         logger.warning(f"[ProxyImage] 拒绝非公网地址: {reason}")
         raise HTTPException(status_code=400, detail="URL 不被允许")
+
+    from fastapi.responses import Response
+
+    cache_path = _image_cache_path(url)
+
+    # 命中磁盘缓存：直接返回，并支持 304 少传一次图片内容
+    if os.path.isfile(cache_path):
+        try:
+            st = os.stat(cache_path)
+            etag = f'"{int(st.st_mtime)}-{st.st_size}"'
+            headers = {"Cache-Control": "public, max-age=604800", "ETag": etag}
+            if _if_none_match_hit(request, etag):
+                return Response(status_code=304, headers=headers)
+            with open(cache_path, "rb") as f:
+                content = f.read()
+            return Response(content=content,
+                            media_type=_guess_image_type(content),
+                            headers=headers)
+        except OSError:
+            pass  # 缓存文件损坏，走下面重新抓取
+
     try:
         # 豆瓣图片需要 Referer，TMDB 图片不需要
-        headers = {"User-Agent": "Mozilla/5.0"}
+        headers_req = {"User-Agent": "Mozilla/5.0"}
         if "doubanio.com" in url:
-            headers["Referer"] = "https://movie.douban.com/"
+            headers_req["Referer"] = "https://movie.douban.com/"
         proxies = None
         http_proxy = getattr(config_m.config, 'http_proxy', '') or ''
         if http_proxy:
             proxies = {"http": http_proxy, "https": http_proxy}
-        resp = requests.get(url, headers=headers, stream=True, timeout=10, proxies=proxies)
+        resp = requests.get(url, headers=headers_req, stream=True, timeout=10, proxies=proxies)
         resp.raise_for_status()
+        content = resp.content
         content_type = resp.headers.get("content-type", "image/jpeg")
-        from fastapi.responses import Response
-        return Response(content=resp.content, media_type=content_type,
-                        headers={"Cache-Control": "public, max-age=86400"})
-    except Exception:
+
+        # 写入缓存（临时文件 + 替换，避免并发下读到半截文件）
+        try:
+            tmp = f"{cache_path}.tmp"
+            with open(tmp, "wb") as f:
+                f.write(content)
+            os.replace(tmp, cache_path)
+        except OSError as e:
+            logger.warning(f"[ProxyImage] 缓存写入失败: {e}")
+
+        return Response(content=content, media_type=content_type,
+                        headers={"Cache-Control": "public, max-age=604800"})
+    except Exception as e:
+        logger.info(f"[ProxyImage] 抓取失败: {e}")
         raise HTTPException(status_code=404, detail="Image fetch failed")
 
 
@@ -79,8 +139,10 @@ def get_local_poster(path: str, cover: bool = False, request: Request = None):
         # 一屏几十张卡片的场景下能省掉同样数量的整文件读（NAS/SMB 上开销显著）。
         st = os.stat(file_path)
         etag = f'"{int(st.st_mtime)}-{st.st_size}"'
-        # no-cache：浏览器每次都向服务器验证，前端通过 _t= 参数做缓存失效
-        headers = {"Cache-Control": "no-cache", "ETag": etag}
+        # 给一个短期 max-age：前端已通过 _t= 参数在刮削后主动破缓存，
+        # 因此这里不必每次都回源验证。no-cache 会让一屏几十张封面每次刷新
+        # 都重新请求一遍，在 NAS/SMB 上开销明显。
+        headers = {"Cache-Control": "public, max-age=300", "ETag": etag}
         if _if_none_match_hit(request, etag):
             return Response(status_code=304, headers=headers)
 

@@ -11,6 +11,7 @@ from typing import List, Dict, Optional, Tuple
 
 from text_processing import normalize as normalize_text
 from text_utils import fuzzy_score
+from core.source_breaker import metadata_breaker
 import douban_api_v2
 import bangumi_client
 
@@ -329,23 +330,42 @@ def get_combined_recommend() -> List[Dict]:
 
     def _fetch_tmdb():
         """TMDB：trending/week 40 条（2 页）"""
+        # 没配 API Key 时请求必然失败，直接跳过，不要白等一次超时
+        try:
+            from shared import config_m
+            if not (config_m.config.tmdb_api_key or "").strip():
+                logger.info("[CombinedRecommend] 未配置 TMDB API Key，跳过该源")
+                return []
+        except Exception:
+            pass
+
+        if metadata_breaker.is_open("tmdb"):
+            logger.info("[CombinedRecommend] TMDB 处于熔断冷却中，跳过")
+            return []
         try:
             tmdb = get_clients()["tmdb"]
             items = []
             for pg in (1, 2):
                 page_items = tmdb.trending(page=pg)
                 items.extend(page_items or [])
+            metadata_breaker.record_success("tmdb")
             return [(_normalize_tmdb(r), "tmdb") for r in items]
         except Exception as e:
+            metadata_breaker.record_failure("tmdb")
             logger.error(f"[CombinedRecommend] TMDB 失败: {e}")
             return []
 
     def _fetch_bangumi():
         """Bangumi：calendar 热门 20 条"""
+        if metadata_breaker.is_open("bangumi"):
+            logger.info("[CombinedRecommend] Bangumi 处于熔断冷却中，跳过")
+            return []
         try:
             items = bangumi_client.get_hot_anime(0, 20)
+            metadata_breaker.record_success("bangumi")
             return [(_normalize_bangumi(r), "bangumi") for r in (items or [])]
         except Exception as e:
+            metadata_breaker.record_failure("bangumi")
             logger.error(f"[CombinedRecommend] Bangumi 失败: {e}")
             return []
 
