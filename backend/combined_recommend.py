@@ -349,20 +349,33 @@ def get_combined_recommend() -> List[Dict]:
             logger.error(f"[CombinedRecommend] Bangumi 失败: {e}")
             return []
 
-    # 并发拉取，timeout=5s
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+    # 并发拉取。注意 as_completed 的 timeout 是在迭代器上抛 TimeoutError 的，
+    # 必须把整个循环包进 try —— 否则某个源不可达时异常会一路冒到路由层变成 500，
+    # 而不是拿已经取到的数据降级展示（容器无外网时就是这个情况）。
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+    try:
         futures = {
             pool.submit(_fetch_douban): "douban",
             pool.submit(_fetch_tmdb): "tmdb",
             pool.submit(_fetch_bangumi): "bangumi",
         }
-        for future in concurrent.futures.as_completed(futures, timeout=8):
-            try:
-                result = future.result(timeout=5)
-                all_items.extend(result)
-            except Exception as e:
-                src = futures[future]
-                logger.warning(f"[CombinedRecommend] {src} 超时或异常: {e}")
+        try:
+            for future in concurrent.futures.as_completed(futures, timeout=8):
+                try:
+                    result = future.result(timeout=5)
+                    all_items.extend(result)
+                except Exception as e:
+                    src = futures[future]
+                    logger.warning(f"[CombinedRecommend] {src} 超时或异常: {e}")
+        except concurrent.futures.TimeoutError:
+            unfinished = [name for f, name in futures.items() if not f.done()]
+            logger.warning(
+                f"[CombinedRecommend] 以下源未在 8 秒内返回，已跳过: {unfinished}"
+                "（若为容器部署，请检查容器能否访问外网）"
+            )
+    finally:
+        # 不等待未完成的线程，避免不可达的网络请求把接口一直拖住
+        pool.shutdown(wait=False, cancel_futures=True)
 
     if not all_items:
         return []
