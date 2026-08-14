@@ -368,3 +368,90 @@ def delete_poster(path: str):
     
     logger.error(f"[DeletePoster] path={path} deleted={len(deleted)} errors={errors}")
     return {"status": "ok", "deleted": deleted, "errors": errors}
+
+
+# ── 封面诊断 ──
+
+@router.get("/scrape/poster-diagnose")
+def diagnose_posters(limit: int = 40):
+    """统计媒体库里有多少封面能命中本地文件，以及没命中的目录里实际有哪些图片。
+
+    用途：封面加载慢通常是因为本地海报没被识别到，于是每张都退化成走外网代理。
+    这个接口一次性给出全貌，不需要逐个手动拼 URL 去试。
+    """
+    from shared import config_m
+
+    # 与 get_local_poster 保持一致的识别规则
+    folder_level_names = ["poster.jpg", "poster.png", "folder.jpg", "cover.jpg"]
+    suffix_rules = ["-poster.jpg", "-poster.png", "-thumb.jpg"]
+    image_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+
+    library = config_m.load_library()
+    # 按目录去重，只看目录级别
+    folders = []
+    seen = set()
+    for v in library:
+        fp = v.get("file_path", "")
+        if not fp:
+            continue
+        d = os.path.dirname(fp)
+        if d and d not in seen:
+            seen.add(d)
+            folders.append(d)
+
+    total_folders = len(folders)
+    folders = folders[:max(1, limit)]
+
+    hit = 0
+    miss_samples = []
+    unreachable = 0
+
+    for d in folders:
+        if not os.path.isdir(d):
+            unreachable += 1
+            continue
+        try:
+            entries = os.listdir(d)
+        except OSError:
+            unreachable += 1
+            continue
+
+        lower = {e.lower(): e for e in entries}
+        matched = None
+        for name in folder_level_names:
+            if name in lower:
+                matched = lower[name]
+                break
+        if not matched:
+            for e in entries:
+                el = e.lower()
+                if any(el.endswith(s) for s in suffix_rules):
+                    matched = e
+                    break
+
+        if matched:
+            hit += 1
+        elif len(miss_samples) < 8:
+            images = [e for e in entries if os.path.splitext(e)[1].lower() in image_exts]
+            miss_samples.append({
+                "folder": d,
+                "image_files_found": images[:10],
+                "has_nfo": any(e.lower().endswith(".nfo") for e in entries),
+            })
+
+    return {
+        "library_folders_total": total_folders,
+        "checked": len(folders),
+        "local_poster_hit": hit,
+        "local_poster_miss": len(folders) - hit - unreachable,
+        "folder_unreachable": unreachable,
+        "recognized_folder_names": folder_level_names,
+        "recognized_suffixes": suffix_rules,
+        "miss_samples": miss_samples,
+        "hint": (
+            "local_poster_miss 较多时，封面会退化成走 /proxy/image 外网代理，"
+            "这是加载慢的主要原因。请对照 miss_samples 里的 image_files_found，"
+            "看你的海报文件名是否在 recognized_* 列表之外。"
+            if hit < len(folders) else "本地封面命中正常。"
+        ),
+    }
