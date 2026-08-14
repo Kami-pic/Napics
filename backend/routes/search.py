@@ -128,9 +128,9 @@ def search_resources_stream(
     def _generate():
         allowed_bt = get_allowed_bt_sources()
         if not allowed_bt:
-            # 无搜索插件安装，返回空
+            # 无搜索插件安装：带 error 字段，前端据此显示原因而不是静默收起
             import json as _json
-            yield f"data: {_json.dumps({'type': 'done', 'message': '未安装搜索插件，请在插件中心安装搜索源'})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done', 'error': 'no_source', 'message': '未安装搜索插件，请在插件中心安装搜索源'})}\n\n"
             return
 
         keywords = build_keywords(
@@ -158,7 +158,11 @@ def search_pan(keyword: str, media_type: str = ""):
     """网盘搜索聚合接口。"""
     from plugin_guard import is_pan_search_allowed
     if not is_pan_search_allowed():
-        return {"results": [], "groups": {}, "source_statuses": [], "total": 0}
+        return {
+            "results": [], "groups": {}, "source_statuses": [], "total": 0,
+            "error": "no_source",
+            "message": "未安装网盘搜索插件，请在插件中心安装网盘搜索源",
+        }
     try:
         service = _get_pan_search_service()
         response = service.search_sync(keyword, media_type=media_type)

@@ -100,19 +100,40 @@ class BatchSearchRequest(BaseModel):
     items: List[BatchSearchItem]
 
 def _select_best_match(results: list):
-    """从搜索结果中选择做种数 > 0 且 quality_rank 最高的结果"""
-    candidates = [r for r in results if r.seeders > 0]
+    """从搜索结果中选择做种数 > 0 且 quality_rank 最高的结果。
+
+    results 为 enrich 后的 dict 列表（search_service.search_all_sources 的返回）。
+    """
+    candidates = [r for r in results if (r.get("seeders") or 0) > 0]
     if not candidates:
         return None
-    return max(candidates, key=lambda r: r.quality_rank)
+    return max(candidates, key=lambda r: r.get("quality_rank") or 0)
 
 @router.post("/batch-search")
 async def batch_search(req: BatchSearchRequest):
-    """EventSource 流式返回批量搜索进度"""
+    """EventSource 流式返回批量搜索进度。
+
+    走 search_service 统一搜索，和主搜索用同一批已安装的搜索源；
+    早期版本只打 Prowlarr，用户没配 Prowlarr 时全部返回"未找到"且没有任何提示。
+    """
+    from plugin_guard import get_allowed_bt_sources
+    from search_service import build_keywords, search_all_sources
+
     clients = get_clients()
     total = len(req.items)
+    allowed_bt = get_allowed_bt_sources()
+    bt_overrides = config_m.config.bt_search_sources or {}
 
     async def event_gen():
+        # 无可用搜索源：立刻明确报错，不要逐条 sleep 后返回一堆"未找到"
+        if not allowed_bt:
+            yield "data: " + json.dumps({
+                "type": "done", "found": 0, "not_found": total,
+                "error": "no_source",
+                "message": "未安装搜索插件，请在插件中心安装搜索源",
+            }, ensure_ascii=False) + "\n\n"
+            return
+
         found = 0
         not_found = 0
         for i, item in enumerate(req.items):
@@ -123,7 +144,15 @@ async def batch_search(req: BatchSearchRequest):
             }, ensure_ascii=False) + "\n\n"
 
             try:
-                results = clients["search"].search(item.name)
+                keywords = build_keywords(query=item.name)
+                results = await asyncio.to_thread(
+                    search_all_sources,
+                    keywords,
+                    item.name,
+                    sources=list(allowed_bt),
+                    bt_overrides=bt_overrides,
+                    search_client=clients["search"] if "prowlarr" in allowed_bt else None,
+                )
                 best = _select_best_match(results)
                 if best:
                     found += 1
@@ -131,8 +160,8 @@ async def batch_search(req: BatchSearchRequest):
                     not_found += 1
                 yield "data: " + json.dumps({
                     "type": "result", "index": i, "name": item.name,
-                    "best_match": best.dict() if best else None,
-                    "all_results": [r.dict() for r in results]
+                    "best_match": best,
+                    "all_results": results,
                 }, ensure_ascii=False) + "\n\n"
             except Exception as e:
                 not_found += 1
@@ -142,9 +171,9 @@ async def batch_search(req: BatchSearchRequest):
                     "error": str(e)
                 }, ensure_ascii=False) + "\n\n"
 
-            # 间隔 2 秒避免 API 限流（最后一个不等待）
+            # 间隔 1 秒缓解各源限频（最后一个不等待）
             if i < total - 1:
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
 
         yield "data: " + json.dumps({
             "type": "done", "found": found, "not_found": not_found

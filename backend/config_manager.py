@@ -99,7 +99,7 @@ class AppConfig(BaseModel):
     # 刮削配置
     default_scrape_source: str = "douban"          # 默认刮削源 "tmdb" | "douban"
     # 插件系统
-    # 已安装的插件 ID 列表（默认预装）。前 5 个为内置低风险插件，
+    # 已安装的插件 ID 列表（默认预装）。前 6 个为内置低风险插件，
     # 后 2 个是保证"开箱能搜到东西"的第三方搜索源，属于有意保留的产品决策。
     installed_plugins: List[str] = [
         "metadata-tmdb",
@@ -107,6 +107,7 @@ class AppConfig(BaseModel):
         "download-qbittorrent",
         "feature-discover",
         "feature-local-match",
+        "metadata-bangumi",
         "search-bt-movie-tv",
         "search-pan-github",
     ]
@@ -128,6 +129,9 @@ class AppConfig(BaseModel):
     # 官方地址优先、失败时按此列表回退。设为 {"raw": [], "repo": []} 可关闭回退。
     # 为 None（默认）时使用 core/github_access.py 内置的镜像列表。
     github_mirrors: Optional[dict] = None
+    # 已执行过的一次性配置迁移标记。落盘后不再重复执行，
+    # 保证补齐类迁移不会覆盖用户后续的主动卸载。
+    config_migrations: List[str] = []
 
 class ConfigManager:
     def __init__(self, config_path: str = None):
@@ -160,8 +164,39 @@ class ConfigManager:
                 data.pop("nas_path", None)
                 data.pop("nas_paths", None)
                 data.pop("_plugins_migrated", None)
-                return AppConfig(**data)
+                migrated = self._apply_migrations(data)
+                config = AppConfig(**data)
+            # 落盘必须在读句柄关闭之后：Windows 下目标文件仍被占用时 os.replace 会失败
+            if migrated:
+                # 迁移结果必须落盘，否则每次启动都会重复补齐，
+                # 用户主动卸载的插件会被反复装回来
+                self.save(config)
+            return config
         return AppConfig()
+
+    @staticmethod
+    def _apply_migrations(data: dict) -> bool:
+        """对已落盘的配置执行一次性迁移。返回是否发生了改动。
+
+        每个迁移只执行一次（记录在 config_migrations 里），
+        之后用户对相关配置的修改不会被覆盖。
+        """
+        done = list(data.get("config_migrations") or [])
+        changed = False
+
+        # 补齐 Bangumi 元数据源：早期默认列表遗漏了它，
+        # 导致 /api/providers 过滤后前端完全看不到 Bangumi，相关功能整体不可用。
+        if "add_bangumi_metadata" not in done:
+            plugins = list(data.get("installed_plugins") or [])
+            if plugins and "metadata-bangumi" not in plugins:
+                plugins.append("metadata-bangumi")
+                data["installed_plugins"] = plugins
+            done.append("add_bangumi_metadata")
+            changed = True
+
+        if changed:
+            data["config_migrations"] = done
+        return changed
 
     def save(self, config: AppConfig):
         # config.json 需要人工可读，保留缩进；原子写避免损坏

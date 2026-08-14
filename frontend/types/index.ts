@@ -515,6 +515,10 @@ export interface PanSearchResponse {
   groups: Record<string, PanResult[]>;
   source_statuses: PanSourceStatus[];
   total: number;
+  /** 无可用网盘源等非异常失败时后端返回的错误码 */
+  error?: string;
+  /** 对应的中文说明，供前端直接展示 */
+  message?: string;
 }
 
 // ===== Provider metadata 类型定义 =====

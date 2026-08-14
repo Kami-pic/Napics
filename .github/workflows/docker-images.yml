@@ -128,8 +128,64 @@ jobs:
           curl -fsSL -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3032/ || exit 1
 
           echo "--- 插件接口（验证插件系统已加载）---"
-          curl -fsSL http://127.0.0.1:3032/backend/api/providers >/dev/null \
-            && echo "providers 接口正常" || echo "::warning::providers 接口异常"
+          PROVIDERS=$(curl -fsSL http://127.0.0.1:3032/backend/api/providers) || {
+            echo "::error::providers 接口异常"; exit 1; }
+          echo "$PROVIDERS" | head -c 400; echo
+
+          echo "--- 插件是否真正注册了搜索源 ---"
+          # /api/providers 只反映插件守卫的放行结果，空壳插件同样会出现在里面。
+          # 这里必须让容器内真实构建一次搜索源工厂，才能发现"装了插件但没注册 provider"。
+          docker exec napics-smoke python - <<'PY'
+          import sys
+          sys.path.insert(0, "/app/backend")
+          import os
+          os.chdir("/app/backend")
+
+          from plugin_manager import PluginManager
+          from plugin_context import get_plugin_providers
+
+          pm = PluginManager()
+          from config_manager import ConfigManager
+          installed = ConfigManager().config.installed_plugins
+          print("installed_plugins:", installed)
+          pm.load_installed_plugins(installed)
+
+          providers = get_plugin_providers()
+          print("registry 中的 provider:", sorted(providers))
+
+          from bt_search_provider_factory import get_direct_bt_scraper_factories
+          factories = get_direct_bt_scraper_factories()
+          print("BT 工厂:", sorted(factories))
+
+          search_like = [p for p, i in providers.items()
+                         if i.get("type") in ("search", "scraper_search", "pan_search")]
+          print("搜索类 provider 数:", len(search_like))
+          print("BT 工厂源数:", len(factories))
+          if not search_like or not factories:
+              # 按 .gitignore 的约定，plugins/*/sources/ 由社区插件仓库独立分发，
+              # 不随主镜像发布。此时搜索需要用户先在插件中心装搜索源。
+              print("NO_SEARCH_SOURCE")
+          else:
+              print("OK: 搜索源注册正常")
+          PY
+
+          # 上面的检查结果只作提示：镜像默认不带第三方搜索源实现，
+          # 但用户点搜索时必须能看到明确原因（而不是静默无反应），这一点在下面强制校验。
+
+          echo "--- 点搜索时必须有明确反馈（不允许静默）---"
+          # 允许两种结果：有源参与（status 事件），或没有源但明确告知原因（error=no_source）。
+          # 唯一不允许的是"只回一个裸 done" —— 前端表现就是一闪而过、没有任何提示。
+          SSE=$(curl -fsS --max-time 40 "http://127.0.0.1:3032/backend/api/search/stream?query=test" || true)
+          echo "$SSE" | head -n 8
+          if echo "$SSE" | grep -q '"type": *"status"'; then
+            echo "OK: 有搜索源参与搜索"
+          elif echo "$SSE" | grep -q 'no_source'; then
+            echo "OK: 无搜索源，但后端明确回传了原因，前端会提示用户去装搜索源"
+            echo "::warning::镜像内没有可用搜索源，用户需先在插件中心安装搜索源"
+          else
+            echo "::error::搜索既没有源参与、也没有回传原因 —— 前端会静默一闪而过"
+            exit 1
+          fi
 
           echo "--- 媒体库接口 ---"
           curl -fsSL -o /dev/null -w "library HTTP %{http_code}\n" http://127.0.0.1:3032/backend/library || exit 1

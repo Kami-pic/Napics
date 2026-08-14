@@ -1,6 +1,7 @@
 // AI 助手设置区域（从 SettingsModal 拆分）
 "use client";
 import { useState, useEffect } from "react";
+import { BASE_URL } from "@/lib/api/base";
 import type { AppConfig, AIFeaturesConfig } from "@/types";
 
 // AI 服务商预设
@@ -32,8 +33,8 @@ export function AISettingsSection({ config, setConfig }: AISettingsSectionProps)
   const [aiExpanded, setAiExpanded] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:8001/ai/status").then(r => r.json()).then(data => {
-      setAiUsage(data.usage || {});
+    fetch(`${BASE_URL}/ai/status`).then(r => r.ok ? r.json() : null).then(data => {
+      if (data) setAiUsage(data.usage || {});
     }).catch(() => {});
     setAiTestResult(null);
   }, []);

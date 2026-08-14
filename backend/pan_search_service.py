@@ -111,9 +111,12 @@ class PanSearchService:
         """同步版搜索 — 用线程池并发调用爬虫。"""
         active_sources = self.pan_providers or self.scrapers
         if not active_sources:
+            # 带上原因，否则前端只看到 0 结果、无法区分"没搜到"和"没有源"
+            reason = "网盘搜索插件已安装但未注册任何源，请在插件中心重新安装网盘搜索插件"
+            logger.warning(f"[PanSearch] 无可用网盘源: {reason}")
             return PanSearchResponse(
                 source_statuses=[
-                    SourceStatus(name="all", status="disabled", count=0)
+                    SourceStatus(name="all", status="disabled", count=0, error=reason)
                 ]
             )
 

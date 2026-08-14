@@ -42,12 +42,21 @@ export const configApi = {
   getNoScrape: () => request<string[]>(`${BASE_URL}/no-scrape`),
   setNoScrape: (path: string, enabled: boolean) => request<any>(`${BASE_URL}/no-scrape?path=${encodeURIComponent(path)}&enabled=${enabled}`, { method: "POST" }),
 
-  // 备份恢复（backup 返回 fetch Response，不走 request）
-  backup: () => fetch(`${BASE_URL}/backup`, { method: "POST" }).then(r => r.blob()),
+  // 备份恢复（backup 返回 blob，不走 request）
+  backup: async () => {
+    const res = await fetch(`${BASE_URL}/backup`, { method: "POST" });
+    // 不检查状态码会把错误 JSON 当成备份文件下给用户，得到一个坏的备份包
+    if (!res.ok) throw new Error(`备份失败（${res.status}）`);
+    return res.blob();
+  },
   restore: async (file: File) => {
     const form = new FormData();
     form.append("file", file);
     const res = await fetch(`${BASE_URL}/restore`, { method: "POST", body: form });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(detail || `恢复失败（${res.status}）`);
+    }
     return res.json();
   },
 

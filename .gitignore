@@ -26,6 +26,7 @@ Thumbs.db
 backend/sandbox/
 backend/sandbox_real/
 backend/posters/
+backend/image_cache/
 backend/*_report.txt
 *.log
 pytest-cache-files-*/

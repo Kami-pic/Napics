@@ -20,6 +20,10 @@ export const scrapeApi = {
     form.append("file", file);
     const coverParam = cover ? "&cover=true" : "";
     const res = await fetch(`${BASE_URL}/scrape/upload-poster?path=${encodeURIComponent(path)}${coverParam}`, { method: "POST", body: form });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(detail || `封面上传失败（${res.status}）`);
+    }
     return res.json();
   },
   getLocalPoster: (path: string, cover: boolean = false) => `${BASE_URL}/scrape/poster?path=${encodeURIComponent(path)}${cover ? "&cover=true" : ""}`,

@@ -338,6 +338,33 @@ def _get_enabled_sources(bt_overrides: dict) -> Tuple[bool, List[Tuple[str, Any]
     return prowlarr_enabled, enabled_providers
 
 
+def _no_source_reason(bt_overrides: dict, allowed_sources: Optional[set]) -> str:
+    """诊断"一个搜索源都没有"的具体原因，用于回传给前端。
+
+    区分三种情况，避免用户面对一个没有任何信息的空结果：
+    1. 插件未安装 —— 守卫放行集合为空
+    2. 插件装了但 provider 没注册成功 —— 守卫放行了，但工厂里没有对应实现
+    3. 源被用户手动关掉了
+    """
+    if allowed_sources is not None and not allowed_sources:
+        return "未安装搜索插件，请在插件中心安装搜索源"
+
+    registered = {name for name, _ in _get_provider_list()}
+    if not registered:
+        return "搜索插件已安装但未注册任何搜索源，请查看后端日志中的插件加载错误"
+
+    if allowed_sources is not None:
+        usable = registered & allowed_sources
+        if not usable:
+            return (
+                "已安装插件与可用搜索源不匹配（插件声明的源未注册成功），"
+                "请在插件中心重新安装搜索插件"
+            )
+        return f"全部搜索源已被关闭（可用：{'、'.join(sorted(usable))}），请在设置中启用至少一个"
+
+    return "全部搜索源已被关闭，请在设置中启用至少一个"
+
+
 def search_all_sources_iter(
     keywords: MultiLangKeywords,
     query: str,
@@ -373,6 +400,14 @@ def search_all_sources_iter(
     if prowlarr_enabled:
         all_source_names.append("prowlarr")
     all_source_names.extend(name for name, _ in enabled_scrapers)
+
+    # 一个源都没有：必须显式告诉前端原因，否则前端只收到 done、界面静默无反应
+    if not all_source_names:
+        reason = _no_source_reason(bt_overrides, allowed_sources)
+        logger.warning(f"[Search] 无可用搜索源: {reason}")
+        yield f"data: {json.dumps({'type': 'done', 'error': 'no_source', 'message': reason})}\n\n"
+        return
+
     for name in all_source_names:
         yield f"data: {json.dumps({'type': 'status', 'source': name, 'status': 'searching'})}\n\n"
 

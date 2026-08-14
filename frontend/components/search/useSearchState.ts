@@ -274,6 +274,8 @@ export function useSearchState({
       activeEsRef.current = es;
       let sseResults: EnhancedSearchResult[] = [];
       let sseDone = false;
+      // 后端在"无可用搜索源"时会在 done 事件里带 error/message，必须呈现给用户
+      let sseErrorMessage = "";
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, 90000);
@@ -318,6 +320,9 @@ export function useSearchState({
               }
             } else if (data.type === "done") {
               sseDone = true;
+              if (data.error) {
+                sseErrorMessage = data.message || "没有可用的搜索源";
+              }
               clearTimeout(timeout);
               es.close();
               activeEsRef.current = null;
@@ -350,6 +355,10 @@ export function useSearchState({
       if (searchIdRef.current === thisSearchId) {
         setResults(sseResults);
         setHitKeyword(q);
+        // 后端明确报了"无可用源"：直接显示原因，不要走静默的空结果
+        if (sseErrorMessage && sseResults.length === 0) {
+          setError(sseErrorMessage);
+        }
       }
     } catch (e: any) {
       // SSE 失败，fallback 到普通搜索（仅当前搜索仍有效时）
@@ -398,7 +407,7 @@ export function useSearchState({
       setPanSourceStatuses(cached.statuses); setPanTotal(cached.total);
       return;
     }
-    setPanSearching(true); setPanResults([]); setPanGroups({});
+    setPanSearching(true); setPanResults([]); setPanGroups({}); setError("");
     try {
       const d = await api.searchPan(q, mediaType);
       const results: PanResult[] = d.results || [];
@@ -409,8 +418,17 @@ export function useSearchState({
       setPanSourceStatuses(statuses); setPanTotal(total);
       if (results.length > 0) {
         panCache.current.set(q, { results, groups, statuses, total });
+      } else {
+        // 0 结果时区分"没搜到"和"没有可用源"，后者必须给出原因
+        const disabled = statuses.find(s => s.status === "disabled" && s.error);
+        const failed = statuses.find(s => s.status === "failed" && s.error);
+        const msg = d.message || disabled?.error || failed?.error || "";
+        if (msg) setError(msg);
       }
-    } catch { setPanResults([]); }
+    } catch (e: any) {
+      setPanResults([]);
+      setError(e?.message ? `网盘搜索失败：${e.message}` : "网盘搜索失败，请检查网络或网盘搜索源配置");
+    }
     setPanSearching(false);
   }, [mediaType]);
 

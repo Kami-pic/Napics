@@ -27,6 +27,8 @@ export default function BatchUpgradePanel({
   );
   const abortRef = useRef<AbortController | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  // 后端明确报出的失败原因（如未安装搜索插件），必须展示而不是静默出现空列表
+  const [searchError, setSearchError] = useState("");
 
   const toggleExpand = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
@@ -44,6 +46,7 @@ export default function BatchUpgradePanel({
       setTasks([]);
       setProgress({ current: 0, total: 0, currentName: "" });
       setDownloadResult({ success: 0, failed: 0 });
+      setSearchError("");
     }
   }, [open]);
 
@@ -82,6 +85,7 @@ export default function BatchUpgradePanel({
         setTasks((prev) =>
           prev.map((t) => ({ ...t, status: "error" as const }))
         );
+        setSearchError(`搜索请求失败（${resp.status}），请检查后端是否正常运行`);
         setPhase("review");
         return;
       }
@@ -114,7 +118,10 @@ export default function BatchUpgradePanel({
         }
       }
     } catch {
-      // 连接中断
+      // 连接中断：用户主动取消时不提示，其余情况给出原因
+      if (!ctrl.signal.aborted) {
+        setSearchError("搜索连接中断，请检查网络或稍后重试");
+      }
     }
 
     // 搜索完成，进入 review 阶段
@@ -180,6 +187,9 @@ export default function BatchUpgradePanel({
         )
       );
     } else if (evt.type === "done") {
+      if (evt.error) {
+        setSearchError(evt.message || "没有可用的搜索源");
+      }
       setProgress((p) => ({ ...p, current: p.total }));
     }
   }, []);
@@ -319,6 +329,13 @@ export default function BatchUpgradePanel({
           {/* ── 结果汇总阶段 ── */}
           {phase === "review" && (
             <div className="space-y-4">
+              {/* 失败原因（如未安装搜索插件），避免只显示"未找到"让人无从下手 */}
+              {searchError && (
+                <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300">
+                  {searchError}
+                </div>
+              )}
+
               {/* 汇总统计 */}
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-green-400">✓ 找到 {foundCount}</span>
