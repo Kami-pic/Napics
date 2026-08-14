@@ -151,3 +151,70 @@ def check_path(path: str):
 
     return PathCheckResponse(path=target, exists=exists, is_dir=is_dir,
                              readable=readable, hint=hint)
+
+
+# ── 运行环境探测 ──
+
+class RuntimeEnvResponse(BaseModel):
+    in_container: bool                 # 后端是否运行在容器内
+    platform: str                      # win32 / linux / darwin
+    can_use_local_player: bool         # 能否调起后端所在机器的播放器
+    host_alias: str                    # 访问「宿主机上其他服务」时建议填的主机名
+    host_alias_reachable: bool         # 该主机名当前是否可解析
+    dns_ok: bool                       # 容器内域名解析是否正常
+    hints: List[str] = []              # 给用户的配置建议
+
+
+def _resolvable(host: str) -> bool:
+    import socket
+    try:
+        socket.getaddrinfo(host, None)
+        return True
+    except Exception:
+        return False
+
+
+@router.get("/api/system/environment", response_model=RuntimeEnvResponse)
+def runtime_environment():
+    """返回后端运行环境，供前端给出针对性的配置建议。
+
+    解决两个实际困扰：
+    1. 容器内没有桌面环境，本地播放器功能不可用，前端应隐藏
+    2. 容器内 127.0.0.1 指向容器自己，填 qBittorrent / Prowlarr / OpenList
+       地址时该填什么取决于网络模式，需要明确告知
+    """
+    in_container = os.path.exists("/.dockerenv")
+    dns_ok = _resolvable("api.themoviedb.org")
+
+    # host 网络模式下容器与宿主机共用网络栈，127.0.0.1 就是宿主机；
+    # bridge 模式下需要 host.docker.internal（compose 已配 host-gateway 映射）
+    host_gateway_ok = _resolvable("host.docker.internal") if in_container else False
+    host_alias = "127.0.0.1" if (not in_container or not host_gateway_ok) else "host.docker.internal"
+
+    hints: List[str] = []
+    if in_container:
+        if not dns_ok:
+            hints.append(
+                "容器内域名解析失败，刮削 / 搜索 / 发现页 / 插件源都无法工作。"
+                "建议把容器网络改为 host 模式，或为容器显式指定 DNS（如 223.5.5.5）。"
+            )
+        if host_gateway_ok:
+            hints.append(
+                "下载器与网盘服务若装在 NAS 上，地址请填 http://host.docker.internal:端口，"
+                "填 127.0.0.1 会指向容器自身。"
+            )
+        else:
+            hints.append(
+                "当前容器可直接使用 127.0.0.1 访问宿主机服务（host 网络模式）。"
+            )
+        hints.append("后端在容器内运行，无法调起本地播放器，播放请使用 NAS 自带影音应用。")
+
+    return RuntimeEnvResponse(
+        in_container=in_container,
+        platform=sys.platform,
+        can_use_local_player=(not in_container),
+        host_alias=host_alias,
+        host_alias_reachable=host_gateway_ok or not in_container,
+        dns_ok=dns_ok,
+        hints=hints,
+    )

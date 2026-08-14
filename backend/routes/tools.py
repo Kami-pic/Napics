@@ -412,17 +412,43 @@ def rollback_ai_history(snapshot_id: int):
 
 @router.get("/play")
 def play_video(path: str):
+    """在后端所在机器上用本地播放器打开视频。
+
+    仅适用于「后端跑在你自己的桌面系统上」的场景。
+    Docker / NAS 部署时后端没有桌面环境，无法拉起任何播放器，
+    此时返回明确说明而不是静默失败。
+    """
     # 不校验的话这个接口等于"以后端进程权限启动任意本地可执行文件"
     guard_path(path, "播放")
+
+    if os.path.exists("/.dockerenv"):
+        return {
+            "success": False,
+            "error": "后端运行在容器内，没有桌面环境，无法调起本地播放器。"
+                     "请通过 NAS 自带的影音应用或支持 SMB/NFS 的播放器打开该文件。",
+        }
+
+    conf = config_m.config
+    player = (getattr(conf, "player_path", "") or "").strip()
+
     try:
-        conf = config_m.config
-        player = conf.player_path if hasattr(conf, 'player_path') and conf.player_path else r'C:\Program Files\DAUM\PotPlayer\PotPlayerMini64.exe'
-        if os.path.exists(path):
+        if player:
+            if not os.path.exists(player):
+                return {"success": False, "error": f"配置的播放器不存在: {player}"}
             subprocess.Popen([player, path])
             return {"success": True}
+
+        # 未配置播放器：交给系统默认关联程序打开
+        if sys.platform == "win32":
+            os.startfile(path)  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", path])
         else:
-            os.startfile(path)
-            return {"success": True}
+            subprocess.Popen(["xdg-open", path])
+        return {"success": True}
+    except FileNotFoundError:
+        return {"success": False,
+                "error": "系统没有可用的默认播放方式，请在设置中指定播放器路径"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 

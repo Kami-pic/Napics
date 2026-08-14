@@ -81,7 +81,9 @@ class AppConfig(BaseModel):
     download_channel_auto: bool = True            # 下载通道自动推荐
     recycle_bin_path: str = ""                    # 回收站目录路径
     recycle_bin_retention_days: int = 30           # 回收站保留天数
-    player_path: str = "C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini64.exe"  # 本地播放器路径
+    # 本地播放器路径（仅在后端跑在桌面系统上时有意义；
+    # Docker / NAS 部署时后端没有桌面环境，无法拉起播放器，留空即可）
+    player_path: str = ""
     # 二期新增
     sort_weights: SortWeightsConfig = SortWeightsConfig()  # 种子排序权重
     torrent_blacklist: List[str] = []             # 无效种子黑名单（download_url）
