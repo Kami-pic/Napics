@@ -156,8 +156,10 @@ export function useSearchState({
     if (open) {
       api.getProviders()
         .then((catalog: ProviderCatalog) => {
-          setBtSources(toSearchSources(catalog.search.filter(p => p.type === "bt")));
-          setPanSources(toSearchSources(catalog.panSearch));
+          const availableSearch = catalog.search.filter(provider => provider.available !== false);
+          const availablePan = catalog.panSearch.filter(provider => provider.available !== false);
+          setBtSources(toSearchSources(availableSearch.filter(provider => provider.type === "bt")));
+          setPanSources(toSearchSources(availablePan));
         })
         .catch(() => {
           api.getSearchSources().then((d: any) => {
@@ -452,6 +454,14 @@ export function useSearchState({
       })();
 
       const d = await api.searchSource(source, kw, fallbacks || undefined);
+      if (d.error) {
+        setError(d.error);
+        setSourceTabStates(prev => ({
+          ...prev,
+          [source]: { keyword: kw, results: [], searchedKeywords: [kw], hitKeyword: "", searching: false },
+        }));
+        return;
+      }
       const items: EnhancedSearchResult[] = (d.results || []).map((r: any) => ({
         ...r,
         _source: source,

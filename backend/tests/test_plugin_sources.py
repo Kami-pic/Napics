@@ -175,3 +175,278 @@ class TestPluginSourceConfig:
         restored = AppConfig(**data)
         assert len(restored.plugin_sources) == 1
         assert restored.plugin_sources[0].name == "test"
+
+
+@pytest.fixture
+def plugin_tmp_dir():
+    """插件安装测试目录，避开本机 pytest Temp 目录权限污染。"""
+    import shutil
+
+    path = tempfile.mkdtemp(prefix="plugin_fallback_", dir=os.path.dirname(__file__))
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
+
+
+class TestPluginLifecycle:
+    """测试插件注册与卸载生命周期。"""
+
+    def test_uninstall_removes_registered_provider_and_bt_factory(
+        self, plugin_tmp_dir, monkeypatch
+    ):
+        """卸载后必须同步移除 Provider 注册和对应 BT 工厂。"""
+        import sys
+
+        import plugin_manager
+        from bt_search_provider_factory import get_direct_bt_scraper_factories
+        from plugin_context import _plugin_providers
+
+        plugin_id = "test-search-lifecycle"
+        plugin_dir = os.path.join(plugin_tmp_dir, plugin_id)
+        os.makedirs(plugin_dir)
+        with open(os.path.join(plugin_dir, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "id": plugin_id,
+                "name": "生命周期测试插件",
+                "version": "1.0.0",
+                "category": "search",
+            }, f, ensure_ascii=False)
+        with open(os.path.join(plugin_dir, "__init__.py"), "w", encoding="utf-8") as f:
+            f.write(
+                "class DummyScraper:\n"
+                "    def __init__(self, proxy=None):\n"
+                "        self.proxy = proxy\n\n"
+                "def register(ctx):\n"
+                "    ctx.register_scraper_search_provider(\n"
+                "        'yts', '测试 YTS', DummyScraper\n"
+                "    )\n\n"
+                "def unregister():\n"
+                "    pass\n"
+            )
+
+        monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", plugin_tmp_dir)
+        _plugin_providers.clear()
+        try:
+            pm = PluginManager()
+            install_result = pm.install(plugin_id, [])
+
+            assert install_result["success"] is True
+            assert "yts" in _plugin_providers
+            assert "yts" in get_direct_bt_scraper_factories()
+
+            uninstall_result = pm.uninstall(plugin_id, [plugin_id])
+
+            assert uninstall_result["success"] is True
+            assert "yts" not in _plugin_providers
+            assert "yts" not in get_direct_bt_scraper_factories()
+            assert "napics_plugin_test_search_lifecycle" not in sys.modules
+        finally:
+            _plugin_providers.clear()
+
+
+class TestRepositoryFallback:
+    """Release 不存在时的仓库源码回退。"""
+
+    @staticmethod
+    def _repo_zip(plugin_id: str, manifest_id: str = "") -> bytes:
+        import io
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as zf:
+            manifest = {
+                "id": manifest_id or plugin_id,
+                "name": "测试插件",
+                "version": "1.0.0",
+                "category": "download",
+            }
+            prefix = f"plugins-main/{plugin_id}/"
+            zf.writestr(prefix + "manifest.json", json.dumps(manifest))
+            zf.writestr(prefix + "__init__.py", "def register(ctx): pass\n")
+        return buffer.getvalue()
+
+    def test_codeload_used_when_archive_and_mirrors_fail(self, plugin_tmp_dir, monkeypatch):
+        """archive/镜像全失败后仍应尝试 codeload 官方直链。"""
+        import plugin_manager
+
+        monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", plugin_tmp_dir)
+        pm = PluginManager()
+        content = self._repo_zip("download-openlist")
+        calls = []
+
+        class Response:
+            def __init__(self, body):
+                self.content = body
+
+        def fake_get(url, **kwargs):
+            calls.append((url, kwargs.get("mirrors")))
+            if "codeload.github.com" in url:
+                return Response(content), url
+            return None, "archive failed"
+
+        monkeypatch.setattr(plugin_manager.github_access, "get", fake_get)
+        result = pm._fallback_install_from_repo(
+            "download-openlist",
+            "https://github.com/user/plugins",
+            [],
+            None,
+        )
+
+        assert result["success"] is True
+        assert any("codeload.github.com" in url for url, _ in calls)
+        assert os.path.isfile(os.path.join(plugin_tmp_dir, "download-openlist", "manifest.json"))
+
+    def test_download_failure_reports_attempted_fallbacks(self, plugin_tmp_dir, monkeypatch):
+        """所有仓库地址失败时返回明确阶段，不再只说“均不可用”。"""
+        import plugin_manager
+
+        monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", plugin_tmp_dir)
+        monkeypatch.setattr(
+            plugin_manager.github_access,
+            "get",
+            lambda url, **kwargs: (None, f"failed: {url}"),
+        )
+        pm = PluginManager()
+
+        result = pm._fallback_install_from_repo(
+            "rss-anime",
+            "https://github.com/user/plugins",
+            [],
+            None,
+        )
+
+        assert result["success"] is False
+        assert result["error"] == "repo_download_failed"
+        assert "codeload" in result["message"]
+
+    def test_manifest_mismatch_restores_existing_plugin(self, plugin_tmp_dir, monkeypatch):
+        """仓库包身份不匹配时必须恢复安装前的插件目录。"""
+        import plugin_manager
+
+        plugin_id = "download-openlist"
+        existing_dir = os.path.join(plugin_tmp_dir, plugin_id)
+        os.makedirs(existing_dir)
+        with open(os.path.join(existing_dir, "old.txt"), "w", encoding="utf-8") as f:
+            f.write("old plugin")
+
+        class Response:
+            content = self._repo_zip(plugin_id, manifest_id="another-plugin")
+
+        monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", plugin_tmp_dir)
+        monkeypatch.setattr(
+            plugin_manager.github_access,
+            "get",
+            lambda url, **kwargs: (Response(), url),
+        )
+        pm = PluginManager()
+
+        result = pm._fallback_install_from_repo(
+            plugin_id,
+            "https://github.com/user/plugins",
+            [],
+            None,
+        )
+
+        assert result["success"] is False
+        assert result["error"] == "manifest_id_mismatch"
+        assert os.path.isfile(os.path.join(existing_dir, "old.txt"))
+        assert not os.path.exists(existing_dir + ".bak")
+
+    def test_register_failure_rolls_back_runtime_providers(self, plugin_tmp_dir, monkeypatch):
+        """register 中途失败时不得遗留 provider 或模块。"""
+        import io
+        import sys
+
+        import plugin_manager
+        from plugin_context import get_plugin_providers, unregister_plugin_providers
+
+        plugin_id = "broken-register-plugin"
+        unregister_plugin_providers(plugin_id)
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as zf:
+            prefix = f"plugins-main/{plugin_id}/"
+            zf.writestr(prefix + "manifest.json", json.dumps({
+                "id": plugin_id,
+                "name": "失败插件",
+                "version": "1.0.0",
+                "category": "search",
+            }))
+            zf.writestr(
+                prefix + "__init__.py",
+                "def register(ctx):\n"
+                "    ctx.register_search_provider('partial_provider', 'Partial', lambda q, n: [])\n"
+                "    raise RuntimeError('register boom')\n",
+            )
+
+        class Response:
+            content = buffer.getvalue()
+
+        monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", plugin_tmp_dir)
+        monkeypatch.setattr(plugin_manager.github_access, "get", lambda url, **kwargs: (Response(), url))
+        pm = PluginManager()
+
+        result = pm._fallback_install_from_repo(
+            plugin_id,
+            "https://github.com/user/plugins",
+            [],
+            None,
+        )
+
+        assert result["success"] is False
+        assert result["error"] == "load_failed"
+        assert "partial_provider" not in get_plugin_providers()
+        assert f"napics_plugin_{plugin_id.replace('-', '_')}" not in sys.modules
+
+
+def test_direct_release_load_failure_restores_existing_plugin(plugin_tmp_dir, monkeypatch):
+    """Release 包注册失败时必须报错并恢复旧插件，不能伪装安装成功。"""
+    import hashlib
+    import io
+
+    import plugin_manager
+
+    plugin_id = "direct-load-failure"
+    existing_dir = os.path.join(plugin_tmp_dir, plugin_id)
+    os.makedirs(existing_dir)
+    with open(os.path.join(existing_dir, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump({"id": plugin_id, "name": "旧插件", "version": "1.0.0"}, f)
+    with open(os.path.join(existing_dir, "old.txt"), "w", encoding="utf-8") as f:
+        f.write("old")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zf:
+        zf.writestr(
+            f"{plugin_id}/manifest.json",
+            json.dumps({"id": plugin_id, "name": "新插件", "version": "2.0.0"}),
+        )
+        zf.writestr(
+            f"{plugin_id}/__init__.py",
+            "def register(ctx):\n    raise RuntimeError('unsupported api')\n",
+        )
+    content = buffer.getvalue()
+
+    class Response:
+        def __init__(self, body):
+            self.content = body
+
+        def raise_for_status(self):
+            return None
+
+    monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", plugin_tmp_dir)
+    monkeypatch.setattr(plugin_manager, "check_external_url", lambda url: (True, ""))
+    monkeypatch.setattr(plugin_manager.requests, "get", lambda *args, **kwargs: Response(content))
+    manager = PluginManager()
+    result = manager.install_remote_plugin(
+        RemotePluginInfo(
+            id=plugin_id,
+            download_url="https://example.com/direct-load-failure.zip",
+            sha256=hashlib.sha256(content).hexdigest(),
+        ),
+        [],
+    )
+
+    assert result["success"] is False
+    assert result["error"] == "load_failed"
+    assert os.path.isfile(os.path.join(existing_dir, "old.txt"))
+    assert not os.path.exists(existing_dir + ".bak")
+    assert manager.get_manifest(plugin_id).version == "1.0.0"

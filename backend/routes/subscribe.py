@@ -2,13 +2,18 @@
 
 import os
 import logging
+import threading
 from fastapi import APIRouter
 from typing import Optional
 
 from shared import config_m, media_matcher, _tmdb_client, _get_sub_manager
 from subscriber import SubscriptionManager
 from alias_resolver import AliasResolver
-from rss_engine import RSSSourceManager, SubscriptionScheduler
+from rss_engine import (
+    RSSSourceManager,
+    SubscriptionScheduler,
+    clear_rss_search_cache,
+)
 from rss_provider_factory import get_rss_source_factories
 
 logger = logging.getLogger(__name__)
@@ -17,19 +22,46 @@ router = APIRouter()
 
 # 懒加载单例（SubscriptionManager 从 shared.py 获取）
 _source_manager: Optional[RSSSourceManager] = None
+_source_manager_lock = threading.RLock()
 _scheduler: Optional[SubscriptionScheduler] = None
+
+
+def _build_rss_sources():
+    """从当前插件注册表构建 RSS 源，不在构造阶段发起网络请求。"""
+    factories = get_rss_source_factories()
+    sources = []
+    for name, factory in factories.items():
+        try:
+            source = factory()
+            if source is not None:
+                sources.append(source)
+        except Exception as e:
+            logger.error(f"[Subscribe] RSS 源 {name} 注册失败: {e}")
+    return sources, len(factories)
 
 
 def _get_source_manager() -> RSSSourceManager:
     global _source_manager
-    if _source_manager is None:
-        _source_manager = RSSSourceManager()
-        for name, factory in get_rss_source_factories().items():
-            try:
-                _source_manager.register(factory())
-            except Exception as e:
-                logger.error(f"[Subscribe] RSS 源 {name} 注册失败: {e}")
-    return _source_manager
+    with _source_manager_lock:
+        if _source_manager is None:
+            sources, _ = _build_rss_sources()
+            _source_manager = RSSSourceManager()
+            _source_manager.replace_sources(sources)
+        return _source_manager
+
+
+def refresh_rss_sources() -> bool:
+    """插件变更后原子刷新已创建的 RSS SourceManager。"""
+    with _source_manager_lock:
+        if _source_manager is None:
+            return True
+        sources, factory_count = _build_rss_sources()
+        if factory_count and not sources:
+            logger.warning("[Subscribe] RSS 源刷新失败，保留原运行时源")
+            return False
+        clear_rss_search_cache()
+        _source_manager.replace_sources(sources)
+        return True
 
 
 def _get_scheduler() -> SubscriptionScheduler:
@@ -247,11 +279,7 @@ def trigger_search(sub_id: str):
     # 通知模式：存入 found_resources
     if matched and sub.mode == "notify":
         resources = [item.model_dump() for item in matched]
-        existing = sub.found_resources or []
-        existing_hashes = {r.get("info_hash", "") for r in existing}
-        new_res = [r for r in resources if r.get("info_hash", "") not in existing_hashes]
-        if new_res:
-            mgr.update(sub_id, {"found_resources": existing + new_res})
+        mgr.merge_found_resources(sub_id, resources)
     return {
         "status": "ok",
         "matched": len(matched),

@@ -21,15 +21,22 @@ sys.path.insert(0, BACKEND_DIR)
 
 # 分组插件 → 期望注册的 provider_id
 SEARCH_GROUPS = {
-    "search-bt-mirror": ["bitsearch", "1337x", "limetorrents"],
-    "search-bt-movie-tv": ["yts", "eztv"],
-    "search-bt-anime-jp": ["nyaa", "bangumi_moe"],
-    "search-bt-anime-cn": ["mikan", "acgrip", "dmhy"],
-    "search-bt-cn": ["cilixiong", "xl720"],
-    "search-pan-main": ["pansearch", "pansou"],
-    "search-pan-github": ["gogopanso", "github"],
-    "search-pan-resource": ["rrdynb", "ddys"],
+    "search-bt-mirror": (["bitsearch", "1337x", "limetorrents"], "scraper_class"),
+    "search-bt-movie-tv": (["yts", "eztv"], "scraper_class"),
+    "search-bt-anime-jp": (["nyaa", "bangumi_moe"], "scraper_class"),
+    "search-bt-anime-cn": (["mikan", "acgrip", "dmhy"], "scraper_class"),
+    "search-bt-cn": (["cilixiong", "xl720"], "scraper_class"),
+    "search-pan-main": (["pansearch", "pansou"], "scraper_class"),
+    "search-pan-github": (["gogopanso", "github"], "scraper_class"),
+    "search-pan-resource": (["rrdynb", "ddys"], "scraper_class"),
 }
+
+RSS_GROUPS = {
+    "rss-anime": (["rss_mikan", "rss_nyaa", "rss_acgrip", "rss_bangumi_moe", "rss_dmhy"], "source_class"),
+    "rss-tv-movie": (["rss_eztv", "rss_yts", "rss_prowlarr"], "source_class"),
+}
+
+PLUGIN_GROUPS = {**SEARCH_GROUPS, **RSS_GROUPS}
 
 pytestmark = pytest.mark.skipif(
     not os.path.isdir(DIST_DIR),
@@ -37,7 +44,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.parametrize("plugin_id", sorted(SEARCH_GROUPS))
+@pytest.mark.parametrize("plugin_id", sorted(PLUGIN_GROUPS))
 def test_release_zip_contains_sources(plugin_id):
     """发布包必须含 sources/ 下的爬虫源码，否则装出来是空壳"""
     zip_path = os.path.join(DIST_DIR, f"{plugin_id}.zip")
@@ -48,9 +55,10 @@ def test_release_zip_contains_sources(plugin_id):
     assert sources, f"{plugin_id}.zip 不含任何 sources/*.py，实际内容: {names}"
 
 
-@pytest.mark.parametrize("plugin_id,expected", sorted(SEARCH_GROUPS.items()))
-def test_installed_from_zip_registers_providers(plugin_id, expected):
-    """把发布包解压到干净目录后加载，必须真正注册出 provider"""
+@pytest.mark.parametrize("plugin_id,contract", sorted(PLUGIN_GROUPS.items()))
+def test_installed_from_zip_registers_providers(plugin_id, contract):
+    """把发布包解压到干净目录后加载，必须真正注册出 provider。"""
+    expected, implementation_key = contract
     from plugin_context import _plugin_providers
 
     work = tempfile.mkdtemp(prefix="napics_pkg_", dir=os.path.dirname(os.path.abspath(__file__)))
@@ -76,9 +84,39 @@ def test_installed_from_zip_registers_providers(plugin_id, expected):
         missing = [p for p in expected if p not in _plugin_providers]
         assert not missing, f"{plugin_id} 从发布包装载后未注册: {missing}"
         for pid in expected:
-            assert _plugin_providers[pid].get("scraper_class") is not None, \
-                f"{pid} 缺少 scraper_class"
+            assert _plugin_providers[pid].get(implementation_key) is not None, \
+                f"{pid} 缺少 {implementation_key}"
     finally:
         _plugin_providers.clear()
         sys.modules.pop(f"pkgtest_{plugin_id.replace('-', '_')}", None)
+        shutil.rmtree(work, ignore_errors=True)
+
+
+@pytest.mark.parametrize("plugin_id,contract", sorted(RSS_GROUPS.items()))
+def test_rss_release_package_install_and_uninstall_lifecycle(plugin_id, contract, monkeypatch):
+    """RSS 发布包经 PluginManager 安装后可用，卸载后不残留 Provider 或源模块。"""
+    import plugin_manager
+    from plugin_context import _plugin_providers
+
+    expected, _ = contract
+    work = tempfile.mkdtemp(prefix="napics_rss_lifecycle_", dir=os.path.dirname(__file__))
+    module_prefix = f"napics_plugin_{plugin_id.replace('-', '_')}"
+    try:
+        zipfile.ZipFile(os.path.join(DIST_DIR, f"{plugin_id}.zip")).extractall(work)
+        monkeypatch.setattr(plugin_manager, "PLUGINS_DIR", work)
+        _plugin_providers.clear()
+        manager = plugin_manager.PluginManager()
+
+        assert manager.install(plugin_id, [])["success"] is True
+        assert all(provider_id in _plugin_providers for provider_id in expected)
+        assert any(name.startswith(f"{module_prefix}_rss_source_") for name in sys.modules)
+
+        assert manager.uninstall(plugin_id, [plugin_id])["success"] is True
+        assert all(provider_id not in _plugin_providers for provider_id in expected)
+        assert not any(name.startswith(module_prefix) for name in sys.modules)
+    finally:
+        _plugin_providers.clear()
+        for name in tuple(sys.modules):
+            if name.startswith(module_prefix):
+                sys.modules.pop(name, None)
         shutil.rmtree(work, ignore_errors=True)

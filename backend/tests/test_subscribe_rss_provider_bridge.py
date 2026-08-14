@@ -47,3 +47,36 @@ def test_subscribe_source_manager_skips_failed_factory(monkeypatch):
     assert [source["name"] for source in sources] == ["mikan"]
 
     subscribe_routes._source_manager = None
+
+
+def test_refresh_rss_sources_reuses_manager_and_preserves_enabled_state(monkeypatch):
+    """热刷新原子替换源，并保留同名源的启用状态。"""
+    subscribe_routes._source_manager = None
+    monkeypatch.setattr(
+        subscribe_routes,
+        "get_rss_source_factories",
+        lambda: {"mikan": lambda: FakeRSSSource("mikan")},
+    )
+    manager = subscribe_routes._get_source_manager()
+    manager.set_enabled("mikan", False)
+
+    monkeypatch.setattr(
+        subscribe_routes,
+        "get_rss_source_factories",
+        lambda: {
+            "mikan": lambda: FakeRSSSource("mikan"),
+            "eztv": lambda: FakeRSSSource("eztv"),
+        },
+    )
+
+    from rss_engine import RSSItem, _search_cache
+
+    _search_cache.set("mikan", "stale", [RSSItem(title="旧结果")])
+    assert subscribe_routes.refresh_rss_sources() is True
+    assert _search_cache.get("mikan", "stale") is None
+    assert subscribe_routes._get_source_manager() is manager
+    assert manager.get_all_sources() == [
+        {"name": "mikan", "display_name": "Fake RSS", "enabled": False},
+        {"name": "eztv", "display_name": "Fake RSS", "enabled": True},
+    ]
+    subscribe_routes._source_manager = None

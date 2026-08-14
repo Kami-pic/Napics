@@ -4,7 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import type { AppConfig, IndexerPriority, ProviderCatalog, ProviderMetadata, SortWeightsConfig } from "@/types";
 
-interface SearchSource { name: string; label: string; type: "bt" | "pan"; enabled: boolean; needs_proxy?: boolean; proxy?: boolean; }
+interface SearchSource {
+  name: string;
+  label: string;
+  type: "bt" | "pan";
+  enabled: boolean;
+  needs_proxy?: boolean;
+  proxy?: boolean;
+  available?: boolean;
+  loadError?: string;
+}
 type SettingsTab = "sources" | "filter" | "indexer" | "sort";
 
 export default function SearchSettingsPanel({ open, onClose, searching }: {
@@ -114,11 +123,17 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
                   <Section title="BT / 磁力">
                     {sources.filter(s => s.type === "bt").map(s => (
                       <div key={s.name} className="flex items-center justify-between py-0.5">
-                        <Toggle label={s.label} enabled={s.enabled} onChange={(v) => toggleSource(s.name, v)} />
+                        <Toggle
+                          label={s.available === false ? `${s.label} · ${s.loadError || "运行时未注册"}` : s.label}
+                          enabled={s.enabled && s.available !== false}
+                          disabled={s.available === false}
+                          onChange={(v) => toggleSource(s.name, v)}
+                        />
                         {s.needs_proxy !== undefined && (
                           <button onClick={() => toggleProxy(s.name, !s.proxy)}
-                            title={s.proxy ? "走代理（点击切换为直连）" : "直连（点击切换为代理）"}
-                            className={`text-[9px] px-1.5 py-0.5 rounded transition-colors ml-2 ${
+                            disabled={s.available === false}
+                            title={s.available === false ? s.loadError : s.proxy ? "走代理（点击切换为直连）" : "直连（点击切换为代理）"}
+                            className={`text-[9px] px-1.5 py-0.5 rounded transition-colors ml-2 disabled:opacity-30 disabled:cursor-not-allowed ${
                               s.proxy ? "bg-amber-500/15 text-amber-400" : "bg-slate-500/15 text-slate-500"
                             }`}>
                             {s.proxy ? "🌐代理" : "直连"}
@@ -129,7 +144,13 @@ export default function SearchSettingsPanel({ open, onClose, searching }: {
                   </Section>
                   <Section title="网盘资源">
                     {sources.filter(s => s.type === "pan").map(s => (
-                      <Toggle key={s.name} label={s.label} enabled={s.enabled} onChange={(v) => toggleSource(s.name, v)} />
+                      <Toggle
+                        key={s.name}
+                        label={s.available === false ? `${s.label} · ${s.loadError || "运行时未注册"}` : s.label}
+                        enabled={s.enabled && s.available !== false}
+                        disabled={s.available === false}
+                        onChange={(v) => toggleSource(s.name, v)}
+                      />
                     ))}
                   </Section>
                 </>
@@ -265,12 +286,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Toggle({ label, enabled, onChange, compact }: { label: string; enabled: boolean; onChange: (v: boolean) => void; compact?: boolean }) {
+function Toggle({ label, enabled, onChange, compact, disabled }: { label: string; enabled: boolean; onChange: (v: boolean) => void; compact?: boolean; disabled?: boolean }) {
   return (
     <div className={`flex items-center justify-between ${compact ? "" : "py-1"}`}>
-      {label && <span className={`text-[11px] ${enabled ? "text-slate-200" : "text-slate-600"}`}>{label}</span>}
-      <button onClick={() => onChange(!enabled)}
-        className={`w-8 h-4 rounded-full transition-colors relative flex-shrink-0 ${enabled ? "bg-blue-600" : "bg-white/[0.08]"}`}>
+      {label && <span className={`text-[11px] ${enabled ? "text-slate-200" : disabled ? "text-red-400" : "text-slate-600"}`}>{label}</span>}
+      <button onClick={() => onChange(!enabled)} disabled={disabled}
+        className={`w-8 h-4 rounded-full transition-colors relative flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed ${enabled ? "bg-blue-600" : "bg-white/[0.08]"}`}>
         <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${enabled ? "left-4" : "left-0.5"}`} />
       </button>
     </div>
@@ -295,6 +316,8 @@ function toSearchSettingsSource(provider: ProviderMetadata, type: "bt" | "pan", 
     enabled: provider.enabled,
     needs_proxy: legacy?.needs_proxy ?? provider.supportsProxy,
     proxy: legacy?.proxy ?? provider.supportsProxy,
+    available: provider.available !== false,
+    loadError: provider.loadError,
   };
 }
 

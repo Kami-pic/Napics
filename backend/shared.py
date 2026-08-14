@@ -128,6 +128,13 @@ try:
     _completeness_prev_paths = set(v.get("file_path", "") for v in _init_lib if v.get("file_path"))
 except Exception:
     pass
+finally:
+    # media_matcher 已构建自己的索引，完整度也只需要路径集合；继续保留原始媒体库
+    # list 会让同一批数据以“原始 JSON 对象 + 多套索引”重复常驻内存。
+    try:
+        del _init_lib
+    except NameError:
+        pass
 
 _sub_manager: Optional[SubscriptionManager] = None
 _download_manager: Optional[DownloadManager] = None
@@ -159,6 +166,23 @@ def reset_pan_search_service():
     _pan_search_service = None
 
 
+def refresh_download_backends() -> bool:
+    """插件安装/卸载后原子刷新下载后端，不要求重启后端。"""
+    if _download_manager is None:
+        return True
+    backends, failed_channels = _build_download_backends()
+    if failed_channels:
+        previous = _download_manager.get_backends_snapshot()
+        for channel in failed_channels:
+            if channel in previous:
+                backends[channel] = previous[channel]
+        logger.warning(
+            f"[Shared] 下载后端部分刷新失败，已保留仍安装通道的旧实例: {sorted(failed_channels)}"
+        )
+    _download_manager.replace_backends(backends)
+    return not failed_channels
+
+
 def _get_sub_manager() -> SubscriptionManager:
     """订阅管理器全局单例。所有调用方统一使用，避免多实例数据竞争。"""
     global _sub_manager
@@ -181,36 +205,47 @@ def _get_download_manager() -> DownloadManager:
     return _download_manager
 
 
-def _register_download_backends(dm: DownloadManager):
-    """根据已安装插件和配置注册下载后端到 DownloadManager"""
+def _build_download_backends() -> tuple[Dict[str, object], set[str]]:
+    """根据已安装插件和配置构建下载后端，不修改正在使用的实例。"""
+    from download_provider_adapter import DownloadProviderAdapter
     from plugin_guard import is_plugin_installed
+    from provider_models import ProviderKind, ProviderMetadata
+
     conf = config_m.config
+    backends: Dict[str, object] = {}
+    failed_channels: set[str] = set()
 
     if is_plugin_installed("download-qbittorrent") and conf.qb_url:
         try:
-            from download_provider_adapter import DownloadProviderAdapter
-            from provider_models import ProviderKind, ProviderMetadata
             qb_metadata = ProviderMetadata(
                 id="qbittorrent", name="qBittorrent", kind=ProviderKind.DOWNLOAD,
                 type="download", enabled=True, defaultEnabled=True, capabilities=["submit", "progress"],
             )
             qb_client = downloader.QBittorrentClient(conf.qb_url, conf.qb_username, conf.qb_password)
-            dm.register_backend("qb", DownloadProviderAdapter(qb_metadata, lambda: qb_client))
+            backends["qb"] = DownloadProviderAdapter(qb_metadata, lambda: qb_client)
         except Exception as e:
-            logging.getLogger(__name__).error(f"[Shared] qB 后端注册失败: {e}")
+            failed_channels.add("qb")
+            logger.error(f"[Shared] qB 后端构建失败: {e}")
 
     if is_plugin_installed("download-openlist") and conf.alist_url and conf.alist_token:
         try:
-            from download_provider_adapter import DownloadProviderAdapter
-            from provider_models import ProviderKind, ProviderMetadata
             alist_metadata = ProviderMetadata(
                 id="openlist", name="OpenList", kind=ProviderKind.DOWNLOAD,
                 type="download", enabled=True, defaultEnabled=True, capabilities=["submit", "progress"],
             )
             alist_client = downloader.AlistManager(conf.alist_url, conf.alist_token)
-            dm.register_backend("alist", DownloadProviderAdapter(alist_metadata, lambda: alist_client))
+            backends["alist"] = DownloadProviderAdapter(alist_metadata, lambda: alist_client)
         except Exception as e:
-            logging.getLogger(__name__).error(f"[Shared] Alist 后端注册失败: {e}")
+            failed_channels.add("alist")
+            logger.error(f"[Shared] Alist 后端构建失败: {e}")
+
+    return backends, failed_channels
+
+
+def _register_download_backends(dm: DownloadManager):
+    """初始化 DownloadManager 的插件下载后端。"""
+    backends, _ = _build_download_backends()
+    dm.replace_backends(backends)
 
 
 def _get_recycle_bin() -> RecycleBin:

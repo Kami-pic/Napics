@@ -315,6 +315,57 @@ class SubscriptionManager:
             self._save()
         return {"status": "ok", "subscription": sub.model_dump()}
 
+    def merge_found_resources(self, sub_id: str, resources: List[Dict[str, Any]]) -> int:
+        """原子合并待选资源，返回新增数量。"""
+        with self._lock:
+            sub = self.get(sub_id)
+            if not sub:
+                return 0
+            existing_keys = {
+                item.get("info_hash") or item.get("download_url") or item.get("title", "")
+                for item in sub.found_resources
+            }
+            additions = []
+            for resource in resources:
+                key = resource.get("info_hash") or resource.get("download_url") or resource.get("title", "")
+                if not key or key in existing_keys:
+                    continue
+                existing_keys.add(key)
+                additions.append(dict(resource))
+            if additions:
+                sub.found_resources.extend(additions)
+                self._save()
+            return len(additions)
+
+    def append_search_log(self, sub_id: str, entry: SearchLogEntry, max_items: int = 50) -> bool:
+        """原子追加搜索日志。"""
+        with self._lock:
+            sub = self.get(sub_id)
+            if not sub:
+                return False
+            sub.search_logs.append(entry)
+            if len(sub.search_logs) > max_items:
+                sub.search_logs = sub.search_logs[-max_items:]
+            self._save()
+            return True
+
+    def append_notification(
+        self,
+        sub_id: str,
+        entry: NotificationEntry,
+        max_items: int = 100,
+    ) -> bool:
+        """原子追加订阅通知。"""
+        with self._lock:
+            sub = self.get(sub_id)
+            if not sub:
+                return False
+            sub.notifications.append(entry)
+            if len(sub.notifications) > max_items:
+                sub.notifications = sub.notifications[-max_items:]
+            self._save()
+            return True
+
     def delete(self, sub_id: str) -> dict:
         """删除订阅"""
         with self._lock:

@@ -84,7 +84,8 @@ def build_builtin_provider_metadata(
 ) -> list[ProviderMetadata]:
     providers: list[ProviderMetadata] = []
     providers.extend(_build_search_metadata(bt_overrides or {}))
-    providers.extend(_build_pan_search_metadata(pan_overrides or {}))
+    if include_private_pan:
+        providers.extend(_build_pan_search_metadata(pan_overrides or {}))
     providers.extend(_build_metadata_metadata())
     providers.extend(_build_rss_metadata())
     providers.extend(_build_download_metadata())

@@ -69,7 +69,13 @@ def search_single_source(
         pass
 
     if source not in source_getters:
-        return {"error": f"未知源: {source}", "results": [], "search_keywords": [], "hit_keyword": ""}
+        return {
+            "error": f"搜索源 {source} 已安装，但运行时未注册对应 Provider",
+            "error_code": "provider_not_registered",
+            "results": [],
+            "search_keywords": [],
+            "hit_keyword": "",
+        }
 
     searched = []
     hit_kw = ""

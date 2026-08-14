@@ -214,12 +214,10 @@ class TestNotificationService:
         from notification_service import add_notification
         mgr, sub = self._make_sub_manager()
         add_notification(mgr, "test-1", "download_complete", "下载完成: E01")
-        mgr.update.assert_called_once()
-        call_args = mgr.update.call_args
-        assert call_args[0][0] == "test-1"
-        notifications = call_args[0][1]["notifications"]
-        assert len(notifications) == 1
-        assert notifications[0]["type"] == "download_complete"
+        mgr.append_notification.assert_called_once()
+        call_args = mgr.append_notification.call_args
+        assert call_args.args[0] == "test-1"
+        assert call_args.args[1].type == "download_complete"
 
     def test_add_search_log(self):
         from notification_service import add_search_log
@@ -229,13 +227,12 @@ class TestNotificationService:
             best_quality="1080p WEB-DL", sources_ok=["mikan", "nyaa"],
             summary="搜到 3 条",
         )
-        mgr.update.assert_called_once()
-        call_args = mgr.update.call_args
-        logs = call_args[0][1]["search_logs"]
-        assert len(logs) == 1
-        assert logs[0]["channel"] == "rss"
-        assert logs[0]["total"] == 10
-        assert logs[0]["matched"] == 3
+        mgr.append_search_log.assert_called_once()
+        call_args = mgr.append_search_log.call_args
+        log = call_args.args[1]
+        assert log.channel == "rss"
+        assert log.total == 10
+        assert log.matched == 3
 
     def test_get_unread_count(self):
         from notification_service import get_unread_count

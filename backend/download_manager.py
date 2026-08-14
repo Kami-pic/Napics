@@ -79,6 +79,7 @@ class DownloadManager:
         self._download_providers: Dict[str, Any] = {}
         self._deleted_hashes: set = set()
         self._lock = threading.Lock()
+        self._backend_context = threading.local()
         self._last_save_time: float = 0
         self._dirty = False
         self._load()
@@ -96,24 +97,48 @@ class DownloadManager:
 
     def register_backend(self, channel: str, backend) -> None:
         """注册下载后端（插件安装时调用）"""
-        self._backends[channel] = backend
-        # 同步设置兼容属性
-        if channel == "qb":
-            self.qb = backend._get_client() if backend else None
-        elif channel == "alist":
-            self.alist = backend._get_client() if backend else None
+        client = backend._get_client() if backend else None
+        with self._lock:
+            self._backends[channel] = backend
+            # 同步设置兼容属性
+            if channel == "qb":
+                self.qb = client
+                self._download_providers.pop("qbittorrent", None)
+            elif channel == "alist":
+                self.alist = client
+                self._download_providers.pop("openlist", None)
 
     def unregister_backend(self, channel: str) -> None:
         """注销下载后端（插件卸载时调用）"""
-        self._backends.pop(channel, None)
-        if channel == "qb":
-            self.qb = None
-        elif channel == "alist":
-            self.alist = None
+        with self._lock:
+            self._backends.pop(channel, None)
+            if channel == "qb":
+                self.qb = None
+                self._download_providers.pop("qbittorrent", None)
+            elif channel == "alist":
+                self.alist = None
+                self._download_providers.pop("openlist", None)
+
+    def replace_backends(self, backends: Dict[str, Any]) -> None:
+        """原子替换下载后端；已开始的提交可继续使用原后端快照。"""
+        qb = backends["qb"]._get_client() if backends.get("qb") else None
+        alist = backends["alist"]._get_client() if backends.get("alist") else None
+        with self._lock:
+            self._backends = dict(backends)
+            self.qb = qb
+            self.alist = alist
+            self._download_providers.pop("qbittorrent", None)
+            self._download_providers.pop("openlist", None)
 
     def get_available_backends(self) -> List[str]:
         """返回当前可用的下载后端 channel 列表"""
-        return list(self._backends.keys())
+        with self._lock:
+            return list(self._backends.keys())
+
+    def get_backends_snapshot(self) -> Dict[str, Any]:
+        """返回当前下载后端快照，供失败刷新保留仍安装的通道。"""
+        with self._lock:
+            return dict(self._backends)
 
     # ── 沙盒管理 ──
 
@@ -142,19 +167,33 @@ class DownloadManager:
 
         with self._lock:
             self.tasks.append(task)
+            backend = self._backends.get(task.channel)
+            client = self.qb if task.channel == "qb" else self.alist if task.channel == "alist" else None
 
-        # 推送到下载器
+        # 兼容直接传入 client 的旧调用方式。
+        if backend is None and client is not None:
+            backend = self._get_download_provider(task.channel)
+
+        # 推送到下载器。后端刷新时继续使用提交瞬间的快照，避免装卸插件制造空窗。
         success = False
         error_msg = ""
 
-        if task.channel == "qb" and self.qb:
-            success, hash_or_err = self._push_to_qb(task)
+        if task.channel == "qb" and backend and client:
+            self._backend_context.qb_submit = (backend, client)
+            try:
+                success, hash_or_err = self._push_to_qb(task)
+            finally:
+                del self._backend_context.qb_submit
             if success:
                 task.downloader_hash = hash_or_err
             else:
                 error_msg = hash_or_err
-        elif task.channel == "alist" and self.alist:
-            success, hash_or_err = self._push_to_alist(task)
+        elif task.channel == "alist" and backend and client:
+            self._backend_context.alist_submit = backend
+            try:
+                success, hash_or_err = self._push_to_alist(task)
+            finally:
+                del self._backend_context.alist_submit
             if success:
                 task.downloader_hash = hash_or_err
                 task.phase = "cloud_download"
@@ -180,6 +219,15 @@ class DownloadManager:
         提交后通过 qB API 查询最近添加的种子获取 hash。
         """
         try:
+            snapshot = getattr(self._backend_context, "qb_submit", None)
+            if snapshot is not None:
+                provider, qb_client = snapshot
+            else:
+                with self._lock:
+                    provider = self._backends.get("qb")
+                    qb_client = self.qb
+                if provider is None:
+                    provider = self._get_download_provider("qb")
             url = task.download_url
             # Prowlarr 代理链接预处理：解析重定向获取真正的磁力链接
             if url and "/download?apikey=" in url and not url.startswith("magnet:"):
@@ -195,21 +243,20 @@ class DownloadManager:
                     logger.warning(f"[DM] Prowlarr 代理链接解析失败，使用原始 URL: {e}")
 
             # 先记录提交前的种子列表
-            before_hashes = self._get_qb_hashes()
+            before_hashes = self._get_qb_hashes_snapshot(provider)
 
-            provider = self._get_download_provider("qb")
             result = provider.submit(ProviderDownloadRequest(url=url, savePath=task.save_path or ""))
             if not result.success and "已在下载队列" in result.message:
                 return False, "该种子已在下载队列中，无需重复添加"
             if not result.success:
                 if result.message and result.message != "qBittorrent 推送失败":
                     return False, result.message
-                return False, f"qBittorrent 推送失败（登录状态: {getattr(self.qb, '_logged_in', False)}，URL: {url[:80]}）"
+                return False, f"qBittorrent 推送失败（登录状态: {getattr(qb_client, '_logged_in', False)}，URL: {url[:80]}）"
 
             # 等待 qB 处理（最多 5 秒）
             for _ in range(10):
                 time.sleep(0.5)
-                after_hashes = self._get_qb_hashes()
+                after_hashes = self._get_qb_hashes_snapshot(provider)
                 new_hashes = after_hashes - before_hashes
                 if new_hashes:
                     return True, new_hashes.pop()
@@ -219,10 +266,19 @@ class DownloadManager:
         except Exception as e:
             return False, str(e)
 
-    def _get_qb_hashes(self) -> set:
+    def _get_qb_hashes_snapshot(self, provider: DownloadProviderAdapter) -> set:
+        """使用提交时的 provider 查询，同时保留旧测试/扩展的无参方法约定。"""
+        self._backend_context.qb_provider = provider
+        try:
+            return self._get_qb_hashes()
+        finally:
+            del self._backend_context.qb_provider
+
+    def _get_qb_hashes(self, provider: Optional[DownloadProviderAdapter] = None) -> set:
         """获取 qBittorrent 当前所有种子的 hash 集合。"""
         try:
-            provider = self._get_download_provider("qb")
+            provider = provider or getattr(self._backend_context, "qb_provider", None)
+            provider = provider or self._get_download_provider("qb")
             return {task.external_task_id for task in provider.list_tasks() if task.external_task_id}
         except Exception:
             pass
@@ -231,7 +287,12 @@ class DownloadManager:
     def _push_to_alist(self, task: DownloadTask) -> tuple:
         """推送到 OpenList，返回 (success, task_id_or_error)。"""
         try:
-            provider = self._get_download_provider("alist")
+            provider = getattr(self._backend_context, "alist_submit", None)
+            if provider is None:
+                with self._lock:
+                    provider = self._backends.get("alist")
+                if provider is None:
+                    provider = self._get_download_provider("alist")
             result = provider.submit(ProviderDownloadRequest(url=task.download_url, savePath=task.download_dir))
             if result.success:
                 return True, result.external_task_id or f"alist_{task.id}"

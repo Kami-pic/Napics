@@ -40,8 +40,10 @@ export default function SubscribeSourceSelect({ selectedSources, onChange, compa
     try {
       // 优先从 provider metadata 获取分组和推荐信息
       const catalog: ProviderCatalog = await api.getProviders();
-      setRssProviders(catalog.rss || []);
-      setSearchProviders(catalog.search?.filter(p => p.type === "bt") || []);
+      setRssProviders((catalog.rss || []).filter(provider => provider.available !== false));
+      setSearchProviders((catalog.search || []).filter(
+        provider => provider.type === "bt" && provider.available !== false,
+      ));
 
       // 仍从旧接口获取实际启用状态（保存接口兼容）
       const data: any = await api.getSubscriptionSources();

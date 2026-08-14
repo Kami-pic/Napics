@@ -6,11 +6,13 @@
 - 频率衰减：新订阅高频搜索，长期无果自动降频/暂停
 """
 
+import json
 import random
 import threading
 import logging
 import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 
@@ -37,7 +39,7 @@ class SearchResultCache:
         with self._lock:
             entry = self._cache.get(key)
             if entry and time.time() - entry[0] < self._ttl:
-                return entry[1]
+                return list(entry[1])
             if entry:
                 del self._cache[key]
         return None
@@ -48,7 +50,7 @@ class SearchResultCache:
             return
         key = f"{source_name}:{keyword}"
         with self._lock:
-            self._cache[key] = (time.time(), items)
+            self._cache[key] = (time.time(), list(items))
             # LRU 清理：超过 500 条时删最旧的
             if len(self._cache) > 500:
                 oldest_key = min(self._cache, key=lambda k: self._cache[k][0])
@@ -95,36 +97,67 @@ class RateLimiter:
 # 全局实例
 _search_cache = SearchResultCache(ttl_seconds=1800)  # 30 分钟
 _rate_limiter = RateLimiter(max_per_minute=4)  # 每源每分钟最多 4 次
+
+
+def clear_rss_search_cache() -> None:
+    """插件实现热更新后清空旧 RSS 结果。"""
+    _search_cache.clear()
+
+
 # ── 源管理器 ──
 
 class RSSSourceManager:
-    """管理所有 RSS 源。新增源只需调用 register()。"""
+    """线程安全地管理 RSS 源，并支持插件热刷新。"""
 
     def __init__(self):
         self._sources: Dict[str, RSSSourceBase] = {}
+        self._lock = threading.RLock()
 
     def register(self, source: RSSSourceBase):
-        """注册一个 RSS 源"""
-        self._sources[source.name] = source
+        """注册一个 RSS 源。"""
+        with self._lock:
+            self._sources[source.name] = source
         logger.info(f"[RSSEngine] 注册源: {source.name} ({source.display_name})")
 
+    def replace_sources(self, sources: List[RSSSourceBase]) -> None:
+        """原子替换全部源，并保留同名源的启用状态。"""
+        with self._lock:
+            enabled_by_name = {
+                name: source.enabled for name, source in self._sources.items()
+            }
+            replacement = {}
+            for source in sources:
+                if source.name in enabled_by_name:
+                    source.enabled = enabled_by_name[source.name]
+                replacement[source.name] = source
+            self._sources = replacement
+        logger.info(f"[RSSEngine] RSS 源已刷新: {list(replacement)}")
+
     def get_enabled_sources(self) -> List[RSSSourceBase]:
-        """获取所有启用的源"""
-        return [s for s in self._sources.values() if s.enabled]
+        """获取所有启用源的稳定快照。"""
+        with self._lock:
+            return [source for source in self._sources.values() if source.enabled]
 
     def get_all_sources(self) -> List[Dict[str, Any]]:
-        """获取所有源的状态信息（供 API 返回）"""
-        return [
-            {"name": s.name, "display_name": s.display_name, "enabled": s.enabled}
-            for s in self._sources.values()
-        ]
+        """获取所有源的状态快照（供 API 返回）。"""
+        with self._lock:
+            return [
+                {
+                    "name": source.name,
+                    "display_name": source.display_name,
+                    "enabled": source.enabled,
+                }
+                for source in self._sources.values()
+            ]
 
     def set_enabled(self, name: str, enabled: bool) -> bool:
-        """启用/禁用某个源"""
-        if name in self._sources:
-            self._sources[name].enabled = enabled
+        """启用或禁用指定源。"""
+        with self._lock:
+            source = self._sources.get(name)
+            if source is None:
+                return False
+            source.enabled = enabled
             return True
-        return False
 
 
 # ── 频率衰减 ──
@@ -193,6 +226,8 @@ class SubscriptionScheduler:
         base_interval_hours: float = 4.0,
         check_interval_seconds: float = 300,  # 每 5 分钟检查一轮（RSS 通道）
         search_interval_seconds: float = 14400,  # 直搜通道间隔（默认 4 小时）
+        max_source_workers: int = 4,
+        source_timeout_seconds: float = 30,
     ):
         self.sub_manager = sub_manager
         self.source_manager = source_manager
@@ -200,24 +235,41 @@ class SubscriptionScheduler:
         self.base_interval = base_interval_hours
         self.check_interval = check_interval_seconds
         self.search_interval = search_interval_seconds
+        self.max_source_workers = max(1, max_source_workers)
+        self.source_timeout = max(0.05, source_timeout_seconds)
         self._running = False
         self._thread: Optional[threading.Thread] = None
-        self._last_search_tick: float = 0  # 上次直搜通道执行时间戳
+        self._search_thread: Optional[threading.Thread] = None
+        self._stop_event = threading.Event()
+        self._source_locks: Dict[str, threading.Lock] = {}
+        self._source_locks_guard = threading.Lock()
 
     def start(self):
-        """启动调度器"""
+        """启动互不阻塞的 RSS 与直搜调度线程。"""
         if self._running:
             return
         self._running = True
+        self._stop_event.clear()
         self._thread = threading.Thread(target=self._loop, daemon=True, name="rss-scheduler")
+        self._search_thread = threading.Thread(
+            target=self._search_loop,
+            daemon=True,
+            name="subscription-search-scheduler",
+        )
         self._thread.start()
-        logger.info(f"[RSSEngine] 调度器启动，检查间隔 {self.check_interval}s")
+        self._search_thread.start()
+        logger.info(
+            f"[RSSEngine] 调度器启动，RSS 检查间隔 {self.check_interval}s，"
+            f"直搜间隔 {self.search_interval}s"
+        )
 
     def stop(self):
-        """停止调度器"""
+        """停止两个调度线程。"""
         self._running = False
-        if self._thread:
-            self._thread.join(timeout=5)
+        self._stop_event.set()
+        for thread in (self._thread, self._search_thread):
+            if thread:
+                thread.join(timeout=5)
         logger.info("[RSSEngine] 调度器已停止")
 
     def search_one(self, sub: Subscription) -> List[RSSItem]:
@@ -225,23 +277,22 @@ class SubscriptionScheduler:
         return self._do_search(sub)
 
     def _loop(self):
-        """调度主循环：RSS 通道每 check_interval 检查，直搜通道每 search_interval 检查"""
+        """RSS 调度循环；慢 RSS 源不会阻塞直搜通道。"""
         while self._running:
             try:
-                self._tick()  # RSS 通道
+                self._tick()
             except Exception as e:
                 logger.error(f"[RSSEngine] RSS 调度异常: {e}")
+            self._stop_event.wait(self.check_interval)
 
-            # 直搜通道：独立计时
-            now = time.time()
-            if now - self._last_search_tick >= self.search_interval:
-                try:
-                    self._tick_search()
-                    self._last_search_tick = now
-                except Exception as e:
-                    logger.error(f"[RSSEngine] 直搜调度异常: {e}")
-
-            time.sleep(self.check_interval)
+    def _search_loop(self):
+        """直搜调度循环，与 RSS 调度独立运行。"""
+        while self._running:
+            try:
+                self._tick_search()
+            except Exception as e:
+                logger.error(f"[RSSEngine] 直搜调度异常: {e}")
+            self._stop_event.wait(self.search_interval)
 
     def _tick(self):
         """单次调度：遍历活跃订阅，判断是否该搜索 + 检测下载失败重试"""
@@ -272,6 +323,46 @@ class SubscriptionScheduler:
             matched = self._do_search(sub)
             self._handle_results(sub, matched)
 
+    @staticmethod
+    def _subscription_cache_key(sub: Subscription) -> str:
+        """构造只包含源查询条件的稳定缓存键。"""
+        payload = {
+            "title": sub.title,
+            "year": sub.year,
+            "type": sub.type,
+            "season": sub.season,
+            "search_keyword": sub.search_keyword,
+            "aliases": sub.aliases,
+            "imdb_id": sub.imdb_id,
+        }
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    def _get_source_lock(self, source_name: str) -> threading.Lock:
+        """每个源只允许一个在途请求，避免手动搜索与调度器击穿缓存。"""
+        with self._source_locks_guard:
+            return self._source_locks.setdefault(source_name, threading.Lock())
+
+    def _fetch_source(self, source: RSSSourceBase, sub: Subscription, cache_key: str):
+        """拉取单个源，接入缓存、限流和同源请求合并。"""
+        cached = _search_cache.get(source.name, cache_key)
+        if cached is not None:
+            return cached, ""
+
+        source_lock = self._get_source_lock(source.name)
+        if not source_lock.acquire(blocking=False):
+            return [], "已有请求正在执行"
+        try:
+            cached = _search_cache.get(source.name, cache_key)
+            if cached is not None:
+                return cached, ""
+            if not _rate_limiter.wait_and_acquire(source.name, timeout=5):
+                return [], "速率限制超时"
+            items = source.fetch(sub)
+            _search_cache.set(source.name, cache_key, items)
+            return items, ""
+        finally:
+            source_lock.release()
+
     def _do_search(self, sub: Subscription) -> List[RSSItem]:
         """执行搜索：遍历所有启用的源，合并结果后匹配"""
         sources = self.source_manager.get_enabled_sources()
@@ -287,18 +378,39 @@ class SubscriptionScheduler:
 
         all_items: List[RSSItem] = []
         source_errors: Dict[str, str] = {}
-        for source in sources:
+        source_items: Dict[str, List[RSSItem]] = {}
+        cache_key = self._subscription_cache_key(sub)
+        executor = ThreadPoolExecutor(
+            max_workers=min(self.max_source_workers, len(sources)),
+            thread_name_prefix="rss-source",
+        )
+        future_sources = {
+            executor.submit(self._fetch_source, source, sub, cache_key): source
+            for source in sources
+        }
+        done, pending = wait(future_sources, timeout=self.source_timeout)
+        for future in done:
+            source = future_sources[future]
             try:
-                # 速率限制
-                if not _rate_limiter.wait_and_acquire(source.name, timeout=60):
-                    source_errors[source.name] = "速率限制超时"
-                    logger.warning(f"[RSSEngine] 源 {source.name} 速率限制，跳过")
-                    continue
-                items = source.fetch(sub)
-                all_items.extend(items)
+                items, error = future.result()
+                source_items[source.name] = items
+                if error:
+                    source_errors[source.name] = error
             except Exception as e:
                 source_errors[source.name] = str(e)
                 logger.error(f"[RSSEngine] 源 {source.name} 搜索失败: {e}")
+        for future in pending:
+            source = future_sources[future]
+            source_errors[source.name] = f"超过 {self.source_timeout:g}s 总预算"
+            future.cancel()
+            logger.warning(
+                f"[RSSEngine] 源 {source.name} 超过 {self.source_timeout:g}s 总预算，跳过本轮"
+            )
+        executor.shutdown(wait=False, cancel_futures=True)
+
+        # 并发完成后仍按配置顺序合并，保证排序和测试结果稳定。
+        for source in sources:
+            all_items.extend(source_items.get(source.name, []))
 
         # 更新搜索时间和计数
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -364,21 +476,15 @@ class SubscriptionScheduler:
         if sub.mode == "notify":
             # 存入 found_resources
             resources = [item.model_dump() for item in matched]
-            # 合并已有的，去重
-            existing = sub.found_resources or []
-            existing_hashes = {r.get("info_hash", "") for r in existing}
-            new_resources = [r for r in resources if r.get("info_hash", "") not in existing_hashes]
-            if new_resources:
-                self.sub_manager.update(sub.id, {
-                    "found_resources": existing + new_resources,
-                })
-                logger.info(f"[RSSEngine] {sub.title}: 通知模式，新增 {len(new_resources)} 条待选资源")
+            added_count = self.sub_manager.merge_found_resources(sub.id, resources)
+            if added_count:
+                logger.info(f"[RSSEngine] {sub.title}: 通知模式，新增 {added_count} 条待选资源")
                 # 发现资源通知
                 try:
                     from notification_service import add_notification
                     add_notification(
                         self.sub_manager, sub.id, "found_resource",
-                        f"发现 {len(new_resources)} 条新资源，请手动选择下载",
+                        f"发现 {added_count} 条新资源，请手动选择下载",
                     )
                 except Exception:
                     pass

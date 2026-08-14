@@ -133,6 +133,18 @@ def test_search_single_direct_source_uses_provider_adapter(monkeypatch):
     assert body["results"][0]["_source"] == "bitsearch"
 
 
+def test_search_single_source_reports_installed_but_unregistered_provider(monkeypatch):
+    monkeypatch.setattr(search_single_routes, "get_direct_bt_provider_map", lambda: {})
+    monkeypatch.setattr("plugin_guard.is_bt_source_allowed", lambda source: True)
+    monkeypatch.setattr("plugin_context.get_plugin_providers", lambda: {})
+
+    body = search_single_routes.search_single_source(source="mikan", keyword="葬送的芙莉莲")
+
+    assert body["error_code"] == "provider_not_registered"
+    assert body["error"] == "搜索源 mikan 已安装，但运行时未注册对应 Provider"
+    assert body["results"] == []
+
+
 def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
     class FakeDirectScraper:
         def __init__(self):

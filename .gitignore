@@ -32,6 +32,7 @@ backend/*_report.txt
 pytest-cache-files-*/
 tmp*/
 backend/.pytest_cache/
+backend/.pytest-runtime-temp/
 backend/pytest-cache-files-*/
 backend/pytest-of-*/
 backend/tmp*/

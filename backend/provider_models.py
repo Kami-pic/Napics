@@ -53,6 +53,10 @@ class ProviderMetadata(BaseModel):
     requires: List[str] = Field(default_factory=list)
     supports_proxy: bool = Field(default=False, alias="supportsProxy")
     description: str = ""
+    installed: bool = False
+    registered: bool = False
+    available: bool = False
+    load_error: str = Field(default="", alias="loadError")
 
     @field_validator("id")
     @classmethod

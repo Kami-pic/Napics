@@ -246,9 +246,10 @@ class PluginManager:
         if not os.path.isfile(init_path):
             return None  # 无代码，纯声明式插件
 
+        module_name = f"napics_plugin_{plugin_id.replace('-', '_')}"
+        module = None
         try:
             # 动态加载模块
-            module_name = f"napics_plugin_{plugin_id.replace('-', '_')}"
             spec = importlib.util.spec_from_file_location(module_name, init_path)
             if spec is None or spec.loader is None:
                 return f"无法加载插件模块: {init_path}"
@@ -269,6 +270,21 @@ class PluginManager:
             return None
 
         except Exception as e:
+            if module is not None:
+                unregister_fn = getattr(module, "unregister", None)
+                if unregister_fn and callable(unregister_fn):
+                    try:
+                        unregister_fn()
+                    except Exception as unregister_error:
+                        logger.warning(
+                            f"[PluginManager] 插件 {plugin_id} 加载回滚 unregister 异常: {unregister_error}"
+                        )
+            try:
+                from plugin_context import unregister_plugin_providers
+                unregister_plugin_providers(plugin_id)
+            except Exception as cleanup_error:
+                logger.warning(f"[PluginManager] 插件 {plugin_id} provider 回滚异常: {cleanup_error}")
+            sys.modules.pop(module_name, None)
             logger.error(f"[PluginManager] 加载插件 {plugin_id} 失败: {e}")
             return f"加载失败: {str(e)}"
 
@@ -285,6 +301,12 @@ class PluginManager:
                     unregister_fn()
                 except Exception as e:
                     logger.warning(f"[PluginManager] 插件 {plugin_id} unregister 异常: {e}")
+
+        try:
+            from plugin_context import unregister_plugin_providers
+            unregister_plugin_providers(plugin_id)
+        except Exception as e:
+            logger.warning(f"[PluginManager] 插件 {plugin_id} provider 注销异常: {e}")
 
         # 从 sys.modules 移除
         sys.modules.pop(module_name, None)
@@ -393,11 +415,9 @@ class PluginManager:
 
         # 回退：从源仓库下载整个 zip 并提取子目录
         if zip_content is None and source_url:
-            fallback_result = self._fallback_install_from_repo(plugin_id, source_url, installed_plugins, proxies)
-            if fallback_result is not None:
-                return fallback_result
-            # fallback_result 为 None 表示回退也失败了
-            return {"success": False, "error": "download_failed", "message": f"下载失败，release 和仓库源码均不可用"}
+            return self._fallback_install_from_repo(
+                plugin_id, source_url, installed_plugins, proxies
+            )
 
         if zip_content is None:
             return {"success": False, "error": "download_failed", "message": "下载失败"}
@@ -413,30 +433,31 @@ class PluginManager:
                     "message": f"文件校验失败（期望 {plugin_info.sha256[:16]}...，实际 {actual_hash[:16]}...）",
                 }
 
-        # 解压到 plugins/ 目录
+        # 解压到 plugins/ 目录。旧目录保留到 manifest 校验和模块加载都成功。
         plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
-        try:
-            # 如果已存在旧版本，先备份
+        backup_dir = plugin_dir + ".bak"
+        previous_manifest = self._manifests.get(plugin_id)
+
+        def _restore_backup():
             if os.path.isdir(plugin_dir):
-                backup_dir = plugin_dir + ".bak"
+                shutil.rmtree(plugin_dir)
+            if os.path.isdir(backup_dir):
+                os.rename(backup_dir, plugin_dir)
+
+        try:
+            if os.path.isdir(plugin_dir):
                 if os.path.isdir(backup_dir):
                     shutil.rmtree(backup_dir)
                 os.rename(plugin_dir, backup_dir)
 
-            # 解压
             zip_buffer = io.BytesIO(zip_content)
             with zipfile.ZipFile(zip_buffer, "r") as zf:
-                # 检测 zip 内是否有单层根目录
                 top_dirs = set()
                 for name in zf.namelist():
                     parts = name.split("/")
-                    if len(parts) > 1:
-                        top_dirs.add(parts[0])
-                    else:
-                        top_dirs.add("")
+                    top_dirs.add(parts[0] if len(parts) > 1 else "")
 
                 if len(top_dirs) == 1 and "" not in top_dirs:
-                    # zip 内有单层根目录，解压后重命名
                     safe_extract_all(zf, PLUGINS_DIR)
                     extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
                     if extracted_dir != plugin_dir:
@@ -444,44 +465,60 @@ class PluginManager:
                             shutil.rmtree(plugin_dir)
                         os.rename(extracted_dir, plugin_dir)
                 else:
-                    # zip 内无根目录，直接解压到目标目录
                     safe_extract_all(zf, plugin_dir)
-
-            # 清理备份
-            backup_dir = plugin_dir + ".bak"
-            if os.path.isdir(backup_dir):
-                shutil.rmtree(backup_dir)
-
         except Exception as e:
-            # 恢复备份
-            backup_dir = plugin_dir + ".bak"
-            if os.path.isdir(backup_dir):
-                if os.path.isdir(plugin_dir):
-                    shutil.rmtree(plugin_dir)
-                os.rename(backup_dir, plugin_dir)
-            return {"success": False, "error": "extract_failed", "message": f"解压失败: {str(e)}"}
+            _restore_backup()
+            return {
+                "success": False,
+                "error": "extract_failed",
+                "message": f"解压失败: {str(e)}",
+            }
 
-        # 校验 manifest.json 存在
         manifest_path = os.path.join(plugin_dir, "manifest.json")
         if not os.path.isfile(manifest_path):
-            shutil.rmtree(plugin_dir)
-            return {"success": False, "error": "no_manifest", "message": "插件包中缺少 manifest.json"}
+            _restore_backup()
+            return {
+                "success": False,
+                "error": "no_manifest",
+                "message": "插件包中缺少 manifest.json",
+            }
 
-        # 重新加载 manifest
         try:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             manifest = PluginManifest(**data)
+            if manifest.id != plugin_id:
+                _restore_backup()
+                return {
+                    "success": False,
+                    "error": "manifest_id_mismatch",
+                    "message": f"manifest id={manifest.id} 与请求插件 {plugin_id} 不一致",
+                }
             self._manifests[manifest.id] = manifest
         except Exception as e:
-            shutil.rmtree(plugin_dir)
-            return {"success": False, "error": "invalid_manifest", "message": f"manifest.json 无效: {str(e)}"}
+            _restore_backup()
+            return {
+                "success": False,
+                "error": "invalid_manifest",
+                "message": f"manifest.json 无效: {str(e)}",
+            }
 
-        # 加载插件模块
         load_err = self._load_plugin_module(plugin_id)
         if load_err:
-            logger.warning(f"[PluginManager] 远程插件 {plugin_id} 模块加载失败（可能是纯声明式）: {load_err}")
+            if previous_manifest is None:
+                self._manifests.pop(plugin_id, None)
+            else:
+                self._manifests[plugin_id] = previous_manifest
+            _restore_backup()
+            logger.warning(f"[PluginManager] 远程插件 {plugin_id} 模块加载失败: {load_err}")
+            return {
+                "success": False,
+                "error": "load_failed",
+                "message": f"插件模块加载失败: {load_err}",
+            }
 
+        if os.path.isdir(backup_dir):
+            shutil.rmtree(backup_dir)
         logger.info(f"[PluginManager] 远程插件 {plugin_id} 安装成功")
         return {"success": True, "plugin_id": plugin_id}
 
@@ -491,36 +528,66 @@ class PluginManager:
         source_url: str,
         installed_plugins: List[str],
         proxies: Optional[Dict[str, str]],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """回退方案：从源仓库下载整个 zip，提取对应插件子目录。
 
-        返回安装结果 dict，或 None 表示回退失败。
+        GitHub 的仓库 archive 最终会重定向到 codeload.github.com。部分 NAS
+        能访问 GitHub 首页但跟随该重定向失败，因此官方 archive 失败后再直接
+        请求 codeload。所有失败都返回具体阶段，不再折叠成一句"均不可用"。
         """
         import re
         # 从 source_url 解析 GitHub user/repo
         clean_url = source_url.strip().rstrip("/")
         match = re.match(r"https?://github\.com/([^/]+)/([^/]+)", clean_url)
         if not match:
-            return None
+            return {
+                "success": False,
+                "error": "unsupported_source_url",
+                "message": "仓库源码回退仅支持 GitHub 仓库地址",
+            }
 
         user, repo = match.group(1), match.group(2)
-        repo = repo.rstrip(".git")
+        repo = repo.removesuffix(".git")
         branch = "main"
 
-        # 下载仓库 zip（官方不通时回退镜像）
+        # 下载仓库 zip。先走常规 GitHub 地址及镜像；失败后直接请求 codeload，
+        # 绕过部分 NAS/代理无法正确跟随 github.com → codeload.github.com 的问题。
         zip_url = f"https://github.com/{user}/{repo}/archive/refs/heads/{branch}.zip"
-        resp, _used = github_access.get(
+        resp, first_error = github_access.get(
             zip_url, timeout=60, proxies=proxies,
             mirrors=self._configured_mirrors("repo"),
         )
         if resp is None:
-            return None
+            codeload_url = f"https://codeload.github.com/{user}/{repo}/zip/refs/heads/{branch}"
+            resp, codeload_error = github_access.get(
+                codeload_url, timeout=60, proxies=proxies, mirrors=[],
+            )
+            if resp is None:
+                logger.warning(
+                    f"[PluginManager] 仓库源码下载失败: archive={first_error}; "
+                    f"codeload={codeload_error}"
+                )
+                return {
+                    "success": False,
+                    "error": "repo_download_failed",
+                    "message": (
+                        "Release 下载失败，仓库源码下载也失败。"
+                        "已尝试 GitHub archive、镜像和 codeload 直链"
+                    ),
+                }
 
-        # 解压并提取子目录
+        # 解压并提取子目录。旧目录保留到 manifest 校验和模块加载都成功。
         plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        backup_dir = plugin_dir + ".bak"
+
+        def _restore_backup():
+            if os.path.isdir(plugin_dir):
+                shutil.rmtree(plugin_dir)
+            if os.path.isdir(backup_dir):
+                os.rename(backup_dir, plugin_dir)
+
         try:
             if os.path.isdir(plugin_dir):
-                backup_dir = plugin_dir + ".bak"
                 if os.path.isdir(backup_dir):
                     shutil.rmtree(backup_dir)
                 os.rename(plugin_dir, backup_dir)
@@ -539,11 +606,12 @@ class PluginManager:
                             break
 
                 if not members:
-                    # 恢复备份
-                    backup_dir = plugin_dir + ".bak"
-                    if os.path.isdir(backup_dir):
-                        os.rename(backup_dir, plugin_dir)
-                    return None
+                    _restore_backup()
+                    return {
+                        "success": False,
+                        "error": "plugin_dir_not_found",
+                        "message": f"仓库源码中未找到插件目录: {plugin_id}/",
+                    }
 
                 # 提取子目录内容到 plugin_dir
                 os.makedirs(plugin_dir, exist_ok=True)
@@ -564,39 +632,62 @@ class PluginManager:
                         with zf.open(member) as src, open(target_path, "wb") as dst:
                             dst.write(src.read())
 
-            # 清理备份
-            backup_dir = plugin_dir + ".bak"
-            if os.path.isdir(backup_dir):
-                shutil.rmtree(backup_dir)
-
         except Exception as e:
-            backup_dir = plugin_dir + ".bak"
-            if os.path.isdir(backup_dir):
-                if os.path.isdir(plugin_dir):
-                    shutil.rmtree(plugin_dir)
-                os.rename(backup_dir, plugin_dir)
+            _restore_backup()
             logger.error(f"[PluginManager] 回退安装失败: {e}")
-            return None
+            return {
+                "success": False,
+                "error": "repo_extract_failed",
+                "message": f"仓库源码解压失败: {str(e)}",
+            }
 
         # 校验 manifest
         manifest_path = os.path.join(plugin_dir, "manifest.json")
         if not os.path.isfile(manifest_path):
-            shutil.rmtree(plugin_dir)
-            return None
+            _restore_backup()
+            return {
+                "success": False,
+                "error": "fallback_no_manifest",
+                "message": f"仓库插件目录 {plugin_id}/ 中缺少 manifest.json",
+            }
 
+        previous_manifest = self._manifests.get(plugin_id)
         try:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             manifest = PluginManifest(**data)
+            if manifest.id != plugin_id:
+                _restore_backup()
+                return {
+                    "success": False,
+                    "error": "manifest_id_mismatch",
+                    "message": f"manifest id={manifest.id} 与请求插件 {plugin_id} 不一致",
+                }
             self._manifests[manifest.id] = manifest
         except Exception as e:
-            shutil.rmtree(plugin_dir)
-            return None
+            _restore_backup()
+            return {
+                "success": False,
+                "error": "fallback_invalid_manifest",
+                "message": f"仓库插件 manifest.json 无效: {str(e)}",
+            }
 
         load_err = self._load_plugin_module(plugin_id)
         if load_err:
+            if previous_manifest is None:
+                self._manifests.pop(plugin_id, None)
+            else:
+                self._manifests[plugin_id] = previous_manifest
+            _restore_backup()
             logger.warning(f"[PluginManager] 回退安装插件 {plugin_id} 模块加载失败: {load_err}")
+            return {
+                "success": False,
+                "error": "load_failed",
+                "message": f"仓库插件模块加载失败: {load_err}",
+            }
 
+        if os.path.isdir(backup_dir):
+            shutil.rmtree(backup_dir)
         logger.info(f"[PluginManager] 回退从仓库源码安装插件成功: {plugin_id}")
         return {"success": True, "plugin_id": plugin_id}
 

@@ -44,13 +44,12 @@ def add_notification(
         read=False,
     )
 
-    notifications = list(sub.notifications)
-    notifications.append(entry)
-    # 保留最近 N 条
-    if len(notifications) > MAX_NOTIFICATIONS_PER_SUB:
-        notifications = notifications[-MAX_NOTIFICATIONS_PER_SUB:]
-
-    sub_manager.update(subscription_id, {"notifications": [n.model_dump() for n in notifications]})
+    if not sub_manager.append_notification(
+        subscription_id,
+        entry,
+        max_items=MAX_NOTIFICATIONS_PER_SUB,
+    ):
+        return
     logger.info(f"[Notification] {sub.title}: {notify_type} - {message}")
 
     # 预留：外部推送
@@ -87,12 +86,11 @@ def add_search_log(
         summary=summary,
     )
 
-    logs = list(sub.search_logs)
-    logs.append(entry)
-    if len(logs) > MAX_SEARCH_LOGS_PER_SUB:
-        logs = logs[-MAX_SEARCH_LOGS_PER_SUB:]
-
-    sub_manager.update(subscription_id, {"search_logs": [l.model_dump() for l in logs]})
+    sub_manager.append_search_log(
+        subscription_id,
+        entry,
+        max_items=MAX_SEARCH_LOGS_PER_SUB,
+    )
 
 
 def mark_notifications_read(sub_manager, subscription_id: str):

@@ -60,6 +60,40 @@ class PluginContext:
             full_name += f".{name}"
         return logging.getLogger(full_name)
 
+    def register_rss_source_provider(
+        self,
+        source_id: str,
+        name: str,
+        source_class: type,
+        *,
+        enabled: bool = True,
+        supports_proxy: bool = False,
+        capabilities: Optional[List[str]] = None,
+        description: str = "",
+    ) -> None:
+        """注册一个基于 RSSSourceBase 的订阅源。"""
+        provider_id = f"rss_{source_id}"
+        metadata = ProviderMetadata(
+            id=provider_id,
+            name=name,
+            kind=ProviderKind.RSS,
+            type="rss",
+            enabled=enabled,
+            defaultEnabled=enabled,
+            capabilities=capabilities or ["rss", "download_url"],
+            riskLevel=ProviderRiskLevel.HIGH,
+            supportsProxy=supports_proxy,
+            description=description,
+        )
+        _plugin_providers[provider_id] = {
+            "type": "rss_source",
+            "metadata": metadata,
+            "source_id": source_id,
+            "source_class": source_class,
+            "plugin_id": self.plugin_id,
+        }
+        logger.info(f"[PluginContext] 注册 RSS 源: {source_id} ({name})")
+
     def register_search_provider(
         self,
         provider_id: str,

@@ -13,12 +13,25 @@ logger = logging.getLogger(__name__)
 
 
 def _reset_services_on_plugin_change():
-    """插件变更后重置依赖插件状态的服务单例"""
+    """插件变更后刷新依赖插件状态的服务单例"""
     try:
         from shared import reset_pan_search_service
         reset_pan_search_service()
     except Exception:
         pass
+    try:
+        from routes.subscribe import refresh_rss_sources
+        if not refresh_rss_sources():
+            logger.warning("[Plugins] RSS 源刷新失败，已保留原运行时源")
+    except Exception as e:
+        logger.warning(f"[Plugins] RSS 源刷新异常，已保留原运行时源: {e}")
+    try:
+        from shared import refresh_download_backends
+        if not refresh_download_backends():
+            logger.warning("[Plugins] 下载后端刷新失败，已保留原运行时后端")
+    except Exception as e:
+        logger.warning(f"[Plugins] 下载后端刷新异常，已保留原运行时后端: {e}")
+
 
 router = APIRouter(prefix="/api/plugins", tags=["plugins"])
 

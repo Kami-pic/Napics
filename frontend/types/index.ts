@@ -535,6 +535,14 @@ export interface ProviderMetadata {
   requires: string[];
   supportsProxy: boolean;
   description: string;
+  /** 插件已写入 installed_plugins。旧版后端可能不返回该字段。 */
+  installed?: boolean;
+  /** 当前后端进程已注册可执行实现。 */
+  registered?: boolean;
+  /** 当前可作为实际 Provider 使用。 */
+  available?: boolean;
+  /** 已安装但未注册时的原因。 */
+  loadError?: string;
 }
 
 export interface ProviderCatalog {

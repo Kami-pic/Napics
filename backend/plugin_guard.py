@@ -111,44 +111,59 @@ def is_bt_source_allowed(source_name: str) -> bool:
 
 
 def is_pan_search_allowed() -> bool:
-    """网盘搜索是否可用（任意网盘源插件已安装）"""
+    """网盘搜索是否有已安装且策略允许的 Provider。"""
     installed = get_installed_plugins()
-    # 旧捆绑包兼容
-    if "search-pan" in installed:
-        return True
-    # 新独立插件：任意一个网盘源安装即可
-    for plugin_id in PAN_SOURCE_PLUGIN_MAP.values():
-        if plugin_id in installed:
+
+    # 内置私有 Pan 清单只在显式开启时允许执行。
+    from provider_runtime import allow_private_providers
+    if allow_private_providers():
+        if "search-pan" in installed:
             return True
-    # 第三方分组插件
-    pan_group_plugins = ["search-pan-main", "search-pan-github", "search-pan-resource"]
-    for plugin_id in pan_group_plugins:
-        if plugin_id in installed:
+        if any(plugin_id in installed for plugin_id in PAN_SOURCE_PLUGIN_MAP.values()):
             return True
-    return False
+        pan_group_plugins = {"search-pan-main", "search-pan-github", "search-pan-resource"}
+        if pan_group_plugins.intersection(installed):
+            return True
+
+    # 第三方自定义网盘 Provider 使用自身 metadata，不受内置私有清单开关影响。
+    try:
+        from plugin_context import get_plugin_providers
+        return any(
+            info.get("type") == "pan_search" and info.get("plugin_id") in installed
+            for info in get_plugin_providers().values()
+        )
+    except Exception:
+        return False
 
 
 def get_allowed_pan_sources() -> Set[str]:
-    """根据已安装插件返回允许使用的网盘搜索源名称集合。"""
+    """根据安装状态、运行时注册和 private 策略返回网盘源。"""
     installed = get_installed_plugins()
     allowed = set()
 
-    # 旧捆绑包兼容
-    if "search-pan" in installed:
-        allowed.update(PAN_SOURCE_PLUGIN_MAP.keys())
+    from provider_runtime import allow_private_providers
+    if allow_private_providers():
+        if "search-pan" in installed:
+            allowed.update(PAN_SOURCE_PLUGIN_MAP.keys())
 
-    # 新独立插件
-    for source_id, plugin_id in PAN_SOURCE_PLUGIN_MAP.items():
-        if plugin_id in installed:
-            allowed.add(source_id)
+        for source_id, plugin_id in PAN_SOURCE_PLUGIN_MAP.items():
+            if plugin_id in installed:
+                allowed.add(source_id)
 
-    # 第三方分组插件
-    if "search-pan-main" in installed:
-        allowed.update(["pansearch", "pansou"])
-    if "search-pan-github" in installed:
-        allowed.update(["gogopanso", "github"])
-    if "search-pan-resource" in installed:
-        allowed.update(["rrdynb", "ddys", "sites", "slowread", "wnsearch"])
+        if "search-pan-main" in installed:
+            allowed.update(["pansearch", "pansou"])
+        if "search-pan-github" in installed:
+            allowed.update(["gogopanso", "github"])
+        if "search-pan-resource" in installed:
+            allowed.update(["rrdynb", "ddys", "sites", "slowread", "wnsearch"])
+
+    try:
+        from plugin_context import get_plugin_providers
+        for provider_id, info in get_plugin_providers().items():
+            if info.get("type") == "pan_search" and info.get("plugin_id") in installed:
+                allowed.add(provider_id)
+    except Exception:
+        pass
 
     return allowed
 
@@ -215,6 +230,15 @@ def get_allowed_rss_sources() -> Set[str]:
         allowed.update(RSS_ANIME_SOURCES)
     if "rss-tv-movie" in installed:
         allowed.update(RSS_TV_MOVIE_SOURCES)
+
+    try:
+        from plugin_context import get_plugin_providers
+        for provider_id, info in get_plugin_providers().items():
+            if info.get("type") == "rss_source" and info.get("plugin_id") in installed:
+                allowed.add(info.get("source_id", provider_id))
+    except Exception:
+        pass
+
     return allowed
 
 

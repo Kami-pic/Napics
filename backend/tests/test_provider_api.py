@@ -1,9 +1,17 @@
+import pytest
+
 from main import app
 import providers as providers_module
 from provider_builtin_metadata import build_builtin_provider_metadata
-from provider_models import ProviderKind
+from provider_models import ProviderKind, ProviderMetadata
 from provider_registry import default_provider_registry
 from providers import list_providers
+
+
+@pytest.fixture(autouse=True)
+def _isolate_private_provider_env(monkeypatch):
+    """测试默认使用 open-core catalog，显式开启用例自行覆盖。"""
+    monkeypatch.delenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", raising=False)
 
 
 def test_provider_api_returns_static_provider_catalog():
@@ -132,3 +140,108 @@ def test_root_route_keeps_existing_response():
     from main import read_root
 
     assert read_root() == {"message": "NAS Video Upgrader API is running"}
+
+
+def test_provider_api_marks_installed_provider_without_runtime_registration(monkeypatch):
+    import plugin_guard
+
+    monkeypatch.setattr(plugin_guard, "get_installed_plugins", lambda: ["search-bt-anime-cn"])
+    monkeypatch.setattr(plugin_guard, "get_allowed_bt_sources", lambda: {"mikan"})
+    monkeypatch.setattr(plugin_guard, "is_pan_search_allowed", lambda: False)
+    monkeypatch.setattr(
+        providers_module,
+        "_get_registered_provider_ids",
+        lambda: {kind: set() for kind in ProviderKind},
+    )
+
+    payload = providers_module.list_providers().model_dump(by_alias=True)
+    mikan = next(item for item in payload["search"] if item["id"] == "mikan")
+
+    assert mikan["installed"] is True
+    assert mikan["registered"] is False
+    assert mikan["available"] is False
+    assert mikan["loadError"] == "插件已安装，但运行时未注册该 Provider"
+
+
+def test_provider_api_marks_runtime_registered_provider_available(monkeypatch):
+    import plugin_guard
+
+    monkeypatch.setattr(plugin_guard, "get_installed_plugins", lambda: ["search-bt-anime-cn"])
+    monkeypatch.setattr(plugin_guard, "get_allowed_bt_sources", lambda: {"mikan"})
+    monkeypatch.setattr(plugin_guard, "is_pan_search_allowed", lambda: False)
+    runtime_ids = {kind: set() for kind in ProviderKind}
+    runtime_ids[ProviderKind.SEARCH].add("mikan")
+    monkeypatch.setattr(providers_module, "_get_registered_provider_ids", lambda: runtime_ids)
+
+    payload = providers_module.list_providers().model_dump(by_alias=True)
+    mikan = next(item for item in payload["search"] if item["id"] == "mikan")
+
+    assert mikan["registered"] is True
+    assert mikan["available"] is True
+    assert mikan["loadError"] == ""
+
+
+def test_provider_api_includes_registered_third_party_metadata(monkeypatch):
+    import plugin_context
+    import plugin_guard
+
+    metadata = ProviderMetadata(
+        id="custom_search",
+        name="Custom Search",
+        kind=ProviderKind.SEARCH,
+        type="bt",
+        enabled=True,
+    )
+    runtime = {
+        "custom_search": {
+            "type": "search",
+            "metadata": metadata,
+            "search_fn": lambda *_: [],
+            "plugin_id": "search-custom",
+        }
+    }
+    monkeypatch.setattr(plugin_context, "get_plugin_providers", lambda: runtime)
+    monkeypatch.setattr(plugin_guard, "get_installed_plugins", lambda: ["search-custom"])
+
+    payload = providers_module.list_providers().model_dump(by_alias=True)
+    custom = next(item for item in payload["search"] if item["id"] == "custom_search")
+
+    assert custom["installed"] is True
+    assert custom["registered"] is True
+    assert custom["available"] is True
+
+
+def test_provider_api_filters_rss_by_installed_package(monkeypatch):
+    import plugin_guard
+
+    monkeypatch.setattr(plugin_guard, "get_installed_plugins", lambda: ["rss-anime"])
+    runtime_ids = {kind: set() for kind in ProviderKind}
+    runtime_ids[ProviderKind.RSS].add("rss_mikan")
+    monkeypatch.setattr(providers_module, "_get_registered_provider_ids", lambda: runtime_ids)
+
+    payload = providers_module.list_providers().model_dump(by_alias=True)
+
+    assert {item["id"] for item in payload["rss"]} == {
+        "rss_mikan", "rss_nyaa", "rss_acgrip", "rss_bangumi_moe", "rss_dmhy",
+    }
+    mikan = next(item for item in payload["rss"] if item["id"] == "rss_mikan")
+    nyaa = next(item for item in payload["rss"] if item["id"] == "rss_nyaa")
+    assert mikan["available"] is True
+    assert nyaa["available"] is False
+
+
+def test_private_pan_guard_matches_runtime_policy(monkeypatch):
+    import plugin_context
+    import plugin_guard
+
+    monkeypatch.setattr(plugin_guard, "get_installed_plugins", lambda: ["search-pan-main"])
+    monkeypatch.setattr(plugin_context, "get_plugin_providers", lambda: {})
+    monkeypatch.delenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", raising=False)
+
+    assert plugin_guard.is_pan_search_allowed() is False
+    assert plugin_guard.get_allowed_pan_sources() == set()
+
+    monkeypatch.setenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", "true")
+
+    assert plugin_guard.is_pan_search_allowed() is True
+    assert plugin_guard.get_allowed_pan_sources() == {"pansearch", "pansou"}
