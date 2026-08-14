@@ -27,6 +27,7 @@ from core.path_guard import (
     safe_extract_all,
 )
 from core.url_guard import check_external_url, is_https_url
+from core import github_access
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +315,7 @@ class PluginManager:
             if not ok:
                 logger.warning(f"[PluginManager] 拒绝非公网插件源: {reason}")
                 return {"success": False, "error": "unsafe_url", "message": "插件源地址不被允许"}
-            headers = {}
+            headers = {"User-Agent": "Mozilla/5.0"}
             # License Key 只在 https 下发送，避免明文经过中间网络。
             # TODO: 进一步限制为仅发送给官方授权服务器域名，当前会发给用户添加的任意源。
             if license_key:
@@ -322,8 +323,19 @@ class PluginManager:
                     headers["Authorization"] = f"Bearer {license_key}"
                 else:
                     logger.warning("[PluginManager] 插件源为非 https，已跳过 License Key 发送")
-            resp = requests.get(url, timeout=15, proxies=proxies, headers=headers)
-            resp.raise_for_status()
+
+            # GitHub 在国内常直连超时，这里官方地址优先、失败自动回退镜像
+            if "github" in url:
+                resp, used = github_access.get(
+                    url, timeout=10, proxies=proxies, headers=headers,
+                    mirrors=self._configured_mirrors("raw"),
+                )
+                if resp is None:
+                    return {"success": False, "error": "network_error",
+                            "message": f"无法访问插件源（已尝试官方地址与镜像）: {used}"}
+            else:
+                resp = requests.get(url, timeout=15, proxies=proxies, headers=headers)
+                resp.raise_for_status()
             data = resp.json()
             index = PluginSourceIndex(**data)
             return {"success": True, "index": index}
@@ -364,8 +376,17 @@ class PluginManager:
                 logger.warning(f"[PluginManager] 拒绝非公网下载地址: {reason}")
                 return {"success": False, "error": "unsafe_url", "message": "插件下载地址不被允许"}
             try:
-                resp = requests.get(plugin_info.download_url, timeout=60, proxies=proxies)
-                resp.raise_for_status()
+                if "github" in plugin_info.download_url:
+                    dl_resp, _u = github_access.get(
+                        plugin_info.download_url, timeout=60, proxies=proxies,
+                        mirrors=self._configured_mirrors("repo"),
+                    )
+                    if dl_resp is None:
+                        raise requests.RequestException("官方地址与镜像均不可达")
+                    resp = dl_resp
+                else:
+                    resp = requests.get(plugin_info.download_url, timeout=60, proxies=proxies)
+                    resp.raise_for_status()
                 zip_content = resp.content
             except requests.RequestException as e:
                 logger.warning(f"[PluginManager] download_url 下载失败，尝试回退: {e}")
@@ -486,12 +507,13 @@ class PluginManager:
         repo = repo.rstrip(".git")
         branch = "main"
 
-        # 下载仓库 zip
+        # 下载仓库 zip（官方不通时回退镜像）
         zip_url = f"https://github.com/{user}/{repo}/archive/refs/heads/{branch}.zip"
-        try:
-            resp = requests.get(zip_url, timeout=60, proxies=proxies)
-            resp.raise_for_status()
-        except requests.RequestException:
+        resp, _used = github_access.get(
+            zip_url, timeout=60, proxies=proxies,
+            mirrors=self._configured_mirrors("repo"),
+        )
+        if resp is None:
             return None
 
         # 解压并提取子目录
@@ -597,6 +619,24 @@ class PluginManager:
         return result
 
     @staticmethod
+    def _configured_mirrors(kind: str):
+        """读取用户自定义的 GitHub 镜像列表；未配置时返回 None 用默认值。
+
+        kind: "raw" 对应 raw.githubusercontent.com，"repo" 对应 github.com
+        配置为空列表表示关闭镜像回退（只用官方地址）。
+        """
+        try:
+            from shared import config_m
+            mirrors = getattr(config_m.config, "github_mirrors", None)
+            if mirrors is None:
+                return None
+            if isinstance(mirrors, dict):
+                return mirrors.get(kind)
+            return mirrors
+        except Exception:
+            return None
+
+    @staticmethod
     def _normalize_source_url(url: str) -> str:
         """将 GitHub 仓库 URL 转换为 raw index.json URL"""
         url = url.strip().rstrip("/")
@@ -638,14 +678,19 @@ class PluginManager:
         user, repo, branch = match.group(1), match.group(2), match.group(3) or "main"
         repo = repo.rstrip(".git")
 
-        # 先尝试获取 manifest.json 确认是有效插件
+        # 先尝试获取 manifest.json 确认是有效插件（官方不通时回退镜像）
         manifest_url = f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/manifest.json"
         try:
             proxies = {"http": proxy, "https": proxy} if proxy else None
-            resp = requests.get(manifest_url, timeout=15, proxies=proxies)
+            resp, used = github_access.get(
+                manifest_url, timeout=10, proxies=proxies,
+                mirrors=self._configured_mirrors("raw"),
+            )
+            if resp is None:
+                return {"success": False, "error": "network_error",
+                        "message": f"获取 manifest.json 失败（已尝试官方地址与镜像）: {used}"}
             if resp.status_code == 404:
                 return {"success": False, "error": "no_manifest", "message": "仓库中未找到 manifest.json（确认仓库根目录有此文件）"}
-            resp.raise_for_status()
             manifest_data = resp.json()
             plugin_id = manifest_data.get("id", "")
             if not plugin_id:
@@ -659,13 +704,15 @@ class PluginManager:
         if plugin_id in installed_plugins:
             return {"success": False, "error": "already_installed", "message": f"插件 {plugin_id} 已安装"}
 
-        # 下载仓库 zip
+        # 下载仓库 zip（官方不通时回退镜像）
         zip_url = f"https://github.com/{user}/{repo}/archive/refs/heads/{branch}.zip"
-        try:
-            resp = requests.get(zip_url, timeout=60, proxies=proxies)
-            resp.raise_for_status()
-        except requests.RequestException as e:
-            return {"success": False, "error": "download_failed", "message": f"下载仓库失败: {str(e)}"}
+        resp, used = github_access.get(
+            zip_url, timeout=60, proxies=proxies,
+            mirrors=self._configured_mirrors("repo"),
+        )
+        if resp is None:
+            return {"success": False, "error": "download_failed",
+                    "message": f"下载仓库失败（已尝试官方地址与镜像）: {used}"}
 
         # 解压到 plugins/ 目录
         plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)

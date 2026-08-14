@@ -218,3 +218,149 @@ def runtime_environment():
         dns_ok=dns_ok,
         hints=hints,
     )
+
+
+# ── 总体诊断 ──
+
+@router.get("/api/system/diagnose")
+def system_diagnose():
+    """一次性返回部署健康状况，避免逐项试错。
+
+    覆盖：运行环境、数据目录是否持久化、媒体库路径可达性、媒体库规模、
+    各外部服务连通性（含是否需要代理）、以及针对性的处置建议。
+    """
+    import concurrent.futures
+    import socket
+
+    import requests
+
+    from shared import config_m
+
+    conf = config_m.config
+    in_container = os.path.exists("/.dockerenv")
+    proxy = (getattr(conf, "http_proxy", "") or "").strip()
+    proxies = {"http": proxy, "https": proxy} if proxy else None
+
+    # ── 媒体库路径 ──
+    paths_status = []
+    for p in (conf.scan_paths or []):
+        paths_status.append({
+            "path": p,
+            "exists": os.path.isdir(p),
+        })
+    for lib in (conf.media_libraries or []):
+        for p in (lib.paths or []):
+            paths_status.append({
+                "path": p,
+                "exists": os.path.isdir(p),
+                "library": lib.name,
+            })
+
+    # ── 媒体库规模 ──
+    try:
+        library = config_m.load_library()
+    except Exception:
+        library = []
+    folders = {os.path.dirname(v.get("file_path", "")) for v in library if v.get("file_path")}
+
+    # ── 数据目录持久化 ──
+    data_dir = config_m.data_dir
+    data_persisted = None
+    if in_container:
+        # /app/data 若没挂载卷，容器重建后配置与媒体库都会丢
+        try:
+            with open("/proc/mounts", "r", encoding="utf-8", errors="ignore") as f:
+                mounts = f.read()
+            data_persisted = any(
+                line.split()[1] == data_dir.rstrip("/") for line in mounts.splitlines()
+                if len(line.split()) > 1
+            )
+        except Exception:
+            data_persisted = None
+
+    # ── 外部服务连通性（并发 + 短超时）──
+    targets = {
+        "douban": "https://movie.douban.com/j/search_subjects?type=movie&tag=%E7%83%AD%E9%97%A8&page_limit=1&page_start=0",
+        "tmdb": "https://api.themoviedb.org/3/configuration",
+        "bangumi": "https://api.bgm.tv/calendar",
+        "github_raw": "https://raw.githubusercontent.com/Kami-pic/Napics/release/README.md",
+    }
+
+    def probe(name: str, url: str):
+        result = {"name": name, "dns_ok": False, "reachable": False, "detail": ""}
+        try:
+            host = url.split("//", 1)[1].split("/", 1)[0]
+            socket.getaddrinfo(host, 443)
+            result["dns_ok"] = True
+        except Exception as e:
+            result["detail"] = f"域名解析失败: {e}"
+            return result
+        try:
+            r = requests.get(url, timeout=6, proxies=proxies,
+                             headers={"User-Agent": "Mozilla/5.0"})
+            result["reachable"] = r.status_code < 500
+            result["detail"] = f"HTTP {r.status_code}"
+        except requests.exceptions.Timeout:
+            result["detail"] = "连接超时（国内访问该站点通常需要代理）"
+        except Exception as e:
+            result["detail"] = f"{type(e).__name__}: {e}"[:160]
+        return result
+
+    services = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        futs = [pool.submit(probe, n, u) for n, u in targets.items()]
+        for f in futs:
+            try:
+                services.append(f.result(timeout=10))
+            except Exception:
+                pass
+
+    svc = {s["name"]: s for s in services}
+
+    # ── 建议 ──
+    problems = []
+    if in_container and data_persisted is False:
+        problems.append(
+            f"数据目录 {data_dir} 没有挂载卷：容器重建后配置与媒体库会全部丢失。"
+            f"请把一个宿主机目录挂载到 {data_dir}。"
+        )
+    if not paths_status:
+        problems.append("尚未配置任何媒体库路径，请在设置页添加。")
+    for ps in paths_status:
+        if not ps["exists"]:
+            problems.append(
+                f"媒体库路径在后端不可见：{ps['path']}。"
+                "容器部署时请确认该目录已挂载进容器，且容器内路径与填写的一致。"
+            )
+    if not library:
+        problems.append("媒体库为空，请在首页执行扫描。")
+    if not (conf.tmdb_api_key or "").strip():
+        problems.append("未配置 TMDB API Key，TMDB 相关的刮削与发现页无法使用。")
+    if svc.get("tmdb") and not svc["tmdb"]["reachable"]:
+        problems.append(
+            "TMDB 不可达。国内网络通常需要在设置里填 HTTP 代理，"
+            "或改用豆瓣作为刮削源（设置项 default_scrape_source）。"
+        )
+    if svc.get("github_raw") and not svc["github_raw"]["reachable"]:
+        problems.append(
+            "GitHub 不可达，插件源安装会失败。需要代理，或改用可访问的插件源地址。"
+        )
+    if svc.get("douban") and svc["douban"]["reachable"]:
+        problems.append("豆瓣可直连，建议把默认刮削源设为豆瓣（无需代理）。")
+
+    return {
+        "environment": {
+            "in_container": in_container,
+            "platform": sys.platform,
+            "data_dir": data_dir,
+            "data_dir_persisted": data_persisted,
+            "http_proxy_configured": bool(proxy),
+        },
+        "media_library": {
+            "video_count": len(library),
+            "folder_count": len(folders),
+            "configured_paths": paths_status,
+        },
+        "external_services": services,
+        "problems": problems,
+    }
