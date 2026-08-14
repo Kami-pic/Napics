@@ -13,24 +13,18 @@ BASE = "https://api.bgm.tv"
 # type: 1=书籍 2=动画 3=音乐 4=游戏 6=三次元
 TYPE_MAP = {1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元"}
 
-# 代理配置（从 config.json 读取）
-_PROXIES = None
 def _get_proxies():
-    global _PROXIES
-    if _PROXIES is not None:
-        return _PROXIES
-    try:
-        from config_manager import ConfigManager
+    """Bangumi 的代理策略：api.bgm.tv 在国内可直连，默认不走代理。
 
-        cm = ConfigManager()
-        proxy = cm.get("http_proxy", "")
-        if proxy:
-            _PROXIES = {"http": proxy, "https": proxy}
-        else:
-            _PROXIES = {}
+    原实现把全局 http_proxy 套在所有请求上，配了代理反而把 Bangumi
+    绕出国，更慢甚至失败。现统一交给 core/proxy_policy 按域名分流
+    （bgm.tv 在内置直连列表里，除非用户显式把它移出）。
+    """
+    try:
+        from core.proxy_policy import proxies_from_config
+        return proxies_from_config(BASE)
     except Exception:
-        _PROXIES = {}
-    return _PROXIES
+        return None
 
 def search(query: str, type_filter: int = 0) -> List[Dict]:
     """搜索 Bangumi，返回候选列表。type_filter=0 搜全部，2=动画，6=三次元"""

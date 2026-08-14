@@ -12,7 +12,9 @@ def download_poster(folder_path: str, poster_url: str, filename: str = "poster.j
         return False
     target = os.path.join(folder_path, filename)
     try:
-        proxies = {"http": proxy, "https": proxy} if proxy else None
+        # 按域名分流：豆瓣图床直连，境外图床走代理
+        from core.proxy_policy import proxies_for
+        proxies = proxies_for(poster_url, proxy)
         headers = {"Referer": "https://movie.douban.com/", "User-Agent": "Mozilla/5.0"} if "doubanio.com" in poster_url else {}
         resp = requests.get(poster_url, stream=True, timeout=15, headers=headers, proxies=proxies)
         resp.raise_for_status()

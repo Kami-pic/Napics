@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse, FileResponse, Response
 
 from shared import config_m, guard_path
 from core.url_guard import check_external_url
+from core.proxy_policy import proxies_from_config
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -82,10 +83,9 @@ def proxy_image(url: str, request: Request = None):
         headers_req = {"User-Agent": "Mozilla/5.0"}
         if "doubanio.com" in url:
             headers_req["Referer"] = "https://movie.douban.com/"
-        proxies = None
-        http_proxy = getattr(config_m.config, 'http_proxy', '') or ''
-        if http_proxy:
-            proxies = {"http": http_proxy, "https": http_proxy}
+        # 按域名分流：豆瓣等国内图床直连，境外图床（如 image.tmdb.org）走代理。
+        # 原先一律用全局代理，导致配了代理之后豆瓣封面全部加载失败。
+        proxies = proxies_from_config(url)
         resp = requests.get(url, headers=headers_req, stream=True, timeout=10, proxies=proxies)
         resp.raise_for_status()
         content = resp.content

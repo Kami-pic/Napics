@@ -72,6 +72,10 @@ class AppConfig(BaseModel):
     ai_enabled: bool = False                      # AI 全局总开关
     ai_features: AIFeaturesConfig = AIFeaturesConfig()  # AI 场景开关
     http_proxy: Optional[str] = ""
+    # 代理分流：以下域名（后缀匹配）始终直连，不走 http_proxy。
+    # 内置已包含豆瓣 / Bangumi / 常见国内 CDN 与网盘，这里是额外追加。
+    # 用途：http_proxy 只有一个，全部请求都走它会把国内站点绕出国反而失败。
+    direct_domains: List[str] = []
     indexer_priorities: List[IndexerPriorityConfig] = []
     search_confidence_threshold: str = "medium"  # "high" | "medium" | "low"
     category_tags: dict = {}  # 一级分类目录路径 → 标签 {"\\\\NAS\\电影": "movie", ...}
