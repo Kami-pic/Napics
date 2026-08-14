@@ -18,6 +18,12 @@ services:
       - ${MEDIA_PATH:?请在 .env 中设置 MEDIA_PATH}:${MEDIA_PATH}
     environment:
       - TZ=${TZ:-Asia/Shanghai}
+    # 显式指定 DNS：部分 NAS 的 Docker 默认网络拿不到可用的 DNS，
+    # 表现为容器内所有域名解析失败（Temporary failure in name resolution），
+    # 刮削 / 搜索 / 发现页 / 插件源全部不可用。
+    dns:
+      - ${DNS1:-223.5.5.5}
+      - ${DNS2:-119.29.29.29}
     # 容器内访问宿主机上的 qBittorrent / OpenList 时填 host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -69,7 +69,12 @@ def _resolve_host_is_public(host: str) -> Tuple[bool, str]:
     try:
         infos = socket.getaddrinfo(host, None)
     except socket.gaierror as e:
-        return False, f"域名解析失败: {e}"
+        # DNS 解析失败不代表目标是内网地址，因此这里必须放行。
+        # 容器里很常见 DNS 未配置（Temporary failure in name resolution），
+        # 若在此拦下，网络故障会被伪装成「URL 不被允许」，把真实原因藏起来。
+        # 放行后请求会自然失败，用户看到的是真实的网络错误。
+        logger.warning(f"[UrlGuard] 域名 {host} 解析失败，放行交由请求层报错: {e}")
+        return True, ""
 
     addresses = {info[4][0] for info in infos}
     if not addresses:
