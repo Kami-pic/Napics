@@ -13,9 +13,9 @@ services:
     volumes:
       # 配置与媒体库数据
       - napics-data:/app/data
-      # 媒体库：宿主机目录 → 容器内固定为 /media
-      # 设置页填扫描路径时要填 /media/...
-      - ${MEDIA_PATH:-./_media}:/media
+      # 媒体库：容器内外使用同一个路径，这样设置页里直接填真实路径即可，
+      # 不需要在两套路径之间做心算转换，下载器返回的路径也能直接对上。
+      - ${MEDIA_PATH:?请在 .env 中设置 MEDIA_PATH}:${MEDIA_PATH}
     environment:
       - TZ=${TZ:-Asia/Shanghai}
     # 容器内访问宿主机上的 qBittorrent / OpenList 时填 host.docker.internal

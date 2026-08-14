@@ -26,6 +26,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from routes.config import router as config_router
 from routes.discover import router as discover_router
+from routes.filesystem import router as filesystem_router
 from routes.download import router as download_router
 from routes.library import router as library_router
 from routes.library_tree import router as library_tree_router
@@ -84,6 +85,7 @@ app.add_middleware(
 # 注册所有路由
 app.include_router(config_router)
 app.include_router(discover_router)
+app.include_router(filesystem_router)
 app.include_router(download_router)
 app.include_router(library_router)
 app.include_router(library_tree_router)

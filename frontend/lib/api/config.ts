@@ -51,6 +51,24 @@ export const configApi = {
     return res.json();
   },
 
-  // 文件夹选择器
-  browseFolder: (multi?: boolean) => request<{ path: string; paths: string[] }>(`${BASE_URL}/config/browse-folder${multi ? '?multi=true' : ''}`),
+  // 网页版文件夹选择器：列目录（path 为空时返回根/盘符）
+  listDirectories: (path: string = "") =>
+    request<{
+      path: string;
+      parent: string;
+      separator: string;
+      is_root_list: boolean;
+      dirs: { name: string; path: string }[];
+      error: string;
+    }>(`${BASE_URL}/fs/list?path=${encodeURIComponent(path)}`),
+
+  // 校验路径在服务端是否真实可用（Docker 下常见填了宿主机路径的问题）
+  checkPath: (path: string) =>
+    request<{
+      path: string;
+      exists: boolean;
+      is_dir: boolean;
+      readable: boolean;
+      hint: string;
+    }>(`${BASE_URL}/fs/check?path=${encodeURIComponent(path)}`),
 };

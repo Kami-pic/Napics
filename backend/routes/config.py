@@ -3,6 +3,7 @@
 """
 import os
 import json
+import logging
 import re
 import time
 import asyncio
@@ -21,6 +22,7 @@ from shared import (
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
     _tmdb_client, get_clients,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
+    invalidate_allowed_roots_cache,
 )
 import scanner, searcher, downloader, tmdb_client, config_manager
 import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
@@ -28,6 +30,7 @@ from organize_history import history_m
 from global_filter import GlobalFilter
 from download_manager import DownloadManager, DownloadTask
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/config")
@@ -84,63 +87,41 @@ def set_no_scrape(path: str, enabled: bool = True):
 @router.post("/config")
 def update_config(conf: config_manager.AppConfig):
     config_m.save(conf)
+    # 保存后失效路径白名单缓存，让新配置的媒体库路径立即生效
+    invalidate_allowed_roots_cache()
+
+    # 校验配置的媒体库路径在后端进程里是否真实可见。
+    # Docker 部署最常见的翻车点：填了宿主机路径，但容器里并没有挂载该路径，
+    # 于是扫描永远扫不到东西又不报错。这里把无效路径回给前端，便于提示用户。
+    unreachable = []
+    for p in (conf.scan_paths or []):
+        if p and not os.path.isdir(p):
+            unreachable.append(p)
+    for lib in (conf.media_libraries or []):
+        for p in (lib.paths or []):
+            if p and not os.path.isdir(p):
+                unreachable.append(p)
+
+    if unreachable:
+        logger.warning(
+            f"[Config] 以下媒体库路径在后端不可访问，扫描将扫不到内容: {unreachable}"
+            "（Docker 部署时请确认该路径已挂载进容器，且容器内路径与此处填写的一致）"
+        )
+        return {
+            "message": "Success",
+            "unreachable_paths": unreachable,
+            "warning": "以下路径无法访问，扫描将没有结果。Docker 部署请确认该目录已挂载进容器，"
+                       "并且容器内路径与填写的路径一致。",
+        }
+
     return {"message": "Success"}
 
 
-@router.get("/config/browse-folder")
-def browse_folder(multi: bool = False):
-    """弹出系统文件夹选择器，返回用户选择的路径。multi=True 时支持多选"""
-    import sys
-    import threading
-    import subprocess
-
-    result = {"path": "", "paths": []}
-
-    def _pick():
-        try:
-            if sys.platform == "win32" and multi:
-                # Windows 多选文件夹：通过 PowerShell 调用 COM 接口
-                ps_script = '''
-Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = "选择文件夹（多次选择，取消结束）"
-$dialog.ShowNewFolderButton = $false
-$paths = @()
-do {
-    $r = $dialog.ShowDialog()
-    if ($r -eq [System.Windows.Forms.DialogResult]::OK) {
-        $paths += $dialog.SelectedPath
-    }
-} while ($r -eq [System.Windows.Forms.DialogResult]::OK)
-$paths -join "|"
-'''
-                proc = subprocess.run(
-                    ["powershell", "-NoProfile", "-Command", ps_script],
-                    capture_output=True, text=True, timeout=120
-                )
-                output = proc.stdout.strip()
-                if output:
-                    result["paths"] = [p for p in output.split("|") if p]
-                    result["path"] = result["paths"][0] if result["paths"] else ""
-            else:
-                import tkinter as tk
-                from tkinter import filedialog
-                root = tk.Tk()
-                root.withdraw()
-                root.wm_attributes("-topmost", 1)
-                root.focus_force()
-                path = filedialog.askdirectory(title="选择文件夹", mustexist=True)
-                root.destroy()
-                result["path"] = path.replace("/", "\\") if path and sys.platform == "win32" else (path or "")
-                result["paths"] = [result["path"]] if result["path"] else []
-        except Exception:
-            result["path"] = ""
-            result["paths"] = []
-
-    t = threading.Thread(target=_pick)
-    t.start()
-    t.join(timeout=120)
-    return {"path": result["path"], "paths": result["paths"]}
+# 说明：原 /config/browse-folder 已移除。
+# 它在服务端弹出系统对话框（Windows 走 PowerShell，其他平台走 tkinter），
+# 只有"后端跑在用户自己的桌面上"才成立；Docker 容器与 NAS 上都无法弹窗。
+# 现由 routes/filesystem.py 的 /fs/list 提供目录列举，前端渲染网页版选择器，
+# 所有平台统一。
 
 
 # ── 搜索过滤规则配置 API ──
