@@ -3,6 +3,8 @@
 import os
 import sys
 
+import pytest
+
 _dir = os.path.dirname(os.path.abspath(__file__))
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
@@ -10,7 +12,14 @@ if _dir not in sys.path:
 from rss_source_base import RSSItem, extract_episode, extract_season
 from rss_matcher import match_items, _filter_quality, _filter_keywords, _filter_episodes
 from rss_engine import should_search_now, RSSSourceManager
-from rss_source_prowlarr import ProwlarrRSSSource
+
+# Prowlarr 源由 rss-tv-movie 社区插件提供，未安装插件时相关用例跳过。
+try:
+    from rss_source_prowlarr import ProwlarrRSSSource
+except ModuleNotFoundError:
+    ProwlarrRSSSource = None
+
+_NEED_PROWLARR = "需要 rss-tv-movie 插件提供 rss_source_prowlarr"
 from subscriber import Subscription, EpisodeInfo
 from datetime import datetime, timedelta
 
@@ -247,6 +256,8 @@ def test_frequency_decay():
 
 def test_source_manager():
     print("\n[SUITE] 源管理器")
+    if ProwlarrRSSSource is None:
+        pytest.skip(_NEED_PROWLARR)
     mgr = RSSSourceManager()
 
     # 注册源
@@ -290,6 +301,8 @@ def test_source_manager():
 
 def test_prowlarr_search_group():
     print("\n[SUITE] Prowlarr 搜索词构造")
+    if ProwlarrRSSSource is None:
+        pytest.skip(_NEED_PROWLARR)
     src = ProwlarrRSSSource()
 
     # 剧集 + 别名

@@ -2,9 +2,16 @@
 
 import sys
 import os
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from rss_source_eztv import EZTVRSSSource
+# EZTV 源由 rss-tv-movie 社区插件提供，主体仓库没有实现，未安装时跳过本模块。
+EZTVRSSSource = pytest.importorskip(
+    "rss_source_eztv",
+    reason="需要 rss-tv-movie 插件提供 rss_source_eztv",
+).EZTVRSSSource
 
 
 # 模拟 EZTV RSS XML（真实格式）

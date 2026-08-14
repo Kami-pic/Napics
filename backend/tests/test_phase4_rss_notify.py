@@ -4,13 +4,24 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
+import importlib.util
+
 import pytest
 from unittest.mock import MagicMock, patch
 from datetime import datetime
 
 
+def _requires_plugin_source(module_name: str, plugin_id: str):
+    """RSS 源实现由社区插件提供，未安装时跳过对应用例。"""
+    return pytest.mark.skipif(
+        importlib.util.find_spec(module_name) is None,
+        reason=f"需要 {plugin_id} 插件提供 {module_name}",
+    )
+
+
 # ── Phase 4a: RSS 源基础测试 ──
 
+@_requires_plugin_source("rss_source_dmhy", "rss-anime")
 class TestDMHYRSSSource:
     """动漫花园 RSS 源测试"""
 
@@ -62,6 +73,7 @@ class TestDMHYRSSSource:
         assert items[0].size_gb == pytest.approx(1.0, abs=0.01)
 
 
+@_requires_plugin_source("rss_source_acgrip", "rss-anime")
 class TestACGRipRSSSource:
     """ACG.RIP RSS 源测试"""
 
@@ -103,6 +115,7 @@ class TestACGRipRSSSource:
         assert items[0].size_gb == pytest.approx(0.5, abs=0.01)
 
 
+@_requires_plugin_source("rss_source_bangumi_moe", "rss-anime")
 class TestBangumiMoeRSSSource:
     """Bangumi Moe RSS 源测试"""
 
@@ -149,6 +162,7 @@ class TestBangumiMoeRSSSource:
         assert "abc123" in item.download_url
 
 
+@_requires_plugin_source("rss_source_yts", "rss-tv-movie")
 class TestYTSRSSSource:
     """YTS RSS 源测试"""
 

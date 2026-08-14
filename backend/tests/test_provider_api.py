@@ -14,7 +14,25 @@ def _isolate_private_provider_env(monkeypatch):
     monkeypatch.delenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", raising=False)
 
 
-def test_provider_api_returns_static_provider_catalog():
+def _fake_installed(monkeypatch, plugin_ids):
+    """固定已安装插件列表，避免结果随本机 config.json 变化。"""
+    import plugin_guard
+
+    monkeypatch.setattr(plugin_guard, "get_installed_plugins", lambda: list(plugin_ids))
+
+
+def test_provider_api_returns_static_provider_catalog(monkeypatch):
+    _fake_installed(monkeypatch, [
+        "search-prowlarr",
+        "download-qbittorrent",
+        "download-openlist",
+        "storage-openlist",
+        "rss-anime",
+        "metadata-tmdb",
+        "metadata-douban",
+        "metadata-bangumi",
+    ])
+
     response = list_providers()
     payload = response.model_dump(by_alias=True)
 
@@ -130,6 +148,7 @@ def test_builtin_provider_metadata_can_include_private_pan_sources():
 
 def test_provider_api_can_expose_private_pan_sources_with_explicit_env(monkeypatch):
     monkeypatch.setenv("NAPICS_ALLOW_PRIVATE_PROVIDERS", "true")
+    _fake_installed(monkeypatch, ["search-pan-main"])
 
     payload = providers_module.list_providers().model_dump(by_alias=True)
 
