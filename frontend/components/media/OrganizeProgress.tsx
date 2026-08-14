@@ -36,8 +36,22 @@ export default function OrganizeProgress({ open, path, onClose, onComplete }: Pr
 
     try {
       const response = await api.organizeFullStream(path, dryRun, useAi);
+      // fetch 不会因 4xx/5xx 抛异常，必须显式判断。
+      // 否则错误响应体会被当成 SSE 流解析、逐行跳过，界面上什么反应都没有。
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const err = await response.json();
+          detail = typeof err?.detail === "string" ? err.detail : "";
+        } catch { /* 非 JSON 响应 */ }
+        setError(detail || `请求失败（HTTP ${response.status}）`);
+        return;
+      }
       const reader = response.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        setError("服务端没有返回数据流");
+        return;
+      }
 
       const decoder = new TextDecoder();
       let buffer = "";

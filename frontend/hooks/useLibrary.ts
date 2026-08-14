@@ -207,6 +207,20 @@ export function useLibrary() {
       for (const p of scanPaths) {
         if (!p.trim()) continue;
         const response = await api.scan(p.trim(), libraryName, controller.signal);
+        // fetch 对 4xx/5xx 不会抛异常，必须显式检查。
+        // 漏掉这一步时，错误响应体会被当成 SSE 流去解析，每行都不以 "data: " 开头
+        // 于是被静默跳过 —— 表现为进度条一闪而过、什么都没扫、也没有任何报错。
+        if (!response.ok) {
+          let detail = "";
+          try {
+            const err = await response.json();
+            detail = typeof err?.detail === "string" ? err.detail : "";
+          } catch { /* 响应不是 JSON，忽略 */ }
+          const reason = detail === "Path does not exist"
+            ? `路径不存在：${p.trim()}\n\n服务端访问不到这个目录。如果用 Docker 部署，请确认该目录已挂载进容器，并且容器内路径与这里填写的完全一致。`
+            : (detail || `HTTP ${response.status}`);
+          throw new Error(reason);
+        }
         const reader = response.body?.getReader();
         if (!reader) continue;
         const decoder = new TextDecoder();
@@ -239,7 +253,8 @@ export function useLibrary() {
       setScanning(false);
       refreshLibrary();
     } catch (e: any) {
-      if (e.name !== "AbortError") alert("扫描出错");
+      // 把真实原因显示出来，而不是笼统的"扫描出错"
+      if (e.name !== "AbortError") alert(`扫描失败\n\n${e?.message || e}`);
     } finally { setScanning(false); setAbortController(null); }
   }, [paths, refreshLibrary, videos]);
 
