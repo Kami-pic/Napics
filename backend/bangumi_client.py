@@ -49,6 +49,34 @@ def _session():
     return _bgm_session
 
 
+def _probe_direct_on_import():
+    """模块加载时快速探测直连：1.5s 内能 TCP 握手则直连可用，否则直接标记代理模式。"""
+    global _bgm_use_proxy
+    import socket
+    try:
+        addrs = socket.getaddrinfo("api.bgm.tv", 443, socket.AF_INET, socket.SOCK_STREAM)
+        if not addrs:
+            _bgm_use_proxy = True
+            logger.info("[Bangumi] DNS 无 IPv4 地址，启用代理模式")
+            return
+        ip = addrs[0][4][0]
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1.5)
+        s.connect((ip, 443))
+        s.close()
+        logger.info(f"[Bangumi] 直连探测通过 ({ip})")
+    except Exception as e:
+        _bgm_use_proxy = True
+        logger.info(f"[Bangumi] 直连探测失败 ({e})，启用代理模式")
+
+
+try:
+    _probe_direct_on_import()
+except Exception as _e:
+    _bgm_use_proxy = True
+    logger.error(f"[Bangumi] 探测异常: {_e}，启用代理模式")
+
+
 def _bgm_get(url: str, **kwargs):
     """Bangumi 请求包装：直连失败时自动回退到代理，后续请求直接走代理。
     始终强制 IPv4 解析，避免容器解析到不可达的 IPv6。

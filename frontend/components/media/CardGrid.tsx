@@ -4,6 +4,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import type { VideoInfo, FolderNode } from "@/types";
 import { formatSize, isLeafFolder } from "@/lib/utils";
 import { getCategoryTagLabel } from "@/lib/folderTypes";
+import CategoryTagBadge from "./CategoryTagBadge";
 import ExpandPanel from "./ExpandPanel";
 import CardPoster from "./CardPoster";
 import { getSeasonLabel, getSeasonNum, compareSeasons, getSeriesPrefix, type CardItem } from "./cardGridUtils";
@@ -260,9 +261,12 @@ export default function CardGrid({
                       </div>
                     )}
                     {!folder.is_virtual_library && folder.category_tag && (
-                      <div className={`absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide ${folder.category_tag === "movie" || folder.category_tag === "anime_movie" ? "bg-blue-500/30 text-blue-300" : "bg-green-500/30 text-green-300"}`}>
-                        {getCategoryTagLabel(folder.category_tag)}
-                      </div>
+                      <CategoryTagBadge
+                        tag={folder.category_tag}
+                        editable={!!folder.is_top_category}
+                        path={folder.path}
+                        onChanged={() => { if (currentFolder) onNavigate(currentFolder); }}
+                      />
                     )}
                     {ft === "movie" && !folder.is_virtual_library && folder.videos[0] && (
                       <div className="absolute top-3 right-3 flex flex-col gap-1 z-10">

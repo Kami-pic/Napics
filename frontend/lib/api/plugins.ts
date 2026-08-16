@@ -170,3 +170,9 @@ export async function installFromUrl(url: string): Promise<{ success: boolean; p
   }
   return res.json();
 }
+
+export async function testPluginConnection(pluginId: string): Promise<{ success: boolean; error?: string; version?: string; username?: string }> {
+  const res = await fetch(`${BASE_URL}/api/plugins/${pluginId}/test`, { method: "POST" });
+  if (!res.ok) throw new Error("测试连接失败");
+  return res.json();
+}

@@ -205,6 +205,87 @@ def update_plugin_config(plugin_id: str, req: PluginConfigUpdate):
     return {"success": True, "updated_keys": updated_keys}
 
 
+@router.post("/{plugin_id}/test")
+def test_plugin_connection(plugin_id: str):
+    """测试插件连通性（检查配置的服务是否可达）"""
+    import requests as _requests
+
+    pm = _get_plugin_manager()
+    manifest = pm.get_manifest(plugin_id)
+    if not manifest:
+        raise HTTPException(status_code=404, detail={"error": "plugin_not_found"})
+
+    conf = config_m.config
+    results = {}
+
+    # 根据插件 ID 执行不同的连通性检测
+    try:
+        if plugin_id == "search-prowlarr":
+            url = (getattr(conf, "prowlarr_url", "") or "").rstrip("/")
+            key = getattr(conf, "prowlarr_api_key", "") or ""
+            if not url or not key:
+                return {"success": False, "error": "地址或 API Key 未配置"}
+            resp = _requests.get(
+                f"{url}/api/v1/health", params={"apikey": key}, timeout=5,
+                proxies={"http": None, "https": None},
+            )
+            results["status_code"] = resp.status_code
+            results["success"] = resp.status_code == 200
+
+        elif plugin_id == "download-qbittorrent":
+            url = (getattr(conf, "qb_url", "") or "").rstrip("/")
+            if not url:
+                return {"success": False, "error": "地址未配置"}
+            resp = _requests.get(
+                f"{url}/api/v2/app/version", timeout=5,
+                proxies={"http": None, "https": None},
+            )
+            results["status_code"] = resp.status_code
+            results["version"] = resp.text.strip() if resp.status_code == 200 else ""
+            results["success"] = resp.status_code == 200
+
+        elif plugin_id in ("storage-openlist", "download-openlist"):
+            url = (getattr(conf, "alist_url", "") or "").rstrip("/")
+            token = getattr(conf, "alist_token", "") or ""
+            if not url:
+                return {"success": False, "error": "地址未配置"}
+            resp = _requests.post(
+                f"{url}/api/me", headers={"Authorization": token}, timeout=5,
+                proxies={"http": None, "https": None},
+            )
+            results["status_code"] = resp.status_code
+            data = resp.json() if resp.status_code == 200 else {}
+            results["success"] = data.get("code") == 200
+            results["username"] = data.get("data", {}).get("username", "")
+
+        elif plugin_id == "metadata-tmdb":
+            key = getattr(conf, "tmdb_api_key", "") or ""
+            proxy = getattr(conf, "http_proxy", "") or ""
+            if not key:
+                return {"success": False, "error": "API Key 未配置"}
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+            resp = _requests.get(
+                "https://api.themoviedb.org/3/configuration",
+                params={"api_key": key}, timeout=8, proxies=proxies,
+            )
+            results["status_code"] = resp.status_code
+            results["success"] = resp.status_code == 200
+
+        else:
+            return {"success": True, "message": "该插件无需连通性测试"}
+
+    except _requests.exceptions.Timeout:
+        return {"success": False, "error": "连接超时"}
+    except _requests.exceptions.ConnectionError as e:
+        return {"success": False, "error": f"连接失败: {e}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+    if results.get("success"):
+        return {"success": True, **results}
+    return {"success": False, "error": f"HTTP {results.get('status_code', '?')}", **results}
+
+
 # ── 外部插件源管理 ──
 
 

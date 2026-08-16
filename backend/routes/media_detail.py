@@ -122,8 +122,8 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
 
 
 def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: str = ""):
-    """补充其他源的评分和 ID。豆瓣先跑（拿 original_title），然后 TMDB+Bangumi 并行。"""
-    from concurrent.futures import ThreadPoolExecutor
+    """补充其他源的评分和 ID。三源全部并行，总超时 4s，超时则跳过。"""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     source = detail.get("source", "")
     ratings = {}
@@ -138,15 +138,12 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
 
     orig_title = detail.get("original_title", "") or subtitle
 
-    if source != "douban":
+    def _fetch_douban():
+        if source == "douban": return None
         try:
-            db = _try_douban_detail(title, year, type)
-            if db:
-                if db.get("rating"): ratings["douban"] = db["rating"]
-                if not orig_title:
-                    orig_title = db.get("original_title", "")
+            return _try_douban_detail(title, year, type)
         except Exception:
-            pass
+            return None
 
     def _fetch_tmdb():
         if source == "tmdb": return None
@@ -157,17 +154,26 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
 
     def _fetch_bangumi():
         if source == "bangumi": return None
-        try:
-            return _try_bangumi_detail(title, subtitle)
-        except Exception:
-            return None
+        # Bangumi 通过代理延迟太大（7s+/次），评分补全不主动联网
+        # 只有在已有 bgm_id 或主结果中带 bangumi 数据时才补
+        return None
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        futures = {"tmdb": pool.submit(_fetch_tmdb), "bangumi": pool.submit(_fetch_bangumi)}
-        for key, future in futures.items():
+    pool = ThreadPoolExecutor(max_workers=3)
+    futures = {
+        "douban": pool.submit(_fetch_douban),
+        "tmdb": pool.submit(_fetch_tmdb),
+        "bangumi": pool.submit(_fetch_bangumi),
+    }
+    try:
+        for future in as_completed(futures.values(), timeout=4):
+            key = next(k for k, f in futures.items() if f is future)
             try:
-                result = future.result(timeout=10)
-                if key == "tmdb" and result and result.get("found"):
+                result = future.result(timeout=0)
+                if key == "douban" and result:
+                    if result.get("rating"): ratings["douban"] = result["rating"]
+                    if not orig_title:
+                        orig_title = result.get("original_title", "")
+                elif key == "tmdb" and result and result.get("found"):
                     if result.get("rating"): ratings["tmdb"] = result["rating"]
                     if result.get("tmdb_id"): external_ids["tmdb_id"] = result["tmdb_id"]
                     if result.get("imdb_id"): external_ids["imdb_id"] = result["imdb_id"]
@@ -184,6 +190,10 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
                     ratings["bangumi"] = result["rating"]
             except Exception:
                 pass
+    except (TimeoutError, Exception):
+        pass
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
     detail["ratings"] = ratings
     detail["external_ids"] = external_ids
