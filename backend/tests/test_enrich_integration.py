@@ -31,7 +31,7 @@ def record(name, passed, detail=""):
 # 测试 1：enrich_cache 持久化（写入 → 保存 → 清空 → 加载 → 验证恢复）
 # ══════════════════════════════════════════════════════════════
 def test_enrich_cache_persistence():
-    import routes.discover as disc
+    import discover_enrich as disc
 
     # 保存原始状态
     orig_cache = disc._enrich_cache.copy()
@@ -101,7 +101,7 @@ def test_enrich_cache_persistence():
 # 测试 2：_inject_clean_names 缓存命中路径
 # ══════════════════════════════════════════════════════════════
 def test_inject_clean_names_cache_hit():
-    import routes.discover as disc
+    import discover_enrich as disc
 
     orig_cache = disc._enrich_cache.copy()
     try:
@@ -123,7 +123,7 @@ def test_inject_clean_names_cache_hit():
 
         # mock _tmdb_client 确保不会被调用（缓存命中后 en 已有值，不进 need_enrich）
         with patch.object(disc, "_tmdb_client") as mock_tmdb:
-            disc._inject_clean_names(items)
+            disc.inject_clean_names(items)
             # _tmdb_client 不应被调用（因为缓存命中后 en 已有值，不进 need_enrich 列表）
             # 注意：_tmdb_client 只在 need_enrich 非空时才被调用
 
@@ -142,7 +142,7 @@ def test_inject_clean_names_cache_hit():
 # 测试 3：_inject_clean_names 缓存未命中 + 同步补全
 # ══════════════════════════════════════════════════════════════
 def test_inject_clean_names_cache_miss_sync():
-    import routes.discover as disc
+    import discover_enrich as disc
 
     orig_cache = disc._enrich_cache.copy()
     try:
@@ -162,7 +162,7 @@ def test_inject_clean_names_cache_miss_sync():
         }]
 
         with patch.object(disc, "_tmdb_client", return_value=fake_tmdb):
-            disc._inject_clean_names(items)
+            disc.inject_clean_names(items)
 
         assert items[0].get("clean_name_en") == "Fight Club", \
             f"期望 'Fight Club'，实际 '{items[0].get('clean_name_en')}'"
@@ -181,7 +181,7 @@ def test_inject_clean_names_cache_miss_sync():
 # 测试 4：_sync_enrich_english_names 超时降级
 # ══════════════════════════════════════════════════════════════
 def test_sync_enrich_timeout():
-    import routes.discover as disc
+    import discover_enrich as disc
 
     orig_cache = disc._enrich_cache.copy()
     try:
@@ -218,7 +218,7 @@ def test_sync_enrich_timeout():
 # 测试 5：enrich_cache_put 回写验证（模拟 media_info 场景）
 # ══════════════════════════════════════════════════════════════
 def test_enrich_cache_put():
-    import routes.discover as disc
+    import discover_enrich as disc
 
     orig_cache = disc._enrich_cache.copy()
     orig_path = disc._ENRICH_CACHE_PATH
@@ -262,7 +262,7 @@ def test_enrich_cache_put():
 # 测试 6：LRU 淘汰边界测试
 # ══════════════════════════════════════════════════════════════
 def test_lru_eviction():
-    import routes.discover as disc
+    import discover_enrich as disc
 
     orig_cache = disc._enrich_cache.copy()
     orig_max = disc._ENRICH_CACHE_MAX

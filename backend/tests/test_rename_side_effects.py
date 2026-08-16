@@ -12,7 +12,7 @@ class FakeConfigManager:
     def __init__(self, library, nas_root):
         self.library = library
         self.saved_library = None
-        self.config = SimpleNamespace(nas_paths=[str(nas_root)])
+        self.config = SimpleNamespace(scan_paths=[str(nas_root)])
 
     def load_library(self):
         return self.library

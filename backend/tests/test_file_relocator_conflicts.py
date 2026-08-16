@@ -210,10 +210,9 @@ def test_recycle_old_files_moves_files_into_real_recycle_bin_and_persists_metada
 
         assert set(entries) == {str(old_video), str(sidecar_nfo), str(season_nfo)}
         for original_path, entry in entries.items():
-            assert Path(entry.recycle_path).exists()
-            assert Path(entry.recycle_path).parent == recycle_dir
-            assert Path(entry.recycle_path).name.startswith("task-1_")
-            assert Path(entry.recycle_path).name.endswith(Path(original_path).name)
+            expected_path = recycle_dir / "Show" / "Season 01" / Path(original_path).name
+            assert Path(entry.recycle_path) == expected_path
+            assert expected_path.exists()
             assert entry.task_id == "task-1"
 
         assert meta_path.exists()
@@ -249,7 +248,7 @@ def test_recycle_old_files_defaults_to_same_library_root_instead_of_backend_loca
             task_id="task-1",
         )
 
-        recycle_dir = tmp_dir / ".recycle_bins" / "media-root"
+        recycle_dir = tmp_dir / "#recycle"
         reloaded = RecycleBin(
             retention_days=7,
             library_roots=[str(media_root)],
@@ -260,8 +259,10 @@ def test_recycle_old_files_defaults_to_same_library_root_instead_of_backend_loca
         assert result is True
         assert recycle_dir.exists()
         assert set(entries) == {str(old_video), str(sidecar_nfo), str(season_nfo)}
-        for entry in entries.values():
-            assert Path(entry.recycle_path).parent == recycle_dir
+        for original_path, entry in entries.items():
+            expected_path = recycle_dir / "media-root" / "Show" / "Season 01" / Path(original_path).name
+            assert Path(entry.recycle_path) == expected_path
+            assert expected_path.exists()
         assert not (tmp_dir / "backend" / "recycle_bin").exists()
         assert meta_path.exists()
 

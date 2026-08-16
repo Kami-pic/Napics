@@ -35,10 +35,10 @@ def test_move_to_bin_falls_back_to_source_parent_when_path_is_outside_library_ro
         )
         entry = recycle_bin.move_to_bin(str(file_path), task_id="task-1")
 
-        expected_dir = download_dir / ".recycle_bins"
+        expected_dir = download_dir / "#recycle"
         assert entry is not None
         assert expected_dir.exists()
-        assert Path(entry.recycle_path).parent == expected_dir
+        assert Path(entry.recycle_path) == expected_dir / file_path.name
         assert meta_path.exists()
 
     _with_temp_dir("recycle_bin_parent_fallback", run)
@@ -58,10 +58,12 @@ def test_move_to_bin_uses_hidden_sibling_recycle_dir_for_library_root():
         )
         entry = recycle_bin.move_to_bin(str(file_path), task_id="task-1")
 
-        expected_dir = tmp_dir / ".recycle_bins" / "TV"
+        expected_dir = tmp_dir / "#recycle"
+        expected_path = expected_dir / "TV" / "Show" / "Season 01" / file_path.name
         assert entry is not None
         assert expected_dir.exists()
-        assert Path(entry.recycle_path).parent == expected_dir
+        assert Path(entry.recycle_path) == expected_path
+        assert expected_path.exists()
         assert meta_path.exists()
 
     _with_temp_dir("recycle_bin_hidden_sibling_root", run)

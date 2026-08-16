@@ -122,7 +122,7 @@ def _make_cache_key(endpoint: str, **kwargs) -> str:
 
 
 def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
-    """统一请求方法：签名 + 随机 UA + 随机延迟 + 文件缓存"""
+    """统一请求方法：签名 + 随机 UA + 随机延迟 + 文件缓存 + 代理分流"""
     # 缓存检查
     cache_key = _make_cache_key(endpoint, **kwargs)
     ttl = _CACHE_TTL.get(endpoint, _DEFAULT_TTL)
@@ -144,6 +144,13 @@ def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
     }
     params.update(kwargs)
 
+    # 代理分流：豆瓣直连，不走代理
+    try:
+        from core.proxy_policy import proxies_from_config
+        proxies = proxies_from_config(req_url)
+    except Exception:
+        proxies = None
+
     # 随机延迟 1-3 秒（防封）
     time.sleep(random.uniform(1.0, 3.0))
 
@@ -153,6 +160,7 @@ def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
             params=params,
             headers={"User-Agent": random.choice(_USER_AGENTS)},
             timeout=8,
+            proxies=proxies,
         )
         if resp.status_code != 200:
             logger.error(f"[DoubanV2] {endpoint} 请求失败: HTTP {resp.status_code}")

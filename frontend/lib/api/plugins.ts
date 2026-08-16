@@ -1,6 +1,15 @@
 // 插件中心 API
 import { BASE_URL } from "./base";
 
+export interface PluginConfigField {
+  key: string;
+  label: string;
+  type: "text" | "password" | "url";
+  description: string;
+  placeholder: string;
+  required: boolean;
+}
+
 export interface PluginInfo {
   id: string;
   name: string;
@@ -9,16 +18,21 @@ export interface PluginInfo {
   category: string;
   icon: string;
   requires_config: string[];
+  config_schema: PluginConfigField[];
   depends_on: string[];
   provides: string[];
   risk_level: string;
   installed: boolean;
-  source?: string;  // builtin / remote
+  source: "builtin" | "external";
+  registered: boolean;
+  available: boolean;
+  load_error: string;
 }
 
 export interface PluginConfig {
   plugin_id: string;
   config: Record<string, string>;
+  schema: PluginConfigField[];
 }
 
 export interface PluginSource {

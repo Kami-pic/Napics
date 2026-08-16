@@ -6,6 +6,23 @@
     "category": "storage",
     "icon": "💾",
     "requires_config": ["alist_url", "alist_token"],
+    "config_schema": [
+        {
+            "key": "alist_url",
+            "label": "OpenList/Alist 地址",
+            "type": "url",
+            "description": "Napics 后端可访问的 OpenList/Alist 地址",
+            "placeholder": "http://host.docker.internal:5244",
+            "required": true
+        },
+        {
+            "key": "alist_token",
+            "label": "OpenList Token",
+            "type": "password",
+            "description": "OpenList 管理后台生成的访问 Token",
+            "required": true
+        }
+    ],
     "depends_on": [],
     "provides": ["StorageProvider:openlist"],
     "risk_level": "medium"

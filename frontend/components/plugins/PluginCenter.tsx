@@ -77,33 +77,13 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
     }
   };
 
-  // 社区仓库插件（第三方 Tab 展示）+ 旧的废弃单源插件，不在内置 Tab 中显示
-  // 内置 Tab 保留：预装 5 个 + 主仓库非预装 5 个（bangumi/completeness/subscribe/prowlarr/storage-openlist）
-  const COMMUNITY_ONLY_PLUGINS = new Set([
-    // 社区插件（通过社区插件源分发）
-    "search-bt-mirror", "search-bt-movie-tv", "search-bt-anime-jp",
-    "search-bt-anime-cn", "search-bt-cn",
-    "search-pan-main", "search-pan-github", "search-pan-resource",
-    "rss-anime", "rss-tv-movie",
-    "download-openlist",
-    // 旧的聚合包 / 废弃 / 示例插件
-    "search-bt-direct", "search-pan", "search-example",
-    // 旧的单独 scraper 插件（已拆分到社区源的独立包中）
-    "search-nyaa", "search-yts", "search-eztv", "search-mikan",
-    "search-bitsearch", "search-1337x", "search-limetorrents",
-    "search-cilixiong", "search-xl720", "search-dmhy",
-    "search-acgrip", "search-bangumi-moe",
-    "search-pansearch", "search-pansou", "search-gogopanso",
-    "search-github-pan", "search-rrdynb", "search-ddys",
-    "search-slowread", "search-wnsearch", "search-sites",
-    "search", "search-1337x",
-  ]);
-
+  const builtinPlugins = plugins.filter(plugin => plugin.source === "builtin");
+  const externalPlugins = plugins.filter(plugin => plugin.source === "external");
   const filtered = activeCategory === "all"
-    ? plugins.filter(p => !p.id.includes("deprecated") && !COMMUNITY_ONLY_PLUGINS.has(p.id))
+    ? builtinPlugins
     : activeCategory === "installed"
-    ? plugins.filter(p => p.installed && !COMMUNITY_ONLY_PLUGINS.has(p.id))
-    : plugins.filter(p => p.category === activeCategory && !p.id.includes("deprecated") && !COMMUNITY_ONLY_PLUGINS.has(p.id));
+    ? builtinPlugins.filter(plugin => plugin.installed)
+    : builtinPlugins.filter(plugin => plugin.category === activeCategory);
 
   // 排序：已安装在前，同组内按 category → name 排序
   const sorted = [...filtered].sort((a, b) => {
@@ -194,6 +174,21 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
 
         {activeTab === "remote" && (
           <div className="flex-1 overflow-y-auto px-6 py-4">
+            {externalPlugins.length > 0 && (
+              <div className="mb-5 space-y-3">
+                <p className="text-xs font-medium text-slate-400">本机外部插件</p>
+                {externalPlugins.map(plugin => (
+                  <PluginCard
+                    key={plugin.id}
+                    plugin={plugin}
+                    loading={actionLoading === plugin.id}
+                    onInstall={() => handleInstall(plugin.id)}
+                    onUninstall={() => handleUninstall(plugin.id)}
+                    onConfig={() => setConfigPlugin(plugin)}
+                  />
+                ))}
+              </div>
+            )}
             <RemotePluginList
               onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
             />

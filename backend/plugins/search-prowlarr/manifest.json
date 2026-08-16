@@ -6,6 +6,23 @@
     "category": "search",
     "icon": "🔍",
     "requires_config": ["prowlarr_url", "prowlarr_api_key"],
+    "config_schema": [
+        {
+            "key": "prowlarr_url",
+            "label": "Prowlarr 地址",
+            "type": "url",
+            "description": "Napics 后端可访问的 Prowlarr Web 地址",
+            "placeholder": "http://host.docker.internal:9696",
+            "required": true
+        },
+        {
+            "key": "prowlarr_api_key",
+            "label": "Prowlarr API Key",
+            "type": "password",
+            "description": "Prowlarr Settings → General 中的 API Key",
+            "required": true
+        }
+    ],
     "depends_on": [],
     "provides": ["SearchProvider:prowlarr"],
     "risk_level": "medium"

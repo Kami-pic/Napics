@@ -76,7 +76,7 @@ class TestComputeCompleteness:
                     return {"episodes": [{"episode_number": i, "name": f"E{i}", "air_date": "2024-01-01"} for i in eps]}
             return {"episodes": []}
 
-        client._get = mock_get
+        client.get_raw.side_effect = mock_get
         return client
 
     def test_all_complete(self):
@@ -159,7 +159,7 @@ class TestComputeCompleteness:
             seasons_info=seasons_info,
         )
         client.get_season_detail.return_value = ScrapeResult()
-        client._get = lambda path, params=None: {
+        client.get_raw.return_value = {
             "episodes": [
                 {"episode_number": 1, "name": "E1", "air_date": "2024-01-01"},
                 {"episode_number": 2, "name": "E2", "air_date": "2024-06-01"},

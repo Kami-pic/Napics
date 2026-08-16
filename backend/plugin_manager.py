@@ -31,8 +31,39 @@ from core import github_access
 
 logger = logging.getLogger(__name__)
 
-# plugins/ 目录位于 backend/ 下
-PLUGINS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugins")
+# 镜像内置插件只读；第三方插件只能写入持久化数据目录。
+BUILTIN_PLUGINS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugins")
+PLUGINS_DIR = BUILTIN_PLUGINS_DIR  # 兼容旧测试与外部导入
+CORE_BUILTIN_PLUGIN_IDS = frozenset({
+    "metadata-tmdb",
+    "metadata-douban",
+    "metadata-bangumi",
+    "search-prowlarr",
+    "download-qbittorrent",
+    "storage-openlist",
+    "feature-completeness",
+    "feature-discover",
+    "feature-local-match",
+    "feature-subscribe",
+})
+
+
+def _default_external_plugins_dir() -> str:
+    data_dir = os.environ.get("NAPICS_DATA_DIR") or os.path.dirname(os.path.abspath(__file__))
+    return os.path.abspath(
+        os.environ.get("NAPICS_EXTERNAL_PLUGINS_DIR") or os.path.join(data_dir, "plugins")
+    )
+
+
+class PluginConfigField(BaseModel):
+    """由 manifest 声明的插件配置字段。"""
+
+    key: str
+    label: str = ""
+    type: str = "text"
+    description: str = ""
+    placeholder: str = ""
+    required: bool = False
 
 
 class PluginManifest(BaseModel):
@@ -44,6 +75,7 @@ class PluginManifest(BaseModel):
     category: str = ""  # metadata / search / rss / download / storage / feature
     icon: str = ""
     requires_config: List[str] = Field(default_factory=list)
+    config_schema: List[PluginConfigField] = Field(default_factory=list)
     depends_on: List[str] = Field(default_factory=list)
     provides: List[str] = Field(default_factory=list)
     risk_level: str = "low"  # low / medium / high
@@ -58,11 +90,15 @@ class PluginInfo(BaseModel):
     category: str = ""
     icon: str = ""
     requires_config: List[str] = Field(default_factory=list)
+    config_schema: List[PluginConfigField] = Field(default_factory=list)
     depends_on: List[str] = Field(default_factory=list)
     provides: List[str] = Field(default_factory=list)
     risk_level: str = "low"
     installed: bool = False
-    source: str = "builtin"  # builtin / remote
+    source: str = "builtin"  # builtin / external
+    registered: bool = False
+    available: bool = False
+    load_error: str = ""
 
 
 class RemotePluginInfo(BaseModel):
@@ -90,41 +126,82 @@ class PluginSourceIndex(BaseModel):
 
 
 class PluginManager:
-    """插件管理器"""
+    """插件管理器。内置根只读，外部根承载可安装社区插件。"""
 
-    def __init__(self):
+    def __init__(
+        self,
+        builtin_plugins_dir: Optional[str] = None,
+        external_plugins_dir: Optional[str] = None,
+    ):
+        # PLUGINS_DIR 保留给旧测试注入；默认内置根只暴露 10 个核心插件。
+        self.builtin_plugins_dir = os.path.abspath(builtin_plugins_dir or PLUGINS_DIR)
+        if external_plugins_dir:
+            self.external_plugins_dir = os.path.abspath(external_plugins_dir)
+        elif PLUGINS_DIR != BUILTIN_PLUGINS_DIR:
+            self.external_plugins_dir = self.builtin_plugins_dir
+        else:
+            self.external_plugins_dir = _default_external_plugins_dir()
+        self._restrict_builtin_ids = self.builtin_plugins_dir == os.path.abspath(BUILTIN_PLUGINS_DIR)
         self._manifests: Dict[str, PluginManifest] = {}
-        self._loaded_modules: Dict[str, Any] = {}  # 已加载的插件模块
+        self._plugin_dirs: Dict[str, str] = {}
+        self._plugin_sources: Dict[str, str] = {}
+        self._loaded_modules: Dict[str, Any] = {}
+        self._load_errors: Dict[str, str] = {}
         self._load_manifests()
 
-    def _load_manifests(self) -> None:
-        """扫描 plugins/ 目录加载所有 manifest.json"""
-        self._manifests.clear()
-        if not os.path.isdir(PLUGINS_DIR):
-            logger.warning(f"[PluginManager] plugins 目录不存在: {PLUGINS_DIR}")
+    def _scan_root(self, root: str, source: str) -> None:
+        """扫描一个插件根；内置 ID 永远优先，外部同 ID 不得覆盖。"""
+        if not os.path.isdir(root):
+            if source == "builtin":
+                logger.warning(f"[PluginManager] 内置插件目录不存在: {root}")
             return
 
-        for entry in os.listdir(PLUGINS_DIR):
-            plugin_dir = os.path.join(PLUGINS_DIR, entry)
+        for entry in sorted(os.listdir(root)):
+            plugin_dir = os.path.join(root, entry)
             manifest_path = os.path.join(plugin_dir, "manifest.json")
             if not os.path.isfile(manifest_path):
                 continue
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                manifest = PluginManifest(**data)
+                    manifest = PluginManifest(**json.load(f))
+                if source == "builtin" and self._restrict_builtin_ids:
+                    if manifest.id not in CORE_BUILTIN_PLUGIN_IDS:
+                        continue
+                if manifest.id in self._manifests:
+                    logger.warning(
+                        f"[PluginManager] 忽略重复插件 {manifest.id}: {plugin_dir}，"
+                        f"已由 {self._plugin_sources[manifest.id]} 提供"
+                    )
+                    continue
                 self._manifests[manifest.id] = manifest
+                self._plugin_dirs[manifest.id] = plugin_dir
+                self._plugin_sources[manifest.id] = source
             except Exception as e:
                 logger.error(f"[PluginManager] 加载插件清单失败 {manifest_path}: {e}")
 
+    def _load_manifests(self) -> None:
+        """先扫描内置根，再扫描外部根，保证内置插件不可被覆盖。"""
+        self._manifests.clear()
+        self._plugin_dirs.clear()
+        self._plugin_sources.clear()
+        self._scan_root(self.builtin_plugins_dir, "builtin")
+        if self.external_plugins_dir != self.builtin_plugins_dir:
+            self._scan_root(self.external_plugins_dir, "external")
+
     def reload(self) -> None:
-        """重新扫描插件目录"""
+        """重新扫描插件目录。"""
         self._load_manifests()
 
     def list_all(self, installed_plugins: List[str]) -> List[PluginInfo]:
-        """返回所有可用插件列表（含安装状态）"""
+        """返回所有可发现插件及其真实安装、来源和加载状态。"""
         result = []
         for manifest in sorted(self._manifests.values(), key=lambda m: (m.category, m.name)):
+            installed = manifest.id in installed_plugins
+            init_path = os.path.join(self._plugin_dirs[manifest.id], "__init__.py")
+            registered = installed and (
+                not os.path.isfile(init_path) or manifest.id in self._loaded_modules
+            )
+            load_error = self._load_errors.get(manifest.id, "")
             result.append(PluginInfo(
                 id=manifest.id,
                 name=manifest.name,
@@ -133,17 +210,29 @@ class PluginManager:
                 category=manifest.category,
                 icon=manifest.icon,
                 requires_config=manifest.requires_config,
+                config_schema=manifest.config_schema,
                 depends_on=manifest.depends_on,
                 provides=manifest.provides,
                 risk_level=manifest.risk_level,
-                installed=manifest.id in installed_plugins,
-                source="builtin",
+                installed=installed,
+                source=self._plugin_sources[manifest.id],
+                registered=registered,
+                available=registered and not load_error,
+                load_error=load_error,
             ))
         return result
 
     def get_manifest(self, plugin_id: str) -> Optional[PluginManifest]:
-        """获取单个插件的 manifest"""
+        """获取单个插件的 manifest。"""
         return self._manifests.get(plugin_id)
+
+    def get_source(self, plugin_id: str) -> Optional[str]:
+        """获取插件真实来源。"""
+        return self._plugin_sources.get(plugin_id)
+
+    def get_discovered_plugin_ids(self) -> set[str]:
+        """返回当前双根目录实际发现的插件 ID。"""
+        return set(self._manifests)
 
     def check_dependencies(self, plugin_id: str, installed_plugins: List[str]) -> List[str]:
         """检查插件依赖是否满足，返回缺失的依赖列表"""
@@ -214,20 +303,8 @@ class PluginManager:
     # ── 插件模块加载 ──
 
     def _get_plugin_dir(self, plugin_id: str) -> Optional[str]:
-        """获取插件目录路径"""
-        for entry in os.listdir(PLUGINS_DIR):
-            plugin_dir = os.path.join(PLUGINS_DIR, entry)
-            manifest_path = os.path.join(plugin_dir, "manifest.json")
-            if not os.path.isfile(manifest_path):
-                continue
-            try:
-                with open(manifest_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                if data.get("id") == plugin_id:
-                    return plugin_dir
-            except Exception:
-                continue
-        return None
+        """返回扫描时记录的插件目录，避免跨根目录重新猜测来源。"""
+        return self._plugin_dirs.get(plugin_id)
 
     def _load_plugin_module(self, plugin_id: str) -> Optional[str]:
         """加载插件的 Python 模块。返回错误信息或 None（成功）。
@@ -238,6 +315,7 @@ class PluginManager:
         if plugin_id in self._loaded_modules:
             return None  # 已加载
 
+        self._load_errors.pop(plugin_id, None)
         plugin_dir = self._get_plugin_dir(plugin_id)
         if not plugin_dir:
             return None  # 无代码目录，纯声明式插件（内置功能开关）
@@ -264,6 +342,15 @@ class PluginManager:
                 from plugin_context import get_plugin_context
                 ctx = get_plugin_context(plugin_id)
                 register_fn(ctx)
+                manifest = self._manifests[plugin_id]
+                if self.get_source(plugin_id) == "external" and manifest.category in {"search", "rss"}:
+                    from plugin_context import get_plugin_providers
+                    registered = any(
+                        info.get("plugin_id") == plugin_id
+                        for info in get_plugin_providers().values()
+                    )
+                    if not registered:
+                        raise RuntimeError("插件未注册任何可执行 Provider")
                 logger.info(f"[PluginManager] 插件 {plugin_id} 已加载并注册")
 
             self._loaded_modules[plugin_id] = module
@@ -285,8 +372,10 @@ class PluginManager:
             except Exception as cleanup_error:
                 logger.warning(f"[PluginManager] 插件 {plugin_id} provider 回滚异常: {cleanup_error}")
             sys.modules.pop(module_name, None)
+            error_message = f"加载失败: {str(e)}"
+            self._load_errors[plugin_id] = error_message
             logger.error(f"[PluginManager] 加载插件 {plugin_id} 失败: {e}")
-            return f"加载失败: {str(e)}"
+            return error_message
 
     def _unload_plugin_module(self, plugin_id: str) -> None:
         """卸载插件模块"""
@@ -382,6 +471,12 @@ class PluginManager:
         """
         plugin_id = plugin_info.id
 
+        if plugin_id in CORE_BUILTIN_PLUGIN_IDS and self.get_source(plugin_id) == "builtin":
+            return {
+                "success": False,
+                "error": "builtin_plugin_conflict",
+                "message": f"插件 {plugin_id} 是内置插件，外部包不能覆盖",
+            }
         if plugin_id in self._manifests and plugin_id in installed_plugins:
             return {"success": False, "error": "already_installed", "message": f"插件 {plugin_id} 已安装"}
 
@@ -433,8 +528,9 @@ class PluginManager:
                     "message": f"文件校验失败（期望 {plugin_info.sha256[:16]}...，实际 {actual_hash[:16]}...）",
                 }
 
-        # 解压到 plugins/ 目录。旧目录保留到 manifest 校验和模块加载都成功。
-        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        # 解压到外部插件目录。旧目录保留到 manifest 校验和模块加载都成功。
+        os.makedirs(self.external_plugins_dir, exist_ok=True)
+        plugin_dir = os.path.join(self.external_plugins_dir, plugin_id)
         backup_dir = plugin_dir + ".bak"
         previous_manifest = self._manifests.get(plugin_id)
 
@@ -458,8 +554,8 @@ class PluginManager:
                     top_dirs.add(parts[0] if len(parts) > 1 else "")
 
                 if len(top_dirs) == 1 and "" not in top_dirs:
-                    safe_extract_all(zf, PLUGINS_DIR)
-                    extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
+                    safe_extract_all(zf, self.external_plugins_dir)
+                    extracted_dir = os.path.join(self.external_plugins_dir, top_dirs.pop())
                     if extracted_dir != plugin_dir:
                         if os.path.isdir(plugin_dir):
                             shutil.rmtree(plugin_dir)
@@ -495,6 +591,8 @@ class PluginManager:
                     "message": f"manifest id={manifest.id} 与请求插件 {plugin_id} 不一致",
                 }
             self._manifests[manifest.id] = manifest
+            self._plugin_dirs[manifest.id] = plugin_dir
+            self._plugin_sources[manifest.id] = "external"
         except Exception as e:
             _restore_backup()
             return {
@@ -507,6 +605,8 @@ class PluginManager:
         if load_err:
             if previous_manifest is None:
                 self._manifests.pop(plugin_id, None)
+                self._plugin_dirs.pop(plugin_id, None)
+                self._plugin_sources.pop(plugin_id, None)
             else:
                 self._manifests[plugin_id] = previous_manifest
             _restore_backup()
@@ -577,7 +677,8 @@ class PluginManager:
                 }
 
         # 解压并提取子目录。旧目录保留到 manifest 校验和模块加载都成功。
-        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        os.makedirs(self.external_plugins_dir, exist_ok=True)
+        plugin_dir = os.path.join(self.external_plugins_dir, plugin_id)
         backup_dir = plugin_dir + ".bak"
 
         def _restore_backup():
@@ -664,6 +765,8 @@ class PluginManager:
                     "message": f"manifest id={manifest.id} 与请求插件 {plugin_id} 不一致",
                 }
             self._manifests[manifest.id] = manifest
+            self._plugin_dirs[manifest.id] = plugin_dir
+            self._plugin_sources[manifest.id] = "external"
         except Exception as e:
             _restore_backup()
             return {
@@ -676,6 +779,8 @@ class PluginManager:
         if load_err:
             if previous_manifest is None:
                 self._manifests.pop(plugin_id, None)
+                self._plugin_dirs.pop(plugin_id, None)
+                self._plugin_sources.pop(plugin_id, None)
             else:
                 self._manifests[plugin_id] = previous_manifest
             _restore_backup()
@@ -692,18 +797,27 @@ class PluginManager:
         return {"success": True, "plugin_id": plugin_id}
 
     def uninstall_remote_plugin(self, plugin_id: str, installed_plugins: List[str]) -> Dict[str, Any]:
-        """卸载远程插件（卸载 + 删除文件）"""
+        """卸载外部插件并删除其持久化目录，绝不触碰内置根。"""
+        if self.get_source(plugin_id) != "external":
+            return {
+                "success": False,
+                "error": "not_external_plugin",
+                "message": f"插件 {plugin_id} 不是可删除的外部插件",
+            }
         result = self.uninstall(plugin_id, installed_plugins)
         if not result["success"]:
             return result
 
         # 删除插件目录
-        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        plugin_dir = os.path.join(self.external_plugins_dir, plugin_id)
         if os.path.isdir(plugin_dir):
             try:
                 shutil.rmtree(plugin_dir)
                 self._manifests.pop(plugin_id, None)
-                logger.info(f"[PluginManager] 已删除远程插件目录: {plugin_dir}")
+                self._plugin_dirs.pop(plugin_id, None)
+                self._plugin_sources.pop(plugin_id, None)
+                self._load_errors.pop(plugin_id, None)
+                logger.info(f"[PluginManager] 已删除外部插件目录: {plugin_dir}")
             except Exception as e:
                 logger.warning(f"[PluginManager] 删除插件目录失败: {e}")
 
@@ -791,7 +905,13 @@ class PluginManager:
         except Exception as e:
             return {"success": False, "error": "parse_error", "message": f"解析 manifest.json 失败: {str(e)}"}
 
-        # 检查是否已安装
+        # 检查是否与内置插件冲突或已经安装
+        if plugin_id in CORE_BUILTIN_PLUGIN_IDS and self.get_source(plugin_id) == "builtin":
+            return {
+                "success": False,
+                "error": "builtin_plugin_conflict",
+                "message": f"插件 {plugin_id} 是内置插件，外部仓库不能覆盖",
+            }
         if plugin_id in installed_plugins:
             return {"success": False, "error": "already_installed", "message": f"插件 {plugin_id} 已安装"}
 
@@ -805,11 +925,13 @@ class PluginManager:
             return {"success": False, "error": "download_failed",
                     "message": f"下载仓库失败（已尝试官方地址与镜像）: {used}"}
 
-        # 解压到 plugins/ 目录
-        plugin_dir = os.path.join(PLUGINS_DIR, plugin_id)
+        # 解压到外部插件目录
+        os.makedirs(self.external_plugins_dir, exist_ok=True)
+        plugin_dir = os.path.join(self.external_plugins_dir, plugin_id)
+        backup_dir = plugin_dir + ".bak"
+        previous_manifest = self._manifests.get(plugin_id)
         try:
             if os.path.isdir(plugin_dir):
-                backup_dir = plugin_dir + ".bak"
                 if os.path.isdir(backup_dir):
                     shutil.rmtree(backup_dir)
                 os.rename(plugin_dir, backup_dir)
@@ -824,8 +946,8 @@ class PluginManager:
                         top_dirs.add(parts[0])
 
                 if len(top_dirs) == 1:
-                    safe_extract_all(zf, PLUGINS_DIR)
-                    extracted_dir = os.path.join(PLUGINS_DIR, top_dirs.pop())
+                    safe_extract_all(zf, self.external_plugins_dir)
+                    extracted_dir = os.path.join(self.external_plugins_dir, top_dirs.pop())
                     if extracted_dir != plugin_dir:
                         if os.path.isdir(plugin_dir):
                             shutil.rmtree(plugin_dir)
@@ -833,13 +955,7 @@ class PluginManager:
                 else:
                     safe_extract_all(zf, plugin_dir)
 
-            # 清理备份
-            backup_dir = plugin_dir + ".bak"
-            if os.path.isdir(backup_dir):
-                shutil.rmtree(backup_dir)
-
         except Exception as e:
-            backup_dir = plugin_dir + ".bak"
             if os.path.isdir(backup_dir):
                 if os.path.isdir(plugin_dir):
                     shutil.rmtree(plugin_dir)
@@ -856,14 +972,44 @@ class PluginManager:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             manifest = PluginManifest(**data)
+            if manifest.id != plugin_id:
+                raise ValueError(f"manifest id={manifest.id} 与请求插件 {plugin_id} 不一致")
             self._manifests[manifest.id] = manifest
+            self._plugin_dirs[manifest.id] = plugin_dir
+            self._plugin_sources[manifest.id] = "external"
         except Exception as e:
-            shutil.rmtree(plugin_dir)
+            if os.path.isdir(plugin_dir):
+                shutil.rmtree(plugin_dir)
+            if os.path.isdir(backup_dir):
+                os.rename(backup_dir, plugin_dir)
+            if previous_manifest is not None:
+                self._manifests[plugin_id] = previous_manifest
+                self._plugin_dirs[plugin_id] = plugin_dir
+                self._plugin_sources[plugin_id] = "external"
+            else:
+                self._manifests.pop(plugin_id, None)
+                self._plugin_dirs.pop(plugin_id, None)
+                self._plugin_sources.pop(plugin_id, None)
             return {"success": False, "error": "invalid_manifest", "message": f"manifest.json 无效: {str(e)}"}
 
         load_err = self._load_plugin_module(plugin_id)
         if load_err:
-            logger.warning(f"[PluginManager] GitHub 插件 {plugin_id} 模块加载失败: {load_err}")
+            self._unload_plugin_module(plugin_id)
+            if os.path.isdir(plugin_dir):
+                shutil.rmtree(plugin_dir)
+            if os.path.isdir(backup_dir):
+                os.rename(backup_dir, plugin_dir)
+            if previous_manifest is not None:
+                self._manifests[plugin_id] = previous_manifest
+                self._plugin_dirs[plugin_id] = plugin_dir
+                self._plugin_sources[plugin_id] = "external"
+            else:
+                self._manifests.pop(plugin_id, None)
+                self._plugin_dirs.pop(plugin_id, None)
+                self._plugin_sources.pop(plugin_id, None)
+            return {"success": False, "error": "load_failed", "message": load_err}
 
+        if os.path.isdir(backup_dir):
+            shutil.rmtree(backup_dir)
         logger.info(f"[PluginManager] 从 GitHub 安装插件成功: {plugin_id} ({github_url})")
         return {"success": True, "plugin_id": plugin_id, "name": manifest.name}

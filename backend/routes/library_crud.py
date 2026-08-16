@@ -335,9 +335,11 @@ def set_clean_name(req: dict):
 @router.get("/library/completeness")
 def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = False):
     """获取 TV 文件夹的季集完整度（基于 TMDB 数据源）"""
-    from plugin_guard import is_feature_allowed
+    from plugin_guard import is_feature_allowed, is_metadata_allowed
     if not is_feature_allowed("completeness"):
         return {"status": "plugin_not_installed", "message": "请先安装「季集完整性检测」插件"}
+    if not is_metadata_allowed("tmdb"):
+        return {"status": "metadata_plugin_not_installed", "message": "请先安装「TMDB 元数据」插件"}
 
     from completeness import (
         collect_local_episodes, get_tmdb_id_from_folder, compute_completeness,
@@ -383,7 +385,13 @@ def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = F
 @router.post("/library/completeness/refresh-all")
 def refresh_all_completeness():
     """批量预计算所有 TV 文件夹的完整度（后台运行）"""
+    import plugin_guard
     from completeness import batch_refresh_all
+
+    if not plugin_guard.is_feature_allowed("completeness"):
+        return {"status": "plugin_not_installed", "message": "请先安装「季集完整性检测」插件"}
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"status": "metadata_plugin_not_installed", "message": "请先安装「TMDB 元数据」插件"}
 
     tc = _tmdb_client()
     if not tc:
@@ -394,6 +402,8 @@ def refresh_all_completeness():
 
     def _run():
         try:
+            if not plugin_guard.is_feature_allowed("completeness") or not plugin_guard.is_metadata_allowed("tmdb"):
+                return
             batch_refresh_all(tc, nas_paths, category_tags)
         except Exception as e:
             logger.error(f"[completeness] 批量预计算异常: {e}")

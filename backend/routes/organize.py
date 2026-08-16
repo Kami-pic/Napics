@@ -27,6 +27,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _optional_raw_tmdb_client():
+    """仅在 TMDB 插件已安装且已配置时创建旧整理接口客户端。"""
+    import plugin_guard
+
+    api_key = config_m.config.tmdb_api_key
+    if not api_key or not plugin_guard.is_metadata_allowed("tmdb"):
+        return None
+    return tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, "http_proxy", "") or "")
+
+
 @router.post("/organize/rollback")
 def rollback_rename(snapshot_id: int):
     """回滚重命名操作，同时更新媒体库路径"""
@@ -69,8 +79,7 @@ def rename_videos(path: str, dry_run: bool = True, shadow_only: bool = False):
     支持文件夹和单个文件
     shadow_only=True 时不改文件名，只把标准名存到影子名中
     无论哪种模式，都会生成影子名"""
-    api_key = config_m.config.tmdb_api_key
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '') if api_key else None
+    client = _optional_raw_tmdb_client()
     library = config_m.load_library()
     
     # 支持单个文件：取其父文件夹来处理（仅预览和影子名用）
@@ -208,10 +217,13 @@ def scrape_supplement(path: str):
     """刮削补充（只补缺少的字段）"""
     if not os.path.isdir(path):
         raise HTTPException(status_code=404, detail="Not a directory")
-    api_key = config_m.config.tmdb_api_key
-    if not api_key:
+    client = _optional_raw_tmdb_client()
+    if not client:
+        import plugin_guard
+
+        if not plugin_guard.is_metadata_allowed("tmdb"):
+            return {"status": "plugin_not_installed", "message": "请先安装「TMDB 元数据」插件"}
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
     return organizer.scrape_supplement(path, client)
 
 @router.post("/organize/seasons")
@@ -219,8 +231,7 @@ def reorganize_seasons(path: str, dry_run: bool = True):
     """多季规整"""
     if not os.path.isdir(path):
         raise HTTPException(status_code=404, detail="Not a directory")
-    api_key = config_m.config.tmdb_api_key
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '') if api_key else None
+    client = _optional_raw_tmdb_client()
     result = organizer.reorganize_seasons(path, client, dry_run, category_hint=_get_category_from_path(path))
     if not dry_run and result.get("ops"):
         _sync_library_paths(result["ops"])
@@ -237,8 +248,7 @@ def organize_folder(path: str, dry_run: bool = True):
     """归类整理 — 消费分析层输出执行（旧路由，兼容）"""
     if not os.path.isdir(path):
         raise HTTPException(status_code=404, detail="Not a directory")
-    api_key = config_m.config.tmdb_api_key
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '') if api_key else None
+    client = _optional_raw_tmdb_client()
     library = config_m.load_library()
     category_hint = _get_category_from_path(path)
     result = organizer.organize_folder(path, client, dry_run, library, category_hint=category_hint)
@@ -384,9 +394,14 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
             result["plan"] = scrape_result.get("plan", [])
             result["summary"] = scrape_result.get("summary", {})
         else:
+            import plugin_guard
+
             result["tmdb_match"] = {}
             result["plan"] = []
-            result["summary"] = {"error": "TMDB API key not configured"}
+            if plugin_guard.is_metadata_allowed("tmdb"):
+                result["summary"] = {"error": "TMDB API key not configured"}
+            else:
+                result["summary"] = {"error": "plugin_not_installed"}
 
         return result
 
@@ -411,6 +426,11 @@ async def organize_full(path: str, dry_run: bool = True, use_ai: bool = False,
             tmdb_match = action_plan.get("tmdb_match", {})
             plan_items = action_plan.get("plan", [])
             folder_type = action_plan.get("folder_type", "")
+            if tmdb_match.get("tmdb_id") and not client:
+                raise HTTPException(
+                    status_code=409,
+                    detail={"error": "metadata_plugin_unavailable", "provider": "tmdb"},
+                )
             duplicate_targets = _find_duplicate_target_paths(plan_items)
             if duplicate_targets:
                 sample_targets = "\n".join(duplicate_targets[:3])

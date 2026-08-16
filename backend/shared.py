@@ -78,8 +78,15 @@ try:
 except Exception as _e:
     logger.error(f"[Shared] 媒体库索引构建失败: {_e}")
 
-# 注册回调：save_library 后自动刷新索引
-config_m._on_library_save_callbacks.append(lambda lib: media_matcher.build_index(lib))
+# 注册回调：save_library 后仅在插件启用时刷新索引
+def _refresh_media_match_index(library: list):
+    import plugin_guard
+
+    if plugin_guard.is_feature_allowed("local_match"):
+        media_matcher.build_index(library)
+
+
+config_m._on_library_save_callbacks.append(_refresh_media_match_index)
 
 # 注册回调：save_library 后延迟刷新受影响的 TV 文件夹完整度
 _completeness_prev_paths: set = set()
@@ -89,6 +96,10 @@ _completeness_lock = threading.Lock()
 def _on_library_save_refresh_completeness(library: list):
     """save_library 回调：对比新旧库数据，找出变更的文件路径，延迟刷新完整度"""
     global _completeness_prev_paths, _completeness_timer
+    import plugin_guard
+
+    if not plugin_guard.is_feature_allowed("completeness"):
+        return
 
     current_paths = set(v.get("file_path", "") for v in library if v.get("file_path"))
     with _completeness_lock:
@@ -110,6 +121,10 @@ def _on_library_save_refresh_completeness(library: list):
 
         def _do_refresh():
             try:
+                import plugin_guard
+
+                if not plugin_guard.is_feature_allowed("completeness") or not plugin_guard.is_metadata_allowed("tmdb"):
+                    return
                 from completeness import refresh_affected_folders
                 tc = _tmdb_client()
                 if tc:
@@ -156,6 +171,7 @@ def _get_pan_search_service() -> PanSearchService:
         _pan_search_service = PanSearchService(
             search_sources=sources,
             pansou_api_url="https://pansou.app",
+            scraper_proxy=config_m.config.http_proxy or "",
         )
     return _pan_search_service
 
@@ -276,21 +292,25 @@ def _get_file_relocator() -> FileRelocator:
 
 
 def _tmdb_client():
-    """统一创建 MetadataService（包装 TMDBClient），自动带 proxy"""
+    """统一创建 MetadataService（包装 TMDBClient），自动带 proxy。"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return None
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         return None
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '')
+    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, "http_proxy", "") or "")
     return metadata_service.MetadataService(client)
 
 
 def get_clients():
-    """动态实例化客户端（由配置驱动）"""
+    """动态实例化客户端（由配置和插件安装状态驱动）。"""
     conf = config_m.config
-    raw_tmdb = tmdb_client.TMDBClient(conf.tmdb_api_key, proxy=getattr(conf, 'http_proxy', '') or '')
+    tmdb = _tmdb_client()
     return {
         "search": searcher.ProwlarrClient(conf.prowlarr_url, conf.prowlarr_api_key),
-        "tmdb": metadata_service.MetadataService(raw_tmdb),
+        "tmdb": tmdb,
         "qb": downloader.QBittorrentClient(conf.qb_url, username=conf.qb_username, password=conf.qb_password),
         "alist": downloader.AlistManager(conf.alist_url, conf.alist_token),
         "netdisk": searcher.NetdiskSearcher()

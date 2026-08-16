@@ -6,6 +6,15 @@
     "category": "feature",
     "icon": "📊",
     "requires_config": ["tmdb_api_key"],
+    "config_schema": [
+        {
+            "key": "tmdb_api_key",
+            "label": "TMDB API Key",
+            "type": "password",
+            "description": "完整性检测复用 TMDB 元数据插件的 API Key",
+            "required": true
+        }
+    ],
     "depends_on": ["metadata-tmdb"],
     "provides": ["Feature:completeness"],
     "risk_level": "low"

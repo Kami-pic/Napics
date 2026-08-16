@@ -46,7 +46,7 @@ def get_media_info(title: str, year: str = "", type: str = "movie", subtitle: st
         if not en and not tmdb_id:
             return
         try:
-            from routes.discover import enrich_cache_put
+            from discover_enrich import enrich_cache_put
             cache_key = ""
             if id and source == "douban":
                 cache_key = f"douban_{id}"
@@ -191,6 +191,10 @@ def _enrich_ratings(detail: dict, title: str, year: str, type: str, subtitle: st
 
 def _try_douban_detail(title: str, year: str, type: str, douban_id: str = "") -> dict | None:
     """尝试从豆瓣 v2 获取详情"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("douban"):
+        return None
     try:
         media_type = "tv" if type == "tv" else "movie"
 
@@ -294,6 +298,10 @@ def _format_douban_detail(detail: dict) -> dict:
 
 def _try_bangumi_detail(title: str, subtitle: str = "", bgm_id: int = 0) -> dict | None:
     """尝试从 Bangumi 获取详情"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("bangumi"):
+        return None
     try:
         if bgm_id > 0:
             logger.info(f"[MediaInfo._try_bangumi] 用 ID 直接拉: bgm_id={bgm_id}")
@@ -379,6 +387,10 @@ class AddMediaRequest(BaseModel):
 
 def _try_tmdb_detail_by_id(tmdb_id: int, type: str) -> dict:
     """用 tmdb_id 直接拉详情"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"found": False}
     try:
         provider = get_metadata_provider_map().get("tmdb")
         detail = provider.get_detail(str(tmdb_id), "tv" if type == "tv" else "movie") if provider else None
@@ -429,6 +441,10 @@ def _format_tmdb_metadata_detail(detail) -> dict:
 
 def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> dict:
     """尝试从 TMDB 获取详情"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"found": False}
     try:
         provider = get_metadata_provider_map().get("tmdb")
         if not provider:
@@ -449,7 +465,7 @@ def _try_tmdb_detail(title: str, year: str, type: str, subtitle: str = "") -> di
         best = _pick_best(title, _search(title), year)
         if not best and subtitle and subtitle != title:
             best = _pick_best(subtitle, _search(subtitle), year)
-        if not best:
+        if not best and plugin_guard.is_metadata_allowed("douban"):
             douban_results = douban_api_v2.search(title, count=5) or douban_client.search(title)
             for dr in douban_results:
                 alt_name = dr.get("subtitle", "") or dr.get("original_title", "")

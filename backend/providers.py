@@ -72,8 +72,11 @@ def _get_registered_provider_ids() -> dict[ProviderKind, set[str]]:
     except Exception:
         pass
 
-    # Prowlarr、元数据、下载和存储 Provider 由主体适配器提供，不依赖插件运行时注册。
+    # 以下 Provider 由主体适配器实现，但仍由对应插件控制安装/卸载。
     registered[ProviderKind.SEARCH].add("prowlarr")
+    registered[ProviderKind.METADATA].update({"tmdb", "douban", "bangumi"})
+    registered[ProviderKind.DOWNLOAD].update({"qbittorrent", "openlist"})
+    registered[ProviderKind.STORAGE].add("openlist_storage")
     return registered
 
 
@@ -127,7 +130,7 @@ def list_providers() -> ProviderCatalog:
         filtered_pan = []
     filtered_metadata = _with_availability([
         p for p in catalog.metadata if f"metadata-{p.id}" in installed
-    ])
+    ], registered[ProviderKind.METADATA])
     allowed_rss = get_allowed_rss_sources()
     filtered_rss = _with_availability(
         [p for p in catalog.rss if p.id.removeprefix("rss_") in allowed_rss],
@@ -135,10 +138,10 @@ def list_providers() -> ProviderCatalog:
     )
     filtered_download = _with_availability([
         p for p in catalog.download if f"download-{p.id}" in installed
-    ])
+    ], registered[ProviderKind.DOWNLOAD])
     filtered_storage = _with_availability([
-        p for p in catalog.storage if any(pid.startswith("storage-") for pid in installed)
-    ]) if any(pid.startswith("storage-") for pid in installed) else []
+        p for p in catalog.storage if p.id == "openlist_storage" and "storage-openlist" in installed
+    ], registered[ProviderKind.STORAGE])
 
     return ProviderCatalog(
         search=filtered_search,

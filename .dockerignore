@@ -53,3 +53,27 @@ _media/
 *.bat
 *.vbs
 docker-compose.yml
+
+# ── 插件分层 ──
+# 主镜像只携带 10 个核心插件；社区搜索/RSS/下载实现由插件源安装到 /app/data/plugins。
+backend/plugins/*
+!backend/plugins/metadata-tmdb/
+!backend/plugins/metadata-tmdb/**
+!backend/plugins/metadata-douban/
+!backend/plugins/metadata-douban/**
+!backend/plugins/metadata-bangumi/
+!backend/plugins/metadata-bangumi/**
+!backend/plugins/search-prowlarr/
+!backend/plugins/search-prowlarr/**
+!backend/plugins/download-qbittorrent/
+!backend/plugins/download-qbittorrent/**
+!backend/plugins/storage-openlist/
+!backend/plugins/storage-openlist/**
+!backend/plugins/feature-completeness/
+!backend/plugins/feature-completeness/**
+!backend/plugins/feature-discover/
+!backend/plugins/feature-discover/**
+!backend/plugins/feature-local-match/
+!backend/plugins/feature-local-match/**
+!backend/plugins/feature-subscribe/
+!backend/plugins/feature-subscribe/**

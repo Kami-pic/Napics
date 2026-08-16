@@ -155,3 +155,18 @@ def test_merge_deduplicates():
     _merge_alias_set(target, source)
     assert target.cn_names == ["流浪地球", "流浪地球2"]
     assert target.en_names == ["Earth", "Wandering"]
+
+
+def test_disabled_sources_are_not_called():
+    douban = MockDoubanClient(should_fail=True)
+    bangumi = MockBangumiClient(should_fail=True)
+    resolver = AliasResolver(
+        douban=douban,
+        bangumi=bangumi,
+        enable_douban=False,
+        enable_bangumi=False,
+    )
+
+    result = resolver.resolve("测试影片")
+
+    assert result.cn_names == ["测试影片"]

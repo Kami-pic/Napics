@@ -42,9 +42,13 @@ def clear_shadow_name(req: ShadowNameDeleteRequest):
 
 @router.post("/media/shadow-name/batch")
 def batch_generate_shadow_names():
-    """批量生成影子名（NFO + TMDB 搜索）"""
+    """批量生成影子名（NFO 优先，TMDB 插件可用时再联网补全）"""
+    import plugin_guard
+
     api_key = config_m.config.tmdb_api_key
-    client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, 'http_proxy', '') or '') if api_key else None
+    client = None
+    if api_key and plugin_guard.is_metadata_allowed("tmdb"):
+        client = tmdb_client.TMDBClient(api_key, proxy=getattr(config_m.config, "http_proxy", "") or "")
     stats = shadow_m.batch_generate(tmdb_client=client)
     return {"status": "ok", **stats}
 
@@ -53,6 +57,10 @@ def batch_generate_shadow_names():
 @router.get("/config/indexers")
 def get_indexer_priorities():
     """获取索引器优先级列表，每次从 Prowlarr 同步最新状态（含连接状态和优先级）"""
+    from plugin_guard import get_allowed_bt_sources
+
+    if "prowlarr" not in get_allowed_bt_sources():
+        return []
     from indexer_priority_manager import IndexerConfig
     indexer_m.load()
     
@@ -175,6 +183,10 @@ class IndexerPrioritySaveRequest(BaseModel):
 @router.post("/config/indexers")
 def save_indexer_priorities(req: IndexerPrioritySaveRequest):
     """保存索引器优先级配置"""
+    from plugin_guard import get_allowed_bt_sources
+
+    if "prowlarr" not in get_allowed_bt_sources():
+        return {"status": "plugin_not_installed", "count": 0}
     from indexer_priority_manager import IndexerConfig
 
     configs = [
@@ -197,6 +209,10 @@ def save_indexer_priorities(req: IndexerPrioritySaveRequest):
 def scrape_by_name(name: str, path: str = "", enhanced: bool = False):
     """根据名字刮削，如果提供 path 则写入 NFO + 海报
     enhanced=True 时使用增强刮削流程，返回置信度信息"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"status": "plugin_not_installed", "data": {}}
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")
@@ -325,6 +341,10 @@ def _write_scrape_result(path: str, result):
 @router.post("/scrape/select")
 def scrape_select(path: str, tmdb_id: int, media_type: str):
     """用户选择候选后，用指定 TMDB ID 执行刮削"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        raise HTTPException(status_code=409, detail={"error": "plugin_not_installed"})
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")

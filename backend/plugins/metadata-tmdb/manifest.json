@@ -6,6 +6,16 @@
     "category": "metadata",
     "icon": "🎬",
     "requires_config": ["tmdb_api_key"],
+    "config_schema": [
+        {
+            "key": "tmdb_api_key",
+            "label": "TMDB API Key",
+            "type": "password",
+            "description": "用于影视搜索、详情、海报和季集信息",
+            "placeholder": "在 TMDB 账户设置中获取",
+            "required": true
+        }
+    ],
     "depends_on": [],
     "provides": ["MetadataProvider:tmdb"],
     "risk_level": "low"

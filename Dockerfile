@@ -41,12 +41,16 @@ RUN apt-get update && \
 
 # 注意：刻意不设 HOSTNAME。Docker 运行时会把它覆盖成容器 ID，
 # 而 Next.js standalone 用它决定监听地址，所以改由 entrypoint 在启动命令上强制指定。
+# 限制 glibc 为多线程创建的 malloc arena 数量，减少扫描/并发搜索后
+# 已释放内存仍长期滞留在进程 RSS；不限制 Python/Node 可用内存和功能。
 ENV TZ=Asia/Shanghai \
     NODE_ENV=production \
     PORT=3000 \
     NAPICS_DATA_DIR=/app/data \
+    NAPICS_EXTERNAL_PLUGINS_DIR=/app/data/plugins \
     NAPICS_BACKEND_ORIGIN=http://127.0.0.1:8001 \
     PYTHONUNBUFFERED=1 \
+    MALLOC_ARENA_MAX=2 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app

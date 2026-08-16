@@ -99,17 +99,15 @@ class AppConfig(BaseModel):
     # 刮削配置
     default_scrape_source: str = "douban"          # 默认刮削源 "tmdb" | "douban"
     # 插件系统
-    # 已安装的插件 ID 列表（默认预装）。前 6 个为内置低风险插件，
-    # 后 2 个是保证"开箱能搜到东西"的第三方搜索源，属于有意保留的产品决策。
+    # 新安装默认预装 6 个低风险核心插件；社区插件只从外部源按需安装。
+    # 已有配置不会被该默认值覆盖，用户主动卸载状态会被保留。
     installed_plugins: List[str] = [
         "metadata-tmdb",
-        "metadata-douban",
+        "metadata-bangumi",
         "download-qbittorrent",
+        "feature-completeness",
         "feature-discover",
         "feature-local-match",
-        "metadata-bangumi",
-        "search-bt-movie-tv",
-        "search-pan-github",
     ]
     plugin_sources: List[PluginSourceConfig] = [  # 外部插件源列表（预置官方社区源）
         PluginSourceConfig(

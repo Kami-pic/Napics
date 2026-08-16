@@ -6,6 +6,28 @@
     "category": "download",
     "icon": "⬇️",
     "requires_config": ["qb_url", "qb_username", "qb_password"],
+    "config_schema": [
+        {
+            "key": "qb_url",
+            "label": "qBittorrent 地址",
+            "type": "url",
+            "description": "Napics 后端可访问的 qBittorrent Web UI 地址",
+            "placeholder": "http://host.docker.internal:8080",
+            "required": true
+        },
+        {
+            "key": "qb_username",
+            "label": "qBittorrent 用户名",
+            "type": "text",
+            "required": true
+        },
+        {
+            "key": "qb_password",
+            "label": "qBittorrent 密码",
+            "type": "password",
+            "required": true
+        }
+    ],
     "depends_on": [],
     "provides": ["DownloadBackend:qbittorrent"],
     "risk_level": "medium"

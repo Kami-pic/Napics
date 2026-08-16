@@ -9,6 +9,7 @@ from routes import search_single as search_single_routes
 from searcher import SearchResult
 from test_support.route_response_snapshot import RouteResponseSnapshot
 from bt_search_provider_adapter import DirectBTSearchProviderAdapter, build_direct_bt_search_metadata
+import plugin_guard
 
 
 class FakeSearchClient:
@@ -186,6 +187,7 @@ def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
         build_direct_bt_search_metadata("bitsearch", "Bitsearch"),
         lambda: scraper,
     )
+    monkeypatch.setattr(plugin_guard, "get_allowed_bt_sources", lambda: {"prowlarr", "bitsearch"})
     monkeypatch.setattr(search_single_routes, "get_clients", lambda: {"search": client})
     monkeypatch.setattr(search_single_routes, "get_direct_bt_provider_map", lambda: {"bitsearch": provider})
     monkeypatch.setattr(
@@ -253,3 +255,169 @@ def test_search_stream_snapshot_emits_source_done_event(monkeypatch):
     assert payload["count"] == 1
     assert payload["search_keywords"] == ["Attack on Titan", "进击的巨人"]
     assert payload["hit_keyword"] == "Attack on Titan"
+
+
+def test_search_resources_without_prowlarr_never_creates_prowlarr_client(monkeypatch):
+    direct_result = SearchResult(
+        title="YTS Result",
+        size_gb=1.5,
+        indexer="yts",
+        seeders=12,
+        leechers=1,
+        download_url="magnet:?xt=urn:btih:CCCCCC1234567890ABCDEF1234567890ABCDEF12",
+        info_url="https://example.com/yts",
+        quality_tag="WEB-1080p",
+    )
+    monkeypatch.setattr("plugin_guard.get_allowed_bt_sources", lambda: {"yts"})
+    monkeypatch.setattr(
+        search_routes,
+        "get_clients",
+        lambda: (_ for _ in ()).throw(AssertionError("不应创建 Prowlarr 客户端")),
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "_merge_bt_extra_sources",
+        lambda keyword, existing, allowed_sources=None: [direct_result],
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "_enrich_result",
+        lambda result, query: {"title": result.title, "_source": result.indexer},
+    )
+
+    body = search_routes.search_resources(query="Dune")
+
+    assert body["bt_count"] == 1
+    assert body["bt_results"][0]["_source"] == "yts"
+
+
+def test_search_single_keyword_without_prowlarr_uses_allowed_direct_source(monkeypatch):
+    class FakeDirectScraper:
+        def search_as_search_results(self, keyword, max_results=40):
+            return [
+                SearchResult(
+                    title="YTS Result",
+                    size_gb=1.5,
+                    indexer="yts",
+                    seeders=12,
+                    leechers=1,
+                    download_url="magnet:?xt=urn:btih:DDDDDD1234567890ABCDEF1234567890ABCDEF12",
+                    info_url="https://example.com/yts",
+                    quality_tag="WEB-1080p",
+                )
+            ]
+
+    provider = DirectBTSearchProviderAdapter(
+        build_direct_bt_search_metadata("yts", "YTS"),
+        lambda: FakeDirectScraper(),
+    )
+    monkeypatch.setattr("plugin_guard.get_allowed_bt_sources", lambda: {"yts"})
+    monkeypatch.setattr(
+        search_single_routes,
+        "get_clients",
+        lambda: (_ for _ in ()).throw(AssertionError("不应创建 Prowlarr 客户端")),
+    )
+    monkeypatch.setattr(search_single_routes, "get_direct_bt_provider_map", lambda: {"yts": provider})
+    monkeypatch.setattr(
+        search_single_routes,
+        "LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES",
+        ("yts",),
+    )
+    monkeypatch.setattr(
+        search_single_routes,
+        "config_m",
+        SimpleNamespace(config=SimpleNamespace(bt_search_sources={})),
+    )
+    monkeypatch.setattr(
+        search_single_routes,
+        "_enrich_result",
+        lambda result, query, match_names=None: {"title": result.title, "_source": result.indexer},
+    )
+
+    body = search_single_routes.search_single_keyword(keyword="Dune", skip_filter=True)
+
+    assert body["bt_count"] == 1
+    assert body["bt_results"][0]["_source"] == "yts"
+
+
+def test_search_resources_direct_only_applies_global_filter(monkeypatch):
+    results = [
+        SearchResult(
+            title="Dune 2021 CAM",
+            size_gb=1.5,
+            indexer="yts",
+            seeders=12,
+            leechers=1,
+            download_url="magnet:?xt=urn:btih:EEEEEE1234567890ABCDEF1234567890ABCDEF12",
+            info_url="https://example.com/cam",
+            quality_tag="CAM",
+        ),
+        SearchResult(
+            title="Dune 2021 WEB-DL",
+            size_gb=8.0,
+            indexer="yts",
+            seeders=20,
+            leechers=2,
+            download_url="magnet:?xt=urn:btih:FFFFFF1234567890ABCDEF1234567890ABCDEF12",
+            info_url="https://example.com/web",
+            quality_tag="WEB-1080p",
+        ),
+    ]
+    monkeypatch.setattr("plugin_guard.get_allowed_bt_sources", lambda: {"yts"})
+    monkeypatch.setattr(
+        search_routes,
+        "config_m",
+        SimpleNamespace(
+            config=SimpleNamespace(
+                search_filter=SimpleNamespace(must_include=[], must_exclude=["CAM"])
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "_merge_bt_extra_sources",
+        lambda keyword, existing, allowed_sources=None: results,
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "_enrich_result",
+        lambda result, query: {"title": result.title},
+    )
+
+    body = search_routes.search_resources(query="Dune")
+
+    assert body["bt_count"] == 1
+    assert body["bt_results"][0]["title"] == "Dune 2021 WEB-DL"
+
+
+def test_search_sources_does_not_duplicate_registered_builtin_provider(monkeypatch):
+    from provider_models import ProviderKind, ProviderMetadata
+
+    metadata = ProviderMetadata(
+        id="bitsearch",
+        name="Bitsearch",
+        kind=ProviderKind.SEARCH,
+        type="bt",
+        enabled=True,
+    )
+    monkeypatch.setattr("plugin_guard.get_allowed_bt_sources", lambda: {"bitsearch"})
+    monkeypatch.setattr("plugin_guard.is_pan_search_allowed", lambda: False)
+    monkeypatch.setattr(
+        "plugin_context.get_plugin_providers",
+        lambda: {
+            "bitsearch": {
+                "type": "scraper_search",
+                "metadata": metadata,
+                "plugin_id": "search-bt-mirror",
+            }
+        },
+    )
+    monkeypatch.setattr(
+        search_routes,
+        "config_m",
+        SimpleNamespace(config=SimpleNamespace(bt_search_sources={}, pan_search_sources={})),
+    )
+
+    names = [source["name"] for source in search_routes.get_search_sources()["sources"]]
+
+    assert names.count("bitsearch") == 1

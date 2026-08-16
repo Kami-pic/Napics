@@ -87,9 +87,11 @@ def _merge_alias_set(target: AliasSet, source: AliasSet) -> None:
 
 
 class AliasResolver:
-    def __init__(self, douban=None, bangumi=None):
+    def __init__(self, douban=None, bangumi=None, enable_douban: bool = True, enable_bangumi: bool = True):
         self.douban = douban or douban_client
         self.bangumi = bangumi or bangumi_client
+        self.enable_douban = enable_douban
+        self.enable_bangumi = enable_bangumi
         self._cache: dict[str, AliasSet] = {}
 
     def resolve(self, title: str, year: str = "",
@@ -115,18 +117,20 @@ class AliasResolver:
         result.cn_names.append(title)
 
         # 从豆瓣获取别名
-        try:
-            douban_aliases = self._from_douban(title)
-            _merge_alias_set(result, douban_aliases)
-        except Exception as e:
-            logger.error(f"[AliasResolver] douban failed, skipping: {e}")
+        if self.enable_douban:
+            try:
+                douban_aliases = self._from_douban(title)
+                _merge_alias_set(result, douban_aliases)
+            except Exception as e:
+                logger.error(f"[AliasResolver] douban failed, skipping: {e}")
 
         # 从 Bangumi 获取别名
-        try:
-            bangumi_aliases = self._from_bangumi(title)
-            _merge_alias_set(result, bangumi_aliases)
-        except Exception as e:
-            logger.error(f"[AliasResolver] bangumi failed, skipping: {e}")
+        if self.enable_bangumi:
+            try:
+                bangumi_aliases = self._from_bangumi(title)
+                _merge_alias_set(result, bangumi_aliases)
+            except Exception as e:
+                logger.error(f"[AliasResolver] bangumi failed, skipping: {e}")
 
         self._cache[cache_key] = result
         return result

@@ -31,11 +31,17 @@ def execute_scrape(path: str, force: bool = True):
     conf = config_m.config
     default_source = conf.default_scrape_source or "tmdb"
 
+    import plugin_guard
+
     # 豆瓣源：用豆瓣搜索+详情刮削
     if default_source == "douban":
+        if not plugin_guard.is_metadata_allowed("douban"):
+            return {"self": {"status": "plugin_not_installed", "data": None}}
         return _execute_scrape_douban(path, force)
 
     # TMDB 源（默认）
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"self": {"status": "plugin_not_installed", "data": None}}
     api_key = conf.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")
@@ -75,6 +81,10 @@ def execute_scrape(path: str, force: bool = True):
 
 def _execute_scrape_douban(path: str, force: bool = True):
     """豆瓣源刮削：搜索 → 取第一个候选 → 拉详情 → 写 NFO"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("douban"):
+        return {"self": {"status": "plugin_not_installed", "data": None}}
     from tmdb_client import ScrapeResult, parse_filename
     from clean_name_system import strip_noise, split_names
 
@@ -173,6 +183,10 @@ def _douban_metadata_detail_to_legacy(detail):
 @router.post("/scrape/batch")
 def batch_scrape_api(paths: List[str]):
     """批量刮削"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"status": "plugin_not_installed", "results": []}
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")

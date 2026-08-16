@@ -17,7 +17,10 @@ from bt_search_provider_factory import (
 )
 from prowlarr_search_provider_factory import get_prowlarr_provider_map
 from global_filter import GlobalFilter
-from search_helpers import enrich_result as _enrich_result
+from search_helpers import (
+    enrich_result as _enrich_result,
+    merge_bt_extra_sources as _merge_bt_extra_sources,
+)
 from provider_models import SearchCandidate, SearchRequest
 
 logger = logging.getLogger(__name__)
@@ -150,18 +153,34 @@ def search_single_keyword(
     skip_filter=False（默认）：含二次匹配+全局过滤（不含年份匹配）
     skip_filter=True：Prowlarr 裸搜，不做任何过滤
     """
-    clients = get_clients()
-    prowlarr_provider = get_prowlarr_provider_map(client_factory=lambda: clients["search"])["prowlarr"]
+    from plugin_guard import get_allowed_bt_sources
 
-    try:
-        candidates = prowlarr_provider.search(SearchRequest(query=keyword, limit=0))
-        raw_results = [_candidate_to_search_result(candidate) for candidate in candidates]
-    except Exception as e:
-        logger.error(f"[Search/Single] Prowlarr error: {e}")
+    allowed_bt = get_allowed_bt_sources()
+    if not allowed_bt:
         return {"keyword": keyword, "bt_count": 0, "bt_results": [], "total_raw": 0, "total_filtered": 0}
 
+    clients = None
+    raw_results = []
+    if "prowlarr" in allowed_bt:
+        clients = get_clients()
+        prowlarr_provider = get_prowlarr_provider_map(
+            client_factory=lambda: clients["search"]
+        )["prowlarr"]
+        try:
+            candidates = prowlarr_provider.search(SearchRequest(query=keyword, limit=0))
+            raw_results = [_candidate_to_search_result(candidate) for candidate in candidates]
+        except Exception as e:
+            logger.error(f"[Search/Single] Prowlarr error: {e}")
+
+    if not raw_results and not skip_filter:
+        raw_results = _merge_bt_extra_sources(
+            keyword,
+            [],
+            allowed_sources=allowed_bt,
+        )
+
     total_raw = len(raw_results)
-    if not raw_results:
+    if not raw_results and not skip_filter:
         return {"keyword": keyword, "bt_count": 0, "bt_results": [], "total_raw": 0, "total_filtered": 0}
 
     # 去重
@@ -181,7 +200,7 @@ def search_single_keyword(
             providers = [
                 (name, direct_providers[name])
                 for name in LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES
-                if name in direct_providers
+                if name in direct_providers and name in allowed_bt
             ]
             existing_hashes = set()
             for r in all_results:
@@ -236,7 +255,14 @@ def search_single_keyword(
         from secondary_matcher import SecondaryMatcher
 
         if media_type:
-            resolver = AliasResolver(douban_client, bangumi_client)
+            from plugin_guard import is_metadata_allowed
+
+            resolver = AliasResolver(
+                douban_client,
+                bangumi_client,
+                enable_douban=is_metadata_allowed("douban"),
+                enable_bangumi=is_metadata_allowed("bangumi"),
+            )
             aliases = resolver.resolve(keyword, "", media_type)
             target_titles = [keyword]
             if aliases:
@@ -266,5 +292,8 @@ def search_single_keyword(
         }
     except Exception as e:
         logger.error(f"[Search/Single] error: {e}")
-        raw = clients["search"].search(keyword)
+        if clients is not None:
+            raw = clients["search"].search(keyword)
+        else:
+            raw = deduped
         return {"keyword": keyword, "bt_count": len(raw), "bt_results": [r.dict() for r in raw], "total_raw": len(raw), "total_filtered": len(raw)}

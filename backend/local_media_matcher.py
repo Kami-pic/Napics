@@ -152,7 +152,9 @@ class LocalMediaMatcher:
         - status: 'none' / 'owned_low' / 'owned_high'
         - folder: 匹配到的文件夹路径（none 时为空）
         """
-        if not self._indexed:
+        import plugin_guard
+
+        if not plugin_guard.is_feature_allowed("local_match") or not self._indexed:
             return ("none", "")
 
         # 1. tmdb_id 精确匹配
@@ -256,6 +258,14 @@ class LocalMediaMatcher:
 
     def match_batch(self, items: List[dict]) -> List[dict]:
         """批量匹配，给每个 item 注入 local_status + local_folder 字段。"""
+        import plugin_guard
+
+        if not plugin_guard.is_feature_allowed("local_match"):
+            for item in items:
+                item["local_status"] = "none"
+                item["local_folder"] = ""
+            return items
+
         pending = []
         for item in items:
             status, folder = self.match(item)
@@ -311,6 +321,10 @@ class LocalMediaMatcher:
 
     def _enqueue_async(self, items: List[dict]):
         """将未匹配条目加入异步补全队列"""
+        import plugin_guard
+
+        if not plugin_guard.is_feature_allowed("local_match") or not plugin_guard.is_metadata_allowed("tmdb"):
+            return
         with self._queue_lock:
             # 去重：已在队列中的不重复加
             existing_ids = {i["douban_id"] for i in self._pending_queue}
@@ -330,6 +344,12 @@ class LocalMediaMatcher:
         save_counter = 0
         try:
             while True:
+                import plugin_guard
+
+                if not plugin_guard.is_feature_allowed("local_match") or not plugin_guard.is_metadata_allowed("tmdb"):
+                    with self._queue_lock:
+                        self._pending_queue.clear()
+                    break
                 with self._queue_lock:
                     if not self._pending_queue:
                         break
@@ -371,9 +391,15 @@ class LocalMediaMatcher:
     def _search_tmdb_id(self, title: str, year: str, original_title: str, media_type: str) -> Optional[int]:
         """用 TMDB API 搜索获取 tmdb_id"""
         try:
+            import plugin_guard
+
+            if not plugin_guard.is_feature_allowed("local_match") or not plugin_guard.is_metadata_allowed("tmdb"):
+                return None
             from shared import get_clients
 
             tmdb = get_clients()["tmdb"]
+            if not tmdb:
+                return None
 
             # 优先用 original_title 搜索（英文/原始名匹配率更高）
             search_titles = []

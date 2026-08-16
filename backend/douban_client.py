@@ -10,11 +10,21 @@ HEADERS = {
     "Referer": "https://movie.douban.com/",
 }
 
+
+def _douban_proxies(url: str):
+    """豆瓣域名在内置直连列表里，返回 None 表示直连。"""
+    try:
+        from core.proxy_policy import proxies_from_config
+        return proxies_from_config(url)
+    except Exception:
+        return None
+
+
 def search(query: str) -> List[Dict]:
     """豆瓣搜索建议，返回候选列表"""
     url = "https://movie.douban.com/j/subject_suggest"
     try:
-        resp = requests.get(url, params={"q": query}, headers=HEADERS, timeout=8)
+        resp = requests.get(url, params={"q": query}, headers=HEADERS, timeout=8, proxies=_douban_proxies(url))
         resp.raise_for_status()
         items = resp.json()
         results = []
@@ -50,7 +60,7 @@ def get_hot_list(media_type: str = "movie", page_start: int = 0, tag: str = "热
         "page_start": page_start,
     }
     try:
-        resp = requests.get(url, params=params, headers=HEADERS, timeout=8)
+        resp = requests.get(url, params=params, headers=HEADERS, timeout=8, proxies=_douban_proxies(url))
         resp.raise_for_status()
         data = resp.json()
         subjects = data.get("subjects", [])
@@ -89,7 +99,7 @@ def get_detail(douban_id: str) -> Optional[Dict]:
     """获取豆瓣影视详情（从网页解析）"""
     url = f"https://movie.douban.com/subject/{douban_id}/"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=10)
+        resp = requests.get(url, headers=HEADERS, timeout=10, proxies=_douban_proxies(url))
         resp.raise_for_status()
         html = resp.text
 

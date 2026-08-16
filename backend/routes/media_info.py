@@ -27,6 +27,10 @@ router = APIRouter()
 @router.get("/scrape/candidates")
 def scrape_candidates(name: str):
     """搜索 TMDB 返回多个候选结果供用户选择"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        return {"query": name, "candidates": [], "error": "plugin_not_installed"}
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="TMDB API Key not configured")
@@ -98,6 +102,10 @@ def scrape_candidates(name: str):
 @router.get("/scrape/douban")
 def scrape_douban_candidates(name: str):
     """搜索豆瓣返回候选结果（优先 API v2，fallback 旧版网页接口）"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("douban"):
+        return {"query": name, "candidates": [], "source": "disabled", "error": "plugin_not_installed"}
     parsed = tmdb_client.parse_filename(name)
     query = parsed["clean_name"] or name
 
@@ -143,6 +151,10 @@ def _douban_candidate_to_legacy(candidate):
 @router.post("/scrape/douban-select")
 def scrape_douban_select(path: str, douban_id: str, title: str = "", year: str = "", poster_url: str = "", subtitle: str = "", media_type: str = ""):
     """用户选择豆瓣候选后，用搜索结果数据写入 NFO + 海报"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("douban"):
+        return {"status": "plugin_not_installed", "data": None}
     from tmdb_client import ScrapeResult
     
     # 自动判断 media_type：优先用前端传入，否则先尝试 tv 再 movie
@@ -266,6 +278,10 @@ def _get_douban_provider_detail(provider, douban_id: str, media_type: str):
 @router.get("/scrape/bangumi")
 def scrape_bangumi_candidates(name: str):
     """搜索 Bangumi 返回候选结果"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("bangumi"):
+        return {"query": name, "candidates": [], "error": "plugin_not_installed"}
     parsed = tmdb_client.parse_filename(name)
     query = parsed["clean_name"] or name
     provider = get_metadata_provider_map().get("bangumi")
@@ -294,6 +310,10 @@ def _bangumi_candidate_to_legacy(candidate):
 @router.post("/scrape/bangumi-select")
 def scrape_bangumi_select(path: str, bgm_id: int):
     """用户选择 Bangumi 候选后，拉取详情写入 NFO + 海报"""
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("bangumi"):
+        return {"status": "plugin_not_installed", "data": None}
     provider = get_metadata_provider_map().get("bangumi")
     detail = provider.get_detail(str(bgm_id), "") if provider else None
     if not detail:

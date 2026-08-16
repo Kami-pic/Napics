@@ -450,3 +450,48 @@ def test_direct_release_load_failure_restores_existing_plugin(plugin_tmp_dir, mo
     assert os.path.isfile(os.path.join(existing_dir, "old.txt"))
     assert not os.path.exists(existing_dir + ".bak")
     assert manager.get_manifest(plugin_id).version == "1.0.0"
+
+
+def test_remote_release_is_written_only_to_external_root(plugin_tmp_dir, monkeypatch):
+    """远程包必须进入 external root，并返回真实 external 来源。"""
+    import hashlib
+    import io
+    import plugin_manager
+
+    builtin_dir = os.path.join(plugin_tmp_dir, "builtin")
+    external_dir = os.path.join(plugin_tmp_dir, "external")
+    os.makedirs(builtin_dir)
+    plugin_id = "external-only-plugin"
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            f"{plugin_id}/manifest.json",
+            json.dumps({"id": plugin_id, "name": "外部插件", "category": "feature"}),
+        )
+        archive.writestr(f"{plugin_id}/__init__.py", "def register(ctx): pass\n")
+    content = buffer.getvalue()
+
+    class Response:
+        def __init__(self, body):
+            self.content = body
+
+        def raise_for_status(self):
+            return None
+
+    monkeypatch.setattr(plugin_manager, "check_external_url", lambda url: (True, ""))
+    monkeypatch.setattr(plugin_manager.requests, "get", lambda *args, **kwargs: Response(content))
+    manager = PluginManager(builtin_dir, external_dir)
+
+    result = manager.install_remote_plugin(
+        RemotePluginInfo(
+            id=plugin_id,
+            download_url="https://example.com/external-only-plugin.zip",
+            sha256=hashlib.sha256(content).hexdigest(),
+        ),
+        [],
+    )
+
+    assert result["success"] is True
+    assert manager.get_source(plugin_id) == "external"
+    assert os.path.isfile(os.path.join(external_dir, plugin_id, "manifest.json"))
+    assert not os.path.exists(os.path.join(builtin_dir, plugin_id))

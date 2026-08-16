@@ -54,8 +54,11 @@ def _load(plugin_id: str):
     """用真实 PluginManager 加载插件，返回错误信息（None 表示成功）"""
     from plugin_manager import PluginManager
 
-    pm = PluginManager()  # 构造时自动扫描 plugins/ 下的 manifest.json
-    assert plugin_id in pm._manifests, f"{plugin_id} 的 manifest 未被发现"
+    pm = PluginManager(
+        builtin_plugins_dir=os.path.join(_PLUGINS_DIR, "__empty_builtin__"),
+        external_plugins_dir=_PLUGINS_DIR,
+    )
+    assert plugin_id in pm._manifests, f"{plugin_id} 的外部 manifest 未被发现"
     return pm._load_plugin_module(plugin_id)
 
 

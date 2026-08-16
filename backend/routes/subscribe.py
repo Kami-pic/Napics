@@ -80,7 +80,12 @@ def _get_scheduler() -> SubscriptionScheduler:
 
 
 def _get_alias_resolver() -> AliasResolver:
-    return AliasResolver()
+    from plugin_guard import is_metadata_allowed
+
+    return AliasResolver(
+        enable_douban=is_metadata_allowed("douban"),
+        enable_bangumi=is_metadata_allowed("bangumi"),
+    )
 
 
 @router.get("/subscribe/check")

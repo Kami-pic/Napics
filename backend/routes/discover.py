@@ -41,6 +41,10 @@ def get_movie_poster(name: str):
     if os.path.exists(cache_path):
         return FileResponse(cache_path)
 
+    import plugin_guard
+
+    if not plugin_guard.is_metadata_allowed("tmdb"):
+        raise HTTPException(status_code=409, detail={"error": "plugin_not_installed"})
     api_key = config_m.config.tmdb_api_key
     if not api_key:
         raise HTTPException(status_code=404, detail="TMDB API Key not configured")

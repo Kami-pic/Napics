@@ -8,6 +8,8 @@ export interface InstalledPluginsState {
   installed: Set<string>;
   /** 是否加载完成 */
   ready: boolean;
+  /** 插件状态是否加载失败 */
+  loadFailed: boolean;
   /** 刷新插件状态 */
   refresh: () => void;
   /** 快捷判断 */
@@ -20,18 +22,37 @@ export interface InstalledPluginsState {
   hasProwlarr: boolean;
 }
 
+export interface PluginCapabilities {
+  hasSearch: boolean;
+  hasPanSearch: boolean;
+}
+
+export function derivePluginCapabilities(plugins: PluginInfo[]): PluginCapabilities {
+  const available = plugins.filter(plugin => plugin.installed && plugin.available);
+  return {
+    hasSearch: available.some(plugin =>
+      plugin.id === "search-prowlarr"
+      || plugin.id === "search-bt-direct"
+      || plugin.provides.some(capability => capability.startsWith("SearchProvider:"))
+    ),
+    hasPanSearch: available.some(plugin =>
+      plugin.id === "search-pan"
+      || plugin.provides.some(capability => capability.startsWith("PanSearchProvider:"))
+    ),
+  };
+}
+
 export function useInstalledPlugins(): InstalledPluginsState {
-  const [installed, setInstalled] = useState<Set<string>>(new Set());
+  const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [ready, setReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const plugins = await fetchPlugins();
-      const ids = new Set(plugins.filter(p => p.installed).map(p => p.id));
-      setInstalled(ids);
+      setPlugins(await fetchPlugins());
+      setLoadFailed(false);
     } catch {
-      // 后端不可用时默认空
-      setInstalled(new Set());
+      setLoadFailed(true);
     } finally {
       setReady(true);
     }
@@ -46,16 +67,22 @@ export function useInstalledPlugins(): InstalledPluginsState {
     return () => window.removeEventListener("plugins-changed", handler);
   }, [refresh]);
 
+  const installed = new Set(plugins.filter(plugin => plugin.installed).map(plugin => plugin.id));
+  const available = new Set(
+    plugins.filter(plugin => plugin.installed && plugin.available).map(plugin => plugin.id),
+  );
+  const capabilities = derivePluginCapabilities(plugins);
+
   return {
     installed,
     ready,
+    loadFailed,
     refresh,
-    hasSearch: installed.has("search-prowlarr") || installed.has("search-bt-direct"),
-    hasPanSearch: installed.has("search-pan"),
-    hasDiscover: installed.has("feature-discover"),
-    hasSubscribe: installed.has("feature-subscribe"),
-    hasCompleteness: installed.has("feature-completeness"),
-    hasDownload: installed.has("download-qbittorrent") || installed.has("download-openlist"),
-    hasProwlarr: installed.has("search-prowlarr"),
+    ...capabilities,
+    hasDiscover: available.has("feature-discover"),
+    hasSubscribe: available.has("feature-subscribe"),
+    hasCompleteness: available.has("feature-completeness"),
+    hasDownload: available.has("download-qbittorrent") || available.has("download-openlist"),
+    hasProwlarr: available.has("search-prowlarr"),
   };
 }

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { BASE_URL } from "@/lib/api/base";
-import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import PathInput from "./PathInput";
 import { AISettingsSection } from "./AISettingsSection";
 import LicenseSection from "./LicenseSection";
@@ -17,23 +16,9 @@ interface SettingsModalProps {
 }
 
 // 按分组定义字段，group 用于插入分割线
-const FIELD_GROUPS: { group: string; fields: { label: string; key: string; desc: string; link?: boolean; type?: string }[] }[] = [
-  { group: "影视数据", fields: [
-    { label: "TMDB API Key", key: "tmdb_api_key", desc: "影视封面和标准化标题" },
-    { label: "HTTP 代理", key: "http_proxy", desc: "如 http://127.0.0.1:7890，TMDB 等海外服务需要" },
-  ]},
-  { group: "搜索下载", fields: [
-    { label: "Prowlarr 地址", key: "prowlarr_url", desc: "BT/PT 全网聚合搜索后台", link: true },
-    { label: "Prowlarr API Key", key: "prowlarr_api_key", desc: "Settings → General 获取" },
-  ]},
-  { group: "BT 下载", fields: [
-    { label: "qBittorrent 地址", key: "qb_url", desc: "触发 BT 下载", link: true },
-    { label: "qBittorrent 用户名", key: "qb_username", desc: "Web UI 登录用户名" },
-    { label: "qBittorrent 密码", key: "qb_password", desc: "Web UI 登录密码", type: "password" },
-  ]},
-  { group: "网盘转存", fields: [
-    { label: "OpenList 地址", key: "alist_url", desc: "网盘转存", link: true },
-    { label: "OpenList Token", key: "alist_token", desc: "管理后台 → 生成 Token" },
+const FIELD_GROUPS: { group: string; fields: { label: string; key: string; desc: string; type?: string }[] }[] = [
+  { group: "网络", fields: [
+    { label: "HTTP 代理", key: "http_proxy", desc: "如 http://127.0.0.1:7890，插件下载和海外数据源需要" },
   ]},
   { group: "AI 辅助", fields: [] },
 ];
@@ -71,8 +56,6 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   const [cacheInfo, setCacheInfo] = useState<{ size_mb: number; file_count: number } | null>(null);
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
-  const [connTest, setConnTest] = useState<Record<string, "idle" | "testing" | "ok" | "fail">>({});
-  const plugins = useInstalledPlugins();
 
   useEffect(() => {
     if (open) {
@@ -86,37 +69,6 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
   if (!open) return null;
   const updatePath = (i: number, v: string) => { const n = [...paths]; n[i] = v; setPaths(n); };
   const recycleBinPlaceholder = getDefaultRecycleBinPlaceholder(paths);
-
-  const testConnection = async (key: string) => {
-    setConnTest(prev => ({ ...prev, [key]: "testing" }));
-    try {
-      if (key === "tmdb") {
-        const resp = await fetch(`https://api.themoviedb.org/3/configuration?api_key=${(config.tmdb_api_key || "").trim()}`, { signal: AbortSignal.timeout(8000) });
-        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
-      } else if (key === "prowlarr") {
-        const resp = await fetch(`${(config.prowlarr_url || "").replace(/\/$/, "")}/api/v1/health?apikey=${(config.prowlarr_api_key || "").trim()}`, { signal: AbortSignal.timeout(5000) });
-        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
-      } else if (key === "qb") {
-        const resp = await fetch(`${(config.qb_url || "").replace(/\/$/, "")}/api/v2/app/version`, { signal: AbortSignal.timeout(5000) });
-        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
-      } else if (key === "alist") {
-        const resp = await fetch(`${(config.alist_url || "").replace(/\/$/, "")}/api/me`, { headers: { Authorization: config.alist_token || "" }, signal: AbortSignal.timeout(5000) });
-        setConnTest(prev => ({ ...prev, [key]: resp.ok ? "ok" : "fail" }));
-      }
-    } catch {
-      setConnTest(prev => ({ ...prev, [key]: "fail" }));
-    }
-  };
-
-  const ConnTestBtn = ({ testKey, disabled }: { testKey: string; disabled?: boolean }) => {
-    const st = connTest[testKey];
-    return (
-      <button onClick={() => testConnection(testKey)} disabled={disabled || st === "testing"}
-        className="px-2 py-1 rounded text-[10px] bg-white/[0.04] hover:bg-white/[0.08] text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-all flex-shrink-0">
-        {st === "testing" ? "..." : st === "ok" ? "✓ 连接成功" : st === "fail" ? "✗ 失败" : "测试"}
-      </button>
-    );
-  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-8 z-50"
@@ -243,14 +195,8 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               className="w-full mt-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30 resize-y min-h-[38px]" placeholder="@eaDir&#10;#recycle" />
           </div>
 
-          {/* 按分组渲染字段（根据插件安装状态过滤） */}
-          {FIELD_GROUPS.filter(g => {
-            if (g.group === "影视数据") return plugins.installed.has("metadata-tmdb");
-            if (g.group === "搜索下载") return plugins.installed.has("search-prowlarr");
-            if (g.group === "BT 下载") return plugins.installed.has("download-qbittorrent");
-            if (g.group === "网盘转存") return plugins.installed.has("download-openlist") || plugins.installed.has("storage-openlist");
-            return true; // AI 辅助始终显示
-          }).map((g, gi) => (
+          {/* 按分组渲染字段；基础配置始终可见，插件未安装时也可预先配置 */}
+          {FIELD_GROUPS.map((g, gi) => (
             <div key={g.group} className={gi > 0 ? "pt-3 border-t border-white/[0.06]" : ""}>
               {/* AI 辅助分组：独立组件 */}
               {g.group === "AI 辅助" ? (
@@ -259,17 +205,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 /* 其他分组：正常渲染字段 */
                 g.fields.map(f => {
                 const val = (config as any)[f.key] || "";
-                const testKeyMap: Record<string, string> = { tmdb_api_key: "tmdb", prowlarr_url: "prowlarr", qb_url: "qb", alist_url: "alist" };
-                const testKey = testKeyMap[f.key];
                 return (
                   <div key={f.key} className="mb-3">
                     <div className="flex items-center gap-2">
                       <label className="text-sm font-medium text-slate-300">{f.label}</label>
-                      {f.link && val && <a href={val} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300">打开 ↗</a>}
-                      {testKey && val && <ConnTestBtn testKey={testKey} disabled={!val.trim()} />}
                     </div>
                     <p className="text-xs text-slate-600 mt-0.5 mb-1.5">{f.desc}</p>
-                    <input value={val} onChange={e => { setConfig({ ...config, [f.key]: e.target.value }); if (testKey) setConnTest(prev => ({ ...prev, [testKey]: "idle" })); }} type={f.type || "text"}
+                    <input value={val} onChange={e => setConfig({ ...config, [f.key]: e.target.value })} type={f.type || "text"}
                       className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
                   </div>
                 );

@@ -87,7 +87,21 @@ def list_plugins():
     """获取所有可用插件列表（含安装状态）"""
     pm = _get_plugin_manager()
     installed = config_m.config.installed_plugins
-    return pm.list_all(installed)
+    plugins = pm.list_all(installed)
+    result = []
+    for plugin in plugins:
+        missing = [
+            key for key in plugin.requires_config
+            if not str(getattr(config_m.config, key, "") or "").strip()
+        ]
+        if plugin.installed and missing:
+            result.append(plugin.model_copy(update={
+                "available": False,
+                "load_error": f"缺少配置: {', '.join(missing)}",
+            }))
+        else:
+            result.append(plugin)
+    return result
 
 
 @router.post("/install")
@@ -147,6 +161,8 @@ def get_plugin_config(plugin_id: str):
     manifest = pm.get_manifest(plugin_id)
     if not manifest:
         raise HTTPException(status_code=404, detail={"error": "plugin_not_found"})
+    if plugin_id not in config_m.config.installed_plugins:
+        raise HTTPException(status_code=409, detail={"error": "plugin_not_installed"})
 
     # 从全局 config 中提取插件需要的配置字段
     conf = config_m.config
@@ -154,7 +170,13 @@ def get_plugin_config(plugin_id: str):
     for key in manifest.requires_config:
         plugin_config[key] = getattr(conf, key, "")
 
-    return {"plugin_id": plugin_id, "config": plugin_config}
+    schema = [field.model_dump() for field in manifest.config_schema]
+    if not schema:
+        schema = [
+            {"key": key, "label": key, "type": "text", "description": "", "placeholder": "", "required": False}
+            for key in manifest.requires_config
+        ]
+    return {"plugin_id": plugin_id, "config": plugin_config, "schema": schema}
 
 
 @router.put("/{plugin_id}/config")
@@ -164,6 +186,8 @@ def update_plugin_config(plugin_id: str, req: PluginConfigUpdate):
     manifest = pm.get_manifest(plugin_id)
     if not manifest:
         raise HTTPException(status_code=404, detail={"error": "plugin_not_found"})
+    if plugin_id not in config_m.config.installed_plugins:
+        raise HTTPException(status_code=409, detail={"error": "plugin_not_installed"})
 
     # 只允许更新 manifest 中声明的配置字段
     conf = config_m.config.model_copy()
@@ -176,6 +200,7 @@ def update_plugin_config(plugin_id: str, req: PluginConfigUpdate):
     if updated_keys:
         config_m.save(conf)
         logger.info(f"[Plugins] 更新插件 {plugin_id} 配置: {updated_keys}")
+        _reset_services_on_plugin_change()
 
     return {"success": True, "updated_keys": updated_keys}
 

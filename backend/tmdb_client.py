@@ -388,7 +388,14 @@ class TMDBClient:
             import douban_client
             import bangumi_client
             from alias_resolver import AliasResolver
-            self._alias_resolver = AliasResolver(douban_client, bangumi_client)
+            import plugin_guard
+
+            self._alias_resolver = AliasResolver(
+                douban_client,
+                bangumi_client,
+                enable_douban=plugin_guard.is_metadata_allowed("douban"),
+                enable_bangumi=plugin_guard.is_metadata_allowed("bangumi"),
+            )
         return self._alias_resolver
 
     @property

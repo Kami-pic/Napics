@@ -1,7 +1,16 @@
 from types import SimpleNamespace
 
+import pytest
+
+import plugin_guard
 from provider_models import DownloadSubmitResult, DownloadTaskInfo
 from routes import download as download_routes
+
+
+@pytest.fixture(autouse=True)
+def _enable_download_plugins(monkeypatch):
+    """Provider 桥接测试显式注入后端，不依赖本机插件安装状态。"""
+    monkeypatch.setattr(plugin_guard, "is_download_allowed", lambda _provider: True)
 
 
 class FakeDownloadProvider:

@@ -42,11 +42,17 @@ export default function PluginCard({ plugin, loading, onInstall, onUninstall, on
             <span className={`px-1.5 py-0.5 rounded text-[10px] ${catStyle}`}>
               {plugin.category}
             </span>
-            {plugin.installed && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] text-green-400 bg-green-500/10">已安装</span>
+            {plugin.installed && plugin.available && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] text-green-400 bg-green-500/10">可用</span>
+            )}
+            {plugin.installed && !plugin.available && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] text-red-400 bg-red-500/10">不可用</span>
             )}
           </div>
           <p className="text-xs text-slate-500 mt-1 line-clamp-2">{plugin.description}</p>
+          {plugin.load_error && (
+            <p className="mt-1 text-[10px] text-red-400">{plugin.load_error}</p>
+          )}
 
           {/* 依赖提示 */}
           {plugin.depends_on.length > 0 && (

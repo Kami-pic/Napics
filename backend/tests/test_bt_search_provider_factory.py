@@ -9,12 +9,7 @@ from bt_search_provider_factory import (
 from provider_builtin_metadata import build_builtin_provider_metadata
 from search_service import BT_SOURCE_DEFAULTS
 
-# 确保 search-bt-direct 插件已加载（测试环境无 startup_event）
 import plugin_context
-if not plugin_context.get_plugin_providers():
-    from plugin_manager import PluginManager
-    _pm = PluginManager()
-    _pm._load_plugin_module("search-bt-direct")
 
 
 def test_build_direct_bt_providers_skips_prowlarr_and_missing_factories():
@@ -57,10 +52,21 @@ def test_get_direct_bt_provider_map_is_keyed_by_provider_id():
     assert providers["bitsearch"].metadata().id == "bitsearch"
 
 
-def test_factory_keys_match_legacy_direct_bt_sources():
-    expected = {name for name in BT_SOURCE_DEFAULTS if name != "prowlarr"}
+def test_factory_keys_match_registered_direct_bt_sources(monkeypatch):
+    class FakeScraper:
+        pass
 
-    assert set(get_direct_bt_scraper_factories()) == expected
+    registered = {
+        name: {
+            "type": "scraper_search",
+            "scraper_class": FakeScraper,
+            "plugin_id": "test-community-plugin",
+        }
+        for name in DIRECT_BT_SOURCE_ORDER
+    }
+    monkeypatch.setattr(plugin_context, "get_plugin_providers", lambda: registered)
+
+    assert set(get_direct_bt_scraper_factories()) == set(DIRECT_BT_SOURCE_ORDER)
 
 
 def test_direct_bt_source_order_matches_legacy_defaults():

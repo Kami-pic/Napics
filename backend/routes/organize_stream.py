@@ -80,6 +80,14 @@ async def organize_full_stream(path: str, dry_run: bool = True, use_ai: bool = F
                     dry_run=dry_run, use_ai=use_ai
                 )
                 scrape_summary = scrape_result.get("summary", {})
+            else:
+                import plugin_guard
+
+                scrape_summary = {
+                    "error": "TMDB API key not configured"
+                    if plugin_guard.is_metadata_allowed("tmdb")
+                    else "plugin_not_installed"
+                }
             result["steps"]["scrape"] = scrape_summary
             yield f"data: {json.dumps({'step': 4, 'total': total_steps, 'label': '刮削确权', 'status': 'done', 'summary': scrape_summary})}\n\n"
 

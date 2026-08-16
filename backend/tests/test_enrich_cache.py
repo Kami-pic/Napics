@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 def test_enrich_cache_put_and_read():
     """测试写入和读取 enrich_cache"""
-    from routes.discover import enrich_cache_put, _enrich_cache, _enrich_cache_lock
+    from discover_enrich import enrich_cache_put, _enrich_cache, _enrich_cache_lock
 
     # 写入一条
     enrich_cache_put("douban_12345", tmdb_id=550, en_title="Fight Club", tmdb_rating=8.4)
@@ -28,7 +28,7 @@ def test_enrich_cache_put_and_read():
 
 def test_enrich_cache_key():
     """测试缓存 key 生成逻辑"""
-    from routes.discover import _enrich_cache_key
+    from discover_enrich import _enrich_cache_key
 
     # douban_id 优先
     assert _enrich_cache_key({"douban_id": "123", "tmdb_id": 456, "title": "T"}) == "douban_123"
@@ -41,7 +41,7 @@ def test_enrich_cache_key():
 
 def test_enrich_cache_lru():
     """测试 LRU 淘汰（超过 MAX 时删除最旧的）"""
-    from routes import discover
+    import discover_enrich as discover
     # 临时调小 MAX
     old_max = discover._ENRICH_CACHE_MAX
     discover._ENRICH_CACHE_MAX = 5

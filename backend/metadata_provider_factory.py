@@ -100,7 +100,15 @@ def get_metadata_provider_map(
     metadata_items: list[ProviderMetadata] | None = None,
     source_factories: Mapping[str, MetadataSourceFactory] | None = None,
 ) -> Mapping[str, MetadataProviderAdapter]:
-    metadata = metadata_items or build_builtin_provider_metadata()
+    metadata = metadata_items
+    if metadata is None:
+        import plugin_guard
+
+        metadata = [
+            item
+            for item in build_builtin_provider_metadata()
+            if item.kind != ProviderKind.METADATA or plugin_guard.is_metadata_allowed(item.id)
+        ]
     providers = build_metadata_providers_from_metadata(metadata, source_factories=source_factories)
     return {provider.metadata().id: provider for provider in providers}
 

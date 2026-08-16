@@ -34,6 +34,15 @@ def get_storage_provider_map(
     metadata_items: list[ProviderMetadata] | None = None,
     client_factories: Mapping[str, StorageClientFactory] | None = None,
 ) -> Mapping[str, StorageProviderAdapter]:
-    metadata = metadata_items or build_builtin_provider_metadata()
+    metadata = metadata_items
+    if metadata is None:
+        import plugin_guard
+
+        storage_allowed = plugin_guard.is_storage_allowed("openlist")
+        metadata = [
+            item
+            for item in build_builtin_provider_metadata()
+            if item.kind != ProviderKind.STORAGE or storage_allowed
+        ]
     providers = build_storage_providers_from_metadata(metadata, client_factories=client_factories)
     return {provider.metadata().id: provider for provider in providers}

@@ -57,16 +57,38 @@ def search_resources(
     allowed_bt = get_allowed_bt_sources()
     if not allowed_bt:
         return {"query": query, "bt_count": 0, "bt_results": [], "hit_keyword": "", "total_raw": 0, "total_filtered": 0, "enhanced": False}
-    clients = get_clients()
+
     conf = config_m.config
     gf = GlobalFilter(
         must_include=conf.search_filter.must_include,
         must_exclude=conf.search_filter.must_exclude if conf.search_filter.must_exclude else None,
     )
+    if "prowlarr" not in allowed_bt:
+        bt_results = _merge_bt_extra_sources(query, [], allowed_sources=allowed_bt)
+        passed = gf.apply([result.title for result in bt_results])
+        bt_results = [bt_results[index] for index in passed]
+        return {
+            "query": query,
+            "bt_count": len(bt_results),
+            "bt_results": [_enrich_result(r, query) for r in bt_results],
+            "hit_keyword": query,
+            "total_raw": len(bt_results),
+            "total_filtered": len(bt_results),
+            "enhanced": False,
+        }
+
+    clients = get_clients()
 
     try:
         from alias_resolver import AliasResolver, AliasSet
-        resolver = AliasResolver(douban_client, bangumi_client)
+        from plugin_guard import is_metadata_allowed
+
+        resolver = AliasResolver(
+            douban_client,
+            bangumi_client,
+            enable_douban=is_metadata_allowed("douban"),
+            enable_bangumi=is_metadata_allowed("bangumi"),
+        )
         aliases = resolver.resolve(query, "", media_type)
         indexer_m.load()
 
@@ -83,7 +105,11 @@ def search_resources(
         )
 
         bt_keyword = resp.hit_keyword or query
-        bt_results_list = _merge_bt_extra_sources(bt_keyword, list(resp.results))
+        bt_results_list = _merge_bt_extra_sources(
+            bt_keyword,
+            list(resp.results),
+            allowed_sources=allowed_bt,
+        )
 
         return {
             "query": query,
@@ -98,7 +124,7 @@ def search_resources(
         logger.error(f"[Search] Enhanced search failed, fallback: {e}")
 
     bt_results = clients["search"].search(query)
-    bt_results = _merge_bt_extra_sources(query, bt_results)
+    bt_results = _merge_bt_extra_sources(query, bt_results, allowed_sources=allowed_bt)
 
     return {
         "query": query,
@@ -175,6 +201,10 @@ def search_pan(keyword: str, media_type: str = ""):
 @router.get("/alist/mounts")
 def get_alist_mounts():
     """获取 OpenList 已挂载网盘列表。"""
+    import plugin_guard
+
+    if not plugin_guard.is_storage_allowed("openlist"):
+        return {"mounts": [], "error": "plugin_not_installed"}
     try:
         provider = get_storage_provider_map().get("openlist_storage")
         if not provider:
@@ -279,23 +309,34 @@ def get_search_sources():
                 "enabled": pan_overrides.get(name, info["enabled"]),
             })
 
-    # 第三方插件注册的搜索源
+    # 第三方插件注册的搜索源；内置元数据已列出的同 ID Provider 不重复追加
+    listed_names = {source["name"] for source in sources}
     try:
         from plugin_context import get_plugin_providers
         for pid, info in get_plugin_providers().items():
-            if info["type"] in ("search", "scraper_search") and pid in allowed_bt:
+            if (
+                info["type"] in ("search", "scraper_search")
+                and pid in allowed_bt
+                and pid not in listed_names
+            ):
                 meta = info["metadata"]
                 sources.append({
                     "name": pid, "label": meta.name, "type": "bt",
                     "enabled": True, "needs_proxy": meta.supports_proxy,
                     "proxy": False,
                 })
-            elif info["type"] == "pan_search" and is_pan_search_allowed():
+                listed_names.add(pid)
+            elif (
+                info["type"] == "pan_search"
+                and is_pan_search_allowed()
+                and pid not in listed_names
+            ):
                 meta = info["metadata"]
                 sources.append({
                     "name": pid, "label": meta.name, "type": "pan",
                     "enabled": True,
                 })
+                listed_names.add(pid)
     except Exception:
         pass
 

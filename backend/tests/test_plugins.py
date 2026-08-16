@@ -17,16 +17,20 @@ class TestPluginManager:
     """测试 PluginManager 核心逻辑"""
 
     def test_load_manifests(self):
-        """应能加载 plugins/ 目录下的所有 manifest"""
+        """默认内置根只加载 10 个核心插件。"""
         pm = PluginManager()
-        # 至少应该加载到我们创建的 16 个插件
-        assert len(pm._manifests) >= 16
+        assert set(pm._manifests) == {
+            "metadata-tmdb", "metadata-douban", "metadata-bangumi",
+            "search-prowlarr", "download-qbittorrent", "storage-openlist",
+            "feature-completeness", "feature-discover",
+            "feature-local-match", "feature-subscribe",
+        }
 
     def test_list_all_no_installed(self):
-        """无已安装插件时，所有插件 installed=False"""
+        """无已安装插件时，10 个核心插件均保持可安装。"""
         pm = PluginManager()
         plugins = pm.list_all([])
-        assert len(plugins) >= 16
+        assert len(plugins) == 10
         for p in plugins:
             assert p.installed is False
 
@@ -137,8 +141,8 @@ class TestPluginManager:
         assert "search" in categories
         assert "download" in categories
         assert "feature" in categories
-        assert "rss" in categories
         assert "storage" in categories
+        assert "rss" not in categories
 
     def test_reload(self):
         """reload 不报错"""
@@ -146,3 +150,57 @@ class TestPluginManager:
         count_before = len(pm._manifests)
         pm.reload()
         assert len(pm._manifests) == count_before
+
+
+class TestPluginRoots:
+    """内置与外部插件目录必须物理隔离。"""
+
+    @staticmethod
+    def _write_manifest(root: str, plugin_id: str, name: str) -> str:
+        plugin_dir = os.path.join(root, plugin_id)
+        os.makedirs(plugin_dir, exist_ok=True)
+        with open(os.path.join(plugin_dir, "manifest.json"), "w", encoding="utf-8") as file:
+            json.dump({"id": plugin_id, "name": name, "category": "feature"}, file)
+        return plugin_dir
+
+    def test_merges_roots_and_reports_real_source(self):
+        with tempfile.TemporaryDirectory() as builtin, tempfile.TemporaryDirectory() as external:
+            self._write_manifest(builtin, "builtin-test", "内置")
+            self._write_manifest(external, "external-test", "外部")
+
+            manager = PluginManager(builtin, external)
+            plugins = {plugin.id: plugin for plugin in manager.list_all([])}
+
+            assert plugins["builtin-test"].source == "builtin"
+            assert plugins["external-test"].source == "external"
+
+    def test_builtin_wins_when_external_uses_same_id(self):
+        with tempfile.TemporaryDirectory() as builtin, tempfile.TemporaryDirectory() as external:
+            self._write_manifest(builtin, "same-id", "内置版本")
+            self._write_manifest(external, "same-id", "外部版本")
+
+            manager = PluginManager(builtin, external)
+
+            assert manager.get_manifest("same-id").name == "内置版本"
+            assert manager.get_source("same-id") == "builtin"
+
+
+def test_core_plugin_config_schema_is_manifest_driven():
+    manager = PluginManager()
+    tmdb = manager.get_manifest("metadata-tmdb")
+    prowlarr = manager.get_manifest("search-prowlarr")
+
+    assert [field.key for field in tmdb.config_schema] == ["tmdb_api_key"]
+    assert [field.key for field in prowlarr.config_schema] == [
+        "prowlarr_url", "prowlarr_api_key",
+    ]
+    assert all(field.label for field in tmdb.config_schema + prowlarr.config_schema)
+
+
+def test_builtin_plugin_files_cannot_be_removed():
+    manager = PluginManager()
+    result = manager.uninstall_remote_plugin("metadata-tmdb", ["metadata-tmdb"])
+
+    assert result["success"] is False
+    assert result["error"] == "not_external_plugin"
+    assert manager.get_manifest("metadata-tmdb") is not None

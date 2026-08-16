@@ -10,10 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_installed_plugins() -> List[str]:
-    """获取当前已安装的插件列表"""
+    """获取配置中已安装且 manifest 当前可发现的插件列表。"""
     try:
         from shared import config_m
-        return config_m.config.installed_plugins or []
+        configured = config_m.config.installed_plugins or []
+        from routes.plugins import _get_plugin_manager
+        discovered = _get_plugin_manager().get_discovered_plugin_ids()
+        return [plugin_id for plugin_id in configured if plugin_id in discovered]
     except Exception:
         return []
 
