@@ -14,17 +14,83 @@ BASE = "https://api.bgm.tv"
 TYPE_MAP = {1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元"}
 
 def _get_proxies():
-    """Bangumi 的代理策略：api.bgm.tv 在国内可直连，默认不走代理。
+    """Bangumi 的代理策略。
 
-    原实现把全局 http_proxy 套在所有请求上，配了代理反而把 Bangumi
-    绕出国，更慢甚至失败。现统一交给 core/proxy_policy 按域名分流
-    （bgm.tv 在内置直连列表里，除非用户显式把它移出）。
+    api.bgm.tv 理论上国内可直连，但部分 NAS 环境下不可达（DNS 解析到不通的 IP
+    或运营商封锁）。这里先尝试直连（proxies_from_config 返回 None），
+    如果连不上，_session 会用后备代理重试。
     """
     try:
         from core.proxy_policy import proxies_from_config
         return proxies_from_config(BASE)
     except Exception:
         return None
+
+
+def _get_fallback_proxy():
+    """获取配置中的 http_proxy 作为 Bangumi 回退代理。"""
+    try:
+        from shared import config_m
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+        return {"http": proxy, "https": proxy} if proxy else None
+    except Exception:
+        return None
+
+
+# 模块级单例
+_bgm_session: requests.Session | None = None
+_bgm_use_proxy: bool = False  # 直连失败后切换为代理模式
+
+
+def _session():
+    global _bgm_session
+    if _bgm_session is None:
+        _bgm_session = requests.Session()
+    return _bgm_session
+
+
+def _bgm_get(url: str, **kwargs):
+    """Bangumi 请求包装：直连失败时自动回退到代理，后续请求直接走代理。
+    始终强制 IPv4 解析，避免容器解析到不可达的 IPv6。
+    """
+    global _bgm_use_proxy
+    import socket as _socket
+
+    _orig_gai = _socket.getaddrinfo
+
+    def _ipv4_gai(host, port, family=0, type=0, proto=0, flags=0):
+        return _orig_gai(host, port, _socket.AF_INET, type, proto, flags)
+
+    session = _session()
+
+    if _bgm_use_proxy:
+        kwargs["proxies"] = _get_fallback_proxy()
+        _socket.getaddrinfo = _ipv4_gai
+        try:
+            return session.get(url, **kwargs)
+        finally:
+            _socket.getaddrinfo = _orig_gai
+
+    # 先尝试直连（超时缩短到 2s，快速失败后切代理）
+    proxies = _get_proxies()
+    kwargs["proxies"] = proxies
+    kwargs.setdefault("timeout", 2)
+    _socket.getaddrinfo = _ipv4_gai
+    try:
+        resp = session.get(url, **kwargs)
+        return resp
+    except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
+        # 直连不通，切换到代理模式
+        fallback = _get_fallback_proxy()
+        if fallback:
+            logger.info("[Bangumi] 直连超时，切换到代理模式")
+            _bgm_use_proxy = True
+            kwargs["proxies"] = fallback
+            kwargs["timeout"] = 10  # 代理模式给足超时
+            return session.get(url, **kwargs)
+        raise
+    finally:
+        _socket.getaddrinfo = _orig_gai
 
 def search(query: str, type_filter: int = 0) -> List[Dict]:
     """搜索 Bangumi，返回候选列表。type_filter=0 搜全部，2=动画，6=三次元"""
@@ -33,7 +99,7 @@ def search(query: str, type_filter: int = 0) -> List[Dict]:
     if type_filter:
         params["type"] = type_filter
     try:
-        resp = requests.get(url, params=params, headers=HEADERS, timeout=8, proxies=_get_proxies() or None)
+        resp = _bgm_get(url, params=params, headers=HEADERS, timeout=8)
         if resp.status_code == 404:
             return []
         resp.raise_for_status()

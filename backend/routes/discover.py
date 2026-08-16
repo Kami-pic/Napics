@@ -162,10 +162,10 @@ def douban_hot(type: str = "movie", page_start: int = 0, tag: str = "热门"):
             except:
                 pass
 
-    # 最多 4 个并发线程，超时 4 秒
+    # 最多 4 个并发线程，超时 3 秒（不阻塞响应，TMDB 补不上就用豆瓣封面）
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(enrich_item, item) for item in items]
-        concurrent.futures.wait(futures, timeout=4)
+        concurrent.futures.wait(futures, timeout=3)
 
     # 清理临时字段 + 确保所有豆瓣封面都走代理
     for item in items:

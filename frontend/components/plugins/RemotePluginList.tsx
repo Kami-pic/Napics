@@ -14,7 +14,10 @@ import {
 } from "@/lib/api/plugins";
 
 interface RemotePluginListProps {
+  installedExternalIds?: string[];
   onInstalled: () => void;
+  onUninstall?: (id: string) => void;
+  actionLoading?: string | null;
 }
 
 // 社区插件源
@@ -29,7 +32,7 @@ interface SourceGroup {
   plugins: RemotePluginItem[];
 }
 
-export default function RemotePluginList({ onInstalled }: RemotePluginListProps) {
+export default function RemotePluginList({ installedExternalIds = [], onInstalled, onUninstall, actionLoading: externalActionLoading }: RemotePluginListProps) {
   const [sources, setSources] = useState<PluginSource[]>([]);
   const [remotePlugins, setRemotePlugins] = useState<RemotePluginItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,7 +169,7 @@ export default function RemotePluginList({ onInstalled }: RemotePluginListProps)
     });
   };
 
-  // 按源分组
+  // 按源分组（合并本机外部插件状态）
   const sourceGroups: SourceGroup[] = [];
   const groupMap = new Map<string, SourceGroup>();
   for (const plugin of remotePlugins) {
@@ -176,7 +179,12 @@ export default function RemotePluginList({ onInstalled }: RemotePluginListProps)
       groupMap.set(plugin.source, group);
       sourceGroups.push(group);
     }
-    group.plugins.push(plugin);
+    // 用本机外部插件状态覆盖：已安装的标记为 installed
+    const merged = { ...plugin };
+    if (installedExternalIds.includes(plugin.id)) {
+      merged.installed = true;
+    }
+    group.plugins.push(merged);
   }
 
   if (sources.length === 0 && !loading) {

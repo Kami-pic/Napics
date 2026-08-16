@@ -174,23 +174,11 @@ export default function PluginCenter({ open, onClose }: PluginCenterProps) {
 
         {activeTab === "remote" && (
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            {externalPlugins.length > 0 && (
-              <div className="mb-5 space-y-3">
-                <p className="text-xs font-medium text-slate-400">本机外部插件</p>
-                {externalPlugins.map(plugin => (
-                  <PluginCard
-                    key={plugin.id}
-                    plugin={plugin}
-                    loading={actionLoading === plugin.id}
-                    onInstall={() => handleInstall(plugin.id)}
-                    onUninstall={() => handleUninstall(plugin.id)}
-                    onConfig={() => setConfigPlugin(plugin)}
-                  />
-                ))}
-              </div>
-            )}
             <RemotePluginList
+              installedExternalIds={externalPlugins.map(p => p.id)}
               onInstalled={() => { loadPlugins(); window.dispatchEvent(new Event("plugins-changed")); }}
+              onUninstall={handleUninstall}
+              actionLoading={actionLoading}
             />
           </div>
         )}

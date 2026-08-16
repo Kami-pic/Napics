@@ -260,7 +260,7 @@ export default function CardGrid({
                       </div>
                     )}
                     {!folder.is_virtual_library && folder.category_tag && (
-                      <div className={`absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide ${folder.category_tag === "movie" ? "bg-blue-500/30 text-blue-300" : "bg-green-500/30 text-green-300"}`}>
+                      <div className={`absolute top-3 left-3 text-white text-[11px] px-2 py-0.5 rounded-md font-medium tracking-wide ${folder.category_tag === "movie" || folder.category_tag === "anime_movie" ? "bg-blue-500/30 text-blue-300" : "bg-green-500/30 text-green-300"}`}>
                         {getCategoryTagLabel(folder.category_tag)}
                       </div>
                     )}
