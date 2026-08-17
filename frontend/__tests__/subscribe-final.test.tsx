@@ -7,6 +7,7 @@ vi.mock("@/hooks/useInstalledPlugins", () => ({
   useInstalledPlugins: () => ({
     installed: new Set(["feature-subscribe"]),
     ready: true,
+    loadFailed: false,
     refresh: vi.fn(),
     hasSearch: true,
     hasPanSearch: true,

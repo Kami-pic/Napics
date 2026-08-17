@@ -144,3 +144,49 @@ def test_search_prowlarr_uses_provider_adapter_and_keeps_result_shape():
     assert isinstance(results[0], SearchResult)
     assert results[0].indexer == "Nyaa"
     assert results[0].download_url.startswith("magnet:")
+
+
+def test_provider_list_does_not_duplicate_registry_scraper(monkeypatch):
+    provider = _provider("bitsearch", FakeDirectScraper())
+    monkeypatch.setattr(
+        "bt_search_provider_factory.get_direct_bt_provider_map",
+        lambda: {"bitsearch": provider},
+    )
+    monkeypatch.setattr(
+        "plugin_context.get_plugin_providers",
+        lambda: {
+            "bitsearch": {
+                "type": "scraper_search",
+                "scraper_class": FakeDirectScraper,
+                "metadata": provider.metadata(),
+            }
+        },
+    )
+
+    names = [name for name, _ in search_service._get_provider_list()]
+
+    assert names.count("bitsearch") == 1
+
+
+def test_plugin_scraper_adapter_uses_source_proxy_policy(monkeypatch):
+    received = []
+
+    class ProxyAwareScraper(FakeDirectScraper):
+        def __init__(self, proxy=None):
+            super().__init__()
+            received.append(proxy)
+
+    provider = _provider("bitsearch", FakeDirectScraper())
+    adapter = search_service._PluginScraperAdapter(
+        "bitsearch",
+        {
+            "type": "scraper_search",
+            "scraper_class": ProxyAwareScraper,
+            "metadata": provider.metadata(),
+        },
+    )
+    monkeypatch.setattr(search_service, "get_source_proxy", lambda source: "http://proxy:7890")
+
+    adapter._get_scraper()
+
+    assert received == ["http://proxy:7890"]

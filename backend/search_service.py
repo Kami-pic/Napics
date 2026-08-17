@@ -238,12 +238,14 @@ def _get_provider_list() -> List[Tuple[str, Any]]:
 
     providers = get_direct_bt_provider_map()
     result = [(name, provider) for name, provider in providers.items()]
+    registered_ids = set(providers)
 
-    # 加载第三方插件注册的搜索源
+    # 加载未被内置工厂接管的第三方插件搜索源
     try:
         from plugin_context import get_plugin_providers
-        from provider_models import SearchRequest, SearchCandidate
         for pid, info in get_plugin_providers().items():
+            if pid in registered_ids:
+                continue
             if info["type"] == "scraper_search":
                 # 基于 ScraperBase 的爬虫，包装为兼容接口
                 result.append((pid, _PluginScraperAdapter(pid, info)))
@@ -267,12 +269,20 @@ class _PluginScraperAdapter:
     def _get_scraper(self):
         if self._scraper is None:
             scraper_class = self._info["scraper_class"]
-            try:
-                from shared import config_m
-                proxy = config_m.config.http_proxy or ""
-            except Exception:
-                proxy = ""
-            self._scraper = scraper_class(proxy=proxy if proxy else None)
+            if self.id in BT_SOURCE_DEFAULTS:
+                proxy = get_source_proxy(self.id)
+            else:
+                try:
+                    from shared import config_m
+                    metadata = self._info.get("metadata")
+                    proxy = (
+                        config_m.config.http_proxy or None
+                        if getattr(metadata, "supports_proxy", False)
+                        else None
+                    )
+                except Exception:
+                    proxy = None
+            self._scraper = scraper_class(proxy=proxy)
         return self._scraper
 
     def metadata(self):

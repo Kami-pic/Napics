@@ -93,3 +93,26 @@ def test_pan_search_service_provider_statuses_keep_success_failed_disabled():
     assert statuses["failed_pan"].status == "failed"
     assert statuses["failed_pan"].error == "boom"
     assert statuses["missing_pan"].status == "disabled"
+
+
+def test_shared_pan_service_passes_http_proxy_to_scrapers(monkeypatch):
+    import shared
+
+    captured = {}
+
+    class FakePanSearchService:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(shared, "PanSearchService", FakePanSearchService)
+    monkeypatch.setattr(shared, "_pan_search_service", None)
+    monkeypatch.setattr(
+        shared,
+        "config_m",
+        type("ConfigManager", (), {"config": type("Config", (), {"http_proxy": "http://proxy:7890"})()})(),
+    )
+    monkeypatch.setattr("plugin_guard.get_allowed_pan_sources", lambda: {"pansearch"})
+
+    shared._get_pan_search_service()
+
+    assert captured["scraper_proxy"] == "http://proxy:7890"

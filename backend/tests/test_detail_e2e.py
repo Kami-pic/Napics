@@ -12,7 +12,7 @@ def get(url, params=None, timeout=15):
     try: return requests.get(f"{BASE}{url}", params=params, timeout=timeout).json()
     except Exception as e: return {"_error": str(e)}
 
-def test_leaf(path, label, ft):
+def run_leaf_case(path, label, ft):
     """测试末端刮削单元（movie/tv/season）"""
     print(f"\n{'='*60}")
     print(f"📁 {label}")
@@ -71,7 +71,7 @@ def test_leaf(path, label, ft):
     s = d.get("summary", {})
     print(f"  ℹ️ 整理: type={d.get('folder_type')} vids={s.get('total_videos',0)} process={s.get('will_process',0)}")
 
-def test_container(path, label, ft):
+def run_container_case(path, label, ft):
     """测试聚合容器"""
     print(f"\n{'='*60}")
     print(f"📦 {label} (聚合容器)")
@@ -95,18 +95,18 @@ if __name__ == "__main__":
         print("❌ 后端未启动"); sys.exit(1)
 
     # ── 洗版测试（聚合容器 + 2 个子目录）──
-    test_container("\\\\NAS\\share\\视频\\其他视频\\洗版测试", "洗版测试", "collection")
-    test_leaf("\\\\NAS\\share\\视频\\其他视频\\洗版测试\\Season 01", "洗版测试/Season 01 (电影)", "movie")
-    test_leaf("\\\\NAS\\share\\视频\\其他视频\\洗版测试\\XiBanCeShi", "洗版测试/XiBanCeShi (电影)", "movie")
+    run_container_case("\\\\NAS\\share\\视频\\其他视频\\洗版测试", "洗版测试", "collection")
+    run_leaf_case("\\\\NAS\\share\\视频\\其他视频\\洗版测试\\Season 01", "洗版测试/Season 01 (电影)", "movie")
+    run_leaf_case("\\\\NAS\\share\\视频\\其他视频\\洗版测试\\XiBanCeShi", "洗版测试/XiBanCeShi (电影)", "movie")
 
     # ── 测试动画合集（tv 容器 + 2 个 season）──
-    test_container("\\\\NAS\\share\\视频\\动画番\\测试动画合集", "测试动画合集", "tv")
-    test_leaf("\\\\NAS\\share\\视频\\动画番\\测试动画合集\\自由的她们", "测试动画合集/自由的她们 (season)", "season")
+    run_container_case("\\\\NAS\\share\\视频\\动画番\\测试动画合集", "测试动画合集", "tv")
+    run_leaf_case("\\\\NAS\\share\\视频\\动画番\\测试动画合集\\自由的她们", "测试动画合集/自由的她们 (season)", "season")
 
     # ── 测试文件夹（collection + 3 个 movie）──
-    test_container("\\\\NAS\\share\\视频\\电影\\测试文件夹", "测试文件夹", "collection")
-    test_leaf("\\\\NAS\\share\\视频\\电影\\测试文件夹\\爱乐之城 La La Land (2016)", "测试文件夹/爱乐之城 (电影)", "movie")
-    test_leaf("\\\\NAS\\share\\视频\\电影\\测试文件夹\\白2023", "测试文件夹/白2023 (电影)", "movie")
+    run_container_case("\\\\NAS\\share\\视频\\电影\\测试文件夹", "测试文件夹", "collection")
+    run_leaf_case("\\\\NAS\\share\\视频\\电影\\测试文件夹\\爱乐之城 La La Land (2016)", "测试文件夹/爱乐之城 (电影)", "movie")
+    run_leaf_case("\\\\NAS\\share\\视频\\电影\\测试文件夹\\白2023", "测试文件夹/白2023 (电影)", "movie")
 
     # ── 详情多源算法 ──
     print(f"\n{'='*60}")

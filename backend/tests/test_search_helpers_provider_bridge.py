@@ -94,3 +94,46 @@ def test_merge_bt_extra_sources_respects_disabled_provider(monkeypatch):
 
     assert scraper.calls == []
     assert merged == []
+
+
+def test_merge_bt_extra_sources_deduplicates_infohash_across_sources(monkeypatch):
+    shared_hash = "ABCDEF1234567890ABCDEF1234567890ABCDEF12"
+    existing = [
+        SearchResult(
+            title="Prowlarr Result",
+            size_gb=1.0,
+            indexer="Prowlarr",
+            seeders=5,
+            leechers=1,
+            download_url=f"magnet:?xt=urn:btih:{shared_hash}",
+            info_url="https://example.com/prowlarr",
+            quality_tag="WEB-1080p",
+        )
+    ]
+    scraper = FakeDirectScraper(
+        [
+            SearchResult(
+                title="Same Torrent From Bitsearch",
+                size_gb=1.0,
+                indexer="bitsearch",
+                seeders=8,
+                leechers=1,
+                download_url=f"magnet:?xt=urn:btih:{shared_hash.lower()}",
+                info_url="https://example.com/bitsearch",
+                quality_tag="WEB-1080p",
+            )
+        ]
+    )
+    monkeypatch.setattr(
+        "bt_search_provider_factory.get_direct_bt_provider_map",
+        lambda: {"bitsearch": _provider("bitsearch", scraper)},
+    )
+    monkeypatch.setattr(
+        "shared.config_m",
+        SimpleNamespace(config=SimpleNamespace(bt_search_sources={})),
+    )
+
+    merged = search_helpers.merge_bt_extra_sources("Dune", existing)
+
+    assert len(merged) == 1
+    assert merged[0].indexer == "Prowlarr"

@@ -32,7 +32,7 @@ def batch_check_urls(results: list) -> list:
     return [checks.get(i, {"alive": False, "status": "skip", "final_url": ""}) for i in range(len(results))]
 
 
-def test_source(name, create_fn):
+def run_source_case(name, create_fn):
     """测试单个源，返回 (results, elapsed, error)"""
     print(f"\n{'='*70}")
     print(f"  测试源: {name}")
@@ -145,28 +145,28 @@ if __name__ == "__main__":
 
     # PanSearch
     from pan_scraper_pansearch import PanSearchScraper
-    r, t, e = test_source("PanSearch (pansearch.me)", lambda: PanSearchScraper())
+    r, t, e = run_source_case("PanSearch (pansearch.me)", lambda: PanSearchScraper())
     all_source_results["pansearch"] = {"results": r, "time": t, "error": e}
 
     # PanSou 增强版
     from pan_scraper_pansou import PanSouClient
-    r, t, e = test_source("PanSou 增强版 (pansou.app)", lambda: PanSouClient(api_url="https://pansou.app"))
+    r, t, e = run_source_case("PanSou 增强版 (pansou.app)", lambda: PanSouClient(api_url="https://pansou.app"))
     all_source_results["pansou"] = {"results": r, "time": t, "error": e}
 
     # 通用站点（逐个测试）
     from pan_scraper_sites import GenericPanSiteScraper, SITE_CONFIGS
     for site_name, config in SITE_CONFIGS.items():
-        r, t, e = test_source(f"通用站点: {config.name} ({site_name})", lambda c=config: GenericPanSiteScraper(c))
+        r, t, e = run_source_case(f"通用站点: {config.name} ({site_name})", lambda c=config: GenericPanSiteScraper(c))
         all_source_results[site_name] = {"results": r, "time": t, "error": e}
 
     # 慢读
     from pan_scraper_slowread import SlowreadScraper
-    r, t, e = test_source("慢读搜索 (so.slowread.net)", lambda: SlowreadScraper())
+    r, t, e = run_source_case("慢读搜索 (so.slowread.net)", lambda: SlowreadScraper())
     all_source_results["slowread"] = {"results": r, "time": t, "error": e}
 
     # 我能搜
     from pan_scraper_wnsearch import WnSearchScraper
-    r, t, e = test_source("我能搜 (wnsearch.top)", lambda: WnSearchScraper())
+    r, t, e = run_source_case("我能搜 (wnsearch.top)", lambda: WnSearchScraper())
     all_source_results["wnsearch"] = {"results": r, "time": t, "error": e}
 
     # ── 第三部分：链接存活检测（只检测有结果的源）──

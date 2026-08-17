@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 passed = 0
 failed = 0
 
-def test(name, fn):
+def run_check(name, fn):
     global passed, failed
     try:
         fn()
@@ -62,13 +62,13 @@ def test_different_no_year():
     # 不做断言，只确保不报错
     _is_same_media(a, b)
 
-test("tmdb_id 精确匹配", test_same_by_tmdb_id)
-test("douban_id 精确匹配", test_same_by_douban_id)
-test("标题+年份精确匹配", test_same_by_title_year)
-test("短标题不误匹配(航海王vs航海日记)", test_different_short_title)
-test("2字重叠不误匹配(冰湖重生vs冰雪奇缘)", test_different_overlap_2chars)
-test("完全相同中文标题", test_same_exact_chinese)
-test("无年份不报错", test_different_no_year)
+run_check("tmdb_id 精确匹配", test_same_by_tmdb_id)
+run_check("douban_id 精确匹配", test_same_by_douban_id)
+run_check("标题+年份精确匹配", test_same_by_title_year)
+run_check("短标题不误匹配(航海王vs航海日记)", test_different_short_title)
+run_check("2字重叠不误匹配(冰湖重生vs冰雪奇缘)", test_different_overlap_2chars)
+run_check("完全相同中文标题", test_same_exact_chinese)
+run_check("无年份不报错", test_different_no_year)
 
 # ── 2. download_manager 回调链路验证 ──
 print("\n[2/3] download_manager 回调链路")
@@ -86,8 +86,8 @@ def test_sync_progress_calls_notify():
     assert "_notify_subscription_complete" in source
     assert "subscription_id" in source
 
-test("_notify_subscription_complete 方法存在", test_notify_method_exists)
-test("sync_progress 包含回调调用", test_sync_progress_calls_notify)
+run_check("_notify_subscription_complete 方法存在", test_notify_method_exists)
+run_check("sync_progress 包含回调调用", test_sync_progress_calls_notify)
 
 # ── 3. subscriber.on_download_complete 验证 ──
 print("\n[3/3] subscriber 回调方法")
@@ -96,7 +96,7 @@ def test_on_download_complete_exists():
     from subscriber import SubscriptionManager
     assert hasattr(SubscriptionManager, 'on_download_complete')
 
-test("on_download_complete 方法存在", test_on_download_complete_exists)
+run_check("on_download_complete 方法存在", test_on_download_complete_exists)
 
 # ── 汇总 ──
 print(f"\n{'='*40}")

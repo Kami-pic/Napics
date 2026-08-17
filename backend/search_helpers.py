@@ -205,16 +205,31 @@ def _candidate_to_search_result(candidate: SearchCandidate) -> SearchResult:
     )
 
 
-def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
-    """合并直搜源结果到已有列表，按 infohash 去重。"""
+def merge_bt_extra_sources(
+    keyword: str,
+    existing_results: list,
+    allowed_sources: set[str] | None = None,
+) -> list:
+    """合并允许的直搜源结果到已有列表，按 infohash 去重。"""
     from shared import config_m as _cfg
     from bt_search_provider_factory import get_direct_bt_provider_map
 
     merged = list(existing_results)
+    seen_hashes = set()
+    for result in merged:
+        match = re.search(
+            r"btih:([a-fA-F0-9]{40})",
+            getattr(result, "download_url", ""),
+            re.IGNORECASE,
+        )
+        if match:
+            seen_hashes.add(match.group(1).upper())
     bt_overrides = _cfg.config.bt_search_sources or {}
     providers = get_direct_bt_provider_map()
 
     for name, provider in providers.items():
+        if allowed_sources is not None and name not in allowed_sources:
+            continue
         override = bt_overrides.get(name, True)
         # 兼容新格式 {"enabled": true, "proxy": false}
         if isinstance(override, dict):
@@ -225,15 +240,14 @@ def merge_bt_extra_sources(keyword: str, existing_results: list) -> list:
         try:
             candidates = provider.search(SearchRequest(query=keyword, limit=40))
             added = 0
-            source_hashes = set()
             for candidate in candidates:
                 r = _candidate_to_search_result(candidate)
                 h = re.search(r"btih:([a-fA-F0-9]{40})", r.download_url, re.IGNORECASE)
                 if h:
                     hash_upper = h.group(1).upper()
-                    if hash_upper in source_hashes:
+                    if hash_upper in seen_hashes:
                         continue
-                    source_hashes.add(hash_upper)
+                    seen_hashes.add(hash_upper)
                 merged.append(r)
                 added += 1
             if added:

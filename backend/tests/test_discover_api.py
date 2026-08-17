@@ -16,7 +16,7 @@ def check(label: str, condition: bool, detail: str = ""):
         FAIL += 1
         print(f"  ❌ {label} {detail}")
 
-def test_recommend_source(source: str, checks: dict):
+def run_recommend_source_case(source: str, checks: dict):
     """测试推荐源返回的数据"""
     print(f"\n{'='*50}")
     print(f"推荐源: {source}")
@@ -33,7 +33,7 @@ def test_recommend_source(source: str, checks: dict):
     except Exception as e:
         check("请求成功", False, str(e))
 
-def test_media_info(title: str, source: str, id: str = "", year: str = "", type: str = "movie", expect_source: str = ""):
+def run_media_info_case(title: str, source: str, id: str = "", year: str = "", type: str = "movie", expect_source: str = ""):
     """测试详情接口"""
     print(f"\n{'='*50}")
     print(f"详情: title={title} source={source} id={id}")
@@ -60,16 +60,16 @@ if __name__ == "__main__":
     print("一、推荐源数据字段验证")
     print("=" * 50)
 
-    test_recommend_source("douban_movie_hot", {
+    run_recommend_source_case("douban_movie_hot", {
         "rating": "豆瓣评分", "genres": "类型", "countries": "国家", "year": "年份"
     })
-    test_recommend_source("douban_tv_hot", {
+    run_recommend_source_case("douban_tv_hot", {
         "rating": "豆瓣评分", "genres": "类型", "episodes_info": "集数信息"
     })
-    test_recommend_source("bangumi_calendar", {
+    run_recommend_source_case("bangumi_calendar", {
         "rating": "Bangumi评分", "title": "标题", "year": "年份", "media_type": "类型"
     })
-    test_recommend_source("tmdb_trending", {
+    run_recommend_source_case("tmdb_trending", {
         "rating": "TMDB评分", "title": "标题", "year": "年份", "media_type": "类型"
     })
 
@@ -78,26 +78,26 @@ if __name__ == "__main__":
     print("=" * 50)
 
     # 豆瓣 tab → 优先豆瓣
-    test_media_info("密探", "douban", id="36697078", year="2025", type="movie", expect_source="douban")
+    run_media_info_case("密探", "douban", id="36697078", year="2025", type="movie", expect_source="douban")
     # 豆瓣 tab → 无 ID 时搜索
-    test_media_info("霸王别姬", "douban", year="1993", type="movie", expect_source="douban")
+    run_media_info_case("霸王别姬", "douban", year="1993", type="movie", expect_source="douban")
     # TMDB tab → 优先 TMDB
-    test_media_info("Inception", "tmdb", year="2010", type="movie", expect_source="tmdb")
+    run_media_info_case("Inception", "tmdb", year="2010", type="movie", expect_source="tmdb")
     # Bangumi tab → 用 bgm_id 直接拉
-    test_media_info("进击的巨人", "bangumi", id="12189", type="tv", expect_source="bangumi")
+    run_media_info_case("进击的巨人", "bangumi", id="12189", type="tv", expect_source="bangumi")
     # Bangumi tab → 无 ID 搜索
-    test_media_info("我独自升级", "bangumi", type="tv", expect_source="bangumi")
+    run_media_info_case("我独自升级", "bangumi", type="tv", expect_source="bangumi")
 
     print("\n\n" + "=" * 50)
     print("三、极端情况 & Fallback 验证")
     print("=" * 50)
 
     # 不存在的影片
-    test_media_info("完全不存在的影片12345", "douban", type="movie")
+    run_media_info_case("完全不存在的影片12345", "douban", type="movie")
     # Bangumi 搜不到 → fallback 豆瓣
-    test_media_info("霸王别姬", "bangumi", type="movie")
+    run_media_info_case("霸王别姬", "bangumi", type="movie")
     # TMDB 搜不到的中文片 → fallback 豆瓣
-    test_media_info("白日提灯", "tmdb", type="tv")
+    run_media_info_case("白日提灯", "tmdb", type="tv")
 
     print(f"\n\n{'='*50}")
     print(f"结果: {PASS} 通过, {FAIL} 失败")

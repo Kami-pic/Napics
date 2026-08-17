@@ -41,7 +41,7 @@ export default function SearchModal({
   if (!open) return null;
 
   // 无搜索源插件时的引导
-  const noSearchPlugin = !plugins.hasSearch && !plugins.hasPanSearch;
+  const noSearchPlugin = plugins.ready && !plugins.loadFailed && !plugins.hasSearch && !plugins.hasPanSearch;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">

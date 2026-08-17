@@ -22,7 +22,7 @@ from shared import (
     _get_download_manager, _get_pan_search_service, _get_recycle_bin, _get_file_relocator,
     _tmdb_client, get_clients,
     _get_category_from_path, _is_top_category, _sync_library_paths, _update_clean_names_after_scrape,
-    invalidate_allowed_roots_cache,
+    invalidate_allowed_roots_cache, reset_pan_search_service,
 )
 import scanner, searcher, downloader, tmdb_client, config_manager
 import ai_organizer, douban_client, bangumi_client, scraper, organizer, analyzer
@@ -86,7 +86,10 @@ def set_no_scrape(path: str, enabled: bool = True):
 
 @router.post("/config")
 def update_config(conf: config_manager.AppConfig):
+    previous_proxy = config_m.config.http_proxy or ""
     config_m.save(conf)
+    if (conf.http_proxy or "") != previous_proxy:
+        reset_pan_search_service()
     # 保存后失效路径白名单缓存，让新配置的媒体库路径立即生效
     invalidate_allowed_roots_cache()
 

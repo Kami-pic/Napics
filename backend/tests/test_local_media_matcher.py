@@ -3,6 +3,8 @@ import json
 import os
 import sys
 
+import pytest
+
 # 确保能导入项目模块
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,7 +20,7 @@ def test_extract_year():
     print("✅ test_extract_year 通过")
 
 
-def test_build_index():
+def _build_matcher():
     """测试索引构建"""
     matcher = LocalMediaMatcher()
     fake_lib = [
@@ -58,38 +60,49 @@ def test_build_index():
     return matcher
 
 
+@pytest.fixture(scope="module")
+def matcher():
+    """构建供匹配用例共享的媒体索引。"""
+    return _build_matcher()
+
+
+def test_build_index(matcher):
+    """验证测试索引已成功构建。"""
+    assert matcher._indexed
+
+
 def test_match_by_tmdb_id(matcher):
     """测试 TMDB ID 精确匹配"""
-    result = matcher.match({"tmdb_id": 535167, "title": "流浪地球", "year": "2019"})
-    assert result == "owned_high", f"期望 owned_high，实际 {result}"
+    status, _ = matcher.match({"tmdb_id": 535167, "title": "流浪地球", "year": "2019"})
+    assert status == "owned_high", f"期望 owned_high，实际 {status}"
     print("✅ test_match_by_tmdb_id 通过")
 
 
 def test_match_by_title(matcher):
     """测试片名匹配"""
-    result = matcher.match({"title": "你的名字。", "year": "2016"})
-    assert result == "owned_high", f"期望 owned_high，实际 {result}"
+    status, _ = matcher.match({"title": "你的名字。", "year": "2016"})
+    assert status == "owned_high", f"期望 owned_high，实际 {status}"
     print("✅ test_match_by_title 通过")
 
 
 def test_match_by_title_fuzzy(matcher):
     """测试模糊片名匹配"""
-    result = matcher.match({"title": "你的名字", "year": "2016"})
-    assert result in ("owned_high", "none"), f"结果: {result}"
-    print(f"✅ test_match_by_title_fuzzy: {result}")
+    status, _ = matcher.match({"title": "你的名字", "year": "2016"})
+    assert status in ("owned_high", "none"), f"结果: {status}"
+    print(f"✅ test_match_by_title_fuzzy: {status}")
 
 
 def test_match_low_quality(matcher):
     """测试低画质匹配"""
-    result = matcher.match({"title": "低画质电影", "year": ""})
-    assert result == "owned_low", f"期望 owned_low，实际 {result}"
+    status, _ = matcher.match({"title": "低画质电影", "year": ""})
+    assert status == "owned_low", f"期望 owned_low，实际 {status}"
     print("✅ test_match_low_quality 通过")
 
 
 def test_match_not_found(matcher):
     """测试未拥有"""
-    result = matcher.match({"title": "完全不存在的电影", "year": "2025"})
-    assert result == "none", f"期望 none，实际 {result}"
+    status, _ = matcher.match({"title": "完全不存在的电影", "year": "2025"})
+    assert status == "none", f"期望 none，实际 {status}"
     print("✅ test_match_not_found 通过")
 
 
@@ -141,7 +154,7 @@ def test_real_library():
 
 if __name__ == "__main__":
     test_extract_year()
-    matcher = test_build_index()
+    matcher = _build_matcher()
     test_match_by_tmdb_id(matcher)
     test_match_by_title(matcher)
     test_match_by_title_fuzzy(matcher)
