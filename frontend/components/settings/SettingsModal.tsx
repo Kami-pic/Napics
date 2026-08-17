@@ -17,9 +17,6 @@ interface SettingsModalProps {
 
 // 按分组定义字段，group 用于插入分割线
 const FIELD_GROUPS: { group: string; fields: { label: string; key: string; desc: string; type?: string }[] }[] = [
-  { group: "网络", fields: [
-    { label: "HTTP 代理", key: "http_proxy", desc: "如 http://127.0.0.1:7890，插件下载和海外数据源需要" },
-  ]},
   { group: "AI 辅助", fields: [] },
 ];
 
@@ -55,6 +52,7 @@ function getDefaultRecycleBinPlaceholder(paths: string[]): string {
 export default function SettingsModal({ open, onClose, config, onSave, setConfig, paths, setPaths, onRefresh }: SettingsModalProps) {
   const [cacheInfo, setCacheInfo] = useState<{ size_mb: number; file_count: number } | null>(null);
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [aiExpanded, setAiExpanded] = useState(false);
   const [metadataProviders, setMetadataProviders] = useState<ProviderMetadata[]>([]);
 
   useEffect(() => {
@@ -195,14 +193,24 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               className="w-full mt-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-mono text-slate-300 outline-none focus:border-blue-500/30 resize-y min-h-[38px]" placeholder="@eaDir&#10;#recycle" />
           </div>
 
-          {/* 按分组渲染字段；基础配置始终可见，插件未安装时也可预先配置 */}
+          {/* 按分组渲染字段；AI 助手折叠，默认收起 */}
           {FIELD_GROUPS.map((g, gi) => (
             <div key={g.group} className={gi > 0 ? "pt-3 border-t border-white/[0.06]" : ""}>
-              {/* AI 辅助分组：独立组件 */}
               {g.group === "AI 辅助" ? (
-                <AISettingsSection config={config} setConfig={setConfig} />
+                <div>
+                  <button onClick={() => setAiExpanded(!aiExpanded)}
+                    className="flex items-center gap-2 w-full text-left">
+                    <span className={`text-[10px] text-slate-600 transition-transform ${aiExpanded ? "rotate-90" : ""}`}>▶</span>
+                    <label className="text-sm font-medium text-slate-400 cursor-pointer">AI 助手</label>
+                    {config.ai_enabled && <span className="text-[10px] px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded">已开启</span>}
+                  </button>
+                  {aiExpanded && (
+                    <div className="mt-3">
+                      <AISettingsSection config={config} setConfig={setConfig} />
+                    </div>
+                  )}
+                </div>
               ) : (
-                /* 其他分组：正常渲染字段 */
                 g.fields.map(f => {
                 const val = (config as any)[f.key] || "";
                 return (
@@ -217,14 +225,13 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                 );
               })
               )}
-              {/* 影视数据组额外：默认刮削源选择已移到缓存管理区域 */}
             </div>
           ))}
 
-          {/* 播放器路径 */}
-          <div className="pt-3 border-t border-white/[0.06]">
+          {/* Pro 授权（暂时隐藏）*/}
+          {/* <div className="pt-3 border-t border-white/[0.06]">
             <LicenseSection />
-          </div>
+          </div> */}
 
           {/* 高级设置 */}
           <div className="pt-3 border-t border-white/[0.06]">
@@ -238,15 +245,20 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
           <>
           <div>
             <label className="text-sm font-medium text-slate-300">播放器路径</label>
-            <p className="text-xs text-slate-600 mt-0.5 mb-1.5">本地视频播放器可执行文件路径</p>
+            <p className="text-xs text-slate-600 mt-0.5 mb-1.5">本地视频播放器可执行文件路径（仅桌面部署时有效）</p>
             <input value={config.player_path || ""} onChange={e => setConfig({ ...config, player_path: e.target.value })}
               className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
           </div>
 
-          {/* 插件代理策略 */}
+          {/* 网络与代理 */}
           <div className="pt-3 border-t border-white/[0.06]">
-            <label className="text-sm font-medium text-slate-300">插件代理策略</label>
-            <p className="text-xs text-slate-600 mt-0.5 mb-2">控制各数据源是否走 HTTP 代理。默认"自动"按域名智能分流。</p>
+            <label className="text-sm font-medium text-slate-300">网络与代理</label>
+            <p className="text-xs text-slate-600 mt-0.5 mb-2">HTTP 代理用于海外数据源和插件下载</p>
+            <input value={config.http_proxy || ""} onChange={e => setConfig({ ...config, http_proxy: e.target.value })}
+              placeholder="如 http://127.0.0.1:7890"
+              className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30 mb-3" />
+            <label className="text-xs font-medium text-slate-400">插件代理策略</label>
+            <p className="text-xs text-slate-600 mt-0.5 mb-2">控制各数据源是否走代理。默认"自动"按域名智能分流。</p>
             <div className="space-y-1.5">
               {[
                 { id: "metadata-tmdb", label: "TMDB" },
@@ -262,7 +274,6 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
                     <span className="text-xs text-slate-400">{item.label}</span>
                     <select value={current} onChange={e => {
                       const newOverrides = { ...overrides, [item.id]: e.target.value };
-                      // auto 不需要存
                       if (e.target.value === "auto") delete newOverrides[item.id];
                       setConfig({ ...config, plugin_proxy_overrides: newOverrides });
                     }} className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none">

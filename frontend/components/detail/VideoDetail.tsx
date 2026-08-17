@@ -10,6 +10,7 @@ import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge,
 import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
+import { PlayButton } from "./PlayButton";
 
 export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: VideoInfo; onPlay: (p: string) => void; onSearch: (q: string, ctx?: any) => void; onRefresh: () => void }) {
   const { data: scrape, loading: scrapeLoading, status: scrapeStatus, rescrape: _rescrape, reload, setData: setScrapeData, confidence, pendingConfirm, setPendingConfirm } = useScrape(v.clean_name || v.file_name, v.file_path, false);
@@ -138,7 +139,7 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
       </div>
       {/* 第三行：播放 / 标准结构 / 生成标准名 */}
       <div className="space-y-2">
-        <button onClick={() => onPlay(v.file_path)} className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium flex items-center justify-center gap-1.5"><svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>播放</button>
+        <PlayButton filePath={v.file_path} onPlay={onPlay} />
         <button onClick={handleStructure} disabled={structureLoading || !isLooseVideo} className={`w-full py-2.5 rounded-lg text-sm disabled:opacity-50 ${isLooseVideo ? "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300" : "bg-white/[0.02] text-slate-600 cursor-not-allowed"}`}>{structureLoading ? "处理中..." : isLooseVideo ? "标准结构" : "✓ 已封装"}</button>
         <button onClick={() => handleAutoRename(false, true)} disabled={renameLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">{renameLoading ? "处理中..." : "生成标准名"}</button>
       </div>

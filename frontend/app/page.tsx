@@ -20,6 +20,7 @@ import OperationHistory from "@/components/media/OperationHistory";
 import OrganizeProgress from "@/components/media/OrganizeProgress";
 import DownloadManagerPanel from "@/components/download/DownloadManagerPanel";
 import PluginCenter from "@/components/plugins/PluginCenter";
+import { VideoPlayer } from "@/components/media/VideoPlayer";
 import EmptyLibraryGuide from "@/components/media/EmptyLibraryGuide";
 import AddLibraryModal from "@/components/media/AddLibraryModal";
 import AddScanPathModal from "@/components/media/AddScanPathModal";
@@ -145,7 +146,16 @@ export default function Home() {
     prevScanningRef.current = scanning;
   }, [scanning, stats.total, config.tmdb_api_key]);
 
-  const handlePlay = (path: string) => api.play(path).catch(() => alert("启动播放器失败"));
+  const [playingPath, setPlayingPath] = useState<string | null>(null);
+  const handlePlay = async (path: string) => {
+    // 优先尝试本地播放器（桌面部署），失败则回退到浏览器播放
+    try {
+      const res = await api.play(path);
+      if (res.success) return;
+    } catch {}
+    // 本地播放器不可用，打开浏览器播放弹窗
+    setPlayingPath(path);
+  };
   const handleOpenSearch = (query: string, ctx?: { shadowName?: string; cleanName?: string; mediaType?: string; cnName?: string; enName?: string; originalName?: string; folderType?: string; seasonNumber?: number; episodeTag?: string; savePath?: string }) => {
     setSearchQuery(query);
     setSearchContext(ctx || {});
@@ -474,6 +484,8 @@ export default function Home() {
           <button onClick={stopScan} className="text-xs text-red-400 hover:text-red-300 ml-2">停止</button>
         </div>
       )}
+      {/* 全局视频播放器弹窗 */}
+      <VideoPlayer path={playingPath} onClose={() => setPlayingPath(null)} />
     </main>
   );
 }

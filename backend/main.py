@@ -48,6 +48,7 @@ from routes.system import router as system_router
 from routes.tools import router as tools_router
 from providers import router as providers_router
 from routes.plugins import router as plugins_router
+from routes.playback import router as playback_router
 
 app = FastAPI(title='NAS Video Upgrader API')
 
@@ -107,6 +108,7 @@ app.include_router(system_router)
 app.include_router(tools_router)
 app.include_router(providers_router)
 app.include_router(plugins_router)
+app.include_router(playback_router)
 
 
 @app.get('/')
