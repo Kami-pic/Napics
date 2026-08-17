@@ -157,7 +157,7 @@ def search(query: str, type_filter: int = 0) -> List[Dict]:
 def get_hot_anime(page_start: int = 0, page_limit: int = 12) -> List[Dict]:
     """获取当季热门动画（Bangumi 每日放送，按评分排序）"""
     try:
-        resp = requests.get(f"{BASE}/calendar", headers=HEADERS, timeout=8, proxies=_get_proxies() or None)
+        resp = _bgm_get(f"{BASE}/calendar", headers=HEADERS, timeout=8)
         resp.raise_for_status()
         days = resp.json()
         all_items = []
@@ -219,7 +219,7 @@ def discover(type: int = 2, cat: int = None, sort: str = "rank",
         # Bangumi v0/subjects 支持 filter 参数
         params["year"] = year
     try:
-        resp = requests.get(f"{BASE}/v0/subjects", params=params, headers=HEADERS, timeout=8, proxies=_get_proxies() or None)
+        resp = _bgm_get(f"{BASE}/v0/subjects", params=params, headers=HEADERS, timeout=8)
         if resp.status_code == 404:
             return []
         resp.raise_for_status()
@@ -254,7 +254,7 @@ def get_detail(bgm_id: int) -> Optional[Dict]:
     """获取 Bangumi 条目详情"""
     url = f"{BASE}/v0/subjects/{bgm_id}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=10, proxies=_get_proxies() or None)
+        resp = _bgm_get(url, headers=HEADERS, timeout=10)
         resp.raise_for_status()
         item = resp.json()
         
@@ -304,7 +304,7 @@ def get_episodes(bgm_id: int) -> List[Dict]:
     """
     url = f"{BASE}/v0/episodes"
     try:
-        resp = requests.get(
+        resp = _bgm_get(
             url, headers=HEADERS, timeout=10,
             params={"subject_id": bgm_id, "type": 0, "limit": 100},
             proxies=_get_proxies() or None,
