@@ -96,3 +96,27 @@ def proxies_from_config(url: str) -> Optional[Dict[str, str]]:
     except Exception:
         proxy = ""
     return proxies_for(url, proxy)
+
+
+def proxies_for_plugin(plugin_id: str, url: str) -> Optional[Dict[str, str]]:
+    """按插件级代理覆盖返回 proxies 参数。
+
+    优先级：plugin_proxy_overrides[plugin_id] > 域名分流 > 无代理。
+    - "direct" → 返回 None（强制直连）
+    - "proxy"  → 返回 {"http": proxy, "https": proxy}（强制走代理）
+    - "auto" 或未配置 → 走正常域名分流（proxies_from_config）
+    """
+    try:
+        from shared import config_m
+        overrides = getattr(config_m.config, "plugin_proxy_overrides", None) or {}
+        mode = overrides.get(plugin_id, "auto")
+        proxy = getattr(config_m.config, "http_proxy", "") or ""
+
+        if mode == "direct":
+            return None
+        if mode == "proxy":
+            return {"http": proxy, "https": proxy} if proxy else None
+        # auto: 走域名分流
+        return proxies_for(url, proxy)
+    except Exception:
+        return proxies_from_config(url)

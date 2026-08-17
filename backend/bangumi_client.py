@@ -14,15 +14,10 @@ BASE = "https://api.bgm.tv"
 TYPE_MAP = {1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元"}
 
 def _get_proxies():
-    """Bangumi 的代理策略。
-
-    api.bgm.tv 理论上国内可直连，但部分 NAS 环境下不可达（DNS 解析到不通的 IP
-    或运营商封锁）。这里先尝试直连（proxies_from_config 返回 None），
-    如果连不上，_session 会用后备代理重试。
-    """
+    """Bangumi 的代理策略。按插件级覆盖 > 域名分流。"""
     try:
-        from core.proxy_policy import proxies_from_config
-        return proxies_from_config(BASE)
+        from core.proxy_policy import proxies_for_plugin
+        return proxies_for_plugin("metadata-bangumi", BASE)
     except Exception:
         return None
 

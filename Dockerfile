@@ -45,7 +45,7 @@ RUN apt-get update && \
 # 已释放内存仍长期滞留在进程 RSS；不限制 Python/Node 可用内存和功能。
 ENV TZ=Asia/Shanghai \
     NODE_ENV=production \
-    PORT=3000 \
+    PORT=3032 \
     NAPICS_DATA_DIR=/app/data \
     NAPICS_EXTERNAL_PLUGINS_DIR=/app/data/plugins \
     NAPICS_BACKEND_ORIGIN=http://127.0.0.1:8001 \
@@ -91,11 +91,11 @@ RUN chmod +x /app/entrypoint.sh
 # 配置与媒体库数据；媒体目录请挂载到 /media
 VOLUME ["/app/data"]
 
-EXPOSE 3000
+EXPOSE 3032
 
 # 探测前端→后端的转发链路，一次覆盖两个进程
 # URL 不带尾斜杠：/backend/ 会被 Next.js 308 重定向，curl 需要 -L 才能跟随
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -fsSL http://127.0.0.1:3000/backend || exit 1
+    CMD curl -fsSL http://127.0.0.1:3032/backend || exit 1
 
 CMD ["/app/entrypoint.sh"]

@@ -243,6 +243,39 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
           </div>
 
+          {/* 插件代理策略 */}
+          <div className="pt-3 border-t border-white/[0.06]">
+            <label className="text-sm font-medium text-slate-300">插件代理策略</label>
+            <p className="text-xs text-slate-600 mt-0.5 mb-2">控制各数据源是否走 HTTP 代理。默认"自动"按域名智能分流。</p>
+            <div className="space-y-1.5">
+              {[
+                { id: "metadata-tmdb", label: "TMDB" },
+                { id: "metadata-douban", label: "豆瓣" },
+                { id: "metadata-bangumi", label: "Bangumi" },
+                { id: "search-prowlarr", label: "Prowlarr" },
+                { id: "storage-openlist", label: "OpenList" },
+              ].map(item => {
+                const overrides = config.plugin_proxy_overrides || {};
+                const current = overrides[item.id] || "auto";
+                return (
+                  <div key={item.id} className="flex items-center justify-between py-1">
+                    <span className="text-xs text-slate-400">{item.label}</span>
+                    <select value={current} onChange={e => {
+                      const newOverrides = { ...overrides, [item.id]: e.target.value };
+                      // auto 不需要存
+                      if (e.target.value === "auto") delete newOverrides[item.id];
+                      setConfig({ ...config, plugin_proxy_overrides: newOverrides });
+                    }} className="bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-xs text-slate-300 outline-none">
+                      <option value="auto">自动</option>
+                      <option value="direct">直连</option>
+                      <option value="proxy">代理</option>
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* 缓存管理 */}
           <div className="pt-3 border-t border-white/[0.06]">
             {/* 默认刮削源：只在有元数据插件时显示 */}

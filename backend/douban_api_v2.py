@@ -144,10 +144,10 @@ def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
     }
     params.update(kwargs)
 
-    # 代理分流：豆瓣直连，不走代理
+    # 代理分流：按插件级覆盖 > 域名分流
     try:
-        from core.proxy_policy import proxies_from_config
-        proxies = proxies_from_config(req_url)
+        from core.proxy_policy import proxies_for_plugin
+        proxies = proxies_for_plugin("metadata-douban", req_url)
     except Exception:
         proxies = None
 

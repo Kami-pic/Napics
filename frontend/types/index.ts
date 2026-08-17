@@ -107,6 +107,7 @@ export interface AppConfig {
   recycle_bin_path?: string;
   recycle_bin_retention_days?: number;
   default_scrape_source?: string;
+  plugin_proxy_overrides?: Record<string, string>;
 }
 
 export interface SearchFilterConfig {

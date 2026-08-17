@@ -123,6 +123,9 @@ class AppConfig(BaseModel):
     license_validated_at: str = ""                # 最后验证时间（ISO 格式）
     # 下载监控目录（无下载器插件时的兜底方案）
     download_watch_dirs: List[str] = []           # 监控目录列表，新文件自动触发整理
+    # 插件代理覆盖：{"metadata-bangumi": "proxy", "metadata-douban": "direct"}
+    # 可选值：auto（默认分流）、direct（强制直连）、proxy（强制走 http_proxy）
+    plugin_proxy_overrides: dict = {}
     # GitHub 镜像：国内直连 raw.githubusercontent.com / github.com 常超时，
     # 官方地址优先、失败时按此列表回退。设为 {"raw": [], "repo": []} 可关闭回退。
     # 为 None（默认）时使用 core/github_access.py 内置的镜像列表。

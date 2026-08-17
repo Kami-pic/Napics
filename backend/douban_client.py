@@ -12,10 +12,10 @@ HEADERS = {
 
 
 def _douban_proxies(url: str):
-    """豆瓣域名在内置直连列表里，返回 None 表示直连。"""
+    """豆瓣代理策略：按插件级覆盖 > 域名分流（豆瓣在直连列表里）。"""
     try:
-        from core.proxy_policy import proxies_from_config
-        return proxies_from_config(url)
+        from core.proxy_policy import proxies_for_plugin
+        return proxies_for_plugin("metadata-douban", url)
     except Exception:
         return None
 
