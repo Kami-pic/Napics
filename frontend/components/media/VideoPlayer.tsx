@@ -122,17 +122,41 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   }, [path, startPlayback, loadSubtitles]);
 
   // video 事件监听：只在视频帧实际渲染时更新 currentTime（避免缓冲期字幕超前）
+  const keyframeOffsetRef = useRef(0); // 关键帧偏移补偿
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     let frameCallbackId: number | null = null;
+    let firstFrameTime: number | null = null;
+    let offsetDetected = false;
 
     // 用 requestVideoFrameCallback 精确跟踪视频帧渲染时间
     const useFrameCallback = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
 
     const onFrame = (_now: number, metadata: { mediaTime: number }) => {
-      setCurrentTime(seekOffset + metadata.mediaTime);
+      const mediaTime = metadata.mediaTime;
+
+      // 检测关键帧偏移：第一帧到第二帧如果有大跳变（>1s），用跳变后的时间作为基准
+      if (!offsetDetected) {
+        if (firstFrameTime === null) {
+          firstFrameTime = mediaTime;
+        } else if (mediaTime - firstFrameTime > 1.0) {
+          // 发现跳变：第一帧是 seek 前的关键帧，第二帧才是实际内容
+          keyframeOffsetRef.current = mediaTime;
+          offsetDetected = true;
+        } else {
+          // 正常递增，无跳变
+          keyframeOffsetRef.current = 0;
+          offsetDetected = true;
+        }
+      }
+
+      if (offsetDetected) {
+        const correctedTime = mediaTime - keyframeOffsetRef.current;
+        setCurrentTime(seekOffset + correctedTime);
+      }
       setBuffering(false);
       frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
     };
@@ -140,7 +164,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     // fallback：没有 requestVideoFrameCallback 时用 timeupdate
     const onTimeUpdate = () => {
       if (!useFrameCallback) {
-        setCurrentTime(seekOffset + video.currentTime);
+        setCurrentTime(seekOffset + video.currentTime - keyframeOffsetRef.current);
       }
     };
 
