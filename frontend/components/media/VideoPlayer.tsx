@@ -121,12 +121,29 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     loadSubtitles(path);
   }, [path, startPlayback, loadSubtitles]);
 
-  // video 事件监听
+  // video 事件监听：只在视频帧实际渲染时更新 currentTime（避免缓冲期字幕超前）
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const onTimeUpdate = () => setCurrentTime(seekOffset + video.currentTime);
+    let frameCallbackId: number | null = null;
+
+    // 用 requestVideoFrameCallback 精确跟踪视频帧渲染时间
+    const useFrameCallback = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
+    const onFrame = (_now: number, metadata: { mediaTime: number }) => {
+      setCurrentTime(seekOffset + metadata.mediaTime);
+      setBuffering(false);
+      frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
+    };
+
+    // fallback：没有 requestVideoFrameCallback 时用 timeupdate
+    const onTimeUpdate = () => {
+      if (!useFrameCallback) {
+        setCurrentTime(seekOffset + video.currentTime);
+      }
+    };
+
     const onPlaying = () => setBuffering(false);
     const onWaiting = () => setBuffering(true);
     const onCanPlay = () => setBuffering(false);
@@ -145,6 +162,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       setBuffering(false);
     };
 
+    if (useFrameCallback) {
+      frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
+    }
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("playing", onPlaying);
     video.addEventListener("waiting", onWaiting);
@@ -154,6 +174,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     video.addEventListener("error", onError);
 
     return () => {
+      if (frameCallbackId !== null && useFrameCallback) {
+        (video as any).cancelVideoFrameCallback(frameCallbackId);
+      }
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("waiting", onWaiting);
@@ -173,27 +196,11 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     video.pause();
     setBuffering(true);
     setSeekOffset(time);
-    // 冻结字幕在 seek 目标位置（不跟着缓冲期的 currentTime 跑）
-    setCurrentTime(time);
+    setCurrentTime(time); // 冻结字幕在目标位置，等 requestVideoFrameCallback 更新
 
     const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}`;
     video.src = streamUrl;
     video.load();
-
-    // 等视频有实际画面后再播放（避免音频先跑导致字幕超前）
-    const waitForVideo = () => {
-      return new Promise<void>(resolve => {
-        const check = () => {
-          // readyState >= 3 (HAVE_FUTURE_DATA) 表示有足够数据开始播放画面
-          if (video.readyState >= 3) { resolve(); return; }
-          // 用 canplay 事件作为 fallback
-          video.addEventListener("canplay", () => resolve(), { once: true });
-        };
-        check();
-      });
-    };
-
-    await waitForVideo();
     video.play().catch(() => {});
   }, [path, isTranscode]);
 
