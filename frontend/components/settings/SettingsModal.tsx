@@ -244,10 +244,25 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
           {advancedExpanded && (
           <>
           <div>
-            <label className="text-sm font-medium text-slate-300">播放器路径</label>
-            <p className="text-xs text-slate-600 mt-0.5 mb-1.5">本地视频播放器可执行文件路径（仅桌面部署时有效）</p>
-            <input value={config.player_path || ""} onChange={e => setConfig({ ...config, player_path: e.target.value })}
-              className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
+            <div className="flex items-center justify-between mb-1.5">
+              <div>
+                <label className="text-sm font-medium text-slate-300">使用本地播放器</label>
+                <p className="text-xs text-slate-600 mt-0.5">开启后点击播放按钮将调起本地播放器，关闭则使用浏览器内置播放器</p>
+              </div>
+              <button
+                onClick={() => setConfig({ ...config, use_local_player: !config.use_local_player })}
+                className={`relative w-10 h-5 rounded-full transition-colors ${config.use_local_player ? "bg-blue-500" : "bg-white/10"}`}>
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${config.use_local_player ? "left-[22px]" : "left-0.5"}`} />
+              </button>
+            </div>
+            {config.use_local_player && (
+              <div className="mt-2">
+                <p className="text-xs text-slate-600 mb-1">播放器路径（留空则使用系统默认关联程序）</p>
+                <input value={config.player_path || ""} onChange={e => setConfig({ ...config, player_path: e.target.value })}
+                  placeholder="如 C:\Program Files\PotPlayer\PotPlayerMini64.exe"
+                  className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-blue-500/30" />
+              </div>
+            )}
           </div>
 
           {/* 网络与代理 */}

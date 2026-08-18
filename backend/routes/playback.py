@@ -116,11 +116,15 @@ def stream_file(path: str = Query(..., description="视频文件路径"), reques
 
 
 @router.get("/playback/transcode")
-def transcode_file(path: str = Query(..., description="视频文件路径")):
+def transcode_file(
+    path: str = Query(..., description="视频文件路径"),
+    start: float = Query(0, description="起始秒数（seek 用）"),
+):
     """用 ffmpeg 实时转封装/转码为 mp4 流。
 
     视频编码 copy（不重编码），音频转为 AAC，容器格式转为 fragmented MP4。
     支持 mkv/ts/avi/wmv/flv 等浏览器不能直接播放的格式。
+    start 参数指定起始时间（秒），用于进度条拖拽 seek。
     """
     import subprocess
 
@@ -129,17 +133,30 @@ def transcode_file(path: str = Query(..., description="视频文件路径")):
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    # ffmpeg 命令：输入文件 → 视频 copy + 音频 aac → fragmented mp4 输出到 stdout
-    cmd = [
-        "ffmpeg",
+    # 构建 ffmpeg 命令
+    cmd = ["ffmpeg"]
+
+    # output seek（精确音画同步）
+    cmd += [
+        "-probesize", "5000000",
+        "-analyzeduration", "3000000",
         "-i", path,
+    ]
+
+    if start > 0:
+        cmd += ["-ss", str(start)]
+
+    cmd += [
         "-c:v", "copy",         # 视频不重编码
         "-c:a", "aac",          # 音频统一转 AAC（兼容浏览器）
-        "-ac", "2",             # 立体声（浏览器兼容性最好）
-        "-movflags", "frag_keyframe+empty_moov+faststart",
-        "-f", "mp4",            # 输出 mp4 容器
-        "-v", "quiet",          # 静默
-        "pipe:1",               # 输出到 stdout
+        "-ac", "2",             # 立体声
+        "-movflags", "frag_keyframe+empty_moov+default_base_moof",
+        "-frag_duration", "500000",
+        "-min_frag_duration", "200000",
+        "-max_muxing_queue_size", "4096",
+        "-f", "mp4",
+        "-v", "quiet",
+        "pipe:1",
     ]
 
     try:
@@ -153,8 +170,13 @@ def transcode_file(path: str = Query(..., description="视频文件路径")):
 
     def stream_output():
         try:
+            # 先读取一大块初始数据（等 ffmpeg 写出足够的交错音视频帧），避免浏览器提前播放不完整的数据
+            initial = process.stdout.read(1024 * 512)  # 首次 512KB（含完整的 moov + 数个 fragment）
+            if initial:
+                yield initial
+            # 后续正常 chunk 输出
             while True:
-                chunk = process.stdout.read(1024 * 256)  # 256KB chunks
+                chunk = process.stdout.read(1024 * 128)  # 128KB chunks
                 if not chunk:
                     break
                 yield chunk
@@ -172,58 +194,281 @@ def transcode_file(path: str = Query(..., description="视频文件路径")):
     )
 
 
+@router.get("/playback/keyframe-time")
+def get_keyframe_time(path: str = Query(..., description="视频文件路径"), time: float = Query(..., description="目标时间")):
+    """查询目标时间之前最近的关键帧时间。前端据此校正 seek 后的字幕偏移。"""
+    import subprocess
+
+    guard_path(path, "关键帧查询")
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    # 用 ffprobe 查找目标时间附近的关键帧
+    cmd = [
+        "ffprobe",
+        "-read_intervals", f"%{time}",  # 从 time 位置开始读
+        "-v", "quiet",
+        "-select_streams", "v:0",
+        "-show_frames",
+        "-show_entries", "frame=pts_time,key_frame",
+        "-of", "csv=p=0",
+        path,
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return {"actual_start": time}
+
+    # 找到第一个关键帧的 pts_time
+    for line in result.stdout.strip().split("\n"):
+        parts = line.strip().split(",")
+        if len(parts) >= 2 and parts[1] == "1":  # key_frame=1
+            try:
+                return {"actual_start": float(parts[0])}
+            except ValueError:
+                break
+    return {"actual_start": time}
+
+
+@router.get("/playback/duration")
+def get_duration(path: str = Query(..., description="视频文件路径")):
+    """用 ffprobe 获取视频总时长（秒）。前端用此值渲染自定义进度条。"""
+    import subprocess
+    import json as json_mod
+
+    guard_path(path, "时长查询")
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    cmd = [
+        "ffprobe",
+        "-v", "quiet",
+        "-print_format", "json",
+        "-show_format",
+        path,
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="ffprobe 未安装")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="ffprobe 超时")
+
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail="无法获取视频信息")
+
+    try:
+        info = json_mod.loads(result.stdout)
+        duration = float(info["format"]["duration"])
+    except (KeyError, ValueError, json_mod.JSONDecodeError):
+        raise HTTPException(status_code=500, detail="无法解析视频时长")
+
+    return {"duration": duration, "path": path}
+
+
 # ── 字幕相关 ──
 
 SUBTITLE_EXTS = {".srt", ".ass", ".ssa", ".vtt", ".sub"}
 
 
+def _read_subtitle_file(path: str) -> str:
+    """读取字幕文件，自动检测编码（BOM → UTF-8 → GBK/GB18030 → Latin-1）"""
+    with open(path, "rb") as f:
+        raw = f.read()
+
+    # BOM 检测
+    if raw.startswith(b"\xff\xfe"):
+        content = raw[2:].decode("utf-16-le", errors="replace")
+    elif raw.startswith(b"\xfe\xff"):
+        content = raw[2:].decode("utf-16-be", errors="replace")
+    elif raw.startswith(b"\xef\xbb\xbf"):
+        content = raw[3:].decode("utf-8", errors="replace")
+    else:
+        # 尝试 UTF-8
+        try:
+            content = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            # 尝试 GBK/GB18030（中文字幕常见编码）
+            try:
+                content = raw.decode("gb18030")
+            except UnicodeDecodeError:
+                # 最后 fallback：latin-1（不会报错，但可能有乱码）
+                content = raw.decode("latin-1", errors="replace")
+
+    # 去除残留 BOM 字符 + 规范化换行
+    content = content.lstrip("\ufeff")
+    content = content.replace("\r\n", "\n").replace("\r", "\n")
+    return content
+
+
 @router.get("/playback/subtitles")
 def list_subtitles(path: str = Query(..., description="视频文件路径")):
-    """列出与视频文件同目录下的外挂字幕文件"""
+    """列出外挂字幕 + 内嵌字幕流"""
     guard_path(path, "字幕查询")
 
-    video_dir = os.path.dirname(path)
-    if not os.path.isdir(video_dir):
-        return {"subtitles": []}
-
-    video_stem = os.path.splitext(os.path.basename(path))[0].lower()
     subtitles = []
 
-    try:
-        for f in os.listdir(video_dir):
-            ext = os.path.splitext(f)[1].lower()
-            if ext not in SUBTITLE_EXTS:
-                continue
-            full_path = os.path.join(video_dir, f)
-            if not os.path.isfile(full_path):
-                continue
-            # 推断语言标签（从文件名后缀猜测，如 movie.chs.srt → chs）
-            parts = os.path.splitext(f)[0].split(".")
-            lang = ""
-            if len(parts) >= 2:
-                candidate = parts[-1].lower()
-                if candidate in ("chs", "cht", "zh", "cn", "sc", "tc", "chi", "chinese"):
-                    lang = "zh"
-                elif candidate in ("eng", "en", "english"):
-                    lang = "en"
-                elif candidate in ("jpn", "jp", "ja", "japanese"):
-                    lang = "ja"
-                elif candidate in ("kor", "ko", "korean"):
-                    lang = "ko"
-                else:
-                    lang = candidate if len(candidate) <= 5 else ""
+    # ── 外挂字幕 ──
+    video_dir = os.path.dirname(path)
+    if os.path.isdir(video_dir):
+        try:
+            for f in os.listdir(video_dir):
+                ext = os.path.splitext(f)[1].lower()
+                if ext not in SUBTITLE_EXTS:
+                    continue
+                full_path = os.path.join(video_dir, f)
+                if not os.path.isfile(full_path):
+                    continue
+                # 推断语言标签（从文件名后缀猜测，如 movie.chs.srt → chs）
+                parts = os.path.splitext(f)[0].split(".")
+                lang = ""
+                if len(parts) >= 2:
+                    candidate = parts[-1].lower()
+                    if candidate in ("chs", "cht", "zh", "cn", "sc", "tc", "chi", "chinese"):
+                        lang = "zh"
+                    elif candidate in ("eng", "en", "english"):
+                        lang = "en"
+                    elif candidate in ("jpn", "jp", "ja", "japanese"):
+                        lang = "ja"
+                    elif candidate in ("kor", "ko", "korean"):
+                        lang = "ko"
+                    else:
+                        lang = candidate if len(candidate) <= 5 else ""
 
-            subtitles.append({
-                "name": f,
-                "path": full_path,
-                "format": ext.lstrip("."),
-                "lang": lang,
-                "url": f"/playback/subtitle/file?path={quote(full_path)}",
-            })
-    except OSError:
-        pass
+                subtitles.append({
+                    "name": f,
+                    "path": full_path,
+                    "format": ext.lstrip("."),
+                    "lang": lang,
+                    "url": f"/playback/subtitle/file?path={quote(full_path)}",
+                    "embedded": False,
+                })
+        except OSError:
+            pass
+
+    # ── 内嵌字幕（ffprobe 检测） ──
+    embedded = _detect_embedded_subtitles(path)
+    subtitles.extend(embedded)
 
     return {"subtitles": subtitles}
+
+
+def _detect_embedded_subtitles(video_path: str) -> list:
+    """用 ffprobe 检测视频内嵌字幕流，返回字幕列表"""
+    import subprocess
+    import json as json_mod
+
+    cmd = [
+        "ffprobe",
+        "-v", "quiet",
+        "-print_format", "json",
+        "-show_streams",
+        "-select_streams", "s",  # 只看字幕流
+        video_path,
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return []
+
+    if result.returncode != 0:
+        return []
+
+    try:
+        info = json_mod.loads(result.stdout)
+        streams = info.get("streams", [])
+    except (json_mod.JSONDecodeError, ValueError):
+        return []
+
+    subtitles = []
+    for stream in streams:
+        index = stream.get("index", 0)
+        codec = stream.get("codec_name", "")
+        tags = stream.get("tags", {})
+        lang = tags.get("language", "")
+        title = tags.get("title", "")
+
+        # 跳过图片型字幕（hdmv_pgs_subtitle / dvd_subtitle），浏览器无法渲染
+        if codec in ("hdmv_pgs_subtitle", "dvd_subtitle", "dvb_subtitle"):
+            continue
+
+        label = title or f"内嵌字幕 #{index}"
+        if lang:
+            label = f"{label} ({lang})"
+
+        subtitles.append({
+            "name": label,
+            "format": "embedded",
+            "lang": _normalize_lang(lang),
+            "url": f"/playback/subtitle/extract?path={quote(video_path)}&index={index}",
+            "embedded": True,
+        })
+
+    return subtitles
+
+
+def _normalize_lang(lang: str) -> str:
+    """标准化语言代码"""
+    lang = lang.lower().strip()
+    zh_codes = ("chi", "zho", "zh", "chs", "cht", "cn", "chinese")
+    en_codes = ("eng", "en", "english")
+    ja_codes = ("jpn", "jp", "ja", "japanese")
+    ko_codes = ("kor", "ko", "korean")
+    if lang in zh_codes:
+        return "zh"
+    if lang in en_codes:
+        return "en"
+    if lang in ja_codes:
+        return "ja"
+    if lang in ko_codes:
+        return "ko"
+    return lang
+
+
+@router.get("/playback/subtitle/extract")
+def extract_embedded_subtitle(
+    path: str = Query(..., description="视频文件路径"),
+    index: int = Query(..., description="字幕流索引"),
+):
+    """提取视频内嵌字幕流，实时转为 WebVTT 格式返回"""
+    import subprocess
+
+    guard_path(path, "内嵌字幕提取")
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    # ffmpeg 提取指定字幕流，转为 webvtt 输出到 stdout
+    cmd = [
+        "ffmpeg",
+        "-v", "quiet",
+        "-i", path,
+        "-map", f"0:{index}",
+        "-c:s", "webvtt",
+        "-f", "webvtt",
+        "pipe:1",
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=30)
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="ffmpeg 未安装")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="字幕提取超时")
+
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail="字幕提取失败")
+
+    return Response(
+        content=result.stdout,
+        media_type="text/vtt; charset=utf-8",
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
 
 
 @router.get("/playback/subtitle/file")
@@ -236,32 +481,32 @@ def serve_subtitle(path: str = Query(..., description="字幕文件路径"), req
 
     ext = os.path.splitext(path)[1].lower()
 
-    # 读取字幕内容
+    # 读取字幕内容（自动检测编码：BOM → UTF-8 → GBK）
     try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
+        content = _read_subtitle_file(path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"读取字幕失败: {e}")
 
     # 如果已经是 VTT 格式直接返回
     if ext == ".vtt":
-        return Response(content=content, media_type="text/vtt; charset=utf-8",
+        return Response(content=content.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
     # SRT → WebVTT 转换
     if ext == ".srt":
         vtt = _srt_to_vtt(content)
-        return Response(content=vtt, media_type="text/vtt; charset=utf-8",
+        logger.info(f"[Playback] SRT→VTT 转换完成，前30字符: {repr(vtt[:30])}")
+        return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
     # ASS/SSA → WebVTT 简易转换（去掉格式标签，保留文本和时间轴）
     if ext in (".ass", ".ssa"):
         vtt = _ass_to_vtt(content)
-        return Response(content=vtt, media_type="text/vtt; charset=utf-8",
+        return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
     # 不支持的格式返回原文
-    return Response(content=content, media_type="text/plain; charset=utf-8",
+    return Response(content=content.encode("utf-8"), media_type="text/plain; charset=utf-8",
                     headers={"Access-Control-Allow-Origin": "*"})
 
 

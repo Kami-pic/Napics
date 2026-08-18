@@ -27,6 +27,27 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# ── 内存级响应缓存（10 分钟），减少首次 tab 切换延迟 ──
+_mem_cache: dict = {}  # key → (timestamp, data)
+_MEM_CACHE_TTL = 600   # 10 分钟
+
+
+def _mem_get(key: str):
+    """获取内存缓存，过期返回 None"""
+    entry = _mem_cache.get(key)
+    if not entry:
+        return None
+    ts, data = entry
+    if time.time() - ts > _MEM_CACHE_TTL:
+        _mem_cache.pop(key, None)
+        return None
+    return data
+
+
+def _mem_set(key: str, data):
+    """写入内存缓存"""
+    _mem_cache[key] = (time.time(), data)
+
 
 @router.get("/movie/poster")
 def get_movie_poster(name: str):
@@ -301,6 +322,15 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
     if not is_feature_allowed("discover"):
         return {"source": source, "items": [], "total": 0}
 
+    # 内存缓存：10 分钟内直接返回（避免重复请求豆瓣/TMDB）
+    mem_key = f"recommend_{source}_{start}_{count}"
+    cached = _mem_get(mem_key)
+    if cached is not None:
+        # 每次返回时刷新 local_status（可能有新下载）
+        items = cached.get("items", [])
+        inject_local_status(items)
+        return cached
+
     # 综合推荐走独立逻辑（带文件缓存 1 小时）
     if source == "combined":
         cache_key = hashlib.md5(b"combined_recommend").hexdigest()[:12]
@@ -326,7 +356,9 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
                 json.dump(items, f, ensure_ascii=False)
         except Exception:
             pass
-        return {"source": "combined", "items": inject_clean_names(inject_local_status(items[start:start + count])), "count": len(items)}
+        result = {"source": "combined", "items": inject_clean_names(inject_local_status(items[start:start + count])), "count": len(items)}
+        _mem_set(mem_key, result)
+        return result
 
     fetcher = _RECOMMEND_SOURCES.get(source)
     if not fetcher:
@@ -337,7 +369,9 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
             # 豆瓣源：后台异步补全 tmdb_id
             if source.startswith("douban"):
                 async_enrich_tmdb_ids(items)
-            return {"source": source, "items": inject_clean_names(inject_local_status(items)), "count": len(items)}
+            result = {"source": source, "items": inject_clean_names(inject_local_status(items)), "count": len(items)}
+            _mem_set(mem_key, result)
+            return result
     except Exception as e:
         logger.error(f"[Discover] recommend/{source} API v2 失败: {e}")
 
@@ -354,7 +388,9 @@ def discover_recommend(source: str, start: int = 0, count: int = 20):
         try:
             logger.info(f"[Discover] {source} fallback 到旧版网页接口")
             items = douban_client.get_hot_list(fb[0], start, fb[1])
-            return {"source": source, "items": inject_clean_names(inject_local_status(items or [])), "count": len(items or []), "fallback": True}
+            result = {"source": source, "items": inject_clean_names(inject_local_status(items or [])), "count": len(items or []), "fallback": True}
+            _mem_set(mem_key, result)
+            return result
         except Exception as e2:
             logger.error(f"[Discover] {source} fallback 也失败: {e2}")
     return {"source": source, "items": [], "count": 0}

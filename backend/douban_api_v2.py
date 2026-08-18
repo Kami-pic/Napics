@@ -151,8 +151,8 @@ def _request(endpoint: str, use_cache: bool = True, **kwargs) -> Optional[Dict]:
     except Exception:
         proxies = None
 
-    # 随机延迟 0.3-1.0 秒（防封，但不要让用户等太久）
-    time.sleep(random.uniform(0.3, 1.0))
+    # 随机延迟 0.1-0.3 秒（防封，频率足够低不需要太长等待）
+    time.sleep(random.uniform(0.1, 0.3))
 
     try:
         resp = requests.get(

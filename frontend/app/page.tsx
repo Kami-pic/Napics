@@ -148,12 +148,14 @@ export default function Home() {
 
   const [playingPath, setPlayingPath] = useState<string | null>(null);
   const handlePlay = async (path: string) => {
-    // 优先尝试本地播放器（桌面部署），失败则回退到浏览器播放
-    try {
-      const res = await api.play(path);
-      if (res.success) return;
-    } catch {}
-    // 本地播放器不可用，打开浏览器播放弹窗
+    // 开关开启时走本地播放器（有路径用指定的，没路径用系统默认）
+    if (config.use_local_player) {
+      try {
+        const res = await api.play(path);
+        if (res.success) return;
+      } catch {}
+    }
+    // 开关关闭 或 本地播放器失败 → 浏览器内 Web Player
     setPlayingPath(path);
   };
   const handleOpenSearch = (query: string, ctx?: { shadowName?: string; cleanName?: string; mediaType?: string; cnName?: string; enName?: string; originalName?: string; folderType?: string; seasonNumber?: number; episodeTag?: string; savePath?: string }) => {

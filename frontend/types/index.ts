@@ -92,6 +92,7 @@ export interface AppConfig {
   media_libraries?: MediaLibraryConfig[];
   http_proxy?: string;
   player_path?: string;
+  use_local_player?: boolean;
   openai_api_key?: string;
   openai_base_url?: string;
   openai_model?: string;

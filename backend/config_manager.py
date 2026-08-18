@@ -88,6 +88,8 @@ class AppConfig(BaseModel):
     # 本地播放器路径（仅在后端跑在桌面系统上时有意义；
     # Docker / NAS 部署时后端没有桌面环境，无法拉起播放器，留空即可）
     player_path: str = ""
+    # 是否使用本地播放器（开启则走后端 /play 调起本地/系统默认播放器，关闭则走浏览器内 Web Player）
+    use_local_player: bool = False
     # 二期新增
     sort_weights: SortWeightsConfig = SortWeightsConfig()  # 种子排序权重
     torrent_blacklist: List[str] = []             # 无效种子黑名单（download_url）

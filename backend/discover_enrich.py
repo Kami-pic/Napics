@@ -170,14 +170,9 @@ def inject_clean_names(items: list) -> list:
         if not item.get("clean_name_en"):
             need_enrich.append(item)
 
-    # 同步并发补全缺英文名的条目（最多等 2 秒）
+    # 缺英文名的条目全部转交后台异步补全（不阻塞响应）
     if need_enrich:
-        tmdb = _tmdb_client()
-        if tmdb:
-            timed_out_items = _sync_enrich_english_names(need_enrich, tmdb, timeout=2.0)
-            # 超时的条目转交后台继续
-            if timed_out_items:
-                async_enrich_tmdb_ids(timed_out_items)
+        async_enrich_tmdb_ids(need_enrich)
 
     return items
 
