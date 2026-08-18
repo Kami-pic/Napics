@@ -138,9 +138,13 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     const onFrame = (_now: number, metadata: { mediaTime: number }) => {
       const mediaTime = metadata.mediaTime;
 
-      // 检测关键帧偏移：第一帧到第二帧如果有大跳变（>1s），用跳变后的时间作为基准
+      // 检测关键帧偏移：仅在 seek 后（seekOffset > 0）才需要检测
       if (!offsetDetected) {
-        if (firstFrameTime === null) {
+        if (seekOffset === 0) {
+          // 从头播放，无偏移
+          keyframeOffsetRef.current = 0;
+          offsetDetected = true;
+        } else if (firstFrameTime === null) {
           firstFrameTime = mediaTime;
         } else if (mediaTime - firstFrameTime > 1.0) {
           // 发现跳变：第一帧是 seek 前的关键帧，第二帧才是实际内容

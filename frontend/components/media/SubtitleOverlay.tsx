@@ -46,7 +46,7 @@ function parseVTT(content: string): Cue[] {
   const lines = content.split("\n");
   let i = 0;
 
-  // 跳过 WEBVTT header
+  // 跳过 WEBVTT header 和空行
   while (i < lines.length && !lines[i].includes("-->")) i++;
 
   while (i < lines.length) {
@@ -58,11 +58,19 @@ function parseVTT(content: string): Cue[] {
       const start = parseTime(startStr);
       const end = parseTime(endStr);
 
-      // 收集文本行（直到空行或下一个时间轴）
+      // 收集文本行（直到下一个时间轴行或纯数字序号+时间轴的组合）
       i++;
       const textLines: string[] = [];
-      while (i < lines.length && lines[i].trim() !== "" && !lines[i].includes("-->")) {
-        textLines.push(lines[i].trim());
+      while (i < lines.length) {
+        const nextLine = lines[i].trim();
+        // 下一个 cue 开始的标志：纯数字行后面紧跟时间轴行
+        if (/^\d+$/.test(nextLine) && i + 1 < lines.length && lines[i + 1].includes("-->")) {
+          break;
+        }
+        // 或者直接遇到时间轴行
+        if (nextLine.includes("-->")) break;
+        // 跳过空行但不作为 cue 结束（兼容非标准 SRT）
+        if (nextLine) textLines.push(nextLine);
         i++;
       }
 
