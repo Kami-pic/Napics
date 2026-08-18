@@ -1,4 +1,4 @@
-// 全局视频播放器弹窗：mp4/webm 直连播放，其他格式通过后端 ffmpeg 转码（支持 seek + 字幕）
+// 全局视频播放器弹窗：mp4/webm 直连播放，其他格式通过后端 ffmpeg 转码
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { BASE_URL } from "@/lib/api/base";
@@ -8,7 +8,7 @@ import { SubtitleOverlay } from "./SubtitleOverlay";
 interface SubtitleData {
   name: string;
   lang: string;
-  vttContent: string;  // VTT 原文（用于 overlay 渲染）
+  vttContent: string;
 }
 
 interface VideoPlayerProps {
@@ -75,7 +75,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     }
   }, []);
 
-  // 加载字幕：fetch VTT 内容到内存（不依赖浏览器 track API）
+  // 加载字幕
   const loadSubtitles = useCallback(async (videoPath: string) => {
     try {
       const res = await fetch(`${BASE_URL}/playback/subtitles?path=${encodeURIComponent(videoPath)}`);
@@ -92,7 +92,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
           if (!subRes.ok) continue;
           const vttContent = await subRes.text();
           loaded.push({ name: track.name, lang: track.lang, vttContent });
-        } catch { /* 单条失败不影响其他 */ }
+        } catch { /* 单条失败不影响 */ }
       }
       if (loaded.length > 0) {
         setSubtitles(loaded);
@@ -104,7 +104,6 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   // 初始化
   useEffect(() => {
     if (!path) return;
-
     setError(null);
     setDuration(0);
     setCurrentTime(0);
@@ -121,66 +120,23 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     loadSubtitles(path);
   }, [path, startPlayback, loadSubtitles]);
 
-  // video 事件监听：只在视频帧实际渲染时更新 currentTime（避免缓冲期字幕超前）
-  const keyframeOffsetRef = useRef(0); // 关键帧偏移补偿
-
+  // 时间更新
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    let frameCallbackId: number | null = null;
-    let firstFrameTime: number | null = null;
-    let offsetDetected = false;
-
-    // 用 requestVideoFrameCallback 精确跟踪视频帧渲染时间
-    const useFrameCallback = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
-
-    const onFrame = (_now: number, metadata: { mediaTime: number }) => {
-      const mediaTime = metadata.mediaTime;
-
-      // 检测关键帧偏移：仅在 seek 后（seekOffset > 0）才需要检测
-      if (!offsetDetected) {
-        if (seekOffset === 0) {
-          // 从头播放，无偏移
-          keyframeOffsetRef.current = 0;
-          offsetDetected = true;
-        } else if (firstFrameTime === null) {
-          firstFrameTime = mediaTime;
-        } else if (mediaTime - firstFrameTime > 1.0) {
-          // 发现跳变：第一帧是 seek 前的关键帧，第二帧才是实际内容
-          keyframeOffsetRef.current = mediaTime;
-          offsetDetected = true;
-        } else {
-          // 正常递增，无跳变
-          keyframeOffsetRef.current = 0;
-          offsetDetected = true;
-        }
-      }
-
-      if (offsetDetected) {
-        const correctedTime = mediaTime - keyframeOffsetRef.current;
-        setCurrentTime(seekOffset + correctedTime);
-      }
-      setBuffering(false);
-      frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
-    };
-
-    // fallback：没有 requestVideoFrameCallback 时用 timeupdate
     const onTimeUpdate = () => {
-      if (!useFrameCallback) {
-        setCurrentTime(seekOffset + video.currentTime - keyframeOffsetRef.current);
+      if (isTranscode) {
+        setCurrentTime(seekOffset + video.currentTime);
+      } else {
+        // mp4 原生播放：currentTime 就是绝对时间
+        setCurrentTime(video.currentTime);
       }
     };
-
     const onPlaying = () => setBuffering(false);
     const onWaiting = () => setBuffering(true);
     const onCanPlay = () => setBuffering(false);
     const onLoadedMetadata = () => {
-      if (video.duration && isFinite(video.duration) && video.duration > 0) {
-        setDuration(prev => prev > 0 ? prev : video.duration);
-      }
-    };
-    const onDurationChange = () => {
       if (video.duration && isFinite(video.duration) && video.duration > 0) {
         setDuration(prev => prev > 0 ? prev : video.duration);
       }
@@ -190,33 +146,25 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       setBuffering(false);
     };
 
-    if (useFrameCallback) {
-      frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
-    }
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("playing", onPlaying);
     video.addEventListener("waiting", onWaiting);
     video.addEventListener("canplay", onCanPlay);
     video.addEventListener("loadedmetadata", onLoadedMetadata);
-    video.addEventListener("durationchange", onDurationChange);
     video.addEventListener("error", onError);
 
     return () => {
-      if (frameCallbackId !== null && useFrameCallback) {
-        (video as any).cancelVideoFrameCallback(frameCallbackId);
-      }
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("waiting", onWaiting);
       video.removeEventListener("canplay", onCanPlay);
       video.removeEventListener("loadedmetadata", onLoadedMetadata);
-      video.removeEventListener("durationchange", onDurationChange);
       video.removeEventListener("error", onError);
     };
-  }, [seekOffset]);
+  }, [seekOffset, isTranscode]);
 
   // 转码流 seek
-  const handleSeek = useCallback(async (time: number) => {
+  const handleSeek = useCallback((time: number) => {
     if (!path || !isTranscode) return;
     const video = videoRef.current;
     if (!video) return;
@@ -224,7 +172,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     video.pause();
     setBuffering(true);
     setSeekOffset(time);
-    setCurrentTime(time); // 冻结字幕在目标位置，等 requestVideoFrameCallback 更新
+    setCurrentTime(time);
 
     const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}`;
     video.src = streamUrl;
@@ -249,28 +197,22 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
           className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm">
           ✕
         </button>
-        {/* 错误提示 */}
         {error && (
           <div className="absolute inset-0 flex items-center justify-center z-20">
             <p className="text-red-400 text-sm px-4 text-center">{error}</p>
           </div>
         )}
-        {/* 视频区域 + 字幕覆盖 */}
+        {/* 视频区域 + 字幕覆盖层 */}
         <div className="flex-1 aspect-video relative">
           <video
             ref={videoRef}
-            controls={!isTranscode}
+            controls={!isTranscode && subtitles.length === 0}
             autoPlay
             className="w-full h-full"
           />
-          {/* 自渲染字幕覆盖层（不依赖浏览器 track API） */}
-          <SubtitleOverlay
-            vttContent={activeVtt}
-            currentTime={currentTime}
-            visible={activeSubIdx >= 0}
-          />
+          <SubtitleOverlay vttContent={activeVtt} currentTime={currentTime} visible={activeSubIdx >= 0} />
         </div>
-        {/* 转码流自定义控制栏 */}
+        {/* 控制栏：转码流用自定义，mp4 有字幕时也显示简易控制栏 */}
         {isTranscode && (
           <TranscodeProgressBar
             currentTime={currentTime}
@@ -283,6 +225,22 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             activeSubtitleIndex={activeSubIdx}
             onSubtitleChange={handleSubtitleChange}
           />
+        )}
+        {/* mp4 有字幕时：显示字幕选择栏 */}
+        {!isTranscode && subtitles.length > 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60">
+            <span className="text-[11px] text-slate-500">字幕:</span>
+            <button onClick={() => setActiveSubIdx(-1)}
+              className={`text-[11px] px-2 py-0.5 rounded ${activeSubIdx === -1 ? "bg-blue-500/20 text-blue-400" : "text-slate-400 hover:text-white"}`}>
+              关闭
+            </button>
+            {subtitles.map((sub, i) => (
+              <button key={i} onClick={() => setActiveSubIdx(i)}
+                className={`text-[11px] px-2 py-0.5 rounded truncate max-w-[200px] ${activeSubIdx === i ? "bg-blue-500/20 text-blue-400" : "text-slate-400 hover:text-white"}`}>
+                {sub.name || `字幕 ${i + 1}`}{sub.lang ? ` (${sub.lang})` : ""}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>
