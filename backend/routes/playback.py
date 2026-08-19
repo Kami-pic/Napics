@@ -579,6 +579,12 @@ def serve_subtitle(path: str = Query(..., description="字幕文件路径"), req
         return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
+    # SUB (MicroDVD) → WebVTT 转换
+    if ext == ".sub":
+        vtt = _sub_to_vtt(content)
+        return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
+                        headers={"Access-Control-Allow-Origin": "*"})
+
     # 不支持的格式返回原文
     return Response(content=content.encode("utf-8"), media_type="text/plain; charset=utf-8",
                     headers={"Access-Control-Allow-Origin": "*"})
@@ -645,3 +651,68 @@ def _ass_time_to_vtt(time_str: str) -> str:
         return ""
     h, mi, s, cs = m.groups()
     return f"{int(h):02d}:{mi}:{s}.{cs}0"
+
+
+def _sub_to_vtt(sub_content: str) -> str:
+    """SUB (MicroDVD) → WebVTT 转换。
+
+    MicroDVD 格式：{start_frame}{end_frame}text
+    第一行如果是 {1}{1}fps_value 则用该帧率，否则默认 23.976fps。
+    """
+    import re
+    lines_raw = sub_content.strip().split("\n")
+    fps = 23.976
+
+    # 检测第一行是否声明帧率
+    if lines_raw and re.match(r"\{1\}\{1\}", lines_raw[0]):
+        try:
+            fps_candidate = float(re.sub(r"\{1\}\{1\}", "", lines_raw[0]).strip())
+            if 10 < fps_candidate < 120:
+                fps = fps_candidate
+            lines_raw = lines_raw[1:]
+        except ValueError:
+            pass
+
+    lines = ["WEBVTT", ""]
+    cue_index = 0
+
+    for line in lines_raw:
+        line = line.strip()
+        if not line:
+            continue
+        m = re.match(r"\{(\d+)\}\{(\d+)\}(.*)", line)
+        if not m:
+            continue
+        start_frame = int(m.group(1))
+        end_frame = int(m.group(2))
+        text = m.group(3).strip()
+
+        if not text or end_frame <= start_frame:
+            continue
+
+        # MicroDVD 用 | 分隔多行
+        text = text.replace("|", "\n")
+        # 去掉格式标签 {y:b} {y:i} 等
+        text = re.sub(r"\{[^}]*\}", "", text).strip()
+
+        if not text:
+            continue
+
+        start_sec = start_frame / fps
+        end_sec = end_frame / fps
+
+        cue_index += 1
+        lines.append(str(cue_index))
+        lines.append(f"{_seconds_to_vtt(start_sec)} --> {_seconds_to_vtt(end_sec)}")
+        lines.append(text)
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _seconds_to_vtt(seconds: float) -> str:
+    """秒数 → WebVTT 时间戳 HH:MM:SS.MMM"""
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = seconds % 60
+    return f"{h:02d}:{m:02d}:{s:06.3f}"

@@ -163,7 +163,10 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     const useFrameCallback = isTranscode && "requestVideoFrameCallback" in HTMLVideoElement.prototype;
 
     const onFrame = (_now: number, metadata: { mediaTime: number }) => {
-      setCurrentTime(seekOffset + metadata.mediaTime);
+      // 用 mediaTime 和 video.currentTime 中较小值作为字幕时间，
+      // 防止视频帧 PTS 超前于音频播放位置导致字幕提前
+      const effectiveTime = Math.min(metadata.mediaTime, video.currentTime);
+      setCurrentTime(seekOffset + effectiveTime);
       setBuffering(false);
       frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
     };
@@ -261,10 +264,23 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
 
   // 音轨切换：重新发起转码请求，保持当前进度
   const handleAudioChange = useCallback((index: number) => {
-    if (!path || !isTranscode) return;
+    if (!path) return;
     setActiveAudioIdx(index);
     const video = videoRef.current;
     if (!video) return;
+
+    // mp4 原生模式：尝试用 audioTracks API 切换
+    if (!isTranscode) {
+      const tracks = (video as any).audioTracks;
+      if (tracks && tracks.length > 1) {
+        for (let i = 0; i < tracks.length; i++) {
+          tracks[i].enabled = (i === index);
+        }
+        return; // 浏览器原生切换成功
+      }
+      // 浏览器不支持 audioTracks API：fallback 到转码模式
+      setIsTranscode(true);
+    }
 
     video.pause();
     setBuffering(true);
@@ -331,6 +347,18 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             activeAudioIndex={activeAudioIdx}
             onAudioChange={handleAudioChange}
           />
+        )}
+        {/* mp4 原生模式：多音轨时显示音轨选择栏 */}
+        {!isTranscode && audioTracks.length > 1 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60">
+            <span className="text-[11px] text-slate-500">音轨:</span>
+            {audioTracks.map((track) => (
+              <button key={track.index} onClick={() => handleAudioChange(track.index)}
+                className={`text-[11px] px-2 py-0.5 rounded truncate max-w-[200px] ${activeAudioIdx === track.index ? "bg-blue-500/20 text-blue-400" : "text-slate-400 hover:text-white"}`}>
+                {track.label}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>
