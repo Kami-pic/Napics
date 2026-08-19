@@ -35,8 +35,19 @@ def set_client(client: AssrtClient):
 
 
 def _get_client() -> AssrtClient:
+    global _client
     if _client is None:
-        raise HTTPException(status_code=503, detail="字幕搜索服务未初始化，请检查 assrt_token 配置")
+        # 尝试从全局配置动态获取（支持安装后配置 token 无需重启）
+        try:
+            from shared import config_m
+            token = config_m.config.assrt_token or ""
+            if token:
+                proxy = config_m.config.http_proxy or ""
+                _client = AssrtClient(token=token, proxy=proxy)
+        except Exception:
+            pass
+    if _client is None:
+        raise HTTPException(status_code=503, detail="字幕搜索服务未初始化，请在插件配置中填写 assrt_token")
     return _client
 
 

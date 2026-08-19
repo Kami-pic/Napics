@@ -20,18 +20,19 @@ def register(ctx):
 
     # 从系统配置获取 assrt token
     token = ctx.get_config("assrt_token", "")
-    if not token:
-        ctx.logger.warning("[subtitle-search] 未配置 assrt_token，字幕搜索不可用")
-        return
-
-    # 初始化客户端
     proxy = ctx.get_proxy()
-    client = AssrtClient(token=token, proxy=proxy)
-    set_client(client)
 
-    # 注册路由
+    # 始终注册路由（token 为空时路由可达但会返回 503 提示配置）
+    # 这样用户安装后填 token 不需要重启
+    if token:
+        client = AssrtClient(token=token, proxy=proxy)
+        set_client(client)
+        ctx.logger.info("[subtitle-search] 字幕搜索插件已加载")
+    else:
+        ctx.logger.warning("[subtitle-search] 未配置 assrt_token，安装后请在插件配置中填写")
+
+    # 注册路由（无论 token 是否存在）
     ctx.register_router(router, tags=["subtitle"])
-    ctx.logger.info("[subtitle-search] 字幕搜索插件已加载")
 
 
 def unregister():
