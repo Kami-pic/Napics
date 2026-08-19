@@ -1,0 +1,22 @@
+{
+    "id": "subtitle-search",
+    "name": "字幕搜索与下载",
+    "version": "1.0.0",
+    "description": "搜索并下载字幕文件到视频同目录（assrt.net 源）",
+    "category": "feature",
+    "icon": "📝",
+    "requires_config": ["assrt_token"],
+    "config_schema": [
+        {
+            "key": "assrt_token",
+            "label": "assrt.net API Token",
+            "type": "password",
+            "description": "在 assrt.net 注册后获取的 API 密钥",
+            "placeholder": "32位字母数字组合",
+            "required": true
+        }
+    ],
+    "depends_on": [],
+    "provides": ["SubtitleSearch"],
+    "risk_level": "low"
+}

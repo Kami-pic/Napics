@@ -1,6 +1,7 @@
 // 视频详情面板：展示视频信息、刮削状态、操作按钮
 "use client";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
 import { formatSize, formatDuration } from "@/lib/utils";
@@ -11,12 +12,19 @@ import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
 import { PlayButton } from "./PlayButton";
+import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
+
+// 字幕弹窗动态加载 — 仅在插件安装后实际加载代码
+const SubtitleModal = dynamic(() => import("@/components/subtitle/SubtitleModal"), { ssr: false });
 
 export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: VideoInfo; onPlay: (p: string) => void; onSearch: (q: string, ctx?: any) => void; onRefresh: () => void }) {
   const { data: scrape, loading: scrapeLoading, status: scrapeStatus, rescrape: _rescrape, reload, setData: setScrapeData, confidence, pendingConfirm, setPendingConfirm } = useScrape(v.clean_name || v.file_name, v.file_path, false);
   const rescrape = async () => { await _rescrape(); setPosterKey(k => k + 1); setPosterDeleted(false); onRefresh(); };
   const [posterKey, setPosterKey] = useState(0);
   const [posterDeleted, setPosterDeleted] = useState(false);
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const plugins = useInstalledPlugins();
+  const hasSubtitle = plugins.installed.has("subtitle-search");
   const handleMove = async (t: string) => { try { await api.batchManage("move", [v.file_path], t); onRefresh(); } catch { alert("失败"); } };
   const handleDelete = async () => { try { await api.batchManage("delete", [v.file_path]); onRefresh(); } catch { alert("失败"); } };
   const [renameResult, setRenameResult] = useState(() => getCached(v.file_path).renameResult || "");
@@ -176,21 +184,39 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
       <div>
         <div className="flex items-center justify-between mb-2">
           <h5 className="text-sm font-medium text-slate-300">文件信息</h5>
-          <button
-            onClick={async () => {
-              try {
-                await api.refreshQuality([v.file_path]);
-                onRefresh();
-              } catch {}
-            }}
-            className="text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
-            title="重新检测质量分"
-          >检测质量</button>
+          <div className="flex items-center gap-2">
+            {hasSubtitle && (
+              <button
+                onClick={() => setShowSubtitle(true)}
+                className="text-[11px] text-slate-500 hover:text-green-400 transition-colors"
+                title="搜索字幕"
+              >搜索字幕</button>
+            )}
+            <button
+              onClick={async () => {
+                try {
+                  await api.refreshQuality([v.file_path]);
+                  onRefresh();
+                } catch {}
+              }}
+              className="text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
+              title="重新检测质量分"
+            >检测质量</button>
+          </div>
         </div>
         {[["分辨率", v.resolution, false], ["视频编码", v.video_codec || "—", false], ["音频编码", v.audio_codec || "—", false], ["HDR", v.hdr_type, false], ["质量分", String(v.quality_score || 0), false], ["大小", formatSize(v.size_gb), false], ["时长", formatDuration(v.duration), false], ["字幕", v.subtitle_count > 0 ? v.subtitle_count + " 条" : "无", false], ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res], ["路径", v.file_path, false]].map(([label, value, warn]) => (
           <InfoRow key={label as string} label={label as string} value={value as string} warn={warn as boolean} />
         ))}
       </div>
+      {/* 字幕搜索弹窗（插件已安装时才渲染） */}
+      {hasSubtitle && (
+        <SubtitleModal
+          open={showSubtitle}
+          onClose={() => setShowSubtitle(false)}
+          query={v.clean_name_cn || v.clean_name || v.file_name.replace(/\.[^.]+$/, "")}
+          videoPath={v.file_path}
+        />
+      )}
     </div>
   );
 }
