@@ -17,20 +17,24 @@ class TestPluginManager:
     """测试 PluginManager 核心逻辑"""
 
     def test_load_manifests(self):
-        """默认内置根只加载 10 个核心插件。"""
+        """核心插件全部被发现，第三方插件也被发现（标记为 external）。"""
         pm = PluginManager()
-        assert set(pm._manifests) == {
+        core_ids = {
             "metadata-tmdb", "metadata-douban", "metadata-bangumi",
             "search-prowlarr", "download-qbittorrent", "storage-openlist",
             "feature-completeness", "feature-discover",
             "feature-local-match", "feature-subscribe",
         }
+        # 核心插件必须全部存在且标记为 builtin
+        assert core_ids.issubset(set(pm._manifests))
+        for cid in core_ids:
+            assert pm._plugin_sources[cid] == "builtin"
 
     def test_list_all_no_installed(self):
-        """无已安装插件时，10 个核心插件均保持可安装。"""
+        """无已安装插件时，所有发现的插件均未安装。"""
         pm = PluginManager()
         plugins = pm.list_all([])
-        assert len(plugins) == 10
+        assert len(plugins) >= 10
         for p in plugins:
             assert p.installed is False
 
@@ -142,7 +146,6 @@ class TestPluginManager:
         assert "download" in categories
         assert "feature" in categories
         assert "storage" in categories
-        assert "rss" not in categories
 
     def test_reload(self):
         """reload 不报错"""

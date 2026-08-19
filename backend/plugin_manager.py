@@ -169,7 +169,7 @@ class PluginManager:
                     if manifest.id not in CORE_BUILTIN_PLUGIN_IDS:
                         continue
                 if manifest.id in self._manifests:
-                    logger.warning(
+                    logger.debug(
                         f"[PluginManager] 忽略重复插件 {manifest.id}: {plugin_dir}，"
                         f"已由 {self._plugin_sources[manifest.id]} 提供"
                     )
@@ -188,6 +188,10 @@ class PluginManager:
         self._scan_root(self.builtin_plugins_dir, "builtin")
         if self.external_plugins_dir != self.builtin_plugins_dir:
             self._scan_root(self.external_plugins_dir, "external")
+        else:
+            # 本地开发环境：builtin 和 external 同目录，
+            # 第一遍只加载白名单内的核心插件，第二遍补充加载其余插件作为 external
+            self._scan_root(self.builtin_plugins_dir, "external")
 
     def reload(self) -> None:
         """重新扫描插件目录。"""
