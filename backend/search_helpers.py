@@ -198,6 +198,8 @@ def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
 
 
 def _candidate_to_search_result(candidate: SearchCandidate) -> SearchResult:
+    from quality_parser import parse_quality, get_quality_level
+    quality = parse_quality(candidate.title)
     return SearchResult(
         title=candidate.title,
         size_gb=candidate.size_gb,
@@ -206,7 +208,9 @@ def _candidate_to_search_result(candidate: SearchCandidate) -> SearchResult:
         leechers=candidate.leechers,
         download_url=candidate.download_url,
         info_url=candidate.info_url,
-        quality_tag=candidate.raw_quality,
+        quality_tag=quality.display if quality.display else (candidate.raw_quality or "Unknown"),
+        quality=quality,
+        quality_rank=get_quality_level(quality).rank,
     )
 
 
