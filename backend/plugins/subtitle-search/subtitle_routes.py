@@ -90,22 +90,20 @@ async def search_subtitles(
     )
 
     if not candidates:
-        raise HTTPException(status_code=400, detail="搜索关键词至少 3 个字符")
+        raise HTTPException(status_code=400, detail="请提供影片名称或搜索关键词")
 
     # 逐词回退搜索，找到结果就停
     results = []
     used_keyword = ""
+    last_error = ""
     for kw in candidates:
-        if len(kw) < 3:
-            continue
         search_results, keyword = client.search(
             kw, is_file=is_file, no_muxer=no_muxer, pos=pos, cnt=cnt
         )
+        used_keyword = keyword
         if search_results:
             results = search_results
-            used_keyword = keyword
             break
-        used_keyword = keyword
 
     return SubtitleSearchResponse(
         status=True,
@@ -138,7 +136,7 @@ def _build_search_keywords(
 
     def _add(kw: str):
         kw = kw.strip()
-        if kw and len(kw) >= 3 and kw.lower() not in seen:
+        if kw and kw.lower() not in seen:
             seen.add(kw.lower())
             candidates.append(kw)
 

@@ -46,7 +46,7 @@ export default function SubtitleModal({ open, onClose, query, videoPath, cnName,
   if (!open) return null;
 
   const handleSearch = () => {
-    if (inputValue.trim().length >= 3) {
+    if (inputValue.trim()) {
       s.doSearch(inputValue.trim(), {
         cn_name: cnName,
         en_name: enName,

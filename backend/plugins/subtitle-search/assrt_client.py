@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 _BASE_URL = "https://api.assrt.net"
 _ALT_BASE_URL = "https://api.makedie.me"  # 备用域名
 
-# 速率限制：最少间隔（秒），用户配额 5 次/分钟 ≈ 12 秒/次
-_MIN_INTERVAL_SEC = 12.0
+# 速率限制：最少间隔（秒）
+_MIN_INTERVAL_SEC = 1.0
 
 
 class AssrtClient:
