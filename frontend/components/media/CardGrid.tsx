@@ -19,7 +19,7 @@ interface CardGridProps {
   onToggleSelect: (path: string) => void;
   onToggleFolderSelect: (items: VideoInfo[]) => void;
   onPlay: (path: string) => void;
-  onSearch: (query: string) => void;
+  onSearch: (query: string, ctx?: { cnName?: string; enName?: string; originalName?: string; folderType?: string; savePath?: string }) => void;
   onNavigate: (node: FolderNode) => void;
   onVideoDetail: (v: VideoInfo) => void;
   onFolderDetail: (n: FolderNode) => void;

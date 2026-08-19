@@ -305,5 +305,86 @@ class TestMatchChainIntegration:
         assert result["is_junk"] is False, f"磁力源相关结果不应被标记，match_score={score}"
 
 
+# ════════════════════════════════════════
+# 第六组：纯中文搜索词场景 — 规则 3 修复验证
+# ════════════════════════════════════════
+
+class TestPureChineseQueryUnmatched:
+    """纯中文搜索词（无英文辅助名）时，不相关的英文结果应被标记 unmatched"""
+
+    def test_cn_query_vs_unrelated_en_title(self):
+        """纯中文搜索词 vs 纯英文不相关标题 → is_junk"""
+        d = {"title": "Ant-Man.and.the.Wasp.2018.1080p.BluRay.x264",
+             "match_score": 0, "seeders": 50, "size_gb": 5.0,
+             "_search_names": ["斯达巴克斯"]}
+        result = _compute_junk_flags(d)
+        assert result["is_junk"] is True
+        assert "unmatched" in result["junk_reasons"]
+
+    def test_cn_query_vs_multiple_unrelated(self):
+        """多个不相关结果都应被标记"""
+        titles = ["Birds.of.Prey.2020.1080p", "Rick.and.Morty.S05E03", "Random.Movie.2024"]
+        for title in titles:
+            d = {"title": title, "match_score": 0, "seeders": 50, "size_gb": 5.0,
+                 "_search_names": ["斯达巴克斯"]}
+            result = _compute_junk_flags(d)
+            assert result["is_junk"] is True, f"应被标记: {title}"
+
+    def test_cn_query_vs_matching_cn_title(self):
+        """纯中文搜索词 vs 包含中文的匹配标题 → match_score > 0 → 不标记"""
+        d = {"title": "西部世界.Westworld.S03.1080p.BluRay",
+             "match_score": 90, "seeders": 50, "size_gb": 5.0,
+             "_search_names": ["西部世界"]}
+        result = _compute_junk_flags(d)
+        assert result["is_junk"] is False
+
+    def test_no_search_names_no_trigger(self):
+        """无 _search_names 时不触发 unmatched（兼容无搜索词场景）"""
+        d = {"title": "Random.Movie.2024", "match_score": 0, "seeders": 50, "size_gb": 5.0}
+        result = _compute_junk_flags(d)
+        assert "unmatched" not in result["junk_reasons"]
+
+    def test_single_char_search_name_no_trigger(self):
+        """搜索词只有 1 个字符时不触发 unmatched（避免单字误判）"""
+        d = {"title": "Random.Movie.2024", "match_score": 0, "seeders": 50, "size_gb": 5.0,
+             "_search_names": ["她"]}
+        result = _compute_junk_flags(d)
+        assert "unmatched" not in result["junk_reasons"]
+
+    def test_two_char_search_name_triggers(self):
+        """搜索词 >= 2 字符即触发 unmatched"""
+        d = {"title": "Random.Movie.2024", "match_score": 0, "seeders": 50, "size_gb": 5.0,
+             "_search_names": ["她的"]}
+        result = _compute_junk_flags(d)
+        assert "unmatched" in result["junk_reasons"]
+
+    def test_enrich_result_pure_cn_query(self):
+        """通过 enrich_result 端到端验证：纯中文搜索 → 纯英文不相关 → is_junk"""
+        from search_helpers import enrich_result
+        from searcher import SearchResult
+        r = SearchResult(
+            title="Ant-Man.and.the.Wasp.2018.1080p.BluRay.x264",
+            size_gb=5.0, indexer="bitsearch", seeders=50, leechers=0,
+            download_url="magnet:?xt=urn:btih:abc", info_url="", quality_tag="",
+        )
+        d = enrich_result(r, "斯达巴克斯")
+        assert d["match_score"] == 0
+        assert d["is_junk"] is True
+        assert "unmatched" in d["junk_reasons"]
+
+    def test_enrich_result_with_match_names_cross_lang(self):
+        """有 match_names 辅助时，跨语言匹配正确工作"""
+        from search_helpers import enrich_result
+        from searcher import SearchResult
+        r = SearchResult(
+            title="Westworld.S03E05.1080p.BluRay.x264",
+            size_gb=5.0, indexer="bitsearch", seeders=50, leechers=0,
+            download_url="magnet:?xt=urn:btih:def", info_url="", quality_tag="",
+        )
+        d = enrich_result(r, "西部世界", match_names=["西部世界", "Westworld"])
+        assert d["match_score"] > 0
+        assert d["is_junk"] is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

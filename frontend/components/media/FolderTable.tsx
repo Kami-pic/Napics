@@ -9,7 +9,7 @@ interface FolderTableProps {
   selectedPaths: Set<string>;
   onToggleSelect: (path: string) => void;
   onPlay: (path: string) => void;
-  onSearch: (query: string) => void;
+  onSearch: (query: string, ctx?: { cnName?: string; enName?: string; originalName?: string; folderType?: string; savePath?: string }) => void;
   onNavigate: (node: FolderNode) => void;
   onVideoDetail: (v: VideoInfo) => void;
   onFolderDetail: (n: FolderNode) => void;
@@ -103,7 +103,7 @@ export default function FolderTable({
                         <button onClick={(e) => { e.stopPropagation(); onPlay(row.data.file_path); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">
                           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); onSearch(row.data.file_name); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
+                        <button onClick={(e) => { e.stopPropagation(); onSearch(row.data.clean_name_cn || row.data.clean_name || row.data.file_name, { cnName: row.data.clean_name_cn || currentFolder?.clean_name_cn, enName: row.data.clean_name_en || currentFolder?.clean_name_en, originalName: row.data.clean_name_original, folderType: currentFolder?.folder_type, savePath: currentFolder?.path }); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
                         </button>
                       </>

@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 export default function ExpandPanel({ item, seasonTab, setSeasonTab, selectedPaths, onToggleSelect, onToggleFolderSelect, onPlay, onSearch, onVideoDetail, onFolderDetail, onClose, batchMode, refreshKey = 0 }: {
   item: CardItem; seasonTab: number; setSeasonTab: (n: number) => void;
   selectedPaths: Set<string>; onToggleSelect: (p: string) => void; onToggleFolderSelect: (items: VideoInfo[]) => void;
-  onPlay: (p: string) => void; onSearch: (q: string) => void; onVideoDetail: (v: VideoInfo) => void; onFolderDetail: (n: FolderNode) => void; onClose: () => void; batchMode?: boolean; refreshKey?: number;
+  onPlay: (p: string) => void; onSearch: (q: string, ctx?: { cnName?: string; enName?: string; originalName?: string; folderType?: string; savePath?: string }) => void; onVideoDetail: (v: VideoInfo) => void; onFolderDetail: (n: FolderNode) => void; onClose: () => void; batchMode?: boolean; refreshKey?: number;
 }) {
   const [sortAsc, setSortAsc] = useState(true);
   // 完整度数据（tv 类型用）

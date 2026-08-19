@@ -26,7 +26,7 @@ function naturalCompare(a: string, b: string): number {
 
 export default function EpisodeList({ videos, selectedPaths, onToggleSelect, onPlay, onSearch, onVideoDetail, batchMode, sortAsc = true }: {
   videos: VideoInfo[]; selectedPaths: Set<string>; onToggleSelect: (p: string) => void;
-  onPlay: (p: string) => void; onSearch: (q: string) => void; onVideoDetail: (v: VideoInfo) => void; batchMode?: boolean; sortAsc?: boolean;
+  onPlay: (p: string) => void; onSearch: (q: string, ctx?: { cnName?: string; enName?: string; originalName?: string }) => void; onVideoDetail: (v: VideoInfo) => void; batchMode?: boolean; sortAsc?: boolean;
 }) {
   const sorted = useMemo(() => {
     const arr = [...videos];
@@ -55,7 +55,7 @@ export default function EpisodeList({ videos, selectedPaths, onToggleSelect, onP
             <button onClick={(e) => { e.stopPropagation(); onPlay(v.file_path); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all flex-shrink-0">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
             </button>
-            <button onClick={(e) => { e.stopPropagation(); onSearch(v.file_name); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all flex-shrink-0">
+            <button onClick={(e) => { e.stopPropagation(); onSearch(v.clean_name_cn || v.clean_name || v.file_name, { cnName: v.clean_name_cn, enName: v.clean_name_en, originalName: v.clean_name_original }); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all flex-shrink-0">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
             </button>
           </div>

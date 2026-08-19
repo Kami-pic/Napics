@@ -75,8 +75,13 @@ def compute_junk_flags(d: dict) -> dict:
     if match_score > 0 and match_score < _MATCH_SCORE_THRESHOLD:
         reasons.append(f"low_match:{match_score}")
 
-    # 规则 3: 完全不匹配（跨语言）
-    if match_score == 0 and has_multilang:
+    # 规则 3: 完全不匹配
+    # 原逻辑只在 _has_multilang_candidates（candidates >= 3）时触发，
+    # 但纯中文搜索词去重后 candidates 可能只有 1-2 个，导致不相关结果逃逸。
+    # 修正：只要搜索词长度 >= 2（排除单字误判），match_score=0 即标记 unmatched。
+    search_names = d.get("_search_names", [])
+    has_valid_query = any(len(n) >= 2 for n in search_names) if search_names else has_multilang
+    if match_score == 0 and has_valid_query:
         reasons.append("unmatched")
 
     # 规则 4: 死种（排除磁力链接源和无做种数信息源）
