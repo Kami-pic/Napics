@@ -64,11 +64,27 @@ export interface SubtitleDownloadResponse {
 // ── API 调用 ──
 
 export const subtitleApi = {
-  /** 搜索字幕 */
-  search: (query: string, options?: { is_file?: boolean; no_muxer?: boolean; pos?: number; cnt?: number }) => {
-    const p = new URLSearchParams({ query });
+  /** 搜索字幕（智能回退：cn_name → en_name → original_name → query） */
+  search: (query: string, options?: {
+    cn_name?: string;
+    en_name?: string;
+    original_name?: string;
+    season_number?: number;
+    episode_number?: number;
+    is_file?: boolean;
+    no_muxer?: boolean;
+    pos?: number;
+    cnt?: number;
+  }) => {
+    const p = new URLSearchParams();
+    if (query) p.set("query", query);
+    if (options?.cn_name) p.set("cn_name", options.cn_name);
+    if (options?.en_name) p.set("en_name", options.en_name);
+    if (options?.original_name) p.set("original_name", options.original_name);
+    if (options?.season_number) p.set("season_number", String(options.season_number));
+    if (options?.episode_number) p.set("episode_number", String(options.episode_number));
     if (options?.is_file) p.set("is_file", "true");
-    if (options?.no_muxer) p.set("no_muxer", "true");
+    if (options?.no_muxer !== false) p.set("no_muxer", "true");
     if (options?.pos !== undefined) p.set("pos", String(options.pos));
     if (options?.cnt !== undefined) p.set("cnt", String(options.cnt));
     return request<SubtitleSearchResponse>(`${BASE_URL}/subtitle/search?${p.toString()}`);

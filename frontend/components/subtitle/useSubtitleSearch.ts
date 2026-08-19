@@ -49,7 +49,7 @@ export interface SubtitleSearchState {
   loadingDetail: boolean;
   downloading: boolean;
   downloadMsg: string;
-  doSearch: (query: string, options?: { is_file?: boolean; no_muxer?: boolean }) => Promise<void>;
+  doSearch: (query: string, options?: { cn_name?: string; en_name?: string; original_name?: string; season_number?: number; episode_number?: number; is_file?: boolean }) => Promise<void>;
   setFormatFilter: (f: FormatFilter) => void;
   setLangFilter: (l: LangFilter) => void;
   fetchDetail: (id: number) => Promise<void>;
@@ -69,7 +69,7 @@ export function useSubtitleSearch(): SubtitleSearchState {
   const [downloading, setDownloading] = useState(false);
   const [downloadMsg, setDownloadMsg] = useState("");
 
-  const doSearch = useCallback(async (query: string, options?: { is_file?: boolean; no_muxer?: boolean }) => {
+  const doSearch = useCallback(async (query: string, options?: { cn_name?: string; en_name?: string; original_name?: string; season_number?: number; episode_number?: number; is_file?: boolean }) => {
     setSearching(true);
     setError("");
     setResults([]);

@@ -215,6 +215,11 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
           onClose={() => setShowSubtitle(false)}
           query={v.clean_name_cn || v.clean_name || v.file_name.replace(/\.[^.]+$/, "")}
           videoPath={v.file_path}
+          cnName={v.clean_name_cn || ""}
+          enName={v.clean_name_en || ""}
+          originalName={v.clean_name_original || ""}
+          seasonNumber={(() => { const m = v.file_name.match(/S(\d+)/i); return m ? parseInt(m[1]) : undefined; })()}
+          episodeNumber={(() => { const m = v.file_name.match(/S\d+E(\d+)/i); return m ? parseInt(m[1]) : undefined; })()}
         />
       )}
     </div>

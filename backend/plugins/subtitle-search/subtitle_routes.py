@@ -44,35 +44,130 @@ def _get_client() -> AssrtClient:
 
 @router.get("/search", response_model=SubtitleSearchResponse)
 async def search_subtitles(
-    query: str,
+    query: str = "",
+    cn_name: str = "",
+    en_name: str = "",
+    original_name: str = "",
+    season_number: Optional[int] = None,
+    episode_number: Optional[int] = None,
     is_file: bool = False,
-    no_muxer: bool = False,
+    no_muxer: bool = True,
     pos: int = 0,
     cnt: int = 15,
 ):
-    """搜索字幕。
+    """搜索字幕（智能回退链）。
+
+    优先用 cn_name 搜索，无结果回退 en_name，再回退 original_name，最后用 query。
+    季集号会自动拼接到搜索词中。
 
     参数：
-    - query: 搜索关键词（影片名称或文件名）
-    - is_file: 是否按文件名模式搜索（忽略分辨率等技术参数）
-    - no_muxer: 是否忽略压制组信息
-    - pos: 分页起始位置
-    - cnt: 返回数量（最大 15）
+    - query: 原始搜索词（兜底）
+    - cn_name: 中文名
+    - en_name: 英文名
+    - original_name: 原始语言名
+    - season_number: 季号
+    - episode_number: 集号
+    - is_file: 是否按文件名模式搜索
+    - no_muxer: 是否忽略压制组信息（默认 True）
     """
-    if len(query) < 3:
+    client = _get_client()
+
+    # 构建回退搜索词链
+    candidates = _build_search_keywords(
+        cn_name=cn_name, en_name=en_name, original_name=original_name,
+        query=query, season_number=season_number, episode_number=episode_number,
+    )
+
+    if not candidates:
         raise HTTPException(status_code=400, detail="搜索关键词至少 3 个字符")
 
-    client = _get_client()
-    results, keyword = client.search(
-        query, is_file=is_file, no_muxer=no_muxer, pos=pos, cnt=cnt
-    )
+    # 逐词回退搜索，找到结果就停
+    results = []
+    used_keyword = ""
+    for kw in candidates:
+        if len(kw) < 3:
+            continue
+        search_results, keyword = client.search(
+            kw, is_file=is_file, no_muxer=no_muxer, pos=pos, cnt=cnt
+        )
+        if search_results:
+            results = search_results
+            used_keyword = keyword
+            break
+        used_keyword = keyword
 
     return SubtitleSearchResponse(
         status=True,
-        keyword=keyword,
+        keyword=used_keyword,
         total=len(results),
         results=results,
     )
+
+
+def _build_search_keywords(
+    cn_name: str = "",
+    en_name: str = "",
+    original_name: str = "",
+    query: str = "",
+    season_number: Optional[int] = None,
+    episode_number: Optional[int] = None,
+) -> list:
+    """构建字幕搜索词回退链。
+
+    策略：
+    1. 中文名（拼季集号）
+    2. 中文名（不带集号，只带季号）
+    3. 英文名（拼 SxxExx）
+    4. 英文名（只带 Sxx）
+    5. 原始名
+    6. 原始 query 兜底
+    """
+    candidates = []
+    seen = set()
+
+    def _add(kw: str):
+        kw = kw.strip()
+        if kw and len(kw) >= 3 and kw.lower() not in seen:
+            seen.add(kw.lower())
+            candidates.append(kw)
+
+    # 季集号构造
+    se_cn = ""
+    se_en = ""
+    s_cn = ""
+    s_en = ""
+    if season_number and season_number > 0:
+        s_cn = f"第{season_number}季"
+        s_en = f"S{str(season_number).zfill(2)}"
+        if episode_number and episode_number > 0:
+            se_cn = f"第{season_number}季第{episode_number}集"
+            se_en = f"S{str(season_number).zfill(2)}E{str(episode_number).zfill(2)}"
+
+    # 中文名优先
+    if cn_name:
+        if se_cn:
+            _add(f"{cn_name} {se_cn}")
+        if s_cn:
+            _add(f"{cn_name} {s_cn}")
+        _add(cn_name)
+
+    # 英文名
+    if en_name:
+        if se_en:
+            _add(f"{en_name} {se_en}")
+        if s_en:
+            _add(f"{en_name} {s_en}")
+        _add(en_name)
+
+    # 原始名
+    if original_name:
+        _add(original_name)
+
+    # 兜底
+    if query:
+        _add(query)
+
+    return candidates
 
 
 # ── 详情 ──

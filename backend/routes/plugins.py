@@ -31,6 +31,25 @@ def _reset_services_on_plugin_change():
             logger.warning("[Plugins] 下载后端刷新失败，已保留原运行时后端")
     except Exception as e:
         logger.warning(f"[Plugins] 下载后端刷新异常，已保留原运行时后端: {e}")
+    # 动态挂载新注册的插件路由（无需重启）
+    try:
+        from plugin_context import get_plugin_routers
+        from main import app
+        existing_paths = {route.path for route in app.routes}
+        for plugin_id, router_entries in get_plugin_routers().items():
+            for entry in router_entries:
+                test_route = entry["router"].routes[0] if entry["router"].routes else None
+                if test_route and getattr(test_route, "path", "") in existing_paths:
+                    continue  # 已挂载
+                kwargs = {}
+                if entry.get("prefix"):
+                    kwargs["prefix"] = entry["prefix"]
+                if entry.get("tags"):
+                    kwargs["tags"] = entry["tags"]
+                app.include_router(entry["router"], **kwargs)
+                logger.info(f"[Plugins] 动态挂载路由: {plugin_id}")
+    except Exception as e:
+        logger.warning(f"[Plugins] 动态路由挂载异常: {e}")
 
 
 router = APIRouter(prefix="/api/plugins", tags=["plugins"])

@@ -12,17 +12,33 @@ export interface SubtitleModalProps {
   query: string;
   /** 视频文件路径（下载时使用） */
   videoPath: string;
+  /** 中文名 */
+  cnName?: string;
+  /** 英文名 */
+  enName?: string;
+  /** 原始语言名 */
+  originalName?: string;
+  /** 季号 */
+  seasonNumber?: number;
+  /** 集号 */
+  episodeNumber?: number;
 }
 
-export default function SubtitleModal({ open, onClose, query, videoPath }: SubtitleModalProps) {
+export default function SubtitleModal({ open, onClose, query, videoPath, cnName, enName, originalName, seasonNumber, episodeNumber }: SubtitleModalProps) {
   const s = useSubtitleSearch();
   const [inputValue, setInputValue] = useState(query);
 
-  // 打开时用默认搜索词自动搜索
+  // 打开时用结构化名称自动搜索
   useEffect(() => {
-    if (open && query) {
-      setInputValue(query);
-      s.doSearch(query, { no_muxer: true });
+    if (open && (cnName || enName || query)) {
+      setInputValue(cnName || enName || query);
+      s.doSearch(cnName || enName || query, {
+        cn_name: cnName,
+        en_name: enName,
+        original_name: originalName,
+        season_number: seasonNumber,
+        episode_number: episodeNumber,
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, query]);
@@ -31,7 +47,13 @@ export default function SubtitleModal({ open, onClose, query, videoPath }: Subti
 
   const handleSearch = () => {
     if (inputValue.trim().length >= 3) {
-      s.doSearch(inputValue.trim(), { no_muxer: true });
+      s.doSearch(inputValue.trim(), {
+        cn_name: cnName,
+        en_name: enName,
+        original_name: originalName,
+        season_number: seasonNumber,
+        episode_number: episodeNumber,
+      });
     }
   };
 
