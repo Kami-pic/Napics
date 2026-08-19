@@ -48,7 +48,6 @@ from routes.system import router as system_router
 from routes.tools import router as tools_router
 from providers import router as providers_router
 from routes.plugins import router as plugins_router
-from routes.playback import router as playback_router
 
 app = FastAPI(title='NAS Video Upgrader API')
 
@@ -108,7 +107,6 @@ app.include_router(system_router)
 app.include_router(tools_router)
 app.include_router(providers_router)
 app.include_router(plugins_router)
-app.include_router(playback_router)
 
 
 @app.get('/')
@@ -128,6 +126,25 @@ def startup_event():
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"[Main] 插件加载失败: {e}")
+
+    # 挂载插件注册的路由
+    try:
+        from plugin_context import get_plugin_routers
+        for plugin_id, router_entries in get_plugin_routers().items():
+            for entry in router_entries:
+                kwargs = {}
+                if entry.get("prefix"):
+                    kwargs["prefix"] = entry["prefix"]
+                if entry.get("tags"):
+                    kwargs["tags"] = entry["tags"]
+                app.include_router(entry["router"], **kwargs)
+                import logging
+                logging.getLogger(__name__).info(
+                    f"[Main] 挂载插件路由: {plugin_id} prefix={entry.get('prefix', '')!r}"
+                )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"[Main] 插件路由挂载失败: {e}")
 
     try:
         from routes.subscribe import _get_scheduler

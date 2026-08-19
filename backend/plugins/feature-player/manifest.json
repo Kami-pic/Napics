@@ -1,0 +1,13 @@
+{
+    "id": "feature-player",
+    "name": "Web 播放器",
+    "version": "1.0.0",
+    "description": "浏览器内视频播放，支持 HTTP Range 流式传输、ffmpeg 实时转码、内嵌/外挂字幕、音轨切换",
+    "category": "feature",
+    "icon": "▶️",
+    "requires_config": [],
+    "config_schema": [],
+    "depends_on": [],
+    "provides": ["Feature:webplayer", "PlaybackAPI"],
+    "risk_level": "low"
+}

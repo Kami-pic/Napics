@@ -6,7 +6,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Query, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
 
-from shared import config_m, guard_path
+from shared import guard_path
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -239,8 +239,8 @@ def transcode_file(
 
     def stream_output():
         try:
-            # 先读取一大块初始数据（等 ffmpeg 写出足够的交错音视频帧），避免浏览器提前播放不完整的数据
-            initial = process.stdout.read(1024 * 512)  # 首次 512KB（含完整的 moov + 数个 fragment）
+            # 先读取一大块初始数据（等 ffmpeg 写出足够的交错音视频帧）
+            initial = process.stdout.read(1024 * 512)  # 首次 512KB
             if initial:
                 yield initial
             # 后续正常 chunk 输出
@@ -273,10 +273,9 @@ def get_keyframe_time(path: str = Query(..., description="视频文件路径"), 
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    # 用 ffprobe 查找目标时间附近的关键帧
     cmd = [
         "ffprobe",
-        "-read_intervals", f"%{time}",  # 从 time 位置开始读
+        "-read_intervals", f"%{time}",
         "-v", "quiet",
         "-select_streams", "v:0",
         "-show_frames",
@@ -290,10 +289,9 @@ def get_keyframe_time(path: str = Query(..., description="视频文件路径"), 
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return {"actual_start": time}
 
-    # 找到第一个关键帧的 pts_time
     for line in result.stdout.strip().split("\n"):
         parts = line.strip().split(",")
-        if len(parts) >= 2 and parts[1] == "1":  # key_frame=1
+        if len(parts) >= 2 and parts[1] == "1":
             try:
                 return {"actual_start": float(parts[0])}
             except ValueError:
@@ -387,7 +385,6 @@ def list_audio_tracks(path: str = Query(..., description="视频文件路径")):
         channels = stream.get("channels", 0)
         sample_rate = stream.get("sample_rate", "")
 
-        # 构造显示标签
         label = title or f"音轨 {audio_index + 1}"
         if lang:
             label = f"{label} ({_normalize_lang(lang)})"
@@ -419,7 +416,6 @@ def _read_subtitle_file(path: str) -> str:
     with open(path, "rb") as f:
         raw = f.read()
 
-    # BOM 检测
     if raw.startswith(b"\xff\xfe"):
         content = raw[2:].decode("utf-16-le", errors="replace")
     elif raw.startswith(b"\xfe\xff"):
@@ -427,18 +423,14 @@ def _read_subtitle_file(path: str) -> str:
     elif raw.startswith(b"\xef\xbb\xbf"):
         content = raw[3:].decode("utf-8", errors="replace")
     else:
-        # 尝试 UTF-8
         try:
             content = raw.decode("utf-8")
         except UnicodeDecodeError:
-            # 尝试 GBK/GB18030（中文字幕常见编码）
             try:
                 content = raw.decode("gb18030")
             except UnicodeDecodeError:
-                # 最后 fallback：latin-1（不会报错，但可能有乱码）
                 content = raw.decode("latin-1", errors="replace")
 
-    # 去除残留 BOM 字符 + 规范化换行
     content = content.lstrip("\ufeff")
     content = content.replace("\r\n", "\n").replace("\r", "\n")
     return content
@@ -462,7 +454,6 @@ def list_subtitles(path: str = Query(..., description="视频文件路径")):
                 full_path = os.path.join(video_dir, f)
                 if not os.path.isfile(full_path):
                     continue
-                # 推断语言标签（从文件名后缀猜测，如 movie.chs.srt → chs）
                 parts = os.path.splitext(f)[0].split(".")
                 lang = ""
                 if len(parts) >= 2:
@@ -506,7 +497,7 @@ def _detect_embedded_subtitles(video_path: str) -> list:
         "-v", "quiet",
         "-print_format", "json",
         "-show_streams",
-        "-select_streams", "s",  # 只看字幕流
+        "-select_streams", "s",
         video_path,
     ]
 
@@ -532,7 +523,6 @@ def _detect_embedded_subtitles(video_path: str) -> list:
         lang = tags.get("language", "")
         title = tags.get("title", "")
 
-        # 跳过图片型字幕（hdmv_pgs_subtitle / dvd_subtitle），浏览器无法渲染
         if codec in ("hdmv_pgs_subtitle", "dvd_subtitle", "dvb_subtitle"):
             continue
 
@@ -582,7 +572,6 @@ def extract_embedded_subtitle(
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    # ffmpeg 提取指定字幕流，转为 webvtt 输出到 stdout
     cmd = [
         "ffmpeg",
         "-v", "quiet",
@@ -620,37 +609,31 @@ def serve_subtitle(path: str = Query(..., description="字幕文件路径"), req
 
     ext = os.path.splitext(path)[1].lower()
 
-    # 读取字幕内容（自动检测编码：BOM → UTF-8 → GBK）
     try:
         content = _read_subtitle_file(path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"读取字幕失败: {e}")
 
-    # 如果已经是 VTT 格式直接返回
     if ext == ".vtt":
         return Response(content=content.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
-    # SRT → WebVTT 转换
     if ext == ".srt":
         vtt = _srt_to_vtt(content)
         logger.info(f"[Playback] SRT→VTT 转换完成，前30字符: {repr(vtt[:30])}")
         return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
-    # ASS/SSA → WebVTT 简易转换（去掉格式标签，保留文本和时间轴）
     if ext in (".ass", ".ssa"):
         vtt = _ass_to_vtt(content)
         return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
-    # SUB (MicroDVD) → WebVTT 转换
     if ext == ".sub":
         vtt = _sub_to_vtt(content)
         return Response(content=vtt.encode("utf-8"), media_type="text/vtt; charset=utf-8",
                         headers={"Access-Control-Allow-Origin": "*"})
 
-    # 不支持的格式返回原文
     return Response(content=content.encode("utf-8"), media_type="text/plain; charset=utf-8",
                     headers={"Access-Control-Allow-Origin": "*"})
 
@@ -658,9 +641,7 @@ def serve_subtitle(path: str = Query(..., description="字幕文件路径"), req
 def _srt_to_vtt(srt_content: str) -> str:
     """SRT → WebVTT 转换"""
     import re
-    # WebVTT header
     lines = ["WEBVTT", ""]
-    # SRT 时间戳用逗号分隔毫秒，VTT 用点
     converted = re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", srt_content)
     lines.append(converted.strip())
     return "\n".join(lines)
@@ -677,7 +658,6 @@ def _ass_to_vtt(ass_content: str) -> str:
         if not line.startswith("Dialogue:"):
             continue
 
-        # Dialogue: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         parts = line.split(",", 9)
         if len(parts) < 10:
             continue
@@ -686,15 +666,12 @@ def _ass_to_vtt(ass_content: str) -> str:
         end_raw = parts[2].strip()
         text = parts[9].strip()
 
-        # 去掉 ASS 格式标签 {\xxx}
         text = re.sub(r"\{[^}]*\}", "", text)
-        # \N 和 \n 换行
         text = text.replace("\\N", "\n").replace("\\n", "\n")
 
         if not text.strip():
             continue
 
-        # ASS 时间格式 H:MM:SS.CC → WebVTT HH:MM:SS.MMM
         start_vtt = _ass_time_to_vtt(start_raw)
         end_vtt = _ass_time_to_vtt(end_raw)
 
@@ -728,7 +705,6 @@ def _sub_to_vtt(sub_content: str) -> str:
     lines_raw = sub_content.strip().split("\n")
     fps = 23.976
 
-    # 检测第一行是否声明帧率
     if lines_raw and re.match(r"\{1\}\{1\}", lines_raw[0]):
         try:
             fps_candidate = float(re.sub(r"\{1\}\{1\}", "", lines_raw[0]).strip())
@@ -755,9 +731,7 @@ def _sub_to_vtt(sub_content: str) -> str:
         if not text or end_frame <= start_frame:
             continue
 
-        # MicroDVD 用 | 分隔多行
         text = text.replace("|", "\n")
-        # 去掉格式标签 {y:b} {y:i} 等
         text = re.sub(r"\{[^}]*\}", "", text).strip()
 
         if not text:

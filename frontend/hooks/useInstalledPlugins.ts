@@ -20,6 +20,7 @@ export interface InstalledPluginsState {
   hasDownload: boolean;
   hasCompleteness: boolean;
   hasProwlarr: boolean;
+  hasPlayer: boolean;
 }
 
 export interface PluginCapabilities {
@@ -84,5 +85,6 @@ export function useInstalledPlugins(): InstalledPluginsState {
     hasCompleteness: available.has("feature-completeness"),
     hasDownload: available.has("download-qbittorrent") || available.has("download-openlist"),
     hasProwlarr: available.has("search-prowlarr"),
+    hasPlayer: available.has("feature-player"),
   };
 }

@@ -156,7 +156,9 @@ export default function Home() {
       } catch {}
     }
     // 开关关闭 或 本地播放器失败 → 浏览器内 Web Player
-    setPlayingPath(path);
+    if (plugins.hasPlayer) {
+      setPlayingPath(path);
+    }
   };
   const handleOpenSearch = (query: string, ctx?: { shadowName?: string; cleanName?: string; mediaType?: string; cnName?: string; enName?: string; originalName?: string; folderType?: string; seasonNumber?: number; episodeTag?: string; savePath?: string }) => {
     setSearchQuery(query);
@@ -487,7 +489,9 @@ export default function Home() {
         </div>
       )}
       {/* 全局视频播放器弹窗 */}
-      <VideoPlayer path={playingPath} onClose={() => setPlayingPath(null)} />
+      {plugins.hasPlayer && (
+        <VideoPlayer path={playingPath} onClose={() => setPlayingPath(null)} />
+      )}
     </main>
   );
 }

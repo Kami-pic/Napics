@@ -45,6 +45,7 @@ CORE_BUILTIN_PLUGIN_IDS = frozenset({
     "feature-discover",
     "feature-local-match",
     "feature-subscribe",
+    "feature-player",
 })
 
 
@@ -371,6 +372,11 @@ class PluginManager:
                 unregister_plugin_providers(plugin_id)
             except Exception as cleanup_error:
                 logger.warning(f"[PluginManager] 插件 {plugin_id} provider 回滚异常: {cleanup_error}")
+            try:
+                from plugin_context import unregister_plugin_routers
+                unregister_plugin_routers(plugin_id)
+            except Exception as cleanup_error:
+                logger.warning(f"[PluginManager] 插件 {plugin_id} 路由回滚异常: {cleanup_error}")
             sys.modules.pop(module_name, None)
             error_message = f"加载失败: {str(e)}"
             self._load_errors[plugin_id] = error_message
@@ -396,6 +402,12 @@ class PluginManager:
             unregister_plugin_providers(plugin_id)
         except Exception as e:
             logger.warning(f"[PluginManager] 插件 {plugin_id} provider 注销异常: {e}")
+
+        try:
+            from plugin_context import unregister_plugin_routers
+            unregister_plugin_routers(plugin_id)
+        except Exception as e:
+            logger.warning(f"[PluginManager] 插件 {plugin_id} 路由注销异常: {e}")
 
         # 从 sys.modules 移除
         sys.modules.pop(module_name, None)
