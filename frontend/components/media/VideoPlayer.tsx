@@ -262,26 +262,33 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     video.play().catch(() => {});
   }, [path, isTranscode, activeAudioIdx]);
 
-  // 音轨切换：重新发起转码请求，保持当前进度
+  // 音轨切换
   const handleAudioChange = useCallback((index: number) => {
     if (!path) return;
     setActiveAudioIdx(index);
     const video = videoRef.current;
     if (!video) return;
 
-    // mp4 原生模式：尝试用 audioTracks API 切换
     if (!isTranscode) {
+      // mp4 原生模式：先尝试浏览器 audioTracks API（Safari 支持）
       const tracks = (video as any).audioTracks;
       if (tracks && tracks.length > 1) {
         for (let i = 0; i < tracks.length; i++) {
           tracks[i].enabled = (i === index);
         }
-        return; // 浏览器原生切换成功
+        return;
       }
-      // 浏览器不支持 audioTracks API：fallback 到转码模式
-      setIsTranscode(true);
+      // Chrome 等不支持 audioTracks API：用后端 remux + 原生播放器
+      const currentPos = video.currentTime;
+      const streamUrl = `${BASE_URL}/playback/stream?path=${encodeURIComponent(path)}&audio_index=${index}`;
+      video.src = streamUrl;
+      video.load();
+      video.currentTime = currentPos;
+      video.play().catch(() => {});
+      return;
     }
 
+    // 转码模式：重新发起转码请求，保持当前进度
     video.pause();
     setBuffering(true);
     const time = currentTime;

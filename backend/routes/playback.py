@@ -12,19 +12,84 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+# ── 音轨 remux 缓存 ──
+
+import tempfile
+import hashlib
+import subprocess as _subprocess
+
+_remux_cache: dict[str, str] = {}  # key: "path:audio_index" → 临时文件路径
+
+
+def _get_remuxed_file(video_path: str, audio_index: int) -> str | None:
+    """用 ffmpeg 将指定音轨 remux 为临时 mp4 文件（video/audio 都 copy，不重编码）。
+    结果缓存在内存字典中，同文件+同音轨不重复 remux。"""
+    cache_key = f"{video_path}:{audio_index}"
+    if cache_key in _remux_cache:
+        cached = _remux_cache[cache_key]
+        if os.path.isfile(cached):
+            return cached
+        del _remux_cache[cache_key]
+
+    # 生成临时文件路径
+    name_hash = hashlib.md5(video_path.encode()).hexdigest()[:12]
+    tmp_dir = tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, f"napics_remux_{name_hash}_a{audio_index}.mp4")
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path,
+        "-map", "0:v:0",
+        "-map", f"0:a:{audio_index}",
+        "-c", "copy",
+        "-movflags", "+faststart",
+        tmp_path,
+    ]
+
+    try:
+        result = _subprocess.run(cmd, capture_output=True, timeout=120)
+        if result.returncode != 0:
+            logger.error(f"[Playback] remux 失败: {result.stderr[:200]}")
+            return None
+    except FileNotFoundError:
+        logger.error("[Playback] ffmpeg 未安装，无法 remux 音轨")
+        return None
+    except _subprocess.TimeoutExpired:
+        logger.error("[Playback] remux 超时")
+        return None
+
+    if os.path.isfile(tmp_path):
+        _remux_cache[cache_key] = tmp_path
+        logger.info(f"[Playback] 音轨 remux 完成: {tmp_path}")
+        return tmp_path
+    return None
+
+
 @router.head("/playback/stream")
 @router.get("/playback/stream")
-def stream_file(path: str = Query(..., description="视频文件路径"), request: Request = None):
+def stream_file(
+    path: str = Query(..., description="视频文件路径"),
+    audio_index: int = Query(0, description="音轨索引（0=默认，>0 时 remux 指定音轨）"),
+    request: Request = None,
+):
     """HTTP Range 文件流端点。
 
-    支持 Range 请求，供前端 libav-wasm 播放器按需拉取文件片段。
+    支持 Range 请求，供前端原生播放器按需拉取文件片段。
+    当 audio_index > 0 时，用 ffmpeg remux 出只含指定音轨的临时 mp4 文件。
     """
     guard_path(path, "流式播放")
 
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    file_size = os.path.getsize(path)
+    # 如果指定了非默认音轨，使用 remux 后的临时文件
+    actual_path = path
+    if audio_index > 0:
+        actual_path = _get_remuxed_file(path, audio_index)
+        if actual_path is None:
+            raise HTTPException(status_code=500, detail="音轨 remux 失败")
+
+    file_size = os.path.getsize(actual_path)
     ext = os.path.splitext(path)[1].lower()
     mime_map = {
         ".mp4": "video/mp4",
@@ -72,7 +137,7 @@ def stream_file(path: str = Query(..., description="视频文件路径"), reques
         content_length = end - start + 1
 
         def range_iterator(chunk_size: int = 1024 * 1024):
-            with open(path, "rb") as f:
+            with open(actual_path, "rb") as f:
                 f.seek(start)
                 remaining = content_length
                 while remaining > 0:
@@ -97,7 +162,7 @@ def stream_file(path: str = Query(..., description="视频文件路径"), reques
 
     # 非 Range 请求：返回完整文件
     def file_iterator(chunk_size: int = 1024 * 1024):
-        with open(path, "rb") as f:
+        with open(actual_path, "rb") as f:
             while True:
                 chunk = f.read(chunk_size)
                 if not chunk:
