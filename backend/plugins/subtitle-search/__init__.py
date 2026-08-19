@@ -16,7 +16,7 @@ if _PLUGIN_DIR not in sys.path:
 def register(ctx):
     """插件注册入口"""
     from assrt_client import AssrtClient
-    from routes import router, set_client
+    from subtitle_routes import router, set_client
 
     # 从系统配置获取 assrt token
     token = ctx.get_config("assrt_token", "")
