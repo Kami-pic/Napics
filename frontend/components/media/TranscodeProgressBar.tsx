@@ -8,6 +8,12 @@ interface SubtitleInfo {
   index: number;
 }
 
+interface AudioTrackInfo {
+  label: string;
+  lang: string;
+  index: number;
+}
+
 interface TranscodeProgressBarProps {
   currentTime: number;
   duration: number;
@@ -18,11 +24,15 @@ interface TranscodeProgressBarProps {
   subtitles?: SubtitleInfo[];
   activeSubtitleIndex?: number;
   onSubtitleChange?: (index: number) => void;
+  audioTracks?: AudioTrackInfo[];
+  activeAudioIndex?: number;
+  onAudioChange?: (index: number) => void;
 }
 
 export function TranscodeProgressBar({
   currentTime, duration, buffering, onSeek, videoRef, containerRef,
   subtitles = [], activeSubtitleIndex = 0, onSubtitleChange,
+  audioTracks = [], activeAudioIndex = 0, onAudioChange,
 }: TranscodeProgressBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -32,6 +42,7 @@ export function TranscodeProgressBar({
   const [muted, setMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSubMenu, setShowSubMenu] = useState(false);
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -117,6 +128,14 @@ export function TranscodeProgressBar({
     return () => { clearTimeout(timer); document.removeEventListener("click", close); };
   }, [showSubMenu]);
 
+  // 点击外部关闭音轨菜单
+  useEffect(() => {
+    if (!showAudioMenu) return;
+    const close = () => setShowAudioMenu(false);
+    const timer = setTimeout(() => document.addEventListener("click", close), 50);
+    return () => { clearTimeout(timer); document.removeEventListener("click", close); };
+  }, [showAudioMenu]);
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const hoverProgress = hoverPos !== null && duration > 0 ? (hoverPos / duration) * 100 : null;
   const canSeek = duration > 0;
@@ -168,7 +187,7 @@ export function TranscodeProgressBar({
       {/* 字幕选择 */}
       {subtitles.length > 0 && (
         <div className="relative flex-shrink-0">
-          <button onClick={e => { e.stopPropagation(); setShowSubMenu(!showSubMenu); }}
+          <button onClick={e => { e.stopPropagation(); setShowSubMenu(!showSubMenu); setShowAudioMenu(false); }}
             className={`w-7 h-7 flex items-center justify-center transition-colors flex-shrink-0 ${activeSubtitleIndex >= 0 ? "text-blue-400" : "text-slate-400 hover:text-white"}`}
             title="字幕">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z" /></svg>
@@ -187,6 +206,29 @@ export function TranscodeProgressBar({
                   onClick={() => { onSubtitleChange?.(sub.index); setShowSubMenu(false); }}
                   className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors truncate ${activeSubtitleIndex === sub.index ? "text-blue-400" : "text-slate-300"}`}>
                   {sub.name}{sub.lang ? ` (${sub.lang})` : ""}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 音轨选择 */}
+      {audioTracks.length > 1 && (
+        <div className="relative flex-shrink-0">
+          <button onClick={e => { e.stopPropagation(); setShowAudioMenu(!showAudioMenu); setShowSubMenu(false); }}
+            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white transition-colors flex-shrink-0"
+            title="音轨">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z" /></svg>
+          </button>
+          {showAudioMenu && (
+            <div className="absolute bottom-full right-0 mb-2 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl py-1 min-w-[180px] z-50" onClick={e => e.stopPropagation()}>
+              <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wider">音轨</div>
+              {audioTracks.map((track) => (
+                <button key={track.index}
+                  onClick={() => { onAudioChange?.(track.index); setShowAudioMenu(false); }}
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors truncate ${activeAudioIndex === track.index ? "text-blue-400" : "text-slate-300"}`}>
+                  {track.label}
                 </button>
               ))}
             </div>

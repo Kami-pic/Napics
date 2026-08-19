@@ -14,6 +14,12 @@ interface SubtitleData {
   blobUrl: string;
 }
 
+interface AudioTrackData {
+  index: number;
+  label: string;
+  lang: string;
+}
+
 interface VideoPlayerProps {
   path: string | null;
   onClose: () => void;
@@ -23,6 +29,8 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   const [error, setError] = useState<string | null>(null);
   const [subtitles, setSubtitles] = useState<SubtitleData[]>([]);
   const [activeSubIdx, setActiveSubIdx] = useState(0);
+  const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>([]);
+  const [activeAudioIdx, setActiveAudioIdx] = useState(0);
   const [isTranscode, setIsTranscode] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -41,6 +49,8 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     blobUrlsRef.current = [];
     setSubtitles([]);
+    setAudioTracks([]);
+    setActiveAudioIdx(0);
     setError(null);
     setDuration(0);
     setCurrentTime(0);
@@ -49,7 +59,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     onClose();
   }, [onClose]);
 
-  const startPlayback = useCallback((videoPath: string, startTime: number = 0) => {
+  const startPlayback = useCallback((videoPath: string, startTime: number = 0, audioIndex: number = 0) => {
     const video = videoRef.current;
     if (!video) return;
 
@@ -73,7 +83,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       if (startTime > 0) video.currentTime = startTime;
       video.play().catch(() => {});
     } else {
-      const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(videoPath)}&start=${startTime}`;
+      const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(videoPath)}&start=${startTime}&audio_index=${audioIndex}`;
       video.src = streamUrl;
       video.load();
       video.play().catch(() => {});
@@ -121,24 +131,49 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     blobUrlsRef.current = [];
     setSubtitles([]);
     setActiveSubIdx(0);
+    setAudioTracks([]);
+    setActiveAudioIdx(0);
 
     fetch(`${BASE_URL}/playback/duration?path=${encodeURIComponent(path)}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.duration) setDuration(data.duration); })
       .catch(() => {});
 
-    startPlayback(path, 0);
+    // 加载音轨列表
+    fetch(`${BASE_URL}/playback/audio-tracks?path=${encodeURIComponent(path)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.tracks && data.tracks.length > 0) {
+          setAudioTracks(data.tracks.map((t: any) => ({ index: t.index, label: t.label, lang: t.lang })));
+        }
+      })
+      .catch(() => {});
+
+    startPlayback(path, 0, 0);
     loadSubtitles(path);
   }, [path, startPlayback, loadSubtitles]);
 
-  // 时间更新
+  // 时间更新：转码模式用 requestVideoFrameCallback 精确跟踪实际渲染帧时间，
+  // 避免"画面等音频对齐"期间字幕提前显示
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
+    let frameCallbackId: number | null = null;
+    const useFrameCallback = isTranscode && "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
+    const onFrame = (_now: number, metadata: { mediaTime: number }) => {
+      setCurrentTime(seekOffset + metadata.mediaTime);
+      setBuffering(false);
+      frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
+    };
+
     const onTimeUpdate = () => {
       if (isTranscode) {
-        setCurrentTime(seekOffset + video.currentTime);
+        // fallback：浏览器不支持 requestVideoFrameCallback 时
+        if (!useFrameCallback) {
+          setCurrentTime(seekOffset + video.currentTime);
+        }
       } else {
         setCurrentTime(video.currentTime);
       }
@@ -156,6 +191,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       setBuffering(false);
     };
 
+    if (useFrameCallback) {
+      frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
+    }
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("playing", onPlaying);
     video.addEventListener("waiting", onWaiting);
@@ -164,6 +202,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     video.addEventListener("error", onError);
 
     return () => {
+      if (frameCallbackId !== null && useFrameCallback) {
+        (video as any).cancelVideoFrameCallback(frameCallbackId);
+      }
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("waiting", onWaiting);
@@ -212,11 +253,29 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     setSeekOffset(time);
     setCurrentTime(time);
 
-    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}`;
+    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}&audio_index=${activeAudioIdx}`;
     video.src = streamUrl;
     video.load();
     video.play().catch(() => {});
-  }, [path, isTranscode]);
+  }, [path, isTranscode, activeAudioIdx]);
+
+  // 音轨切换：重新发起转码请求，保持当前进度
+  const handleAudioChange = useCallback((index: number) => {
+    if (!path || !isTranscode) return;
+    setActiveAudioIdx(index);
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.pause();
+    setBuffering(true);
+    const time = currentTime;
+    setSeekOffset(time);
+
+    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}&audio_index=${index}`;
+    video.src = streamUrl;
+    video.load();
+    video.play().catch(() => {});
+  }, [path, isTranscode, currentTime]);
 
   // mkv 字幕切换
   const handleSubtitleChange = useCallback((index: number) => {
@@ -268,6 +327,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             subtitles={subtitles.map((s, i) => ({ name: s.name, lang: s.lang, index: i }))}
             activeSubtitleIndex={activeSubIdx}
             onSubtitleChange={handleSubtitleChange}
+            audioTracks={audioTracks}
+            activeAudioIndex={activeAudioIdx}
+            onAudioChange={handleAudioChange}
           />
         )}
       </div>

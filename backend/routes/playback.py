@@ -119,12 +119,14 @@ def stream_file(path: str = Query(..., description="视频文件路径"), reques
 def transcode_file(
     path: str = Query(..., description="视频文件路径"),
     start: float = Query(0, description="起始秒数（seek 用）"),
+    audio_index: int = Query(0, description="音轨索引（0=第一条音轨）"),
 ):
     """用 ffmpeg 实时转封装/转码为 mp4 流。
 
     视频编码 copy（不重编码），音频转为 AAC，容器格式转为 fragmented MP4。
     支持 mkv/ts/avi/wmv/flv 等浏览器不能直接播放的格式。
     start 参数指定起始时间（秒），用于进度条拖拽 seek。
+    audio_index 参数指定音轨索引（0=第一条），用于音轨切换。
     """
     import subprocess
 
@@ -147,6 +149,8 @@ def transcode_file(
         cmd += ["-ss", str(start)]
 
     cmd += [
+        "-map", "0:v:0",                    # 选第一条视频流
+        "-map", f"0:a:{audio_index}",       # 选指定音轨
         "-c:v", "copy",         # 视频不重编码
         "-c:a", "aac",          # 音频统一转 AAC（兼容浏览器）
         "-ac", "2",             # 立体声
@@ -268,6 +272,76 @@ def get_duration(path: str = Query(..., description="视频文件路径")):
         raise HTTPException(status_code=500, detail="无法解析视频时长")
 
     return {"duration": duration, "path": path}
+
+
+# ── 音轨相关 ──
+
+@router.get("/playback/audio-tracks")
+def list_audio_tracks(path: str = Query(..., description="视频文件路径")):
+    """用 ffprobe 获取视频中的音轨列表。前端用于音轨切换菜单。"""
+    import subprocess
+    import json as json_mod
+
+    guard_path(path, "音轨查询")
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    cmd = [
+        "ffprobe",
+        "-v", "quiet",
+        "-print_format", "json",
+        "-show_streams",
+        "-select_streams", "a",
+        path,
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="ffprobe 未安装")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="ffprobe 超时")
+
+    if result.returncode != 0:
+        return {"tracks": []}
+
+    try:
+        info = json_mod.loads(result.stdout)
+        streams = info.get("streams", [])
+    except (json_mod.JSONDecodeError, ValueError):
+        return {"tracks": []}
+
+    tracks = []
+    audio_index = 0
+    for stream in streams:
+        tags = stream.get("tags", {})
+        lang = tags.get("language", "")
+        title = tags.get("title", "")
+        codec = stream.get("codec_name", "")
+        channels = stream.get("channels", 0)
+        sample_rate = stream.get("sample_rate", "")
+
+        # 构造显示标签
+        label = title or f"音轨 {audio_index + 1}"
+        if lang:
+            label = f"{label} ({_normalize_lang(lang)})"
+        if channels:
+            ch_label = {1: "单声道", 2: "立体声", 6: "5.1", 8: "7.1"}.get(channels, f"{channels}ch")
+            label = f"{label} [{ch_label}]"
+
+        tracks.append({
+            "index": audio_index,
+            "stream_index": stream.get("index", 0),
+            "label": label,
+            "lang": _normalize_lang(lang),
+            "codec": codec,
+            "channels": channels,
+            "sample_rate": sample_rate,
+        })
+        audio_index += 1
+
+    return {"tracks": tracks}
 
 
 # ── 字幕相关 ──
