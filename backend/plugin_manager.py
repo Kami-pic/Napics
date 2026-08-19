@@ -142,10 +142,7 @@ class PluginManager:
             self.external_plugins_dir = self.builtin_plugins_dir
         else:
             self.external_plugins_dir = _default_external_plugins_dir()
-        self._restrict_builtin_ids = (
-            self.builtin_plugins_dir == os.path.abspath(BUILTIN_PLUGINS_DIR)
-            and self.external_plugins_dir != self.builtin_plugins_dir
-        )
+        self._restrict_builtin_ids = self.builtin_plugins_dir == os.path.abspath(BUILTIN_PLUGINS_DIR)
         self._manifests: Dict[str, PluginManifest] = {}
         self._plugin_dirs: Dict[str, str] = {}
         self._plugin_sources: Dict[str, str] = {}
