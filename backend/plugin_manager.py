@@ -46,6 +46,7 @@ CORE_BUILTIN_PLUGIN_IDS = frozenset({
     "feature-local-match",
     "feature-subscribe",
     "feature-player",
+    "subtitle-search",
 })
 
 
