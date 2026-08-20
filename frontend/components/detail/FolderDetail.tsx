@@ -19,6 +19,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
   const [actionResult, setActionResult] = useState(() => getCached(node.path).actionResult || "");
   const [actionLoading, setActionLoading] = useState(() => getCached(node.path).actionLoading || false);
   const [generatingIndex, setGeneratingIndex] = useState(false);
+  const [shadowNameLoading, setShadowNameLoading] = useState(false);
   const [lastSnapshotId, setLastSnapshotId] = useState<number | null>(null);
   const [posterKey, setPosterKey] = useState(0);
   const [posterDeleted, setPosterDeleted] = useState(false);
@@ -112,6 +113,19 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
       refreshFolderTree();
     } catch (e: any) { setActionResult("生成检索名失败: " + (e?.message || String(e))); }
     setGeneratingIndex(false);
+  };
+
+  // 生成标准名：只写影子名，不动磁盘文件名（与「自动重命名」不是一回事）
+  const handleGenerateShadowName = async () => {
+    if (!node.path) return;
+    setShadowNameLoading(true);
+    setActionResult("");
+    try {
+      const res = await api.renameVideos(node.path, false, true);
+      setActionResult(`标准名已生成：${res.filled ?? 0}/${res.total ?? node.videos.length} 个视频`);
+      refreshFolderTree();
+    } catch (e: any) { setActionResult("生成标准名失败: " + (e?.message || String(e))); }
+    setShadowNameLoading(false);
   };
 
   // 标准结构预览（原先是一段内联 handler，抽出来便于复用按钮组件）
@@ -465,15 +479,21 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
         </div>
       )}
-      {/* 第三行：生成检索名 / 自动重命名 / 标准结构 + 一键整理（虚拟文件夹不显示） */}
+      {/* 第三行：名字类操作 / 自动重命名 / 标准结构 / 一键整理（虚拟文件夹不显示） */}
       {!node.is_virtual_library && (
       <div className="space-y-2">
-        <div className="grid grid-cols-3 gap-2">
-          <ActionButton label="生成检索名" emphasis busy={generatingIndex} onClick={handleGenerateIndexName}
-            title="按 NFO / 文件夹名 / 文件名生成中英文检索名，搜索字幕和资源会更准" />
-          <ActionButton label="自动重命名" busy={actionLoading} onClick={() => doAction("rename_shadow")} />
-          <ActionButton label="标准结构" busy={actionLoading} onClick={handleStructurePreview} />
-        </div>
+        {/* 生成检索名 + 生成标准名：只对"一部作品"有意义，
+            所以只给 movie 和 tv；season、单集、以及合集/系列这类聚合节点不给 */}
+        {(folderType === "movie" || folderType === "tv") && (
+          <div className="grid grid-cols-2 gap-2">
+            <ActionButton label="生成检索名" emphasis busy={generatingIndex} onClick={handleGenerateIndexName}
+              title="按 NFO / 文件夹名 / 文件名生成中英文检索名，搜索字幕和资源会更准" />
+            <ActionButton label="生成标准名" busy={shadowNameLoading} onClick={handleGenerateShadowName}
+              title="只写入标准名，不改磁盘上的文件名" />
+          </div>
+        )}
+        <button onClick={() => doAction("rename_shadow")} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">自动重命名</button>
+        <button onClick={handleStructurePreview} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">标准结构</button>
         <div className="flex gap-2">
           {actionLoading && abortController ? (
             <button

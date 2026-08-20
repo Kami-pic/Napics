@@ -48,6 +48,8 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
 
   // 判断是否已封装：视频所在文件夹只有这一个视频（或少量关联文件）→ 已封装
   // 简单判断：视频的父目录名不是一级分类目录常见名 → 已封装
+  // 单集判定：文件名带 SxxExx 的按剧集处理，名字类操作交给所属剧集文件夹
+  const isEpisode = /S\d+E\d+/i.test(v.file_name);
   const videoDir = v.file_path.replace(/[\\/][^\\/]+$/, '');
   const videoDirName = videoDir.split(/[\\/]/).pop() || "";
   const isLooseVideo = ["电影", "动画电影", "电视剧", "动画番", "其他视频", "综艺", "纪录片"].some(cat => videoDirName.includes(cat));
@@ -165,16 +167,21 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
         <DeleteAction onDelete={handleDelete} />
         <button onClick={async () => { await api.batchManage("remove", [v.file_path]); onRefresh(); }} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
       </div>
-      {/* 第三行：生成检索名 / 生成标准名 / 标准结构 */}
-      <div className="grid grid-cols-3 gap-2">
-        <ActionButton label="生成检索名" emphasis busy={generatingIndex} onClick={handleGenerateIndexName}
-          title="按 NFO / 文件夹名 / 文件名生成中英文检索名，搜索字幕和资源会更准" />
-        <ActionButton label="生成标准名" busy={renameLoading} onClick={() => handleAutoRename(false, true)} />
-        <ActionButton label={isLooseVideo ? "标准结构" : "✓ 已封装"} busy={structureLoading}
-          unavailable={!isLooseVideo} onClick={handleStructure} />
+      {/* 第三行：生成检索名 / 生成标准名（两者都是"整部作品"级别的名字，单集不给，
+          单集统一在所属剧集文件夹上处理，避免每集各生成一份不一致的名字）*/}
+      {!isEpisode && (
+        <div className="grid grid-cols-2 gap-2">
+          <ActionButton label="生成检索名" emphasis busy={generatingIndex} onClick={handleGenerateIndexName}
+            title="按 NFO / 文件夹名 / 文件名生成中英文检索名，搜索字幕和资源会更准" />
+          <ActionButton label="生成标准名" busy={renameLoading} onClick={() => handleAutoRename(false, true)}
+            title="只写入标准名，不改磁盘上的文件名" />
+        </div>
+      )}
+      {/* 第四行：播放 / 标准结构（各自独占一行）*/}
+      <div className="space-y-2">
+        <PlayButton filePath={v.file_path} onPlay={onPlay} />
+        <button onClick={handleStructure} disabled={structureLoading || !isLooseVideo} className={`w-full py-2.5 rounded-lg text-sm disabled:opacity-50 ${isLooseVideo ? "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300" : "bg-white/[0.02] text-slate-600 cursor-not-allowed"}`}>{structureLoading ? "处理中..." : isLooseVideo ? "标准结构" : "✓ 已封装"}</button>
       </div>
-      {/* 第四行：播放 */}
-      <PlayButton filePath={v.file_path} onPlay={onPlay} />
       {/* 标准结构结果 */}
       {structureResult && (
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-xs text-slate-300">
