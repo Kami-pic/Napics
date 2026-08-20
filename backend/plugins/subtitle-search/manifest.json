@@ -1,19 +1,27 @@
 {
     "id": "subtitle-search",
     "name": "字幕搜索与下载",
-    "version": "1.0.0",
-    "description": "搜索并下载字幕文件到视频同目录（assrt.net 源）",
+    "version": "1.1.0",
+    "description": "三源字幕搜索（射手网/SubHD/SubDL），下载到视频同目录并自动重命名",
     "category": "feature",
     "icon": "📝",
-    "requires_config": ["assrt_token"],
+    "requires_config": ["assrt_token", "subdl_api_key"],
     "config_schema": [
         {
             "key": "assrt_token",
-            "label": "assrt.net API Token",
+            "label": "射手网(伪) API Token",
             "type": "password",
-            "description": "在 assrt.net 注册后获取的 API 密钥",
-            "placeholder": "32位字母数字组合",
+            "description": "中文字幕主力源。assrt.net 注册后在用户面板查看 Token",
+            "placeholder": "32 位字母数字组合",
             "required": true
+        },
+        {
+            "key": "subdl_api_key",
+            "label": "SubDL API Key",
+            "type": "password",
+            "description": "英文/小语种回退源（可选）。subdl.com 注册后在账户设置获取",
+            "placeholder": "留空则不启用 SubDL",
+            "required": false
         }
     ],
     "depends_on": [],

@@ -135,8 +135,9 @@ class AppConfig(BaseModel):
     # 已执行过的一次性配置迁移标记。落盘后不再重复执行，
     # 保证补齐类迁移不会覆盖用户后续的主动卸载。
     config_migrations: List[str] = []
-    # 字幕搜索（assrt.net API token）
+    # 字幕搜索源凭据（assrt.net / SubDL；SubHD 无需凭据）
     assrt_token: str = ""
+    subdl_api_key: str = ""
 
 class ConfigManager:
     def __init__(self, config_path: str = None):
