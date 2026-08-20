@@ -12,50 +12,16 @@ interface SubtitleOverlayProps {
   vttContent: string;    // WebVTT 格式的字幕内容
   currentTime: number;   // 当前播放时间（秒）
   visible: boolean;      // 是否显示
-  /** 用于按视频显示高度算字号，不传则退化为固定字号 */
-  videoRef?: React.RefObject<HTMLVideoElement | null>;
-  /** 距底部距离（px）。mp4 用原生 controls，要抬高避免被挡 */
-  bottomOffset?: number;
 }
 
-export function SubtitleOverlay({
-  vttContent, currentTime, visible, videoRef, bottomOffset = 48,
-}: SubtitleOverlayProps) {
+export function SubtitleOverlay({ vttContent, currentTime, visible }: SubtitleOverlayProps) {
   const [cues, setCues] = useState<Cue[]>([]);
-  const [fontSize, setFontSize] = useState(20);
 
   // 解析 VTT 内容
   useEffect(() => {
     if (!vttContent) { setCues([]); return; }
     setCues(parseVTT(vttContent));
   }, [vttContent]);
-
-  // 字号跟视频显示高度成比例（约 4.5%），和浏览器原生 cue 的缩放行为一致。
-  // 固定 px 的话小窗口糊成一团、全屏又小得看不清。
-  useEffect(() => {
-    const el = videoRef?.current;
-    if (!el) return;
-    const update = () => {
-      const h = el.clientHeight || 0;
-      if (h > 0) setFontSize(Math.round(Math.max(14, Math.min(44, h * 0.045))));
-    };
-    update();
-
-    // ResizeObserver 在部分环境（jsdom、老浏览器）不存在，缺失时退化为
-    // 只在全屏切换和窗口缩放时重算，不要因此整个组件崩掉
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(update);
-      ro.observe(el);
-    }
-    window.addEventListener("resize", update);
-    document.addEventListener("fullscreenchange", update);
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener("resize", update);
-      document.removeEventListener("fullscreenchange", update);
-    };
-  }, [videoRef]);
 
   if (!visible || cues.length === 0) return null;
 
@@ -65,13 +31,12 @@ export function SubtitleOverlay({
   if (activeCues.length === 0) return null;
 
   return (
-    <div
-      className="absolute left-0 right-0 flex flex-col items-center pointer-events-none px-4 z-30"
-      style={{ bottom: `${bottomOffset}px` }}
-    >
+    <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center pointer-events-none px-4 z-30">
       {activeCues.map((cue, i) => (
+        // 字号与 globals.css 里的 video::cue 保持一致（20px），
+        // 否则 mp4（原生 track）和 mkv（自绘）两条路径字幕大小不一样
         <div key={i} className="bg-black/75 text-white px-4 py-1.5 rounded mb-1 max-w-[85%] text-center"
-          style={{ fontSize: `${fontSize}px`, lineHeight: 1.4 }}
+          style={{ fontSize: "20px", lineHeight: 1.5 }}
           dangerouslySetInnerHTML={{ __html: sanitizeCueText(cue.text) }}
         />
       ))}
