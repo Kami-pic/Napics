@@ -10,14 +10,21 @@ import { SubtitleOverlay } from "./SubtitleOverlay";
 // 字幕轨元信息 + 懒加载状态。
 // 内嵌字幕提取要把整个视频 demux 一遍（实测约 5.8 秒/GB），
 // 所以只有外挂字幕在打开时立即加载，内嵌字幕等用户选中才拉。
+// external=独立字幕文件，embedded=封装在视频里的文本字幕流，
+// graphic=封装在视频里的图形字幕（PGS/VobSub，需 OCR 才能变文本）。
+// 还有一类"硬字幕"是压进画面像素的，ffprobe 检测不到，只能在无字幕流时提示。
+type SubtitleKind = "external" | "embedded" | "graphic";
+
 interface SubtitleData {
   name: string;
   lang: string;
   url: string;
   embedded: boolean;
+  kind: SubtitleKind;
   codec: string;
   unsupported: boolean;
   unsupportedReason: string;
+  forced: boolean;
   vttContent: string;      // 未加载时为空串
   blobUrl: string;         // 未加载时为空串
   loading: boolean;
@@ -50,6 +57,20 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const blobUrlsRef = useRef<string[]>([]);
+  // 供异步回调读取最新字幕状态。必须在设置状态的同时同步，
+  // 不能只靠 useEffect —— "刚 setSubtitles 就要立刻取内容"的场景下
+  // effect 还没跑，ref 里是空数组，取内容会被当成越界直接跳过。
+  const subtitlesRef = useRef<SubtitleData[]>([]);
+  const writeSubtitles = useCallback(
+    (next: SubtitleData[] | ((prev: SubtitleData[]) => SubtitleData[])) => {
+      const resolved = typeof next === "function"
+        ? (next as (p: SubtitleData[]) => SubtitleData[])(subtitlesRef.current)
+        : next;
+      subtitlesRef.current = resolved;
+      setSubtitles(resolved);
+    },
+    [],
+  );
 
   const handleClose = useCallback(() => {
     if (videoRef.current) {
@@ -59,7 +80,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     }
     blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     blobUrlsRef.current = [];
-    setSubtitles([]);
+    writeSubtitles([]);
     setSubtitleNotice(null);
     setAudioTracks([]);
     setActiveAudioIdx(0);
@@ -103,17 +124,27 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     }
   }, []);
 
-  // 拉取某条字幕的 VTT 内容，成功后写回该轨的 vttContent/blobUrl
+  // 拉取某条字幕的 VTT 内容，成功后写回该轨的 vttContent/blobUrl。
+  //
+  // 判定必须走 ref 而不是在 setState updater 里给外部变量赋值：
+  // React 会重复调用 updater（严格模式 / 并发渲染），第二次拿到的是
+  // 已被标记 loading 的对象，据此判断就会直接 return，fetch 永远不发，
+  // UI 卡在"提取中"。inFlightRef 单独记在途请求，去重不依赖渲染状态。
+  const inFlightRef = useRef<Set<number>>(new Set());
+
   const fetchSubtitleContent = useCallback(async (idx: number) => {
-    let target: SubtitleData | undefined;
-    setSubtitles(prev => {
-      target = prev[idx];
-      if (!target || target.vttContent || target.loading || target.unsupported) return prev;
+    const target = subtitlesRef.current[idx];
+    if (!target || target.unsupported) return;
+    if (target.vttContent) return;              // 已有内容
+    if (inFlightRef.current.has(idx)) return;   // 已在拉取
+
+    inFlightRef.current.add(idx);
+    writeSubtitles(prev => {
+      if (!prev[idx]) return prev;
       const next = [...prev];
-      next[idx] = { ...target, loading: true, loadFailed: false };
+      next[idx] = { ...next[idx], loading: true, loadFailed: false };
       return next;
     });
-    if (!target || target.vttContent || target.loading || target.unsupported) return;
 
     const url = target.url.startsWith("http") ? target.url : `${BASE_URL}${target.url}`;
     try {
@@ -125,14 +156,14 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       }
       const blobUrl = URL.createObjectURL(new Blob([vttContent], { type: "text/vtt" }));
       blobUrlsRef.current.push(blobUrl);
-      setSubtitles(prev => {
+      writeSubtitles(prev => {
         const next = [...prev];
         if (next[idx]) next[idx] = { ...next[idx], vttContent, blobUrl, loading: false };
         return next;
       });
       setSubtitleNotice(null);
     } catch (e) {
-      setSubtitles(prev => {
+      writeSubtitles(prev => {
         const next = [...prev];
         if (next[idx]) next[idx] = { ...next[idx], loading: false, loadFailed: true };
         return next;
@@ -143,6 +174,8 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
           ? `「${name}」提取失败，大文件首次提取较慢，可稍后重试`
           : `「${name}」加载失败`
       );
+    } finally {
+      inFlightRef.current.delete(idx);
     }
   }, []);
 
@@ -157,27 +190,44 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       }
       const data = await res.json();
       const tracks = data?.subtitles || [];
-      if (tracks.length === 0) return;
 
       const list: SubtitleData[] = tracks.map((t: any) => ({
         name: t.name || "",
         lang: t.lang || "",
         url: t.url || "",
         embedded: !!t.embedded,
+        kind: (t.kind || (t.embedded ? "embedded" : "external")) as SubtitleKind,
         codec: t.codec || "",
         unsupported: !!t.unsupported,
         unsupportedReason: t.unsupported_reason || "",
+        forced: !!t.forced,
         vttContent: "",
         blobUrl: "",
         loading: false,
         loadFailed: false,
       }));
-      setSubtitles(list);
+      writeSubtitles(list);
+
+      const summary = data?.summary;
+      if (list.length === 0) {
+        // 一条流都没有：字幕很可能被压进画面，检测不到也无法关闭
+        setSubtitleNotice(
+          summary?.maybe_hardcoded
+            ? "未检测到字幕轨，若画面上有字幕则是压制进画面的硬字幕，无法开关"
+            : null
+        );
+        setActiveSubIdx(-1);
+        return;
+      }
 
       const usable = list.filter(s => !s.unsupported);
       if (usable.length === 0) {
-        const reason = list[0]?.unsupportedReason || "格式不支持";
-        setSubtitleNotice(`检测到 ${list.length} 条字幕但无法显示：${reason}`);
+        const graphic = list.filter(s => s.kind === "graphic").length;
+        setSubtitleNotice(
+          graphic > 0
+            ? `检测到 ${graphic} 条图形字幕（PGS/VobSub），是图片不是文本，浏览器无法渲染`
+            : `检测到 ${list.length} 条字幕但格式不支持`
+        );
         setActiveSubIdx(-1);
         return;
       }
@@ -208,7 +258,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     setSeekOffset(0);
     blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     blobUrlsRef.current = [];
-    setSubtitles([]);
+    writeSubtitles([]);
     setSubtitleNotice(null);
     setActiveSubIdx(0);
     setAudioTracks([]);
@@ -363,13 +413,15 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     setBuffering(true);
     setCurrentTime(time);   // 先按用户意图更新进度条，避免手感迟滞
 
+    // 查转码流的真实起点。start 参数仍传用户请求的 time —— 后端 output seek
+    // 会自己落到 >= time 的关键帧，这里查出来的只是用来对齐字幕时间轴。
     const actualStart = await resolveKeyframe(path, time);
     if (seq !== seekSeqRef.current) return;   // 期间又 seek 了，丢弃这次
 
     setSeekOffset(actualStart);
     setCurrentTime(actualStart);
 
-    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${actualStart}&audio_index=${activeAudioIdx}`;
+    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}&audio_index=${activeAudioIdx}`;
     video.src = streamUrl;
     video.load();
     video.play().catch(() => {});
@@ -407,13 +459,14 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       const seq = ++seekSeqRef.current;
       video.pause();
       setBuffering(true);
-      const actualStart = await resolveKeyframe(path, currentTime);
+      const resumeAt = currentTime;
+      const actualStart = await resolveKeyframe(path, resumeAt);
       if (seq !== seekSeqRef.current) return;
 
       setSeekOffset(actualStart);
       setCurrentTime(actualStart);
 
-      const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${actualStart}&audio_index=${index}`;
+      const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${resumeAt}&audio_index=${index}`;
       video.src = streamUrl;
       video.load();
       video.play().catch(() => {});
@@ -434,6 +487,8 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     ? subtitles[activeSubIdx] : null;
   const activeVtt = isTranscode && activeSub ? activeSub.vttContent : "";
   const subtitleLoading = !!activeSub?.loading;
+  // 只有内嵌字幕才慢（要全量 demux），外挂字幕就是读个文件，不该显示耗时警告
+  const loadingIsEmbedded = !!activeSub?.loading && !!activeSub?.embedded;
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100]" onClick={handleClose}>
@@ -448,11 +503,13 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             <p className="text-red-400 text-sm px-4 text-center">{error}</p>
           </div>
         )}
-        {/* 字幕提示（提取失败 / 全是图形字幕 / 首次提取中） */}
-        {!error && (subtitleNotice || subtitleLoading) && (
+        {/* 字幕提示（提取失败 / 全是图形字幕 / 内嵌首次提取中） */}
+        {!error && (subtitleNotice || loadingIsEmbedded) && (
           <div className="absolute top-3 left-3 z-20 max-w-[70%]">
             <p className="text-[11px] text-amber-300/90 bg-black/70 rounded px-2.5 py-1.5 leading-snug">
-              {subtitleLoading ? "正在提取内嵌字幕，大文件需要数十秒…" : subtitleNotice}
+              {loadingIsEmbedded
+                ? "正在提取内嵌字幕，大文件需要数十秒…"
+                : subtitleNotice}
             </p>
           </div>
         )}
@@ -480,8 +537,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             videoRef={videoRef}
             containerRef={containerRef}
             subtitles={subtitles.map((s, i) => ({
-              name: s.name, lang: s.lang, index: i,
-              unsupported: s.unsupported, loading: s.loading, loadFailed: s.loadFailed,
+              name: s.name, lang: s.lang, index: i, kind: s.kind, forced: s.forced,
+              unsupported: s.unsupported, unsupportedReason: s.unsupportedReason,
+              loading: s.loading, loadFailed: s.loadFailed,
             }))}
             activeSubtitleIndex={activeSubIdx}
             onSubtitleChange={handleSubtitleChange}
