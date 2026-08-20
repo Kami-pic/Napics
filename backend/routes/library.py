@@ -148,28 +148,20 @@ async def scan_path(path: str, library_name: str = ""):
             kept = [v for v in existing if not v.get("file_path", "").startswith(path)]
             final = kept + results
 
-            from clean_name_system import clean_from_filename, safe_update_clean_name as _safe_update
-            # 只对新扫描的文件生成清洗名 + 标准名（复用的已有）
+            from scan_name_filler import fill_names_for_item
+            # 只对新扫描的文件生成检索名 + 标准名（复用的条目保留原值）
+            # 名字来源为 NFO → 文件夹名 → 文件名，扫描就是这两个名字的主要来源，
+            # 只解析文件名会让清缓存重扫丢掉 NFO 里已有的中英文名
             reused_paths = set(f for f, _ in reused)
             shadow_filled = 0
             for item in results:
                 if item.get("file_path") in reused_paths:
-                    continue  # 复用的已有清洗名
-                fn = item.get("file_name", "")
-                if fn:
-                    result_cn = clean_from_filename(fn)
-                    if result_cn.display:
-                        item["clean_name"] = result_cn.display
-                        item["clean_name_cn"] = result_cn.cn
-                        item["clean_name_en"] = result_cn.en
-                        item["clean_name_original"] = result_cn.original
-                        item["clean_name_source"] = "parsed"
-                        # 同时生成标准名（shadow_name）
-                        # 直接在内存条目上应用：这些条目随后由 save_library(final) 一次性落盘，
-                        # 避免每条都做一次全库读写
-                        if result_cn.display:
-                            if apply_auto_fill(item, result_cn.display, source="parsed"):
-                                shadow_filled += 1
+                    continue
+                # 直接在内存条目上应用：这些条目随后由 save_library(final) 一次性落盘，
+                # 避免每条都做一次全库读写
+                _, item_shadow_filled = fill_names_for_item(item)
+                if item_shadow_filled:
+                    shadow_filled += 1
 
             # 清理不属于任何已配置路径的孤立条目
             _all_configured_paths = list(config_m.config.scan_paths or [])
@@ -334,9 +326,15 @@ def quick_sync():
             # 扫描后自动从 NFO 填充影子名
             shadow_filled = 0
             sync_tmdb = _tmdb_client()
+            from scan_name_filler import fill_search_index_name
             for item in new_videos:
                 fp = item.get("file_path", "")
                 if fp:
+                    # 检索名此前在快速同步里完全没填，新增的视频要等目录树自愈才有名字
+                    try:
+                        fill_search_index_name(item)
+                    except Exception:
+                        pass
                     try:
                         nfo_info = shadow_m._read_nfo_originaltitle(fp)
                         if nfo_info and nfo_info.get("original_title"):
