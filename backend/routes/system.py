@@ -186,6 +186,7 @@ async def restart_system():
         subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"],
             cwd=backend_dir,
+            stdin=subprocess.DEVNULL,   # 不继承父进程 stdin，避免句柄失效时起不来
             stdout=log_file,
             stderr=log_file,
             creationflags=flags,

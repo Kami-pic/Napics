@@ -18,6 +18,10 @@ export interface VideoInfo {
   video_codec?: string;
   audio_codec: string;
   subtitle_count: number;
+  /** 内封文本字幕数（可直接渲染） */
+  subtitle_text_count?: number;
+  /** 内封图形字幕数（PGS/VobSub，需 OCR，播放器无法渲染） */
+  subtitle_graphic_count?: number;
   hdr_type: string;
   is_low_res: boolean;
   has_poster?: boolean;

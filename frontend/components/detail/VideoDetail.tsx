@@ -236,13 +236,18 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
           </div>
         </div>
         {(() => {
-          // 字幕状态：内封轨（ffprobe）+ 外挂文件（同目录同名）
-          const embedded = v.subtitle_count || 0;
+          // 字幕状态：内封轨按可用性拆分（文本可直接显示，图形需 OCR）+ 外挂文件。
+          // 混合片源很常见（同片 subrip 和 PGS 各一套），分开列出并用逗号隔开。
+          const total = v.subtitle_count || 0;
+          const graphic = v.subtitle_graphic_count ?? 0;
+          // 存量记录没有拆分字段，退化为"内封 N 条"不区分类型
+          const text = v.subtitle_text_count ?? (graphic ? total - graphic : total);
           const external = externalSubs.length;
           const parts: string[] = [];
-          if (embedded > 0) parts.push(`内封 ${embedded} 条`);
+          if (text > 0) parts.push(`内封 ${text} 条`);
+          if (graphic > 0) parts.push(`图形 ${graphic} 条`);
           if (external > 0) parts.push(`外挂 ${external} 个`);
-          const subtitleValue = parts.length ? parts.join(" · ") : "无";
+          const subtitleValue = parts.length ? parts.join(", ") : "无";
           // 容器格式：优先用扫描到的 container，存量记录退化用扩展名
           const container = (v.container || v.file_name.split(".").pop() || "").toUpperCase();
           const rows: [string, string, boolean, boolean][] = [
@@ -254,8 +259,10 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
             ["质量分", String(v.quality_score || 0), false, false],
             ["大小", formatSize(v.size_gb), false, false],
             ["时长", formatDuration(v.duration_min ?? v.duration), false, false],
-            // 无字幕标橙提示，有外挂字幕标绿（刚下载完能立刻看到变化）
-            ["字幕", subtitleValue, parts.length === 0, external > 0],
+            // 无字幕、或只有图形字幕（播放器渲染不了）都标橙；有可用字幕标绿
+            ["字幕", subtitleValue,
+              parts.length === 0 || (text === 0 && external === 0 && graphic > 0),
+              external > 0 || text > 0],
             ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res, false],
             ["路径", v.file_path, false, false],
           ];
