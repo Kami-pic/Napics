@@ -67,7 +67,7 @@ export default function TvDetail({ node, onSelectEpisode, onSeasonChange }: TvDe
             <span className="text-xs text-slate-400 truncate flex-1">{ep.file_name}</span>
             <div className="flex items-center gap-2 flex-shrink-0">
               {ep.resolution && <span className="text-[10px] text-slate-600">{ep.resolution}</span>}
-              {ep.duration > 0 && <span className="text-[10px] text-slate-600">{formatDuration(ep.duration)}</span>}
+              {(ep.duration_min ?? ep.duration ?? 0) > 0 && <span className="text-[10px] text-slate-600">{formatDuration(ep.duration_min ?? ep.duration)}</span>}
             </div>
           </button>
         ))}

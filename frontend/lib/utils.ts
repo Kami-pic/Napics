@@ -6,8 +6,8 @@ export function formatSize(gb: number): string {
   return `${gb.toFixed(1)}G`;
 }
 
-/** 格式化时长（分钟 → x时xxmin） */
-export function formatDuration(min: number): string {
+/** 格式化时长（分钟 → x时xxmin）。字段可能缺失，允许 undefined */
+export function formatDuration(min?: number): string {
   if (!min || min <= 0) return "—";
   if (min < 60) return `${Math.round(min)}min`;
   const h = Math.floor(min / 60);

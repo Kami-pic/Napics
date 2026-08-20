@@ -34,7 +34,7 @@ export default function SeriesCollectionList({ node, onSelectItem, selectedPath 
             {item.video && (
               <div className="flex items-center gap-2 mt-1">
                 {item.video.resolution && <span className="text-[10px] text-slate-500">{item.video.resolution}</span>}
-                {item.video.duration > 0 && <span className="text-[10px] text-slate-600">{formatDuration(item.video.duration)}</span>}
+                {(item.video.duration_min ?? item.video.duration ?? 0) > 0 && <span className="text-[10px] text-slate-600">{formatDuration(item.video.duration_min ?? item.video.duration)}</span>}
                 {item.video.size_gb > 0 && <span className="text-[10px] text-slate-600">{item.video.size_gb.toFixed(1)}GB</span>}
               </div>
             )}

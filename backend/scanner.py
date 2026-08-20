@@ -18,6 +18,7 @@ class VideoInfo(BaseModel):
     width: int
     bitrate_kbps: float
     codec: str
+    container: str = ""  # 容器格式（mkv/mp4/avi…），取 ffprobe format_name 的第一项
     audio_codec: str  # 音频编码
     audio_channels: int # 声道数
     subtitle_count: int # 字幕数量
@@ -119,6 +120,8 @@ def get_video_metadata(file_path: str) -> Optional[VideoInfo]:
             width=width,
             bitrate_kbps=round(bitrate, 2),
             codec=video_stream.get("codec_name", "unknown"),
+            # format_name 常是逗号分隔的候选列表（如 "mov,mp4,m4a,3gp,3g2,mj2"），取第一项
+            container=(format_info.get("format_name") or "").split(",")[0],
             audio_codec=audio_codec,
             audio_channels=audio_channels,
             subtitle_count=subtitle_count,
@@ -152,6 +155,8 @@ def _fallback_info(file_path: str) -> Optional[VideoInfo]:
             height=0, width=0,
             bitrate_kbps=0,
             codec="unknown",
+            # ffprobe 失败时容器格式退化成扩展名，至少不显示为空
+            container=os.path.splitext(file_path)[1].lstrip(".").lower(),
             audio_codec="unknown",
             audio_channels=0,
             subtitle_count=0,

@@ -243,14 +243,17 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
           if (embedded > 0) parts.push(`内封 ${embedded} 条`);
           if (external > 0) parts.push(`外挂 ${external} 个`);
           const subtitleValue = parts.length ? parts.join(" · ") : "无";
+          // 容器格式：优先用扫描到的 container，存量记录退化用扩展名
+          const container = (v.container || v.file_name.split(".").pop() || "").toUpperCase();
           const rows: [string, string, boolean, boolean][] = [
             ["分辨率", v.resolution, false, false],
-            ["视频编码", v.video_codec || "—", false, false],
+            ["视频格式", container || "—", false, false],
+            ["视频编码", v.codec || v.video_codec || "—", false, false],
             ["音频编码", v.audio_codec || "—", false, false],
             ["HDR", v.hdr_type, false, false],
             ["质量分", String(v.quality_score || 0), false, false],
             ["大小", formatSize(v.size_gb), false, false],
-            ["时长", formatDuration(v.duration), false, false],
+            ["时长", formatDuration(v.duration_min ?? v.duration), false, false],
             // 无字幕标橙提示，有外挂字幕标绿（刚下载完能立刻看到变化）
             ["字幕", subtitleValue, parts.length === 0, external > 0],
             ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res, false],

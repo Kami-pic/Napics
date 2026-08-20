@@ -8,9 +8,15 @@ export interface VideoInfo {
   resolution: string;
   width: number;
   height: number;
-  duration: number;
+  // 后端 scanner.VideoInfo 存的是 codec / duration_min / container。
+  // video_codec 与 duration 是历史遗留写法（旧版 refresh-quality 写过），
+  // 读取时两套都兜一下，避免存量记录显示为空。
+  codec?: string;
+  container?: string;
+  duration_min?: number;
+  duration?: number;
+  video_codec?: string;
   audio_codec: string;
-  video_codec: string;
   subtitle_count: number;
   hdr_type: string;
   is_low_res: boolean;

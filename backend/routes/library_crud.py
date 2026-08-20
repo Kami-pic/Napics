@@ -47,11 +47,15 @@ def refresh_quality_score(paths: List[str] = None):
                     v["resolution"] = info.resolution
                     v["height"] = info.height
                     v["width"] = info.width
-                    v["video_codec"] = info.codec
+                    # 字段名必须和 scanner.VideoInfo 一致（codec / duration_min）。
+                    # 这里曾经写成 video_codec / duration，导致同一条记录里两套名字并存，
+                    # 而前端只读其中一套 —— 表现为"点过检测质量的条目才显示编码"。
+                    v["codec"] = info.codec
+                    v["container"] = info.container
                     v["audio_codec"] = info.audio_codec
                     v["subtitle_count"] = info.subtitle_count
                     v["hdr_type"] = info.hdr_type
-                    v["duration"] = info.duration_min
+                    v["duration_min"] = info.duration_min
                     v["bitrate_kbps"] = info.bitrate_kbps
                     v["size_gb"] = info.size_gb
                     v["is_low_res"] = info.is_low_res
