@@ -14,7 +14,7 @@ export const systemApi = {
 
   /** 按 NFO / 文件夹名 / 文件名重算检索名（中文+英文） */
   generateCleanName: (path: string, isFolder = false) =>
-    request<{ status: string; updated: number; cn: string; en: string; display: string }>(
+    request<{ status: string; message?: string; updated: number; matched?: number; reason?: string; cn: string; en: string; display: string }>(
       `${BASE_URL}/library/clean-name/generate`,
       {
         method: "POST",

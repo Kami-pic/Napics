@@ -197,7 +197,13 @@ export function useLibrary() {
 
   // 扫描：增量追加
   const startScan = useCallback(async (overridePaths?: string[], libraryName?: string) => {
-    const scanPaths = overridePaths || paths;
+    const scanPaths = (overridePaths || paths).filter(p => p && p.trim());
+    // 没有可扫描的路径时循环一次都不会执行，表现为"点扫描一闪而过、毫无反应"，
+    // 排查时很容易误以为是扫描逻辑坏了。这里直接说明原因。
+    if (scanPaths.length === 0) {
+      alert("没有可扫描的路径\n\n请先到设置里填写媒体库路径。Docker 部署时要填容器内的路径，并确认该目录已挂载进容器。");
+      return;
+    }
     const controller = new AbortController();
     setAbortController(controller); setScanning(true);
     setScanProgress({ current: 0, total: 0, lastFile: "" });

@@ -764,7 +764,7 @@ def regenerate_clean_names(library: list, file_path: str, is_folder: bool = Fals
     所以强制覆写，不受 NAME_SOURCE_PRIORITY 保护（否则已有 manual/nfo 名字时按钮点了没反应）。
     """
     if not file_path:
-        return {"updated": 0, "cn": "", "en": "", "display": ""}
+        return {"updated": 0, "matched": 0, "reason": "no_path", "cn": "", "en": "", "display": ""}
 
     targets = []
     if is_folder:
@@ -777,7 +777,10 @@ def regenerate_clean_names(library: list, file_path: str, is_folder: bool = Fals
         targets = [item for item in library if item.get("file_path") == file_path]
 
     if not targets:
-        return {"updated": 0, "cn": "", "en": "", "display": ""}
+        return {
+            "updated": 0, "matched": 0, "reason": "not_in_library",
+            "cn": "", "en": "", "display": "",
+        }
 
     updated = 0
     first: Optional[CleanNameResult] = None
@@ -803,10 +806,19 @@ def regenerate_clean_names(library: list, file_path: str, is_folder: bool = Fals
             first = result
 
     if first is None:
-        return {"updated": 0, "cn": "", "en": "", "display": ""}
+        # 区分两种失败：库里根本没这条记录 vs 记录在但名字解析不出来。
+        # 之前都返回 not_found，排查时无法判断到底是路径对不上还是解析失败。
+        return {
+            "updated": 0,
+            "matched": len(targets),
+            "reason": "unparsable" if targets else "not_in_library",
+            "cn": "", "en": "", "display": "",
+        }
 
     return {
         "updated": updated,
+        "matched": len(targets),
+        "reason": "",
         "cn": first.cn,
         "en": first.en,
         "display": first.display,

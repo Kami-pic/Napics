@@ -363,7 +363,17 @@ def generate_clean_name(req: dict):
     if result["updated"]:
         config_m.save_library(library)
         return {"status": "ok", **result}
-    return {"status": "not_found", **result}
+
+    # 把失败原因说清楚：路径对不上和解析失败要分开，否则线上排查只能靠猜
+    reason = result.get("reason", "")
+    if reason == "not_in_library":
+        message = f"媒体库里没有这条记录，路径可能不一致：{file_path}"
+    elif reason == "unparsable":
+        message = f"匹配到 {result.get('matched', 0)} 条记录，但从 NFO / 文件夹名 / 文件名都解析不出名称"
+    else:
+        message = "缺少 file_path"
+    logger.warning(f"[clean-name/generate] 失败({reason}): {file_path}")
+    return {"status": "failed", "message": message, **result}
 
 
 @router.get("/library/completeness")

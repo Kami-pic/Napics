@@ -108,7 +108,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
     setGeneratingIndex(true);
     try {
       const res = await api.generateCleanName(targetPath, !isMovieFolder);
-      if (res.status !== "ok") { setActionResult("未能解析出名称，请手动填写检索名"); return; }
+      if (res.status !== "ok") { setActionResult(res.message || "未能解析出名称，请手动填写检索名"); return; }
       setActionResult(`检索名已更新：${res.cn || ""} ${res.en || ""}`.trim());
       refreshFolderTree();
     } catch (e: any) { setActionResult("生成检索名失败: " + (e?.message || String(e))); }

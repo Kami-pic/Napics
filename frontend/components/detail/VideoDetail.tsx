@@ -103,9 +103,9 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
     setGeneratingIndex(true);
     try {
       const res = await api.generateCleanName(v.file_path);
-      if (res.status !== "ok") { alert("未能解析出名称，请手动填写检索名"); return; }
+      if (res.status !== "ok") { alert(`生成检索名失败\n\n${res.message || "未能解析出名称，请手动填写"}`); return; }
       onRefresh();
-    } catch { alert("生成失败"); }
+    } catch (e: any) { alert(`生成检索名失败\n\n${e?.message || e}`); }
     setGeneratingIndex(false);
   };
 
