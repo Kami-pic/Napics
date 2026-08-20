@@ -226,20 +226,22 @@ def test_save_library_injects_score():
     print("\n[SUITE 2] save_library 自动注入 quality_score")
 
     # 2.1 直接测试 save_library 注入逻辑（用临时数据）
+    # 必须在隔离数据目录下跑：ConfigManager 的 lib_path 只认 NAPICS_DATA_DIR，
+    # 不受 config_path 影响。此前这里用默认 ConfigManager() 写库、却把备份/读回
+    # 路径拼在 tests/ 下，结果把真实 media_library.json 覆盖成 3 条测试夹具，
+    # 备份也保护错了对象（tests/ 下那个文件根本不存在）。
     from config_manager import ConfigManager
     import shutil
+    import tempfile
 
-    lib_path = os.path.join(_dir, "media_library.json")
-    backup_path = os.path.join(_dir, "media_library.json.p4test_bak")
-
-    # 备份原始文件
-    has_backup = False
-    if os.path.exists(lib_path):
-        shutil.copy2(lib_path, backup_path)
-        has_backup = True
+    tmp_data_dir = tempfile.mkdtemp(prefix="p4test_data_")
+    _env_backup = os.environ.get("NAPICS_DATA_DIR")
+    os.environ["NAPICS_DATA_DIR"] = tmp_data_dir
 
     try:
         cm = ConfigManager()
+        # 用 cm 自己的路径读回，避免再次出现"写一个文件、读另一个文件"
+        lib_path = cm.lib_path
         # 构造测试数据：没有 quality_score 字段的视频条目
         test_data = [
             {
@@ -311,12 +313,12 @@ def test_save_library_injects_score():
         record("已有 quality_score 不被覆盖", preset_score == 99, f"实际={preset_score}")
 
     finally:
-        # 恢复原始文件
-        if has_backup:
-            shutil.copy2(backup_path, lib_path)
-            os.remove(backup_path)
-        elif os.path.exists(lib_path):
-            os.remove(lib_path)
+        # 还原环境变量并清理隔离目录（真实库全程未被触碰）
+        if _env_backup is None:
+            os.environ.pop("NAPICS_DATA_DIR", None)
+        else:
+            os.environ["NAPICS_DATA_DIR"] = _env_backup
+        shutil.rmtree(tmp_data_dir, ignore_errors=True)
 
     # 2.2 API 层面验证：检查后端 /library 返回的数据
     print("\n[SUITE 2.2] API 层面验证 quality_score")

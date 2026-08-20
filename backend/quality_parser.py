@@ -268,6 +268,35 @@ _VIDEO_CODEC_SCORE = {"x265": 10, "AV1": 10, "x264": 6}
 # 中文字幕（5 分）
 _CHINESE_SUB_SCORE = 5
 
+# ffprobe 的编解码器名 → 上面评分表用的发布命名。
+# 上面的表按 BT 标题习惯写（x265 / AC3），而 ffprobe 给的是 codec_name（hevc / ac3，小写），
+# 文件名里没有技术标签时会回退到 ffprobe 值，不做这层映射就必然查不到、白丢 30 分。
+# 只映射能一一对应的；对不上的（opus/flac/pcm 等）不硬给分，宁可 0。
+_FFPROBE_VIDEO_CODEC_MAP = {
+    "hevc": "x265", "h265": "x265",
+    "h264": "x264", "avc": "x264", "avc1": "x264",
+    "av1": "AV1",
+}
+# 注意：Atmos / DTS-HD 属于流内元数据，ffprobe 的 codec_name 只给到 eac3 / dts，
+# 无法据此判定，所以不映射到更高档位。
+_FFPROBE_AUDIO_CODEC_MAP = {
+    "truehd": "TrueHD",
+    "eac3": "EAC3", "e-ac-3": "EAC3",
+    "ac3": "AC3", "ac-3": "AC3",
+    "dts": "DTS",
+    "aac": "AAC",
+}
+
+
+def normalize_ffprobe_video_codec(codec: str) -> str:
+    """ffprobe 视频编码名归一化，无法对应时返回原值（查表得 0 分）"""
+    return _FFPROBE_VIDEO_CODEC_MAP.get((codec or "").strip().lower(), codec or "")
+
+
+def normalize_ffprobe_audio_codec(codec: str) -> str:
+    """ffprobe 音频编码名归一化，无法对应时返回原值（查表得 0 分）"""
+    return _FFPROBE_AUDIO_CODEC_MAP.get((codec or "").strip().lower(), codec or "")
+
 
 def compute_quality_score(tag: QualityTag) -> int:
     """100 分制综合质量评分。
@@ -308,11 +337,13 @@ def compute_quality_score_from_video(video: dict) -> int:
     filename = video.get("file_name", "") or video.get("file_path", "")
     parsed = parse_quality(filename)
 
+    # 文件名里的标签优先（信息更全，能区分 Remux/Atmos 等）；
+    # 没有标签时回退 ffprobe，但要先把 codec_name 归一化到评分表的键
     tag = QualityTag(
         resolution=resolution or parsed.resolution,
         source=parsed.source,
-        video_codec=parsed.video_codec or video.get("codec", ""),
-        audio_codec=parsed.audio_codec or video.get("audio_codec", ""),
+        video_codec=parsed.video_codec or normalize_ffprobe_video_codec(video.get("codec", "")),
+        audio_codec=parsed.audio_codec or normalize_ffprobe_audio_codec(video.get("audio_codec", "")),
         has_chinese_sub=parsed.has_chinese_sub or (video.get("subtitle_count", 0) > 0),
     )
     return compute_quality_score(tag)
