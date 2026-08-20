@@ -207,19 +207,23 @@ def transcode_file(
     # 构建 ffmpeg 命令
     cmd = ["ffmpeg", "-nostdin"]
 
-    # input seek：-ss 必须在 -i 之前。
-    # 放在 -i 之后是 output seek，要从文件头 demux 到 start，耗时随位置线性增长
-    # （实测 300s→0.94s、900s→2.58s、1800s→4.58s），而 input seek 恒定约 0.1s。
-    if start > 0:
-        cmd += ["-ss", str(start)]
-
+    # ── seek 方式：必须用 output seek（-ss 在 -i 之后），不要"优化"成 input seek ──
+    #
+    # input seek 快得多（恒定 0.1s vs output seek 在 1800s 处要 4.6s），
+    # 但它会破坏音画同步：ffmpeg 在输入端 seek 后，音视频流的起始位置各自
+    # 独立对齐，配合 -c:v copy + 音频重编码会产生可感知的错位。
+    # commit 011ffdf「seek音画同步(output seek)」就是为修这个问题从
+    # input seek 改成 output seek 的，别再改回去。
+    #
+    # 慢的代价通过前端行为规避：拖拽只在松手时发一次请求，不是每次 mousemove。
     cmd += [
         "-probesize", "5000000",
         "-analyzeduration", "3000000",
         "-i", path,
-        # 分片 MP4 会把时间戳归零，这里显式声明避免负时间戳
-        "-avoid_negative_ts", "make_zero",
     ]
+
+    if start > 0:
+        cmd += ["-ss", str(start)]
 
     cmd += [
         "-map", "0:v:0",                    # 选第一条视频流
@@ -287,19 +291,15 @@ def get_keyframe_time(
     path: str = Query(..., description="视频文件路径"),
     time: float = Query(..., description="目标时间（秒）"),
 ):
-    """查询 ffmpeg 用 `-ss time` 实际会落到的关键帧时间。
+    """查询转码流实际会从哪个关键帧开始。前端用它作为字幕时间轴的 offset。
 
-    转码时 ffmpeg 会 snap 到 <= time 的最近关键帧，实测偏差 1.4-5.3 秒，
-    GOP 长的片源最坏可达 10 秒。前端必须用这个返回值同时作为
-    `-ss` 参数和字幕时间轴的 offset，否则字幕会整体偏移。
+    **方向是关键**：转码用 output seek（-ss 在 -i 之后），语义是"丢弃 pts < time
+    的帧"，所以落点是 **>= time 的第一个关键帧**（往后跳）。
+    input seek（-ss 在 -i 之前）相反，是 snap 到 <= time 的关键帧（往前跳）。
 
-    实现用 ffmpeg 自己输出一帧再读时间戳，而不是 ffprobe 查关键帧列表：
-    ffprobe 的 `-read_intervals` 自身 seek 不精确会漏帧，实测在 900s / 1800s
-    处分别报 891.724 / 1786.368，而 ffmpeg 实际落点是 898.064 / 1798.547。
-    只有让 ffmpeg 自报才和转码行为一致。
-
-    注意输出**不能**带 `-movflags empty_moov`：分片 MP4 的 muxer 会把时间戳
-    归零，就读不到绝对时间了。
+    两者差一整个 GOP。实测 5s GOP 的样本上请求 7s：
+    output seek 落到 10.02s，input seek 落到 5.0s。
+    拿 input seek 的探测值当 offset，字幕就会偏一个 GOP —— 这个坑踩过一次。
     """
     import subprocess
 
@@ -311,54 +311,51 @@ def get_keyframe_time(
     if time <= 0:
         return {"actual_start": 0.0, "requested": time}
 
-    tmp_path = os.path.join(
-        tempfile.gettempdir(),
-        f"napics_kf_{os.getpid()}_{threading.get_ident()}.mp4",
-    )
+    # 从 time 往后扫一段找第一个关键帧。窗口要覆盖最长 GOP
+    # （实测有片源 GOP 达 10s），扫 30s 的包约 0.1s，代价可接受。
+    window = 30.0
     cmd = [
-        "ffmpeg", "-nostdin", "-y", "-v", "error",
-        "-ss", str(time),
-        "-copyts",              # 保留原始时间戳，才能读出绝对位置
-        "-i", path,
-        "-map", "0:v:0",
-        "-c:v", "copy",
-        "-frames:v", "1",       # 只要一帧，实测约 0.16s
-        "-f", "mp4", tmp_path,
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-read_intervals", f"{time}%+{window}",
+        "-show_entries", "packet=pts_time,flags",
+        "-of", "csv=p=0",
+        path,
     ]
 
-    actual = time
     try:
         result = subprocess.run(
-            cmd, capture_output=True, stdin=subprocess.DEVNULL, timeout=30,
+            cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=60, encoding="utf-8",
         )
-        if result.returncode != 0 or not os.path.isfile(tmp_path):
-            stderr = (result.stderr or b"").decode("utf-8", errors="replace")
-            logger.warning(f"[Playback] 关键帧查询失败，回退到请求值: {stderr[:200]}")
-            return {"actual_start": time, "requested": time}
+    except FileNotFoundError:
+        logger.error("[Playback] ffprobe 未安装，关键帧查询回退到请求值")
+        return {"actual_start": time, "requested": time}
+    except subprocess.TimeoutExpired:
+        logger.warning(f"[Playback] 关键帧查询超时，回退到请求值: time={time}")
+        return {"actual_start": time, "requested": time}
 
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-print_format", "json", "-show_packets",
-             "-show_entries", "packet=pts_time", tmp_path],
-            capture_output=True, text=True, stdin=subprocess.DEVNULL,
-            timeout=15, encoding="utf-8",
+    if result.returncode != 0:
+        logger.warning(
+            f"[Playback] 关键帧查询失败 rc={result.returncode}: "
+            f"{(result.stderr or '')[:200]}"
         )
-        packets = json.loads(probe.stdout).get("packets", [])
-        if packets:
-            actual = float(packets[0]["pts_time"])
-    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-        logger.warning(f"[Playback] 关键帧查询异常，回退到请求值: {e}")
         return {"actual_start": time, "requested": time}
-    except (json.JSONDecodeError, KeyError, ValueError, IndexError) as e:
-        logger.warning(f"[Playback] 关键帧时间戳解析失败: {e}")
-        return {"actual_start": time, "requested": time}
-    finally:
-        if os.path.isfile(tmp_path):
-            try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
 
-    return {"actual_start": actual, "requested": time}
+    for line in (result.stdout or "").strip().split("\n"):
+        parts = line.strip().split(",")
+        if len(parts) < 2 or "K" not in parts[1]:
+            continue
+        try:
+            pts = float(parts[0])
+        except ValueError:
+            continue
+        if pts >= time - 0.05:      # 容一点浮点误差
+            return {"actual_start": pts, "requested": time}
+
+    # 窗口内没有关键帧（GOP 超长或已接近文件尾），回退到请求值
+    logger.info(f"[Playback] {time}s 起 {window}s 内无关键帧，offset 回退到请求值")
+    return {"actual_start": time, "requested": time}
 
 
 @router.get("/playback/duration")
@@ -581,6 +578,7 @@ def list_subtitles(path: str = Query(..., description="视频文件路径")):
                     "name": f,
                     "path": full_path,
                     "format": ext.lstrip("."),
+                    "kind": "external",
                     "codec": ext.lstrip("."),
                     "lang": lang,
                     "url": f"/playback/subtitle/file?path={quote(full_path)}",
@@ -598,7 +596,21 @@ def list_subtitles(path: str = Query(..., description="视频文件路径")):
     embedded = _detect_embedded_subtitles(path)
     subtitles.extend(embedded)
 
-    return {"subtitles": subtitles}
+    external_count = sum(1 for s in subtitles if not s["embedded"])
+    embedded_count = sum(1 for s in subtitles if s["embedded"] and not s["unsupported"])
+    graphic_count = sum(1 for s in subtitles if s.get("kind") == "graphic")
+
+    return {
+        "subtitles": subtitles,
+        "summary": {
+            "external": external_count,
+            "embedded": embedded_count,
+            "graphic": graphic_count,
+            # 一条字幕流都没有、也没有外挂文件时，字幕很可能被压进画面（硬字幕）。
+            # 硬字幕是画面像素的一部分，ffprobe 检测不到，也无法关闭或提取。
+            "maybe_hardcoded": len(subtitles) == 0,
+        },
+    }
 
 
 def _detect_embedded_subtitles(video_path: str) -> list:
@@ -662,14 +674,11 @@ def _detect_embedded_subtitles(video_path: str) -> list:
         sub_ordinal += 1
         supported, reason = _classify_subtitle_codec(codec)
 
-        label = title or f"内嵌字幕 {sub_ordinal}"
         norm_lang = _normalize_lang(lang)
-        if norm_lang:
-            label = f"{label} ({norm_lang})"
-        if disposition.get("forced"):
-            label = f"{label} [强制]"
+        # 标签只放字幕自身信息，类型/语言/状态由前端按字段渲染，
+        # 避免把「— 图形字幕（需 OCR）」这类说明拼进名字里导致菜单一行超长
+        label = title or (f"{norm_lang or '未标注'} 字幕 {sub_ordinal}")
         if not supported:
-            label = f"{label} — {reason}"
             unsupported_count += 1
         else:
             text_count += 1
@@ -677,6 +686,7 @@ def _detect_embedded_subtitles(video_path: str) -> list:
         subtitles.append({
             "name": label,
             "format": "embedded",
+            "kind": "graphic" if codec in GRAPHIC_SUBTITLE_CODECS else "embedded",
             "codec": codec,
             "lang": norm_lang,
             "url": f"/playback/subtitle/extract?path={quote(video_path)}&index={index}",

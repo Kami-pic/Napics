@@ -6,10 +6,19 @@ interface SubtitleInfo {
   name: string;
   lang: string;
   index: number;
-  unsupported?: boolean;   // 图形字幕等无法渲染的轨
-  loading?: boolean;       // 正在提取
-  loadFailed?: boolean;    // 提取失败
+  kind?: "external" | "embedded" | "graphic";
+  forced?: boolean;
+  unsupported?: boolean;       // 图形字幕等无法渲染的轨
+  unsupportedReason?: string;
+  loading?: boolean;           // 正在提取
+  loadFailed?: boolean;        // 提取失败
 }
+
+const KIND_LABEL: Record<string, string> = {
+  external: "外挂",
+  embedded: "内嵌",
+  graphic: "图形",
+};
 
 interface AudioTrackInfo {
   label: string;
@@ -224,19 +233,32 @@ export function TranscodeProgressBar({
                 const cls = disabled
                   ? "text-slate-600 cursor-not-allowed"
                   : activeSubtitleIndex === sub.index ? "text-blue-400" : "text-slate-300 hover:bg-white/5";
+                const kindLabel = sub.kind ? KIND_LABEL[sub.kind] : "";
                 return (
                   <button key={sub.index}
                     disabled={disabled}
-                    title={disabled ? sub.name : undefined}
+                    title={disabled ? (sub.unsupportedReason || sub.name) : sub.name}
                     onClick={() => {
                       if (disabled) return;
                       onSubtitleChange?.(sub.index);
                       setShowSubMenu(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors truncate ${cls}`}>
-                    {sub.name}
-                    {sub.loading && <span className="text-amber-400"> · 提取中</span>}
-                    {sub.loadFailed && <span className="text-red-400"> · 失败</span>}
+                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${cls}`}>
+                    <span className="flex items-center gap-1.5">
+                      {kindLabel && (
+                        <span className={`text-[9px] px-1 py-px rounded shrink-0 ${
+                          sub.kind === "external" ? "bg-emerald-500/15 text-emerald-400"
+                            : sub.kind === "graphic" ? "bg-slate-600/30 text-slate-500"
+                            : "bg-blue-500/15 text-blue-400"
+                        }`}>
+                          {kindLabel}
+                        </span>
+                      )}
+                      <span className="truncate">{sub.name}</span>
+                      {sub.forced && <span className="text-[9px] text-orange-400 shrink-0">强制</span>}
+                      {sub.loading && <span className="text-amber-400 shrink-0">提取中</span>}
+                      {sub.loadFailed && <span className="text-red-400 shrink-0">失败</span>}
+                    </span>
                   </button>
                 );
               })}
