@@ -526,9 +526,15 @@ def list_subtitles(path: str = Query(..., description="视频文件路径")):
                     "name": f,
                     "path": full_path,
                     "format": ext.lstrip("."),
+                    "codec": ext.lstrip("."),
                     "lang": lang,
                     "url": f"/playback/subtitle/file?path={quote(full_path)}",
                     "embedded": False,
+                    # 外挂字幕都是文本格式，一律可用。字段与内嵌字幕保持一致，
+                    # 免得消费端要区分两种结构。
+                    "unsupported": False,
+                    "unsupported_reason": "",
+                    "forced": False,
                 })
         except OSError:
             pass

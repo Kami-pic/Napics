@@ -182,6 +182,34 @@ def test_extract_skips_unsupported_tracks(tmp_path, monkeypatch, mkv_with_subs):
 
 
 @requires_ffmpeg
+def test_external_and_embedded_share_same_field_shape(tmp_path, mkv_with_subs, monkeypatch):
+    """外挂与内嵌字幕必须有相同的字段集合。
+
+    曾经只给内嵌字幕加了 unsupported/codec，消费端对外挂字幕取这些键会 KeyError。
+    """
+    # 在视频同目录放一个外挂 srt，让 list_subtitles 同时返回两类
+    video_dir = os.path.dirname(mkv_with_subs)
+    external = os.path.join(video_dir, "sample.chs.srt")
+    with open(external, "w", encoding="utf-8") as f:
+        f.write("1\n00:00:01,000 --> 00:00:02,000\n外挂字幕\n")
+
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    result = pb.list_subtitles(path=mkv_with_subs)
+    subs = result["subtitles"]
+
+    external_items = [s for s in subs if not s["embedded"]]
+    embedded_items = [s for s in subs if s["embedded"]]
+    assert external_items, "应检测到外挂字幕"
+    assert embedded_items, "应检测到内嵌字幕"
+
+    required = {"name", "format", "codec", "lang", "url",
+                "embedded", "unsupported", "unsupported_reason", "forced"}
+    for item in subs:
+        missing = required - set(item)
+        assert not missing, f"字幕项缺字段 {missing}: {item.get('name')}"
+
+
+@requires_ffmpeg
 def test_fingerprint_changes_when_file_changes(tmp_path, mkv_with_subs):
     """指纹要跟大小/mtime 绑定，文件被替换后缓存必须失效"""
     fp1 = pb._video_fingerprint(mkv_with_subs)
