@@ -30,40 +30,50 @@ export default function SubtitleFilterBar({
   filteredCount, totalCount,
   onSourceChange, onFormatChange, onLangChange,
 }: SubtitleFilterBarProps) {
-  const countOf = (id: string) => sources.find(s => s.source === id)?.count ?? 0;
-
   return (
     <div className="px-5 py-2.5 border-b border-white/[0.06] space-y-2">
-      {/* 来源 */}
+      {/* 来源：静态名称与动态条数分开，不拼成一串 */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] text-slate-500 w-8">来源</span>
+        <span className="text-[10px] text-slate-500 w-8 flex-shrink-0">来源</span>
         {SOURCE_OPTIONS.map(opt => {
-          const stat = sources.find(s => s.source === opt.key);
+          const stat = opt.key === "all" ? undefined : sources.find(s => s.source === opt.key);
           const unavailable = Boolean(stat?.error);
+          const count = opt.key === "all" ? totalCount : (stat?.count ?? 0);
+          const active = sourceFilter === opt.key;
           return (
             <button
               key={opt.key}
-              className={`${CHIP_BASE} ${
-                sourceFilter === opt.key ? "bg-purple-500/20 text-purple-300" : CHIP_IDLE
+              className={`${CHIP_BASE} inline-flex items-center gap-1 ${
+                active ? "bg-purple-500/20 text-purple-300" : CHIP_IDLE
               } ${unavailable ? "opacity-50" : ""}`}
-              title={stat?.error || undefined}
+              title={stat?.error ? `${opt.label}：${stat.error}` : opt.label}
               onClick={() => onSourceChange(opt.key)}
             >
-              {opt.label}
-              {opt.key !== "all" && ` ${countOf(opt.key)}`}
+              <span>{opt.label}</span>
+              {unavailable ? (
+                <span className="text-[9px] px-1 rounded bg-white/[0.06] text-slate-500">未配置</span>
+              ) : (
+                <span
+                  className={`text-[9px] px-1 rounded font-mono ${
+                    active ? "bg-purple-500/25 text-purple-200" : "bg-white/[0.06] text-slate-500"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
             </button>
           );
         })}
         {totalCount > 0 && (
-          <span className="text-[10px] text-slate-600 ml-auto">
-            {filteredCount}/{totalCount} 条
+          <span className="text-[10px] text-slate-600 ml-auto flex-shrink-0">
+            显示 {filteredCount} / 共 {totalCount}
           </span>
         )}
       </div>
 
       {/* 格式 */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] text-slate-500 w-8">格式</span>
+        <span className="text-[10px] text-slate-500 w-8 flex-shrink-0">格式</span>
         {FORMAT_OPTIONS.map(opt => (
           <button
             key={opt}
@@ -79,7 +89,7 @@ export default function SubtitleFilterBar({
 
       {/* 语言 */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] text-slate-500 w-8">语言</span>
+        <span className="text-[10px] text-slate-500 w-8 flex-shrink-0">语言</span>
         {LANG_OPTIONS.map(opt => (
           <button
             key={opt}

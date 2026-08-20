@@ -63,6 +63,11 @@ export interface SubtitleSearchState {
   formatFilter: FormatFilter;
   langFilter: LangFilter;
   sourceFilter: SourceFilter;
+  /** 智能过滤（盾牌）：隐藏不相关结果 */
+  smartFilter: boolean;
+  setSmartFilter: (v: boolean) => void;
+  /** 被智能过滤隐藏的条数 */
+  junkCount: number;
   selected: SubtitleSearchItem | null;
   selectedDetail: SubtitleDetail | null;
   loadingDetail: boolean;
@@ -87,6 +92,8 @@ export function useSubtitleSearch(): SubtitleSearchState {
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("全部");
   const [langFilter, setLangFilter] = useState<LangFilter>("全部");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  // 默认开启：字幕站搜索词宽松，不过滤时无关结果占比很高
+  const [smartFilter, setSmartFilter] = useState(true);
   const [selected, setSelected] = useState<SubtitleSearchItem | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<SubtitleDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -166,11 +173,14 @@ export function useSubtitleSearch(): SubtitleSearchState {
   }, []);
 
   const filteredResults = results.filter((item) => {
+    if (smartFilter && item.is_junk) return false;
     if (sourceFilter !== "all" && item.source !== sourceFilter) return false;
     if (formatFilter !== "全部" && normalizeFormat(item.subtype) !== formatFilter) return false;
     if (langFilter !== "全部" && normalizeLang(item.lang?.desc || "") !== langFilter) return false;
     return true;
   });
+
+  const junkCount = results.filter(item => item.is_junk).length;
 
   return {
     results,
@@ -182,6 +192,9 @@ export function useSubtitleSearch(): SubtitleSearchState {
     formatFilter,
     langFilter,
     sourceFilter,
+    smartFilter,
+    setSmartFilter,
+    junkCount,
     selected,
     selectedDetail,
     loadingDetail,

@@ -76,6 +76,31 @@ export default function SubtitleResultCard({ item, selected, onSelect }: Subtitl
               ★ {item.vote_score}
             </span>
           )}
+
+          {/* 相关性：低分标红，便于判断是否误匹配 */}
+          {item.match_score > 0 && (
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                item.match_score >= 70
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : item.match_score >= 40
+                  ? "bg-white/[0.04] text-slate-500"
+                  : "bg-red-500/10 text-red-400"
+              }`}
+              title={`相关性 ${item.match_score}`}
+            >
+              {item.match_score}
+            </span>
+          )}
+
+          {item.is_junk && (
+            <span
+              className="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-400"
+              title={item.junk_reasons.join(", ")}
+            >
+              可能不相关
+            </span>
+          )}
         </div>
 
         {(item.videoname || item.upload_time) && (

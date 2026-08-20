@@ -25,6 +25,11 @@ export interface SubtitleSearchItem {
   slug: string;
   hit_keyword: string;
   file_size: string;
+  /** 相关性匹配分（0-100，复用后端 L2 匹配链） */
+  match_score: number;
+  /** 智能过滤标记 */
+  is_junk: boolean;
+  junk_reasons: string[];
 }
 
 export interface SubtitleFileItem {

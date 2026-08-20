@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import SubtitleResultCard from "./SubtitleResultCard";
 import SubtitleDetailPanel from "./SubtitleDetailPanel";
 import SubtitleFilterBar from "./SubtitleFilterBar";
+import SubtitleKeywordTrail from "./SubtitleKeywordTrail";
 import { useSubtitleSearch } from "./useSubtitleSearch";
 
 export interface SubtitleModalProps {
@@ -68,11 +69,6 @@ export default function SubtitleModal({
     });
   };
 
-  const searchedSummary = s.sources
-    .filter(stat => stat.searched_keywords.length > 0)
-    .map(stat => `${stat.source}: ${stat.searched_keywords.join(" → ")}`)
-    .join("　");
-
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">
       <div className="bg-[var(--background)] border border-white/[0.06] rounded-2xl w-full max-w-[1000px] h-[82vh] flex flex-col">
@@ -88,6 +84,19 @@ export default function SubtitleModal({
               onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
               autoFocus
             />
+            <button
+              onClick={() => s.setSmartFilter(!s.smartFilter)}
+              title={
+                s.smartFilter
+                  ? `智能过滤已开启：隐藏不相关结果${s.junkCount ? `（已隐藏 ${s.junkCount} 条）` : ""}`
+                  : "智能过滤已关闭：显示全部结果"
+              }
+              className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${
+                s.smartFilter ? "text-green-400 hover:bg-green-600/20" : "text-slate-600 hover:text-slate-400"
+              }`}
+            >
+              {s.smartFilter ? "🛡️" : "🔓"}
+            </button>
             <button
               className="text-xs px-3 py-1 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors disabled:opacity-50"
               onClick={handleSearch}
@@ -111,12 +120,7 @@ export default function SubtitleModal({
           onLangChange={s.setLangFilter}
         />
 
-        {/* 各源实际搜索词回显 */}
-        {searchedSummary && (
-          <div className="px-5 py-1.5 text-[10px] text-slate-600 border-b border-white/[0.06] truncate" title={searchedSummary}>
-            搜索词　{searchedSummary}
-          </div>
-        )}
+        {!s.searching && <SubtitleKeywordTrail sources={s.sources} />}
 
         <div className="flex-1 flex overflow-hidden">
           {/* 结果列表 */}
@@ -144,6 +148,11 @@ export default function SubtitleModal({
             {!s.searching && s.results.length > 0 && s.filteredResults.length === 0 && (
               <div className="text-center py-16">
                 <p className="text-sm text-slate-500">当前筛选无结果</p>
+                {s.smartFilter && s.junkCount > 0 && (
+                  <p className="text-xs text-slate-600 mt-1">
+                    智能过滤隐藏了 {s.junkCount} 条不相关结果，点 🛡️ 可关闭
+                  </p>
+                )}
               </div>
             )}
 
