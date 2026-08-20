@@ -54,15 +54,11 @@ body {
   animation: fade-in 0.3s ease-out;
 }
 
-/* 播放器字幕样式。
-   mp4 走原生 <track>（浏览器默认 CC 字号偏大），mkv 走 SubtitleOverlay 自绘，
-   两条路径必须视觉一致，否则同一个库里切片源字幕大小忽大忽小。
-   这里的值要和 SubtitleOverlay 的 class 保持同步。 */
+/* 播放器字幕统一走 SubtitleOverlay 自绘，不用浏览器原生 CC 渲染。
+   原因：::cue 的字号由浏览器按视频高度自动缩放，还会被用户的浏览器字幕
+   偏好设置覆盖，无法和自绘覆盖层对齐 —— 设成同一个 px 值反而一大一小。
+   这里把原生 cue 隐藏掉，避免和覆盖层重复显示两份字幕。 */
 video::cue {
-  font-size: 20px;
-  line-height: 1.5;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: #fff;
-  font-family: inherit;
-  text-shadow: none;
+  opacity: 0;
+  background: transparent;
 }

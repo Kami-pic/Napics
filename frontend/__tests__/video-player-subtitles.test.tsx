@@ -128,15 +128,35 @@ describe("外挂字幕（mp4 原生播放路径）", () => {
     }, { timeout: 3000 });
   });
 
-  it("mp4 播放时外挂字幕会注入 track 元素", async () => {
+  it("mp4 字幕走自绘覆盖层，不用原生 track", async () => {
     const fetchMock = mockSubtitleApi([externalSrt], { "subtitle/file": VTT });
     global.fetch = fetchMock as any;
 
     const { container } = render(<VideoPlayer path="/v/movie.mp4" onClose={() => {}} />);
 
+    // 等字幕内容拉到
     await waitFor(() => {
-      const tracks = container.querySelectorAll("track");
-      expect(tracks.length, "应注入 <track>").toBeGreaterThan(0);
+      const called = fetchMock.mock.calls.some(c => String(c[0]).includes("subtitle/file"));
+      expect(called).toBe(true);
+    }, { timeout: 3000 });
+
+    // 不能再注入原生 track：::cue 字号由浏览器按视频高度缩放，
+    // 和自绘覆盖层无法对齐，同时存在还会显示两份字幕
+    await waitFor(() => {
+      expect(container.querySelectorAll("track").length,
+        "不应注入原生 track").toBe(0);
+    }, { timeout: 2000 });
+  });
+
+  it("mp4 原生 controls 下有独立的字幕选择入口", async () => {
+    const fetchMock = mockSubtitleApi([externalSrt], { "subtitle/file": VTT });
+    global.fetch = fetchMock as any;
+
+    render(<VideoPlayer path="/v/movie.mp4" onClose={() => {}} />);
+
+    await waitFor(() => {
+      const btn = document.querySelector('button[title="字幕"], button[title="正在提取字幕…"]');
+      expect(btn, "mp4 模式应有字幕选择按钮").toBeTruthy();
     }, { timeout: 3000 });
   });
 });

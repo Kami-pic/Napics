@@ -6,6 +6,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { BASE_URL } from "@/lib/api/base";
 import { TranscodeProgressBar } from "./TranscodeProgressBar";
 import { SubtitleOverlay } from "./SubtitleOverlay";
+import { SubtitlePicker } from "./SubtitlePicker";
 
 // 字幕轨元信息 + 懒加载状态。
 // 内嵌字幕提取要把整个视频 demux 一遍（实测约 5.8 秒/GB），
@@ -303,8 +304,10 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     const video = videoRef.current;
     if (!video) return;
 
+    // 两条路径都用帧回调：字幕改成自绘后，timeupdate 每秒只触发约 4 次，
+    // 字幕出现/消失会有肉眼可见的滞后。
     let frameCallbackId: number | null = null;
-    const useFrameCallback = isTranscode && "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+    const useFrameCallback = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
 
     const onFrame = (_now: number, metadata: { mediaTime: number }) => {
       // 取 mediaTime 与 currentTime 的较小值。
@@ -322,13 +325,10 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     };
 
     const onTimeUpdate = () => {
-      if (isTranscode) {
-        // fallback：浏览器不支持 requestVideoFrameCallback 时
-        if (!useFrameCallback) {
-          setCurrentTime(seekOffset + video.currentTime);
-        }
-      } else {
-        setCurrentTime(video.currentTime);
+      // 只在浏览器不支持帧回调时兜底。mp4 路径 seekOffset 恒为 0，
+      // 转码路径才是真实落点，两者用同一个公式。
+      if (!useFrameCallback) {
+        setCurrentTime(seekOffset + video.currentTime);
       }
     };
     const onPlaying = () => setBuffering(false);
@@ -367,39 +367,16 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     };
   }, [seekOffset, isTranscode]);
 
-  // mp4 原生播放器：字幕通过 Blob URL <track> 标签，浏览器原生 CC 按钮选择。
-  // 只注入已经拉到内容的轨（懒加载后 blobUrl 才有值）。
+  // 两条路径的字幕都由 SubtitleOverlay 自绘，这里只负责清掉可能残留的
+  // 原生 track，避免浏览器同时渲染一份 ::cue 造成双重字幕。
   useEffect(() => {
-    if (isTranscode) return; // mkv 用 SubtitleOverlay，不走这里
     const video = videoRef.current;
     if (!video) return;
-
-    const ready = subtitles
-      .map((sub, i) => ({ sub, i }))
-      .filter(({ sub }) => !!sub.blobUrl);
-    if (ready.length === 0) return;
-
     video.querySelectorAll("track").forEach(t => t.remove());
-    ready.forEach(({ sub, i }) => {
-      const track = document.createElement("track");
-      track.kind = "subtitles";
-      track.label = sub.name || `字幕 ${i + 1}`;
-      track.srclang = sub.lang || "zh";
-      track.src = sub.blobUrl;
-      if (i === activeSubIdx) track.default = true;
-      video.appendChild(track);
-    });
-
-    // 激活当前选中的轨（浏览器需要一点时间解析 track）
-    const timer = setTimeout(() => {
-      const activePos = ready.findIndex(({ i }) => i === activeSubIdx);
-      const pos = activePos >= 0 ? activePos : 0;
-      for (let k = 0; k < video.textTracks.length; k++) {
-        video.textTracks[k].mode = k === pos ? "showing" : "disabled";
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [subtitles, isTranscode, activeSubIdx]);
+    for (let k = 0; k < video.textTracks.length; k++) {
+      video.textTracks[k].mode = "disabled";
+    }
+  }, [subtitles, isTranscode]);
 
   // 查 ffmpeg 用 -ss time 实际会落到的关键帧位置。
   // ffmpeg 会 snap 到 <= time 的最近关键帧（实测偏 1.4-5.3s，GOP 长的可达 10s），
@@ -505,7 +482,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   // mkv 字幕内容（SubtitleOverlay 用）；未加载完时为空串，覆盖层自然不渲染
   const activeSub = activeSubIdx >= 0 && activeSubIdx < subtitles.length
     ? subtitles[activeSubIdx] : null;
-  const activeVtt = isTranscode && activeSub ? activeSub.vttContent : "";
+  const activeVtt = activeSub ? activeSub.vttContent : "";
   const subtitleLoading = !!activeSub?.loading;
   // 只有内嵌字幕才慢（要全量 demux），外挂字幕就是读个文件，不该显示耗时警告
   const loadingIsEmbedded = !!activeSub?.loading && !!activeSub?.embedded;
@@ -552,9 +529,23 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             crossOrigin="anonymous"
             className="w-full h-full"
           />
-          {/* mkv 专用：SubtitleOverlay 覆盖层渲染字幕 */}
-          {isTranscode && (
-            <SubtitleOverlay vttContent={activeVtt} currentTime={currentTime} visible={activeSubIdx >= 0} />
+          {/* 字幕统一自绘：原生 ::cue 的字号由浏览器按视频高度缩放、
+              还会被用户的浏览器字幕设置覆盖，两条路径没法对齐。
+              mp4 用原生 controls，字幕要抬高一点避免被控件挡住。 */}
+          <SubtitleOverlay
+            vttContent={activeVtt}
+            currentTime={currentTime}
+            visible={activeSubIdx >= 0}
+            videoRef={videoRef}
+            bottomOffset={isTranscode ? 16 : 56}
+          />
+          {/* mp4 原生 controls 里没有我们的字幕菜单，单独给一个入口 */}
+          {!isTranscode && subtitles.length > 0 && (
+            <SubtitlePicker
+              subtitles={subtitles}
+              activeIndex={activeSubIdx}
+              onChange={handleSubtitleChange}
+            />
           )}
         </div>
         {/* mkv 专用：自制控制栏 */}
