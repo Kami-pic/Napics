@@ -7,11 +7,21 @@ import { BASE_URL } from "@/lib/api/base";
 import { TranscodeProgressBar } from "./TranscodeProgressBar";
 import { SubtitleOverlay } from "./SubtitleOverlay";
 
+// 字幕轨元信息 + 懒加载状态。
+// 内嵌字幕提取要把整个视频 demux 一遍（实测约 5.8 秒/GB），
+// 所以只有外挂字幕在打开时立即加载，内嵌字幕等用户选中才拉。
 interface SubtitleData {
   name: string;
   lang: string;
-  vttContent: string;
-  blobUrl: string;
+  url: string;
+  embedded: boolean;
+  codec: string;
+  unsupported: boolean;
+  unsupportedReason: string;
+  vttContent: string;      // 未加载时为空串
+  blobUrl: string;         // 未加载时为空串
+  loading: boolean;
+  loadFailed: boolean;
 }
 
 interface AudioTrackData {
@@ -29,6 +39,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   const [error, setError] = useState<string | null>(null);
   const [subtitles, setSubtitles] = useState<SubtitleData[]>([]);
   const [activeSubIdx, setActiveSubIdx] = useState(0);
+  const [subtitleNotice, setSubtitleNotice] = useState<string | null>(null);
   const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>([]);
   const [activeAudioIdx, setActiveAudioIdx] = useState(0);
   const [isTranscode, setIsTranscode] = useState(false);
@@ -49,6 +60,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     blobUrlsRef.current = [];
     setSubtitles([]);
+    setSubtitleNotice(null);
     setAudioTracks([]);
     setActiveAudioIdx(0);
     setError(null);
@@ -91,34 +103,101 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     }
   }, []);
 
-  // 加载字幕：fetch VTT 内容 + 创建 Blob URL
+  // 拉取某条字幕的 VTT 内容，成功后写回该轨的 vttContent/blobUrl
+  const fetchSubtitleContent = useCallback(async (idx: number) => {
+    let target: SubtitleData | undefined;
+    setSubtitles(prev => {
+      target = prev[idx];
+      if (!target || target.vttContent || target.loading || target.unsupported) return prev;
+      const next = [...prev];
+      next[idx] = { ...target, loading: true, loadFailed: false };
+      return next;
+    });
+    if (!target || target.vttContent || target.loading || target.unsupported) return;
+
+    const url = target.url.startsWith("http") ? target.url : `${BASE_URL}${target.url}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const vttContent = await res.text();
+      if (!vttContent.trim() || !vttContent.includes("-->")) {
+        throw new Error("字幕内容为空");
+      }
+      const blobUrl = URL.createObjectURL(new Blob([vttContent], { type: "text/vtt" }));
+      blobUrlsRef.current.push(blobUrl);
+      setSubtitles(prev => {
+        const next = [...prev];
+        if (next[idx]) next[idx] = { ...next[idx], vttContent, blobUrl, loading: false };
+        return next;
+      });
+      setSubtitleNotice(null);
+    } catch (e) {
+      setSubtitles(prev => {
+        const next = [...prev];
+        if (next[idx]) next[idx] = { ...next[idx], loading: false, loadFailed: true };
+        return next;
+      });
+      const name = target.name || `字幕 ${idx + 1}`;
+      setSubtitleNotice(
+        target.embedded
+          ? `「${name}」提取失败，大文件首次提取较慢，可稍后重试`
+          : `「${name}」加载失败`
+      );
+    }
+  }, []);
+
+  // 加载字幕列表：只拉元信息。外挂字幕直接读文件很快，立即加载；
+  // 内嵌字幕要全量 demux，等用户选中才提取。
   const loadSubtitles = useCallback(async (videoPath: string) => {
     try {
       const res = await fetch(`${BASE_URL}/playback/subtitles?path=${encodeURIComponent(videoPath)}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        setSubtitleNotice("字幕列表获取失败");
+        return;
+      }
       const data = await res.json();
       const tracks = data?.subtitles || [];
       if (tracks.length === 0) return;
 
-      const loaded: SubtitleData[] = [];
-      for (const track of tracks) {
-        const subtitleUrl = track.url.startsWith("http") ? track.url : `${BASE_URL}${track.url}`;
-        try {
-          const subRes = await fetch(subtitleUrl);
-          if (!subRes.ok) continue;
-          const vttContent = await subRes.text();
-          const blob = new Blob([vttContent], { type: "text/vtt" });
-          const blobUrl = URL.createObjectURL(blob);
-          blobUrlsRef.current.push(blobUrl);
-          loaded.push({ name: track.name, lang: track.lang, vttContent, blobUrl });
-        } catch { /* 单条失败不影响 */ }
+      const list: SubtitleData[] = tracks.map((t: any) => ({
+        name: t.name || "",
+        lang: t.lang || "",
+        url: t.url || "",
+        embedded: !!t.embedded,
+        codec: t.codec || "",
+        unsupported: !!t.unsupported,
+        unsupportedReason: t.unsupported_reason || "",
+        vttContent: "",
+        blobUrl: "",
+        loading: false,
+        loadFailed: false,
+      }));
+      setSubtitles(list);
+
+      const usable = list.filter(s => !s.unsupported);
+      if (usable.length === 0) {
+        const reason = list[0]?.unsupportedReason || "格式不支持";
+        setSubtitleNotice(`检测到 ${list.length} 条字幕但无法显示：${reason}`);
+        setActiveSubIdx(-1);
+        return;
       }
-      if (loaded.length > 0) {
-        setSubtitles(loaded);
-        setActiveSubIdx(0);
-      }
-    } catch { /* 字幕加载失败不影响播放 */ }
-  }, []);
+
+      // 默认选中：优先中文外挂 → 中文内嵌 → 任意外挂 → 第一条可用
+      const score = (s: SubtitleData) =>
+        (s.lang === "zh" ? 2 : 0) + (s.embedded ? 0 : 1);
+      let bestIdx = -1;
+      let bestScore = -1;
+      list.forEach((s, i) => {
+        if (s.unsupported) return;
+        const sc = score(s);
+        if (sc > bestScore) { bestScore = sc; bestIdx = i; }
+      });
+      setActiveSubIdx(bestIdx);
+      if (bestIdx >= 0) fetchSubtitleContent(bestIdx);
+    } catch {
+      setSubtitleNotice("字幕列表获取失败");
+    }
+  }, [fetchSubtitleContent]);
 
   // 初始化
   useEffect(() => {
@@ -130,6 +209,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     blobUrlsRef.current = [];
     setSubtitles([]);
+    setSubtitleNotice(null);
     setActiveSubIdx(0);
     setAudioTracks([]);
     setActiveAudioIdx(0);
@@ -217,33 +297,39 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     };
   }, [seekOffset, isTranscode]);
 
-  // mp4 原生播放器：字幕通过 Blob URL <track> 标签，浏览器原生 CC 按钮选择
-  // 在 subtitles 加载完后注入 track 元素并激活
+  // mp4 原生播放器：字幕通过 Blob URL <track> 标签，浏览器原生 CC 按钮选择。
+  // 只注入已经拉到内容的轨（懒加载后 blobUrl 才有值）。
   useEffect(() => {
     if (isTranscode) return; // mkv 用 SubtitleOverlay，不走这里
     const video = videoRef.current;
-    if (!video || subtitles.length === 0) return;
+    if (!video) return;
 
-    // 注入 track 元素
+    const ready = subtitles
+      .map((sub, i) => ({ sub, i }))
+      .filter(({ sub }) => !!sub.blobUrl);
+    if (ready.length === 0) return;
+
     video.querySelectorAll("track").forEach(t => t.remove());
-    subtitles.forEach((sub, i) => {
+    ready.forEach(({ sub, i }) => {
       const track = document.createElement("track");
       track.kind = "subtitles";
       track.label = sub.name || `字幕 ${i + 1}`;
       track.srclang = sub.lang || "zh";
       track.src = sub.blobUrl;
-      if (i === 0) track.default = true;
+      if (i === activeSubIdx) track.default = true;
       video.appendChild(track);
     });
 
-    // 延迟激活第一条字幕轨
+    // 激活当前选中的轨（浏览器需要一点时间解析 track）
     const timer = setTimeout(() => {
-      if (video.textTracks.length > 0) {
-        video.textTracks[0].mode = "showing";
+      const activePos = ready.findIndex(({ i }) => i === activeSubIdx);
+      const pos = activePos >= 0 ? activePos : 0;
+      for (let k = 0; k < video.textTracks.length; k++) {
+        video.textTracks[k].mode = k === pos ? "showing" : "disabled";
       }
-    }, 800);
+    }, 500);
     return () => clearTimeout(timer);
-  }, [subtitles, isTranscode]);
+  }, [subtitles, isTranscode, activeSubIdx]);
 
   // 转码流 seek
   const handleSeek = useCallback((time: number) => {
@@ -300,16 +386,20 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     video.play().catch(() => {});
   }, [path, isTranscode, currentTime]);
 
-  // mkv 字幕切换
+  // 字幕切换：选中未加载的轨时才去提取
   const handleSubtitleChange = useCallback((index: number) => {
     setActiveSubIdx(index);
-  }, []);
+    setSubtitleNotice(null);
+    if (index >= 0) fetchSubtitleContent(index);
+  }, [fetchSubtitleContent]);
 
   if (!path) return null;
 
-  // mkv 字幕内容（SubtitleOverlay 用）
-  const activeVtt = isTranscode && activeSubIdx >= 0 && activeSubIdx < subtitles.length
-    ? subtitles[activeSubIdx].vttContent : "";
+  // mkv 字幕内容（SubtitleOverlay 用）；未加载完时为空串，覆盖层自然不渲染
+  const activeSub = activeSubIdx >= 0 && activeSubIdx < subtitles.length
+    ? subtitles[activeSubIdx] : null;
+  const activeVtt = isTranscode && activeSub ? activeSub.vttContent : "";
+  const subtitleLoading = !!activeSub?.loading;
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100]" onClick={handleClose}>
@@ -322,6 +412,14 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
         {error && (
           <div className="absolute inset-0 flex items-center justify-center z-20">
             <p className="text-red-400 text-sm px-4 text-center">{error}</p>
+          </div>
+        )}
+        {/* 字幕提示（提取失败 / 全是图形字幕 / 首次提取中） */}
+        {!error && (subtitleNotice || subtitleLoading) && (
+          <div className="absolute top-3 left-3 z-20 max-w-[70%]">
+            <p className="text-[11px] text-amber-300/90 bg-black/70 rounded px-2.5 py-1.5 leading-snug">
+              {subtitleLoading ? "正在提取内嵌字幕，大文件需要数十秒…" : subtitleNotice}
+            </p>
           </div>
         )}
         {/* 视频区域 */}
@@ -347,9 +445,13 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             onSeek={handleSeek}
             videoRef={videoRef}
             containerRef={containerRef}
-            subtitles={subtitles.map((s, i) => ({ name: s.name, lang: s.lang, index: i }))}
+            subtitles={subtitles.map((s, i) => ({
+              name: s.name, lang: s.lang, index: i,
+              unsupported: s.unsupported, loading: s.loading, loadFailed: s.loadFailed,
+            }))}
             activeSubtitleIndex={activeSubIdx}
             onSubtitleChange={handleSubtitleChange}
+            subtitleLoading={subtitleLoading}
             audioTracks={audioTracks}
             activeAudioIndex={activeAudioIdx}
             onAudioChange={handleAudioChange}

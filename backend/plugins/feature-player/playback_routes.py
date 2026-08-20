@@ -1,6 +1,11 @@
 """播放路由：提供 HTTP Range 文件流，供前端播放器拉取视频数据。"""
-import os
+import hashlib
 import logging
+import os
+import subprocess as _subprocess
+import tempfile
+import threading
+import time
 from urllib.parse import quote
 
 from fastapi import APIRouter, Query, HTTPException, Request
@@ -13,10 +18,6 @@ router = APIRouter()
 
 
 # ── 音轨 remux 缓存 ──
-
-import tempfile
-import hashlib
-import subprocess as _subprocess
 
 _remux_cache: dict[str, str] = {}  # key: "path:audio_index" → 临时文件路径
 
@@ -37,7 +38,7 @@ def _get_remuxed_file(video_path: str, audio_index: int) -> str | None:
     tmp_path = os.path.join(tmp_dir, f"napics_remux_{name_hash}_a{audio_index}.mp4")
 
     cmd = [
-        "ffmpeg", "-y",
+        "ffmpeg", "-nostdin", "-y",
         "-i", video_path,
         "-map", "0:v:0",
         "-map", f"0:a:{audio_index}",
@@ -47,7 +48,9 @@ def _get_remuxed_file(video_path: str, audio_index: int) -> str | None:
     ]
 
     try:
-        result = _subprocess.run(cmd, capture_output=True, timeout=120)
+        result = _subprocess.run(
+            cmd, capture_output=True, stdin=_subprocess.DEVNULL, timeout=120,
+        )
         if result.returncode != 0:
             logger.error(f"[Playback] remux 失败: {result.stderr[:200]}")
             return None
@@ -201,7 +204,7 @@ def transcode_file(
         raise HTTPException(status_code=404, detail="文件不存在")
 
     # 构建 ffmpeg 命令
-    cmd = ["ffmpeg"]
+    cmd = ["ffmpeg", "-nostdin"]
 
     # output seek（精确音画同步）
     cmd += [
@@ -231,6 +234,7 @@ def transcode_file(
     try:
         process = subprocess.Popen(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -285,7 +289,10 @@ def get_keyframe_time(path: str = Query(..., description="视频文件路径"), 
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=10, encoding="utf-8",
+        )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return {"actual_start": time}
 
@@ -319,7 +326,10 @@ def get_duration(path: str = Query(..., description="视频文件路径")):
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=10, encoding="utf-8",
+        )
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="ffprobe 未安装")
     except subprocess.TimeoutExpired:
@@ -360,7 +370,10 @@ def list_audio_tracks(path: str = Query(..., description="视频文件路径")):
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=10, encoding="utf-8",
+        )
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="ffprobe 未安装")
     except subprocess.TimeoutExpired:
@@ -410,6 +423,42 @@ def list_audio_tracks(path: str = Query(..., description="视频文件路径")):
 
 SUBTITLE_EXTS = {".srt", ".ass", ".ssa", ".vtt", ".sub"}
 
+# 图形/位图字幕：像素图而非文本，转 WebVTT 需要 OCR，浏览器无法直接渲染。
+# 这类轨仍会出现在字幕列表里（标记 unsupported），否则用户会以为片源没字幕。
+GRAPHIC_SUBTITLE_CODECS = {
+    "hdmv_pgs_subtitle",   # 蓝光 PGS，remux 片源最常见
+    "dvd_subtitle",        # DVD VobSub
+    "dvb_subtitle",        # DVB 广播字幕
+    "xsub",                # DivX
+}
+
+# 非标准文本字幕：ffmpeg 的 webvtt 编码器不支持，转换会失败。
+# 过去这些 codec 能通过过滤，然后在提取阶段静默 500。
+UNCONVERTIBLE_SUBTITLE_CODECS = {
+    "dvb_teletext",
+    "arib_caption",
+    "hdmv_text_subtitle",
+    "eia_608",
+    "eia_708",
+}
+
+# 可转 WebVTT 的文本字幕
+TEXT_SUBTITLE_CODECS = {"subrip", "ass", "ssa", "mov_text", "webvtt", "text", "srt", "microdvd"}
+
+
+def _classify_subtitle_codec(codec: str) -> tuple[bool, str]:
+    """判断字幕 codec 能否转成 WebVTT。
+
+    返回 (supported, reason)。reason 仅在不支持时有意义，用于前端提示。
+    未知 codec 一律当作可尝试，失败时由提取阶段报错，避免误杀新格式。
+    """
+    codec = (codec or "").lower()
+    if codec in GRAPHIC_SUBTITLE_CODECS:
+        return False, "图形字幕（需 OCR），浏览器无法渲染"
+    if codec in UNCONVERTIBLE_SUBTITLE_CODECS:
+        return False, f"{codec} 格式无法转为 WebVTT"
+    return True, ""
+
 
 def _read_subtitle_file(path: str) -> str:
     """读取字幕文件，自动检测编码（BOM → UTF-8 → GBK/GB18030 → Latin-1）"""
@@ -440,6 +489,10 @@ def _read_subtitle_file(path: str) -> str:
 def list_subtitles(path: str = Query(..., description="视频文件路径")):
     """列出外挂字幕 + 内嵌字幕流"""
     guard_path(path, "字幕查询")
+
+    # 不校验的话，路径不可达（SMB 掉线等）会和"真的没字幕"返回同样的空列表
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="文件不存在")
 
     subtitles = []
 
@@ -488,13 +541,17 @@ def list_subtitles(path: str = Query(..., description="视频文件路径")):
 
 
 def _detect_embedded_subtitles(video_path: str) -> list:
-    """用 ffprobe 检测视频内嵌字幕流，返回字幕列表"""
+    """用 ffprobe 检测视频内嵌字幕流。
+
+    图形字幕（PGS/VobSub）与不可转换的 codec 也会返回，但带 unsupported=True，
+    让前端能显示「有 6 条 PGS 字幕但无法渲染」而不是伪装成"没有字幕"。
+    """
     import subprocess
     import json as json_mod
 
     cmd = [
         "ffprobe",
-        "-v", "quiet",
+        "-v", "error",
         "-print_format", "json",
         "-show_streams",
         "-select_streams", "s",
@@ -502,50 +559,94 @@ def _detect_embedded_subtitles(video_path: str) -> list:
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, encoding="utf-8")
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=20, encoding="utf-8",
+        )
+    except FileNotFoundError:
+        logger.error("[Playback] ffprobe 未安装，无法检测内嵌字幕")
+        return []
+    except subprocess.TimeoutExpired:
+        logger.warning(f"[Playback] 内嵌字幕检测超时(20s): {os.path.basename(video_path)}")
         return []
 
     if result.returncode != 0:
+        logger.warning(
+            f"[Playback] 内嵌字幕检测失败 rc={result.returncode}: "
+            f"{(result.stderr or '')[:200]}"
+        )
         return []
 
     try:
         info = json_mod.loads(result.stdout)
         streams = info.get("streams", [])
-    except (json_mod.JSONDecodeError, ValueError):
+    except (json_mod.JSONDecodeError, ValueError) as e:
+        logger.warning(f"[Playback] 内嵌字幕 ffprobe 输出解析失败: {e}")
         return []
 
     subtitles = []
+    text_count = 0
+    unsupported_count = 0
+    # 相对索引（第几条字幕轨）单独计数，仅用于显示，不参与 -map
+    sub_ordinal = 0
     for stream in streams:
+        # ffprobe 的 index 是文件内绝对流索引，与 ffmpeg `-map 0:<n>` 语义一致
         index = stream.get("index", 0)
         codec = stream.get("codec_name", "")
         tags = stream.get("tags", {})
         lang = tags.get("language", "")
         title = tags.get("title", "")
+        disposition = stream.get("disposition", {})
 
-        if codec in ("hdmv_pgs_subtitle", "dvd_subtitle", "dvb_subtitle"):
-            continue
+        sub_ordinal += 1
+        supported, reason = _classify_subtitle_codec(codec)
 
-        label = title or f"内嵌字幕 #{index}"
-        if lang:
-            label = f"{label} ({lang})"
+        label = title or f"内嵌字幕 {sub_ordinal}"
+        norm_lang = _normalize_lang(lang)
+        if norm_lang:
+            label = f"{label} ({norm_lang})"
+        if disposition.get("forced"):
+            label = f"{label} [强制]"
+        if not supported:
+            label = f"{label} — {reason}"
+            unsupported_count += 1
+        else:
+            text_count += 1
 
         subtitles.append({
             "name": label,
             "format": "embedded",
-            "lang": _normalize_lang(lang),
+            "codec": codec,
+            "lang": norm_lang,
             "url": f"/playback/subtitle/extract?path={quote(video_path)}&index={index}",
             "embedded": True,
+            "unsupported": not supported,
+            "unsupported_reason": reason,
+            "forced": bool(disposition.get("forced")),
         })
 
+    if subtitles:
+        logger.info(
+            f"[Playback] 内嵌字幕检测: {os.path.basename(video_path)} → "
+            f"可用 {text_count} 条，不支持 {unsupported_count} 条"
+        )
     return subtitles
 
 
 def _normalize_lang(lang: str) -> str:
-    """标准化语言代码"""
-    lang = lang.lower().strip()
-    zh_codes = ("chi", "zho", "zh", "chs", "cht", "cn", "chinese")
-    en_codes = ("eng", "en", "english")
+    """标准化语言代码为两字母 ISO 639-1。
+
+    覆盖 ISO 639-2/T、639-2/B 与常见非标准写法。
+    Netflix / WEB-DL 片源常用 cmn / yue / zh-Hans 这类标记，
+    不归一化会变成非法的 <track srclang> 值。
+    """
+    lang = (lang or "").lower().strip().replace("_", "-")
+    zh_codes = (
+        "chi", "zho", "zh", "chs", "cht", "cn", "chinese",
+        "cmn", "yue",                                    # 普通话 / 粤语
+        "zh-hans", "zh-hant", "zh-cn", "zh-tw", "zh-hk", "zh-sg",
+    )
+    en_codes = ("eng", "en", "english", "en-us", "en-gb")
     ja_codes = ("jpn", "jp", "ja", "japanese")
     ko_codes = ("kor", "ko", "korean")
     if lang in zh_codes:
@@ -556,46 +657,176 @@ def _normalize_lang(lang: str) -> str:
         return "ja"
     if lang in ko_codes:
         return "ko"
-    return lang
+    # 其余三字母码取常见映射，剩下的原样返回
+    misc = {
+        "fra": "fr", "fre": "fr", "deu": "de", "ger": "de",
+        "spa": "es", "por": "pt", "rus": "ru", "ita": "it",
+        "tha": "th", "vie": "vi", "ara": "ar", "hin": "hi",
+        "ind": "id", "may": "ms", "msa": "ms", "nld": "nl", "dut": "nl",
+    }
+    return misc.get(lang, lang)
+
+
+# ── 内嵌字幕提取（落盘缓存） ──
+#
+# 字幕包沿整个时长交错分布，提取任意一条都要把整个文件 demux 完一遍。
+# 实测约 5.8 秒/GB（SMB 挂载），8GB 文件要 46 秒 —— 旧实现 30s 硬超时
+# 让所有超过约 5GB 的片源内嵌字幕 100% 失败。
+#
+# 因此改为：首次请求时一次 ffmpeg 调用提取**全部**文本字幕轨落盘，
+# 之后任意轨的请求都走缓存。切字幕不再重复付全量 demux 的代价。
+
+_subtitle_cache: dict[str, dict[int, str]] = {}  # 视频指纹 → {绝对流索引: vtt 文件路径}
+_subtitle_locks: dict[str, threading.Lock] = {}  # 视频指纹 → 提取锁，避免并发重复提取
+_subtitle_locks_guard = threading.Lock()
+
+# 提取超时：按 5.8 s/GB 估算，600s 可覆盖约 100GB 的片源
+SUBTITLE_EXTRACT_TIMEOUT = 600
+
+
+def _video_fingerprint(video_path: str) -> str:
+    """视频文件指纹（路径+大小+mtime），文件被替换后缓存自动失效"""
+    try:
+        st = os.stat(video_path)
+        raw = f"{video_path}:{st.st_size}:{int(st.st_mtime)}"
+    except OSError:
+        raw = video_path
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _get_subtitle_lock(fingerprint: str) -> threading.Lock:
+    """取得某个视频的提取锁（同一文件的并发请求串行化）"""
+    with _subtitle_locks_guard:
+        if fingerprint not in _subtitle_locks:
+            _subtitle_locks[fingerprint] = threading.Lock()
+        return _subtitle_locks[fingerprint]
+
+
+def _extract_all_text_subtitles(video_path: str, fingerprint: str) -> dict[int, str]:
+    """一次 ffmpeg 调用把全部可转换的文本字幕轨提取为 VTT 落盘。
+
+    返回 {绝对流索引: vtt 文件路径}。失败返回空字典。
+    """
+    streams = _detect_embedded_subtitles(video_path)
+    targets = []
+    for item in streams:
+        if item.get("unsupported"):
+            continue
+        # url 里带的就是绝对流索引，这里直接从 detect 结果反解，避免再 probe 一次
+        try:
+            idx = int(item["url"].rsplit("index=", 1)[1])
+        except (KeyError, IndexError, ValueError):
+            continue
+        targets.append(idx)
+
+    if not targets:
+        return {}
+
+    tmp_dir = os.path.join(tempfile.gettempdir(), "napics_subs")
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    cmd = ["ffmpeg", "-nostdin", "-y", "-v", "error", "-i", video_path]
+    out_paths: dict[int, str] = {}
+    for idx in targets:
+        out_path = os.path.join(tmp_dir, f"{fingerprint}_s{idx}.vtt")
+        cmd += ["-map", f"0:{idx}", "-c:s", "webvtt", "-f", "webvtt", out_path]
+        out_paths[idx] = out_path
+
+    logger.info(
+        f"[Playback] 开始提取内嵌字幕 {len(targets)} 条: "
+        f"{os.path.basename(video_path)}（大文件可能需要数十秒）"
+    )
+    started = time.time()
+    try:
+        # stdin 必须显式给 DEVNULL：uvicorn / pytest 下父进程 stdin 可能已被替换，
+        # 继承句柄会直接抛 OSError（Windows 上是 WinError 6）。
+        result = _subprocess.run(
+            cmd, capture_output=True, stdin=_subprocess.DEVNULL,
+            timeout=SUBTITLE_EXTRACT_TIMEOUT,
+        )
+    except FileNotFoundError:
+        logger.error("[Playback] ffmpeg 未安装，无法提取内嵌字幕")
+        return {}
+    except _subprocess.TimeoutExpired:
+        logger.error(
+            f"[Playback] 内嵌字幕提取超时({SUBTITLE_EXTRACT_TIMEOUT}s): "
+            f"{os.path.basename(video_path)}"
+        )
+        return {}
+
+    elapsed = time.time() - started
+    if result.returncode != 0:
+        stderr = (result.stderr or b"").decode("utf-8", errors="replace")
+        logger.error(
+            f"[Playback] 内嵌字幕提取失败 rc={result.returncode} "
+            f"({elapsed:.1f}s): {stderr[:300]}"
+        )
+        # 部分输出可能已成功落盘，保留能用的
+    # 只保留真正写出了内容的轨
+    valid: dict[int, str] = {}
+    for idx, out_path in out_paths.items():
+        if os.path.isfile(out_path) and os.path.getsize(out_path) > len("WEBVTT\n\n"):
+            valid[idx] = out_path
+        elif os.path.isfile(out_path):
+            os.remove(out_path)  # 空 VTT 没有意义，删掉避免命中缓存
+    logger.info(
+        f"[Playback] 内嵌字幕提取完成: {len(valid)}/{len(targets)} 条有内容，"
+        f"耗时 {elapsed:.1f}s"
+    )
+    return valid
 
 
 @router.get("/playback/subtitle/extract")
 def extract_embedded_subtitle(
     path: str = Query(..., description="视频文件路径"),
-    index: int = Query(..., description="字幕流索引"),
+    index: int = Query(..., description="字幕流索引（文件内绝对流索引）"),
 ):
-    """提取视频内嵌字幕流，实时转为 WebVTT 格式返回"""
-    import subprocess
+    """提取视频内嵌字幕流，转为 WebVTT 返回。
 
+    首次调用会一次性提取该文件的全部文本字幕轨并落盘缓存，
+    后续（含切换其他字幕轨）直接命中缓存。
+    """
     guard_path(path, "内嵌字幕提取")
 
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    cmd = [
-        "ffmpeg",
-        "-v", "quiet",
-        "-i", path,
-        "-map", f"0:{index}",
-        "-c:s", "webvtt",
-        "-f", "webvtt",
-        "pipe:1",
-    ]
+    fingerprint = _video_fingerprint(path)
+    cached = _subtitle_cache.get(fingerprint)
 
-    try:
-        result = subprocess.run(cmd, capture_output=True, timeout=30)
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="ffmpeg 未安装")
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=500, detail="字幕提取超时")
+    # 缓存命中且文件还在
+    if cached and index in cached and os.path.isfile(cached[index]):
+        with open(cached[index], "rb") as f:
+            content = f.read()
+        return Response(
+            content=content,
+            media_type="text/vtt; charset=utf-8",
+            headers={"Access-Control-Allow-Origin": "*", "X-Subtitle-Cache": "hit"},
+        )
 
-    if result.returncode != 0:
-        raise HTTPException(status_code=500, detail="字幕提取失败")
+    # 未命中：加锁提取（同一文件并发请求只跑一次 ffmpeg）
+    lock = _get_subtitle_lock(fingerprint)
+    with lock:
+        # 双检：等锁期间可能已被别的请求填好
+        cached = _subtitle_cache.get(fingerprint)
+        if not (cached and index in cached and os.path.isfile(cached[index])):
+            extracted = _extract_all_text_subtitles(path, fingerprint)
+            if extracted:
+                _subtitle_cache[fingerprint] = extracted
+            cached = extracted
 
+    if not cached or index not in cached:
+        raise HTTPException(
+            status_code=404,
+            detail="该字幕轨提取失败或无文本内容（可能是图形字幕）",
+        )
+
+    with open(cached[index], "rb") as f:
+        content = f.read()
     return Response(
-        content=result.stdout,
+        content=content,
         media_type="text/vtt; charset=utf-8",
-        headers={"Access-Control-Allow-Origin": "*"},
+        headers={"Access-Control-Allow-Origin": "*", "X-Subtitle-Cache": "miss"},
     )
 
 

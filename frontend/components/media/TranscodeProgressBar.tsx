@@ -6,6 +6,9 @@ interface SubtitleInfo {
   name: string;
   lang: string;
   index: number;
+  unsupported?: boolean;   // 图形字幕等无法渲染的轨
+  loading?: boolean;       // 正在提取
+  loadFailed?: boolean;    // 提取失败
 }
 
 interface AudioTrackInfo {
@@ -24,6 +27,7 @@ interface TranscodeProgressBarProps {
   subtitles?: SubtitleInfo[];
   activeSubtitleIndex?: number;
   onSubtitleChange?: (index: number) => void;
+  subtitleLoading?: boolean;
   audioTracks?: AudioTrackInfo[];
   activeAudioIndex?: number;
   onAudioChange?: (index: number) => void;
@@ -31,7 +35,7 @@ interface TranscodeProgressBarProps {
 
 export function TranscodeProgressBar({
   currentTime, duration, buffering, onSeek, videoRef, containerRef,
-  subtitles = [], activeSubtitleIndex = 0, onSubtitleChange,
+  subtitles = [], activeSubtitleIndex = 0, onSubtitleChange, subtitleLoading = false,
   audioTracks = [], activeAudioIndex = 0, onAudioChange,
 }: TranscodeProgressBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
@@ -188,8 +192,11 @@ export function TranscodeProgressBar({
       {subtitles.length > 0 && (
         <div className="relative flex-shrink-0">
           <button onClick={e => { e.stopPropagation(); setShowSubMenu(!showSubMenu); setShowAudioMenu(false); }}
-            className={`w-7 h-7 flex items-center justify-center transition-colors flex-shrink-0 ${activeSubtitleIndex >= 0 ? "text-blue-400" : "text-slate-400 hover:text-white"}`}
-            title="字幕">
+            className={`w-7 h-7 flex items-center justify-center transition-colors flex-shrink-0 ${
+              subtitleLoading ? "text-amber-400 animate-pulse"
+                : activeSubtitleIndex >= 0 ? "text-blue-400" : "text-slate-400 hover:text-white"
+            }`}
+            title={subtitleLoading ? "正在提取字幕…" : "字幕"}>
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z" /></svg>
           </button>
           {showSubMenu && (
@@ -201,13 +208,27 @@ export function TranscodeProgressBar({
                 className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${activeSubtitleIndex === -1 ? "text-blue-400" : "text-slate-300"}`}>
                 关闭字幕
               </button>
-              {subtitles.map((sub) => (
-                <button key={sub.index}
-                  onClick={() => { onSubtitleChange?.(sub.index); setShowSubMenu(false); }}
-                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors truncate ${activeSubtitleIndex === sub.index ? "text-blue-400" : "text-slate-300"}`}>
-                  {sub.name}{sub.lang ? ` (${sub.lang})` : ""}
-                </button>
-              ))}
+              {subtitles.map((sub) => {
+                const disabled = !!sub.unsupported;
+                const cls = disabled
+                  ? "text-slate-600 cursor-not-allowed"
+                  : activeSubtitleIndex === sub.index ? "text-blue-400" : "text-slate-300 hover:bg-white/5";
+                return (
+                  <button key={sub.index}
+                    disabled={disabled}
+                    title={disabled ? sub.name : undefined}
+                    onClick={() => {
+                      if (disabled) return;
+                      onSubtitleChange?.(sub.index);
+                      setShowSubMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors truncate ${cls}`}>
+                    {sub.name}
+                    {sub.loading && <span className="text-amber-400"> · 提取中</span>}
+                    {sub.loadFailed && <span className="text-red-400"> · 失败</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
