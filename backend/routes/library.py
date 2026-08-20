@@ -148,20 +148,28 @@ async def scan_path(path: str, library_name: str = ""):
             kept = [v for v in existing if not v.get("file_path", "").startswith(path)]
             final = kept + results
 
-            from scan_name_filler import fill_names_for_item
-            # 只对新扫描的文件生成检索名 + 标准名（复用的条目保留原值）
-            # 名字来源为 NFO → 文件夹名 → 文件名，扫描就是这两个名字的主要来源，
-            # 只解析文件名会让清缓存重扫丢掉 NFO 里已有的中英文名
+            from scan_name_filler import fill_names_for_item, needs_refill
+            # 生成检索名 + 标准名，来源优先级 NFO → 文件夹名 → 文件名。
+            # 复用的旧条目也要按当前算法补算一次：同尺寸文件走复用分支时会整份沿用旧值，
+            # 只处理新文件的话，算法改好后老库重扫看不到任何变化。
+            # 补算受 manual/nfo 优先级保护，不会覆盖用户手填的名字；
+            # 算过的条目打上版本号，后续扫描不再重复读 NFO。
             reused_paths = set(f for f, _ in reused)
             shadow_filled = 0
+            names_refilled = 0
             for item in results:
-                if item.get("file_path") in reused_paths:
+                is_reused = item.get("file_path") in reused_paths
+                if is_reused and not needs_refill(item):
                     continue
                 # 直接在内存条目上应用：这些条目随后由 save_library(final) 一次性落盘，
                 # 避免每条都做一次全库读写
                 _, item_shadow_filled = fill_names_for_item(item)
                 if item_shadow_filled:
                     shadow_filled += 1
+                if is_reused:
+                    names_refilled += 1
+            if names_refilled:
+                logger.info(f"[scan] 按当前取名算法补算了 {names_refilled} 个旧条目的名字")
 
             # 清理不属于任何已配置路径的孤立条目
             _all_configured_paths = list(config_m.config.scan_paths or [])

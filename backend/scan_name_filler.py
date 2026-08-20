@@ -25,6 +25,18 @@ logger = logging.getLogger(__name__)
 # 文件名带 SxxExx 的按剧集处理，否则按电影处理
 _EPISODE_RE = re.compile(r"S\d+E\d+", re.IGNORECASE)
 
+# 填名算法版本。扫描时同尺寸文件走"复用"分支、直接沿用旧条目，
+# 若不比对版本号，算法改好后老条目永远不会被重算——用户重扫看不到任何变化。
+# 版本不一致的条目在下次扫描时补算一次，算完打上版本号，之后不再重复读 NFO。
+# 取名逻辑有实质改动时 +1，触发全库一次性升级。
+FILLER_VERSION = 2
+_VERSION_FIELD = "names_filled_v"
+
+
+def needs_refill(item: dict) -> bool:
+    """复用的旧条目是否需要按当前算法重算名字"""
+    return item.get(_VERSION_FIELD) != FILLER_VERSION
+
 
 def fill_search_index_name(item: dict) -> Tuple[bool, str]:
     """填充检索名，返回 (是否写入, 用于兜底标准名的 display)。
@@ -82,4 +94,7 @@ def fill_names_for_item(item: dict) -> Tuple[bool, bool]:
     """给单个扫描条目填充检索名与标准名，返回 (检索名已写, 标准名已写)。"""
     clean_filled, display = fill_search_index_name(item)
     shadow_filled = fill_standard_name(item, fallback_display=display)
+    # 打上版本号：无论这次是否真的写入（可能被 manual 保护挡住），都算已按当前算法处理过，
+    # 避免每次扫描都为同一批条目重复读 NFO
+    item[_VERSION_FIELD] = FILLER_VERSION
     return clean_filled, shadow_filled

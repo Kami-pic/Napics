@@ -137,3 +137,62 @@ class TestBadInput:
     def test_missing_path_is_noop(self):
         item = {}
         assert fill_names_for_item(item) == (False, False)
+
+
+class TestRefillOldEntries:
+    """扫描时同尺寸文件走"复用"分支、整份沿用旧条目。
+
+    这是用户实际遇到的问题：算法改好后重启重扫，界面上名字纹丝不动——
+    因为填名只处理新文件，复用的旧条目被 continue 跳过了。
+    靠版本号判断旧条目要不要按当前算法补算一次。
+    """
+
+    def test_old_entry_without_version_needs_refill(self):
+        from scan_name_filler import needs_refill
+
+        assert needs_refill({"clean_name": "Killing Me Softly BARC 0 DE"}) is True
+
+    def test_entry_with_current_version_skipped(self):
+        from scan_name_filler import FILLER_VERSION, needs_refill
+
+        assert needs_refill({"names_filled_v": FILLER_VERSION}) is False
+
+    def test_stale_version_needs_refill(self):
+        """取名逻辑改动后 bump 版本号，应触发全库一次性补算"""
+        from scan_name_filler import FILLER_VERSION, needs_refill
+
+        assert needs_refill({"names_filled_v": FILLER_VERSION - 1}) is True
+
+    def test_dirty_entry_gets_upgraded(self, tmp_path):
+        """修复前落盘的脏值应被 NFO 覆盖"""
+        folder = tmp_path / "温柔地杀我 Killing Me Softly (2002)"
+        folder.mkdir()
+        _write_movie_nfo(str(folder), "温柔地杀我", english_title="Killing Me Softly", year="2002")
+        item = _make_item(str(folder), "Killing.Me.Softly.2002.1080p.BluRay.x264-BARC0DE.mkv")
+        item.update({
+            "clean_name": "Killing Me Softly BARC 0 DE",
+            "clean_name_en": "Killing Me Softly BARC 0 DE",
+            "clean_name_source": "parsed",
+            "shadow_name": "Killing Me Softly BARC 0 DE",
+            "shadow_name_source": "parsed",
+        })
+
+        fill_names_for_item(item)
+
+        assert item["clean_name_cn"] == "温柔地杀我"
+        assert item["shadow_name"] == "温柔地杀我 Killing Me Softly (2002)"
+        for field in ("clean_name", "clean_name_cn", "clean_name_en", "shadow_name"):
+            assert "BARC" not in item[field]
+
+    def test_filling_marks_version(self, tmp_path):
+        """算过就打版本号，避免每次扫描都重复读 NFO"""
+        from scan_name_filler import FILLER_VERSION, needs_refill
+
+        folder = tmp_path / "media"
+        folder.mkdir()
+        item = _make_item(str(folder), "Tenet.2020.1080p.BluRay.x264-WiKi.mkv")
+
+        fill_names_for_item(item)
+
+        assert item["names_filled_v"] == FILLER_VERSION
+        assert needs_refill(item) is False
