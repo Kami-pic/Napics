@@ -28,11 +28,14 @@ export interface SubtitleModalProps {
   episodeNumber?: number;
   /** 集标签，如 S01E05 */
   episodeTag?: string;
+  /** 下载成功后回调，供外部刷新字幕状态 */
+  onDownloaded?: () => void;
 }
 
 export default function SubtitleModal({
   open, onClose, videoPath, query,
   cnName, enName, originalName, folderType, seasonNumber, episodeNumber, episodeTag,
+  onDownloaded,
 }: SubtitleModalProps) {
   const s = useSubtitleSearch();
   const [inputValue, setInputValue] = useState(query);
@@ -120,7 +123,14 @@ export default function SubtitleModal({
           onLangChange={s.setLangFilter}
         />
 
-        {!s.searching && <SubtitleKeywordTrail sources={s.sources} />}
+        {!s.searching && (
+          <SubtitleKeywordTrail
+            candidates={s.candidateKeywords}
+            sources={s.sources}
+            activeKeyword={inputValue}
+            onPick={keyword => { setInputValue(keyword); s.doSearch(keyword, { folder_type: folderType }); }}
+          />
+        )}
 
         <div className="flex-1 flex overflow-hidden">
           {/* 结果列表 */}
@@ -176,7 +186,10 @@ export default function SubtitleModal({
               downloadMsg={s.downloadMsg}
               downloadOk={s.downloadOk}
               videoPath={videoPath}
-              onDownload={s.doDownload}
+              onDownload={async (item, path, fileUrl, langSuffix) => {
+                await s.doDownload(item, path, fileUrl, langSuffix);
+                onDownloaded?.();
+              }}
               onClose={s.clearSelection}
             />
           )}

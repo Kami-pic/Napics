@@ -57,6 +57,8 @@ export interface SubtitleSearchState {
   results: SubtitleSearchItem[];
   filteredResults: SubtitleSearchItem[];
   sources: SubtitleSourceStat[];
+  /** 候选搜索词（可点击切换） */
+  candidateKeywords: string[];
   searching: boolean;
   error: string;
   keyword: string;
@@ -86,6 +88,7 @@ export interface SubtitleSearchState {
 export function useSubtitleSearch(): SubtitleSearchState {
   const [results, setResults] = useState<SubtitleSearchItem[]>([]);
   const [sources, setSources] = useState<SubtitleSourceStat[]>([]);
+  const [candidateKeywords, setCandidateKeywords] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -113,6 +116,7 @@ export function useSubtitleSearch(): SubtitleSearchState {
       const resp = await subtitleApi.search(query, options);
       setResults(resp.results || []);
       setSources(resp.sources || []);
+      setCandidateKeywords(resp.candidate_keywords || []);
       setKeyword(resp.keyword || query);
     } catch (e: any) {
       setError(e?.message || "搜索失败");
@@ -186,6 +190,7 @@ export function useSubtitleSearch(): SubtitleSearchState {
     results,
     filteredResults,
     sources,
+    candidateKeywords,
     searching,
     error,
     keyword,

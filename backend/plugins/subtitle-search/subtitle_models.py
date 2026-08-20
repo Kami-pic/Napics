@@ -91,6 +91,8 @@ class SubtitleSearchResponse(BaseModel):
     total: int = 0
     results: List[SubtitleSearchItem] = Field(default_factory=list)
     sources: List[SubtitleSourceStat] = Field(default_factory=list)
+    # 本次可用的候选搜索词（中文 / 中文+英文 / 英文…），供前端做可点标签
+    candidate_keywords: List[str] = Field(default_factory=list)
 
 
 class SubtitleDetailResponse(BaseModel):

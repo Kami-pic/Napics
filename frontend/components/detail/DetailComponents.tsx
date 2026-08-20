@@ -89,12 +89,13 @@ export function Poster({ url, fallbackName, localPath, aspect = "video", posterD
 }
 
 // ── 信息行 ──
-export function InfoRow({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+export function InfoRow({ label, value, warn, ok }: { label: string; value: string; warn?: boolean; ok?: boolean }) {
   const [copied, setCopied] = useState(false);
+  const valueColor = warn ? "text-orange-400" : ok ? "text-green-400" : "text-slate-300";
   return (
     <div className="flex items-center justify-between py-2 px-1 border-b border-white/[0.03] cursor-pointer" onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); }} title="点击复制">
       <span className="text-sm text-slate-500">{label}</span>
-      <span className={`text-sm truncate max-w-[200px] text-right ${warn ? "text-orange-400" : "text-slate-300"}`}>{copied ? <span className="text-green-400 text-xs">已复制</span> : value}</span>
+      <span className={`text-sm truncate max-w-[200px] text-right ${valueColor}`}>{copied ? <span className="text-green-400 text-xs">已复制</span> : value}</span>
     </div>
   );
 }

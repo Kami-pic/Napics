@@ -6,6 +6,12 @@ export const systemApi = {
   getLibrary: () => request<VideoInfo[]>(`${BASE_URL}/library`),
   getLibraryTree: () => request<FolderNode>(`${BASE_URL}/library/tree`),
 
+  /** 视频的外挂字幕文件（下载字幕后刷新字幕状态用） */
+  getMediaSubtitles: (path: string) =>
+    request<{ status: string; files: string[]; count: number }>(
+      `${BASE_URL}/media/subtitles?path=${encodeURIComponent(path)}`,
+    ),
+
   refreshQuality: (paths?: string[]) =>
     request<{ status: string; updated: number; total: number }>(`${BASE_URL}/library/refresh-quality`, {
       method: "POST",

@@ -25,6 +25,14 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
   const [showSubtitle, setShowSubtitle] = useState(false);
   const plugins = useInstalledPlugins();
   const hasSubtitle = plugins.installed.has("subtitle-search");
+  // 外挂字幕（ffprobe 的 subtitle_count 只统计内封轨，看不到同目录的 .srt/.ass）
+  const [externalSubs, setExternalSubs] = useState<string[]>([]);
+  const loadExternalSubs = () => {
+    api.getMediaSubtitles(v.file_path)
+      .then(res => setExternalSubs(res.files || []))
+      .catch(() => setExternalSubs([]));
+  };
+  useEffect(() => { loadExternalSubs(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [v.file_path]);
   const handleMove = async (t: string) => { try { await api.batchManage("move", [v.file_path], t); onRefresh(); } catch { alert("失败"); } };
   const handleDelete = async () => { try { await api.batchManage("delete", [v.file_path]); onRefresh(); } catch { alert("失败"); } };
   const [renameResult, setRenameResult] = useState(() => getCached(v.file_path).renameResult || "");
@@ -204,9 +212,31 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
             >检测质量</button>
           </div>
         </div>
-        {[["分辨率", v.resolution, false], ["视频编码", v.video_codec || "—", false], ["音频编码", v.audio_codec || "—", false], ["HDR", v.hdr_type, false], ["质量分", String(v.quality_score || 0), false], ["大小", formatSize(v.size_gb), false], ["时长", formatDuration(v.duration), false], ["字幕", v.subtitle_count > 0 ? v.subtitle_count + " 条" : "无", false], ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res], ["路径", v.file_path, false]].map(([label, value, warn]) => (
-          <InfoRow key={label as string} label={label as string} value={value as string} warn={warn as boolean} />
-        ))}
+        {(() => {
+          // 字幕状态：内封轨（ffprobe）+ 外挂文件（同目录同名）
+          const embedded = v.subtitle_count || 0;
+          const external = externalSubs.length;
+          const parts: string[] = [];
+          if (embedded > 0) parts.push(`内封 ${embedded} 条`);
+          if (external > 0) parts.push(`外挂 ${external} 个`);
+          const subtitleValue = parts.length ? parts.join(" · ") : "无";
+          const rows: [string, string, boolean, boolean][] = [
+            ["分辨率", v.resolution, false, false],
+            ["视频编码", v.video_codec || "—", false, false],
+            ["音频编码", v.audio_codec || "—", false, false],
+            ["HDR", v.hdr_type, false, false],
+            ["质量分", String(v.quality_score || 0), false, false],
+            ["大小", formatSize(v.size_gb), false, false],
+            ["时长", formatDuration(v.duration), false, false],
+            // 无字幕标橙提示，有外挂字幕标绿（刚下载完能立刻看到变化）
+            ["字幕", subtitleValue, parts.length === 0, external > 0],
+            ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res, false],
+            ["路径", v.file_path, false, false],
+          ];
+          return rows.map(([label, value, warn, ok]) => (
+            <InfoRow key={label} label={label} value={value} warn={warn} ok={ok} />
+          ));
+        })()}
       </div>
       {/* 字幕搜索弹窗（插件已安装时才渲染） */}
       {hasSubtitle && (() => {
@@ -229,6 +259,7 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
             seasonNumber={sNum}
             episodeNumber={eNum}
             episodeTag={epTag}
+            onDownloaded={loadExternalSubs}
           />
         );
       })()}

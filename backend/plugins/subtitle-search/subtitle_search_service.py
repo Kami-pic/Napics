@@ -115,8 +115,8 @@ def search_all_sources(
     is_file: bool = False,
     no_muxer: bool = True,
     cnt: int = 15,
-) -> Tuple[List[SubtitleSearchItem], List[SubtitleSourceStat], str]:
-    """三源并发搜索，返回 (合并结果, 各源情况, 主搜索词)。"""
+) -> Tuple[List[SubtitleSearchItem], List[SubtitleSourceStat], str, List[str]]:
+    """三源并发搜索，返回 (合并结果, 各源情况, 主搜索词, 候选搜索词)。"""
     # 没传 episode_tag 时，用季集号补一个（与前端搜索升级同格式）
     if not episode_tag and season_number and episode_number:
         episode_tag = f"S{str(season_number).zfill(2)}E{str(episode_number).zfill(2)}"
@@ -131,9 +131,10 @@ def search_all_sources(
         episode_tag=episode_tag,
     )
     if not tags:
-        return [], [], query
+        return [], [], query, []
 
     primary_keyword = tags[0].keyword
+    candidate_keywords = [tag.keyword for tag in tags]
 
     tasks = {
         "assrt": lambda: _search_assrt(tags, is_file=is_file, no_muxer=no_muxer, cnt=cnt),
@@ -170,7 +171,7 @@ def search_all_sources(
 
     merged = _dedupe_and_sort(merged)
     stats.sort(key=lambda s: _SOURCE_ORDER.get(s.source, 99))
-    return merged, stats, primary_keyword
+    return merged, stats, primary_keyword, candidate_keywords
 
 
 def _search_assrt(tags, *, is_file: bool, no_muxer: bool, cnt: int):

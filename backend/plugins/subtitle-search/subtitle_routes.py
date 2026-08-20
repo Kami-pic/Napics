@@ -46,7 +46,7 @@ async def search_subtitles(
     搜索词规则与「搜索升级」一致：中文 / 中文+英文 / 英文 三类变体，
     季集号按语言拼接。各源按自身语言偏好走回退链（中文源 cn 优先，SubDL en 优先）。
     """
-    results, sources, keyword = service.search_all_sources(
+    results, sources, keyword, candidates = service.search_all_sources(
         query=query,
         cn_name=cn_name,
         en_name=en_name,
@@ -69,6 +69,7 @@ async def search_subtitles(
         total=len(results),
         results=results,
         sources=sources,
+        candidate_keywords=candidates,
     )
 
 

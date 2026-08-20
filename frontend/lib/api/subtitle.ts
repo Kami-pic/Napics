@@ -70,6 +70,8 @@ export interface SubtitleSearchResponse {
   total: number;
   results: SubtitleSearchItem[];
   sources: SubtitleSourceStat[];
+  /** 候选搜索词（中文 / 中文+英文 / 英文…），与「搜索升级」同规则 */
+  candidate_keywords: string[];
 }
 
 export interface SubtitleDetailResponse {
