@@ -1,7 +1,9 @@
 // 工具函数
 
-/** 格式化文件大小：<1G 显示 MB，>=1G 显示 GB */
-export function formatSize(gb: number): string {
+/** 格式化文件大小：<1G 显示 MB，>=1G 显示 GB。
+ *  字段可能缺失（ffprobe 失败或条目不完整），不能因为一条数据缺字段就白屏整个列表 */
+export function formatSize(gb?: number): string {
+  if (typeof gb !== "number" || !isFinite(gb) || gb <= 0) return "—";
   if (gb < 1) return `${Math.round(gb * 1024)}M`;
   return `${gb.toFixed(1)}G`;
 }
