@@ -5,7 +5,26 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
+
+import shared
 from routes import tools as tools_route
+
+
+@pytest.fixture(autouse=True)
+def _allow_fixture_dir(monkeypatch):
+    """把夹具所在目录声明进路径白名单。
+
+    路由层 guard_path 校验的是 shared.config_m（真实单例），
+    测试里替换 tools_route.config_m 影响不到它。
+    此前这些用例能过是因为夹具建在 backend/tests 下、
+    正好落在白名单里的 config_m.data_dir——测试隔离后 data_dir 变成临时目录，
+    这个巧合就没了。这里显式声明，不再依赖它。
+    """
+    monkeypatch.setattr(shared.config_m.config, "scan_paths", [str(Path(__file__).parent)])
+    shared.invalidate_allowed_roots_cache()
+    yield
+    shared.invalidate_allowed_roots_cache()
 
 
 class FakeConfigManager:

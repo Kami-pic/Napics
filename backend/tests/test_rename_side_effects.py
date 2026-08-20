@@ -5,7 +5,19 @@ from types import SimpleNamespace
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
+import shared
 from routes import rename as rename_route
+
+
+@pytest.fixture(autouse=True)
+def _allow_fixture_dir(monkeypatch):
+    """把夹具所在目录声明进路径白名单（理由见 test_batch_manage_side_effects）"""
+    monkeypatch.setattr(shared.config_m.config, "scan_paths", [str(Path(__file__).parent)])
+    shared.invalidate_allowed_roots_cache()
+    yield
+    shared.invalidate_allowed_roots_cache()
 
 
 class FakeConfigManager:
