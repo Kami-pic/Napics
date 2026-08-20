@@ -399,3 +399,75 @@ class TestSafeUpdate:
         new = CleanNameResult(cn="新刮削", display="新刮削", source="scrape")
         assert safe_update_clean_name(item, new) is True
         assert item["clean_name"] == "新刮削"
+
+
+# ════════════════════════════════════════
+# 发布组尾缀与搜索索引名（曾出问题的点）
+# ════════════════════════════════════════
+
+class TestUnknownReleaseGroupStripped:
+    """_KNOWN_GROUPS 是白名单，覆盖不到的发布组会残留并被切成垃圾尾缀。
+
+    实际案例：`Killing.Me.Softly.2002...x264-BARC0DE.mkv`
+    清洗成 `Killing Me Softly BARC 0 DE`，清洗名和标准名同时被污染。
+    """
+
+    def test_unknown_group_with_digit_removed(self):
+        from clean_name_system import strip_noise
+
+        result = strip_noise("Killing.Me.Softly.2002.1080p.BluRay.DTS-HD.x264-BARC0DE.mkv")
+        assert "BARC" not in result
+        assert "Killing Me Softly" in result
+
+    def test_hyphenated_title_preserved(self):
+        """片名本身带连字符的不能被当成发布组剥掉"""
+        from clean_name_system import strip_noise
+
+        for filename in ("X-MEN.mkv", "Spider-Man.mkv", "WALL-E.2008.1080p.BluRay.x264.mkv"):
+            result = strip_noise(filename)
+            assert result.strip(), f"{filename} 被清空了"
+            # 首个单词必须还在
+            head = filename.split(".")[0].split("-")[0]
+            assert head.lower() in result.lower(), f"{filename} -> {result}"
+
+    def test_organized_name_untouched(self):
+        from clean_name_system import strip_noise
+
+        result = strip_noise("珍珠港 Pearl Harbor (2001).mkv")
+        assert "珍珠港" in result
+        assert "Pearl Harbor" in result
+
+
+class TestBuildSearchIndexName:
+    """搜索索引名取名优先级：NFO → 文件夹名补齐 → 文件名。
+
+    实际案例：`爱情与灵药 (2010).mp4` 文件名里没有英文名，
+    但目录 `爱情与灵药 Love & Other Drugs (2010)` 里有；只看文件名会漏掉英文名。
+    """
+
+    def test_folder_supplements_missing_english(self, tmp_path):
+        from clean_name_system import build_search_index_name
+
+        folder = tmp_path / "爱情与灵药 Love & Other Drugs (2010)"
+        folder.mkdir()
+        video = folder / "爱情与灵药 (2010).mp4"
+        video.write_bytes(b"\x00")
+
+        result = build_search_index_name(str(video))
+        assert result is not None
+        assert result.cn == "爱情与灵药"
+        assert "Love" in result.en
+
+    def test_generic_folder_not_used_as_title(self, tmp_path):
+        """视频直接放在 media 这类通用目录下，目录名不能被当成片名"""
+        from clean_name_system import build_search_index_name
+
+        folder = tmp_path / "media"
+        folder.mkdir()
+        video = folder / "Tenet.2020.1080p.BluRay.x264-WiKi.mkv"
+        video.write_bytes(b"\x00")
+
+        result = build_search_index_name(str(video))
+        assert result is not None
+        assert result.en.lower().startswith("tenet")
+        assert "media" not in result.en.lower()

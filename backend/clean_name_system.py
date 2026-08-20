@@ -104,6 +104,9 @@ _KNOWN_GROUPS = (
     r'TEPES|EDITH|EMBER|AMIABLE|GECKOS|ROVERS|DEMAND|EVOLVE|PLAYNOW|SHORTBREHD)'
 )
 
+# 尾部 "-发布组" 形态（白名单外的发布组靠形态识别）
+_TRAILING_GROUP_RE = re.compile(r'\s*-\s*([A-Za-z0-9][A-Za-z0-9._]{1,14})\s*$')
+
 
 def strip_noise(filename: str) -> str:
     """Level 0：从脏文件名中去除所有非作品名内容。
@@ -185,6 +188,16 @@ def strip_noise(filename: str) -> str:
 
     # 10. 去尾部发布组标签
     name = re.sub(r'\s*-\s*' + _KNOWN_GROUPS + r'$', '', name, flags=re.I)
+
+    # 10b. 去尾部未知发布组（如 x264-BARC0DE 里的 BARC0DE）。
+    # _KNOWN_GROUPS 是白名单，覆盖不到的发布组会残留，
+    # 还会被后续语言分离切成 "BARC 0 DE" 这种垃圾尾缀，同时污染清洗名和标准名。
+    # 只在 "-" 之前已是多词标题时才剥，避免误伤 X-MEN / Spider-Man 这类片名本身。
+    group_match = _TRAILING_GROUP_RE.search(name)
+    if group_match:
+        head = name[:group_match.start()].strip()
+        if " " in head and len(head) >= 4:
+            name = head
 
     # 11. 清理分隔符
     name = re.sub(r'(?<!\d)[._]+', ' ', name)
@@ -673,8 +686,79 @@ def parse_legacy_clean_name(item: dict) -> CleanNameResult:
 # 重新生成（用户显式触发）
 # ════════════════════════════════════════
 
+def build_search_index_name(file_path: str, file_name: str = "") -> Optional[CleanNameResult]:
+    """为搜索构造最容易命中的索引名（中文 + 英文）。
+
+    取名优先级（越靠前信息越干净）：
+    1. NFO —— 刮削结果里 title / english_title 是最准的中英文对
+    2. 文件夹名 —— 已整理过的目录通常是 `中文 English (年份)`，中英文齐全
+    3. 文件名 —— 最脏，常缺英文名、且带发布组等尾缀
+
+    只看文件名是不够的：`爱情与灵药 (2010).mp4` 拿不到英文名，
+    但它所在目录 `爱情与灵药 Love & Other Drugs (2010)` 里有。
+    """
+    file_name = file_name or os.path.basename(file_path)
+    folder = os.path.dirname(file_path)
+    folder_name = os.path.basename(folder)
+
+    # 1. NFO
+    try:
+        from nfo_handler import read_nfo, read_video_nfo
+
+        nfo = read_video_nfo(file_path) or read_nfo(folder)
+    except Exception:
+        nfo = None
+
+    if nfo and nfo.get("title"):
+        result = clean_from_scrape(
+            title=nfo.get("title", ""),
+            original_title=nfo.get("original_title", "") or "",
+            english_title=nfo.get("english_title", "") or "",
+            year=str(nfo.get("year", "") or ""),
+            filename=file_name,
+            folder_name=folder_name,
+            source="nfo",
+        )
+        if result.cn or result.en:
+            return result
+
+    # 2. 文件名，缺失的一侧用文件夹名补
+    file_result = clean_from_filename(file_name, folder_name=folder_name)
+    folder_result = clean_for_folder(folder_name) if folder_name else None
+
+    # 只有确认文件夹指向同一部作品才敢用它的名字：
+    # 视频若直接放在 `media`、`电影` 这类通用目录下，拿目录名当片名会污染结果
+    if folder_result and _points_to_same_work(file_result, folder_result):
+        cn = file_result.cn or folder_result.cn
+        en = file_result.en or folder_result.en
+        original = file_result.original or folder_result.original
+        if cn != file_result.cn or en != file_result.en or original != file_result.original:
+            return CleanNameResult(
+                cn=cn, en=en, original=original,
+                display=compose_display(cn, en, file_result.suffix),
+                suffix=file_result.suffix,
+                year=file_result.year or folder_result.year,
+                source="parsed",
+                confidence="medium",
+            )
+
+    return file_result
+
+
+def _points_to_same_work(a: CleanNameResult, b: CleanNameResult) -> bool:
+    """两个清洗结果是否指向同一部作品（任一语言侧对得上即可）"""
+    for left, right in ((a.cn, b.cn), (a.en, b.en)):
+        left_norm = normalize(left) if left else ""
+        right_norm = normalize(right) if right else ""
+        if not left_norm or not right_norm:
+            continue
+        if left_norm == right_norm or left_norm in right_norm or right_norm in left_norm:
+            return True
+    return False
+
+
 def regenerate_clean_names(library: list, file_path: str, is_folder: bool = False) -> Dict:
-    """按文件名重新生成清洗名，返回 {updated, cn, en, display}。
+    """重新生成搜索索引名（清洗名），返回 {updated, cn, en, display}。
 
     与 safe_update_clean_name 的区别：这里是用户点按钮显式要求重算，
     所以强制覆写，不受 NAME_SOURCE_PRIORITY 保护（否则已有 manual/nfo 名字时按钮点了没反应）。
@@ -704,9 +788,8 @@ def regenerate_clean_names(library: list, file_path: str, is_folder: bool = Fals
         if not file_name:
             continue
 
-        folder_name = os.path.basename(os.path.dirname(item_path)) if item_path else ""
-        result = clean_from_filename(file_name, folder_name=folder_name)
-        if not (result.cn or result.en):
+        result = build_search_index_name(item_path, file_name)
+        if result is None or not (result.cn or result.en):
             continue
 
         item["clean_name"] = result.display

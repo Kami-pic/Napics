@@ -332,6 +332,17 @@ def set_clean_name(req: dict):
     return {"status": "not_found"}
 
 
+@router.get("/media/subtitles")
+def get_media_subtitles(path: str):
+    """列出视频的外挂字幕文件（下载字幕后前端据此刷新字幕状态）"""
+    from core.file_ops.sidecars import list_subtitle_files
+
+    if not path:
+        return {"status": "error", "files": [], "count": 0}
+    files = list_subtitle_files(path)
+    return {"status": "ok", "files": files, "count": len(files)}
+
+
 @router.post("/library/clean-name/generate")
 def generate_clean_name(req: dict):
     """按文件名自动生成搜索索引名（中文+英文），用户点按钮显式触发"""
