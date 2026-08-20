@@ -1,5 +1,6 @@
 """播放路由：提供 HTTP Range 文件流，供前端播放器拉取视频数据。"""
 import hashlib
+import json
 import logging
 import os
 import subprocess as _subprocess
@@ -206,15 +207,19 @@ def transcode_file(
     # 构建 ffmpeg 命令
     cmd = ["ffmpeg", "-nostdin"]
 
-    # output seek（精确音画同步）
+    # input seek：-ss 必须在 -i 之前。
+    # 放在 -i 之后是 output seek，要从文件头 demux 到 start，耗时随位置线性增长
+    # （实测 300s→0.94s、900s→2.58s、1800s→4.58s），而 input seek 恒定约 0.1s。
+    if start > 0:
+        cmd += ["-ss", str(start)]
+
     cmd += [
         "-probesize", "5000000",
         "-analyzeduration", "3000000",
         "-i", path,
+        # 分片 MP4 会把时间戳归零，这里显式声明避免负时间戳
+        "-avoid_negative_ts", "make_zero",
     ]
-
-    if start > 0:
-        cmd += ["-ss", str(start)]
 
     cmd += [
         "-map", "0:v:0",                    # 选第一条视频流
@@ -254,8 +259,18 @@ def transcode_file(
                     break
                 yield chunk
         finally:
-            process.stdout.close()
-            process.wait()
+            # 客户端断连（换 src、关窗口、拖进度条）时生成器会被关闭。
+            # 不 kill 的话 ffmpeg 会一直转到文件尾，拖几次就堆出一批孤儿进程把 IO 打满。
+            try:
+                process.stdout.close()
+            except Exception:
+                pass
+            if process.poll() is None:
+                process.kill()
+            try:
+                process.wait(timeout=5)
+            except Exception:
+                pass
 
     return StreamingResponse(
         stream_output(),
@@ -268,8 +283,24 @@ def transcode_file(
 
 
 @router.get("/playback/keyframe-time")
-def get_keyframe_time(path: str = Query(..., description="视频文件路径"), time: float = Query(..., description="目标时间")):
-    """查询目标时间之前最近的关键帧时间。前端据此校正 seek 后的字幕偏移。"""
+def get_keyframe_time(
+    path: str = Query(..., description="视频文件路径"),
+    time: float = Query(..., description="目标时间（秒）"),
+):
+    """查询 ffmpeg 用 `-ss time` 实际会落到的关键帧时间。
+
+    转码时 ffmpeg 会 snap 到 <= time 的最近关键帧，实测偏差 1.4-5.3 秒，
+    GOP 长的片源最坏可达 10 秒。前端必须用这个返回值同时作为
+    `-ss` 参数和字幕时间轴的 offset，否则字幕会整体偏移。
+
+    实现用 ffmpeg 自己输出一帧再读时间戳，而不是 ffprobe 查关键帧列表：
+    ffprobe 的 `-read_intervals` 自身 seek 不精确会漏帧，实测在 900s / 1800s
+    处分别报 891.724 / 1786.368，而 ffmpeg 实际落点是 898.064 / 1798.547。
+    只有让 ffmpeg 自报才和转码行为一致。
+
+    注意输出**不能**带 `-movflags empty_moov`：分片 MP4 的 muxer 会把时间戳
+    归零，就读不到绝对时间了。
+    """
     import subprocess
 
     guard_path(path, "关键帧查询")
@@ -277,33 +308,57 @@ def get_keyframe_time(path: str = Query(..., description="视频文件路径"), 
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="文件不存在")
 
+    if time <= 0:
+        return {"actual_start": 0.0, "requested": time}
+
+    tmp_path = os.path.join(
+        tempfile.gettempdir(),
+        f"napics_kf_{os.getpid()}_{threading.get_ident()}.mp4",
+    )
     cmd = [
-        "ffprobe",
-        "-read_intervals", f"%{time}",
-        "-v", "quiet",
-        "-select_streams", "v:0",
-        "-show_frames",
-        "-show_entries", "frame=pts_time,key_frame",
-        "-of", "csv=p=0",
-        path,
+        "ffmpeg", "-nostdin", "-y", "-v", "error",
+        "-ss", str(time),
+        "-copyts",              # 保留原始时间戳，才能读出绝对位置
+        "-i", path,
+        "-map", "0:v:0",
+        "-c:v", "copy",
+        "-frames:v", "1",       # 只要一帧，实测约 0.16s
+        "-f", "mp4", tmp_path,
     ]
 
+    actual = time
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-            timeout=10, encoding="utf-8",
+            cmd, capture_output=True, stdin=subprocess.DEVNULL, timeout=30,
         )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return {"actual_start": time}
+        if result.returncode != 0 or not os.path.isfile(tmp_path):
+            stderr = (result.stderr or b"").decode("utf-8", errors="replace")
+            logger.warning(f"[Playback] 关键帧查询失败，回退到请求值: {stderr[:200]}")
+            return {"actual_start": time, "requested": time}
 
-    for line in result.stdout.strip().split("\n"):
-        parts = line.strip().split(",")
-        if len(parts) >= 2 and parts[1] == "1":
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-print_format", "json", "-show_packets",
+             "-show_entries", "packet=pts_time", tmp_path],
+            capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=15, encoding="utf-8",
+        )
+        packets = json.loads(probe.stdout).get("packets", [])
+        if packets:
+            actual = float(packets[0]["pts_time"])
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        logger.warning(f"[Playback] 关键帧查询异常，回退到请求值: {e}")
+        return {"actual_start": time, "requested": time}
+    except (json.JSONDecodeError, KeyError, ValueError, IndexError) as e:
+        logger.warning(f"[Playback] 关键帧时间戳解析失败: {e}")
+        return {"actual_start": time, "requested": time}
+    finally:
+        if os.path.isfile(tmp_path):
             try:
-                return {"actual_start": float(parts[0])}
-            except ValueError:
-                break
-    return {"actual_start": time}
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+    return {"actual_start": actual, "requested": time}
 
 
 @router.get("/playback/duration")

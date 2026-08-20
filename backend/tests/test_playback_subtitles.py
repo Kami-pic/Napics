@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -244,3 +245,85 @@ def test_ass_to_vtt_strips_style_tags():
     assert "带样式的字幕" in vtt
     assert "\\pos" not in vtt
     assert "{" not in vtt
+
+
+# ── 转码 seek 关键帧对齐 ──
+
+@pytest.fixture
+def mkv_long_gop(tmp_path):
+    """造一个 GOP 为 5 秒的 20 秒视频，关键帧在 0/5/10/15s"""
+    out = tmp_path / "gop.mkv"
+    cmd = [
+        "ffmpeg", "-nostdin", "-y", "-v", "error",
+        "-f", "lavfi", "-i", "testsrc=duration=20:size=320x240:rate=10",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=20",
+        "-map", "0:v", "-map", "1:a",
+        "-c:v", "libx264", "-preset", "ultrafast",
+        "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",  # 固定 5s GOP
+        "-c:a", "aac",
+        str(out),
+    ]
+    r = subprocess.run(cmd, capture_output=True, stdin=subprocess.DEVNULL, timeout=180)
+    if r.returncode != 0:
+        pytest.skip(f"造样本失败: {r.stderr[:200]}")
+    return str(out)
+
+
+@requires_ffmpeg
+def test_keyframe_time_snaps_backward(mkv_long_gop, monkeypatch):
+    """请求 7s（非关键帧）应返回 5s，即 <= 请求值的最近关键帧。
+
+    这是字幕对齐的核心：前端必须拿到 ffmpeg 真实落点而不是用户点击的时间。
+    """
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    result = pb.get_keyframe_time(path=mkv_long_gop, time=7.0)
+    actual = result["actual_start"]
+    assert result["requested"] == 7.0
+    assert actual <= 7.0, "落点不能晚于请求时间"
+    assert 4.5 <= actual <= 5.5, f"应 snap 到 5s 附近的关键帧，实际 {actual}"
+
+
+@requires_ffmpeg
+def test_keyframe_time_exact_on_keyframe(mkv_long_gop, monkeypatch):
+    """请求正好落在关键帧上时应原样返回，不再往前跳一个 GOP"""
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    actual = pb.get_keyframe_time(path=mkv_long_gop, time=10.0)["actual_start"]
+    assert 9.5 <= actual <= 10.5, f"应保持在 10s，实际 {actual}"
+
+
+@requires_ffmpeg
+def test_keyframe_time_zero_short_circuits(mkv_long_gop, monkeypatch):
+    """time=0 不需要起 ffmpeg，直接返回 0"""
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    assert pb.get_keyframe_time(path=mkv_long_gop, time=0)["actual_start"] == 0.0
+
+
+@requires_ffmpeg
+def test_keyframe_time_cleans_temp_file(mkv_long_gop, monkeypatch):
+    """临时 mp4 必须删掉，不能在 tempdir 里堆积"""
+    import glob
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    pattern = os.path.join(tempfile.gettempdir(), "napics_kf_*.mp4")
+    before = set(glob.glob(pattern))
+    pb.get_keyframe_time(path=mkv_long_gop, time=7.0)
+    assert set(glob.glob(pattern)) == before, "临时文件未清理"
+
+
+def test_transcode_uses_input_seek():
+    """-ss 必须在 -i 之前（input seek）。
+
+    放在 -i 之后是 output seek，要从文件头 demux，实测 1800s 处要 4.58s
+    而 input seek 恒定 0.1s。
+    """
+    src = open(
+        os.path.join(_BACKEND, "plugins", "feature-player", "playback_routes.py"),
+        encoding="utf-8",
+    ).read()
+    # 截取 transcode_file 函数体
+    start = src.index("def transcode_file(")
+    end = src.index("@router.get(\"/playback/keyframe-time\")")
+    body = src[start:end]
+
+    ss_pos = body.index('"-ss"')
+    i_pos = body.index('"-i", path')
+    assert ss_pos < i_pos, "-ss 必须在 -i 之前，否则退化成 output seek"

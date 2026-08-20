@@ -243,10 +243,10 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     const useFrameCallback = isTranscode && "requestVideoFrameCallback" in HTMLVideoElement.prototype;
 
     const onFrame = (_now: number, metadata: { mediaTime: number }) => {
-      // 用 mediaTime 和 video.currentTime 中较小值作为字幕时间，
-      // 防止视频帧 PTS 超前于音频播放位置导致字幕提前
-      const effectiveTime = Math.min(metadata.mediaTime, video.currentTime);
-      setCurrentTime(seekOffset + effectiveTime);
+      // 用实际渲染帧的 mediaTime 而不是 video.currentTime，字幕跟画面对齐。
+      // seekOffset 现在是 ffmpeg 真实落点（走 /playback/keyframe-time 查出来的），
+      // 所以这里加出来的就是准确的绝对文件时间。
+      setCurrentTime(seekOffset + metadata.mediaTime);
       setBuffering(false);
       frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
     };
@@ -331,22 +331,49 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     return () => clearTimeout(timer);
   }, [subtitles, isTranscode, activeSubIdx]);
 
-  // 转码流 seek
-  const handleSeek = useCallback((time: number) => {
+  // 查 ffmpeg 用 -ss time 实际会落到的关键帧位置。
+  // ffmpeg 会 snap 到 <= time 的最近关键帧（实测偏 1.4-5.3s，GOP 长的可达 10s），
+  // 必须用这个真实值同时作为 start 参数和字幕 offset，否则字幕整体错位。
+  const resolveKeyframe = useCallback(async (videoPath: string, time: number): Promise<number> => {
+    if (time <= 0) return 0;
+    try {
+      const res = await fetch(
+        `${BASE_URL}/playback/keyframe-time?path=${encodeURIComponent(videoPath)}&time=${time}`
+      );
+      if (!res.ok) return time;
+      const data = await res.json();
+      const actual = Number(data?.actual_start);
+      return Number.isFinite(actual) ? actual : time;
+    } catch {
+      return time;   // 查询失败就用请求值，退化成旧行为而不是卡住
+    }
+  }, []);
+
+  // 转码流 seek：换 URL 重启转码。用 seekSeqRef 丢弃过期响应，
+  // 避免快速连续 seek 时旧的关键帧查询回来把 offset 覆盖成错的。
+  const seekSeqRef = useRef(0);
+
+  const handleSeek = useCallback(async (time: number) => {
     if (!path || !isTranscode) return;
     const video = videoRef.current;
     if (!video) return;
 
+    const seq = ++seekSeqRef.current;
     video.pause();
     setBuffering(true);
-    setSeekOffset(time);
-    setCurrentTime(time);
+    setCurrentTime(time);   // 先按用户意图更新进度条，避免手感迟滞
 
-    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}&audio_index=${activeAudioIdx}`;
+    const actualStart = await resolveKeyframe(path, time);
+    if (seq !== seekSeqRef.current) return;   // 期间又 seek 了，丢弃这次
+
+    setSeekOffset(actualStart);
+    setCurrentTime(actualStart);
+
+    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${actualStart}&audio_index=${activeAudioIdx}`;
     video.src = streamUrl;
     video.load();
     video.play().catch(() => {});
-  }, [path, isTranscode, activeAudioIdx]);
+  }, [path, isTranscode, activeAudioIdx, resolveKeyframe]);
 
   // 音轨切换
   const handleAudioChange = useCallback((index: number) => {
@@ -374,17 +401,24 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       return;
     }
 
-    // 转码模式：重新发起转码请求，保持当前进度
-    video.pause();
-    setBuffering(true);
-    const time = currentTime;
-    setSeekOffset(time);
+    // 转码模式：重新发起转码请求，保持当前进度。
+    // 同样要对齐关键帧，否则切完音轨字幕就偏了。
+    void (async () => {
+      const seq = ++seekSeqRef.current;
+      video.pause();
+      setBuffering(true);
+      const actualStart = await resolveKeyframe(path, currentTime);
+      if (seq !== seekSeqRef.current) return;
 
-    const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${time}&audio_index=${index}`;
-    video.src = streamUrl;
-    video.load();
-    video.play().catch(() => {});
-  }, [path, isTranscode, currentTime]);
+      setSeekOffset(actualStart);
+      setCurrentTime(actualStart);
+
+      const streamUrl = `${BASE_URL}/playback/transcode?path=${encodeURIComponent(path)}&start=${actualStart}&audio_index=${index}`;
+      video.src = streamUrl;
+      video.load();
+      video.play().catch(() => {});
+    })();
+  }, [path, isTranscode, currentTime, resolveKeyframe]);
 
   // 字幕切换：选中未加载的轨时才去提取
   const handleSubtitleChange = useCallback((index: number) => {

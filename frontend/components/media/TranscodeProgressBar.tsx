@@ -21,7 +21,7 @@ interface TranscodeProgressBarProps {
   currentTime: number;
   duration: number;
   buffering: boolean;
-  onSeek: (time: number) => void;
+  onSeek: (time: number) => void | Promise<void>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
   subtitles?: SubtitleInfo[];
@@ -106,16 +106,25 @@ export function TranscodeProgressBar({
     return ratio * duration;
   }, [duration]);
 
+  // 拖拽期间只更新本地预览位置，松手才真正 seek。
+  // 每次 seek 都要重启一路 ffmpeg，按 mousemove 触发的话拖一下就能拉起几十个进程。
+  const [dragPreview, setDragPreview] = useState<number | null>(null);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (duration <= 0) return;
     setDragging(true);
-    onSeek(calcTime(e.clientX));
-  }, [calcTime, onSeek, duration]);
+    setDragPreview(calcTime(e.clientX));
+  }, [calcTime, duration]);
 
   useEffect(() => {
     if (!dragging) return;
-    const handleMove = (e: MouseEvent) => onSeek(calcTime(e.clientX));
-    const handleUp = () => setDragging(false);
+    const handleMove = (e: MouseEvent) => setDragPreview(calcTime(e.clientX));
+    const handleUp = (e: MouseEvent) => {
+      setDragging(false);
+      const target = calcTime(e.clientX);
+      setDragPreview(null);
+      onSeek(target);
+    };
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", handleUp);
     return () => {
@@ -140,7 +149,9 @@ export function TranscodeProgressBar({
     return () => { clearTimeout(timer); document.removeEventListener("click", close); };
   }, [showAudioMenu]);
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  // 拖拽中显示预览位置，松手后回到真实播放位置
+  const displayTime = dragPreview !== null ? dragPreview : currentTime;
+  const progress = duration > 0 ? (displayTime / duration) * 100 : 0;
   const hoverProgress = hoverPos !== null && duration > 0 ? (hoverPos / duration) * 100 : null;
   const canSeek = duration > 0;
 
@@ -155,9 +166,9 @@ export function TranscodeProgressBar({
         )}
       </button>
 
-      {/* 时间 */}
-      <span className="text-[11px] text-slate-400 tabular-nums flex-shrink-0">
-        {formatTime(currentTime)}
+      {/* 时间（拖拽中显示目标位置） */}
+      <span className={`text-[11px] tabular-nums flex-shrink-0 ${dragPreview !== null ? "text-blue-400" : "text-slate-400"}`}>
+        {formatTime(displayTime)}
       </span>
 
       {/* 进度条 */}
