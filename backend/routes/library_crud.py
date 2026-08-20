@@ -332,6 +332,23 @@ def set_clean_name(req: dict):
     return {"status": "not_found"}
 
 
+@router.post("/library/clean-name/generate")
+def generate_clean_name(req: dict):
+    """按文件名自动生成搜索索引名（中文+英文），用户点按钮显式触发"""
+    from clean_name_system import regenerate_clean_names
+
+    file_path = req.get("file_path", "")
+    if not file_path:
+        return {"status": "error", "message": "file_path required"}
+
+    library = config_m.load_library()
+    result = regenerate_clean_names(library, file_path, req.get("is_folder", False))
+    if result["updated"]:
+        config_m.save_library(library)
+        return {"status": "ok", **result}
+    return {"status": "not_found", **result}
+
+
 @router.get("/library/completeness")
 def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = False):
     """获取 TV 文件夹的季集完整度（基于 TMDB 数据源）"""

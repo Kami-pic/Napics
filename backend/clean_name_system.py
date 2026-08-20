@@ -667,3 +667,64 @@ def parse_legacy_clean_name(item: dict) -> CleanNameResult:
         source=source,
         confidence="medium" if names["cn"] else "low",
     )
+
+
+# ════════════════════════════════════════
+# 重新生成（用户显式触发）
+# ════════════════════════════════════════
+
+def regenerate_clean_names(library: list, file_path: str, is_folder: bool = False) -> Dict:
+    """按文件名重新生成清洗名，返回 {updated, cn, en, display}。
+
+    与 safe_update_clean_name 的区别：这里是用户点按钮显式要求重算，
+    所以强制覆写，不受 NAME_SOURCE_PRIORITY 保护（否则已有 manual/nfo 名字时按钮点了没反应）。
+    """
+    if not file_path:
+        return {"updated": 0, "cn": "", "en": "", "display": ""}
+
+    targets = []
+    if is_folder:
+        folder_norm = file_path.replace("\\", "/").rstrip("/") + "/"
+        for item in library:
+            item_path = item.get("file_path", "").replace("\\", "/")
+            if item_path.startswith(folder_norm):
+                targets.append(item)
+    else:
+        targets = [item for item in library if item.get("file_path") == file_path]
+
+    if not targets:
+        return {"updated": 0, "cn": "", "en": "", "display": ""}
+
+    updated = 0
+    first: Optional[CleanNameResult] = None
+
+    for item in targets:
+        item_path = item.get("file_path", "")
+        file_name = item.get("file_name", "") or os.path.basename(item_path)
+        if not file_name:
+            continue
+
+        folder_name = os.path.basename(os.path.dirname(item_path)) if item_path else ""
+        result = clean_from_filename(file_name, folder_name=folder_name)
+        if not (result.cn or result.en):
+            continue
+
+        item["clean_name"] = result.display
+        item["clean_name_cn"] = result.cn
+        item["clean_name_en"] = result.en
+        if result.original:
+            item["clean_name_original"] = result.original
+        item["clean_name_source"] = result.source
+        updated += 1
+        if first is None:
+            first = result
+
+    if first is None:
+        return {"updated": 0, "cn": "", "en": "", "display": ""}
+
+    return {
+        "updated": updated,
+        "cn": first.cn,
+        "en": first.en,
+        "display": first.display,
+    }
