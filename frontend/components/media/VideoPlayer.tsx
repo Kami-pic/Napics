@@ -244,6 +244,15 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
       });
       setActiveSubIdx(bestIdx);
       if (bestIdx >= 0) fetchSubtitleContent(bestIdx);
+
+      // 内嵌字幕一并预加载，不等用户选中。
+      // 后端一次 ffmpeg 调用会提取该文件全部文本轨并落盘，所以触发任意一条
+      // 就等于暖好整个缓存，之后切轨/拖进度条都能立刻拿到字幕。
+      // 按需加载虽然省一次提取，但用户切轨时要干等几十秒，体验更差。
+      const firstEmbedded = list.findIndex(s => s.embedded && !s.unsupported);
+      if (firstEmbedded >= 0 && firstEmbedded !== bestIdx) {
+        void fetchSubtitleContent(firstEmbedded);
+      }
     } catch {
       setSubtitleNotice("字幕列表获取失败");
     }
@@ -293,10 +302,16 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     const useFrameCallback = isTranscode && "requestVideoFrameCallback" in HTMLVideoElement.prototype;
 
     const onFrame = (_now: number, metadata: { mediaTime: number }) => {
-      // 用实际渲染帧的 mediaTime 而不是 video.currentTime，字幕跟画面对齐。
-      // seekOffset 现在是 ffmpeg 真实落点（走 /playback/keyframe-time 查出来的），
-      // 所以这里加出来的就是准确的绝对文件时间。
-      setCurrentTime(seekOffset + metadata.mediaTime);
+      // 取 mediaTime 与 currentTime 的较小值。
+      //
+      // mediaTime 是"即将呈现的帧"的时间戳，会超前于实际听到的音频位置，
+      // 直接用它算字幕时间会导致字幕提前出现。commit 681f5f7
+      // 「SRT时间轴精度修正(min约束)」就是为此加的约束，别再删。
+      //
+      // 这和 seekOffset 是两个独立问题：seekOffset 修的是 seek 落点偏移，
+      // 这里的 min 修的是同一时刻视频帧 PTS 与音频播放位置的差。
+      const effectiveTime = Math.min(metadata.mediaTime, video.currentTime);
+      setCurrentTime(seekOffset + effectiveTime);
       setBuffering(false);
       frameCallbackId = (video as any).requestVideoFrameCallback(onFrame);
     };

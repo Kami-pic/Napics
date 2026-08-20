@@ -154,8 +154,31 @@ describe("内嵌字幕（mkv 转码路径）", () => {
     }, { timeout: 3000 });
   });
 
-  it("外挂与内嵌共存时优先选外挂，不触发昂贵的内嵌提取", async () => {
+  it("外挂与内嵌共存时选外挂显示，但内嵌也预加载暖缓存", async () => {
     const fetchMock = mockSubtitleApi([embeddedSub, externalSrt], {
+      "subtitle/file": VTT,
+      "subtitle/extract": VTT,
+    });
+    global.fetch = fetchMock as any;
+
+    render(<VideoPlayer path="/v/a.mkv" onClose={() => {}} />);
+
+    // 外挂优先被选中显示
+    await waitFor(() => {
+      const fileCalled = fetchMock.mock.calls.some(c => String(c[0]).includes("subtitle/file"));
+      expect(fileCalled).toBe(true);
+    }, { timeout: 3000 });
+
+    // 内嵌也要预加载：后端一次提取全部轨落盘，进播放器就暖好缓存，
+    // 用户切轨或拖进度条时不用干等几十秒
+    await waitFor(() => {
+      const extractCalled = fetchMock.mock.calls.some(c => String(c[0]).includes("subtitle/extract"));
+      expect(extractCalled, "内嵌字幕应预加载").toBe(true);
+    }, { timeout: 3000 });
+  });
+
+  it("图形字幕不参与预加载（提取必然失败）", async () => {
+    const fetchMock = mockSubtitleApi([pgsSub, externalSrt], {
       "subtitle/file": VTT,
       "subtitle/extract": VTT,
     });
@@ -168,9 +191,9 @@ describe("内嵌字幕（mkv 转码路径）", () => {
       expect(fileCalled).toBe(true);
     }, { timeout: 3000 });
 
-    // 内嵌提取要全量 demux，没被选中就不该发起
+    await new Promise(r => setTimeout(r, 200));
     const extractCalled = fetchMock.mock.calls.some(c => String(c[0]).includes("subtitle/extract"));
-    expect(extractCalled, "未选中的内嵌字幕不应被提取").toBe(false);
+    expect(extractCalled, "图形字幕不该被预加载").toBe(false);
   });
 
   it("图形字幕不应被提取（省掉必然失败的请求）", async () => {

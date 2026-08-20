@@ -33,7 +33,10 @@ export function SubtitleOverlay({ vttContent, currentTime, visible }: SubtitleOv
   return (
     <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center pointer-events-none px-4 z-30">
       {activeCues.map((cue, i) => (
-        <div key={i} className="bg-black/75 text-white text-base px-4 py-1.5 rounded mb-1 max-w-[85%] text-center leading-relaxed"
+        // 字号与 globals.css 里的 video::cue 保持一致（20px），
+        // 否则 mp4（原生 track）和 mkv（自绘）两条路径字幕大小不一样
+        <div key={i} className="bg-black/75 text-white px-4 py-1.5 rounded mb-1 max-w-[85%] text-center"
+          style={{ fontSize: "20px", lineHeight: 1.5 }}
           dangerouslySetInnerHTML={{ __html: sanitizeCueText(cue.text) }}
         />
       ))}

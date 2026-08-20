@@ -53,3 +53,16 @@ body {
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
+
+/* 播放器字幕样式。
+   mp4 走原生 <track>（浏览器默认 CC 字号偏大），mkv 走 SubtitleOverlay 自绘，
+   两条路径必须视觉一致，否则同一个库里切片源字幕大小忽大忽小。
+   这里的值要和 SubtitleOverlay 的 class 保持同步。 */
+video::cue {
+  font-size: 20px;
+  line-height: 1.5;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-family: inherit;
+  text-shadow: none;
+}
