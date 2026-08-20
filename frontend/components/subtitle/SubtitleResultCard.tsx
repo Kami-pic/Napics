@@ -1,71 +1,76 @@
 // 字幕搜索结果单条卡片
 "use client";
 import type { SubtitleSearchItem } from "@/lib/api/subtitle";
+import { normalizeFormat, normalizeLang } from "./useSubtitleSearch";
 
 export interface SubtitleResultCardProps {
   item: SubtitleSearchItem;
-  onSelect: (id: number) => void;
   selected: boolean;
+  onSelect: (item: SubtitleSearchItem) => void;
 }
 
-/** 解析格式标签颜色 */
-function formatTagStyle(subtype: string): string {
-  const lower = subtype.toLowerCase();
-  if (lower.includes("srt") || lower.includes("subrip")) return "bg-blue-500/15 text-blue-400";
-  if (lower.includes("ass")) return "bg-purple-500/15 text-purple-400";
-  if (lower.includes("ssa")) return "bg-purple-500/15 text-purple-300";
-  if (lower.includes("sup") || lower.includes("pgs")) return "bg-orange-500/15 text-orange-400";
-  if (lower.includes("vobsub") || lower.includes("sub")) return "bg-yellow-500/15 text-yellow-400";
-  return "bg-white/[0.06] text-slate-500";
-}
+const SOURCE_STYLE: Record<string, { label: string; cls: string }> = {
+  assrt: { label: "射手网", cls: "bg-sky-500/15 text-sky-400" },
+  subhd: { label: "SubHD", cls: "bg-rose-500/15 text-rose-400" },
+  subdl: { label: "SubDL", cls: "bg-amber-500/15 text-amber-400" },
+};
 
-/** 简化格式显示名 */
-function formatLabel(subtype: string): string {
-  const lower = subtype.toLowerCase();
-  if (lower.includes("srt") || lower.includes("subrip")) return "SRT";
-  if (lower.includes("ass")) return "ASS";
-  if (lower.includes("ssa")) return "SSA";
-  if (lower.includes("vobsub")) return "SUB";
-  if (lower.includes("sup") || lower.includes("pgs")) return "SUP";
-  return subtype || "未知";
-}
+const FORMAT_STYLE: Record<string, string> = {
+  SRT: "bg-blue-500/15 text-blue-400",
+  ASS: "bg-purple-500/15 text-purple-400",
+  SSA: "bg-purple-500/15 text-purple-300",
+  SUP: "bg-orange-500/15 text-orange-400",
+  SUB: "bg-yellow-500/15 text-yellow-400",
+};
 
-export default function SubtitleResultCard({ item, onSelect, selected }: SubtitleResultCardProps) {
+export default function SubtitleResultCard({ item, selected, onSelect }: SubtitleResultCardProps) {
+  const source = SOURCE_STYLE[item.source] ?? { label: item.source, cls: "bg-white/[0.06] text-slate-400" };
+  const format = normalizeFormat(item.subtype);
+  const lang = normalizeLang(item.lang?.desc || "");
+  const title = item.native_name || item.videoname;
+
   return (
-    <div
-      className={`bg-[#0f0f0f] rounded-xl border transition-colors cursor-pointer ${
+    <button
+      type="button"
+      onClick={() => onSelect(item)}
+      className={`w-full text-left bg-[#0f0f0f] rounded-xl border transition-colors ${
         selected ? "border-blue-500/40 bg-blue-500/5" : "border-white/[0.06] hover:border-white/[0.10]"
       }`}
-      onClick={() => onSelect(item.id)}
     >
       <div className="px-4 py-3">
-        {/* 第一行：标题 */}
-        <p className="text-[13px] text-slate-200 leading-snug truncate" title={item.native_name}>
-          {item.native_name || item.videoname}
+        <p className="text-[13px] text-slate-200 leading-snug truncate" title={title}>
+          {title}
         </p>
 
-        {/* 第二行：标签 */}
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          {/* 格式 */}
-          <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${formatTagStyle(item.subtype)}`}>
-            {formatLabel(item.subtype)}
+          <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${source.cls}`}>
+            {source.label}
           </span>
 
-          {/* 语言 */}
-          {item.lang?.desc && (
-            <span className="text-[10px] px-2 py-0.5 rounded bg-green-500/15 text-green-400">
-              {item.lang.desc}
+          {format !== "其他" && (
+            <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${FORMAT_STYLE[format] ?? "bg-white/[0.06] text-slate-500"}`}>
+              {format}
             </span>
           )}
 
-          {/* 字幕组 */}
+          {lang !== "其他" && (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-green-500/15 text-green-400">
+              {lang}
+            </span>
+          )}
+
           {item.release_site && (
-            <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.06] text-slate-400">
+            <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.06] text-slate-400 max-w-[120px] truncate">
               {item.release_site}
             </span>
           )}
 
-          {/* 评分 */}
+          {item.file_size && (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.04] text-slate-500 font-mono">
+              {item.file_size}
+            </span>
+          )}
+
           {item.vote_score > 0 && (
             <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">
               ★ {item.vote_score}
@@ -73,20 +78,21 @@ export default function SubtitleResultCard({ item, onSelect, selected }: Subtitl
           )}
         </div>
 
-        {/* 第三行：匹配视频名 + 上传时间 */}
-        <div className="flex items-center gap-3 mt-1.5">
-          {item.videoname && (
-            <span className="text-[10px] text-slate-500 truncate flex-1" title={item.videoname}>
-              {item.videoname}
-            </span>
-          )}
-          {item.upload_time && (
-            <span className="text-[10px] text-slate-600 shrink-0">
-              {item.upload_time.split(" ")[0]}
-            </span>
-          )}
-        </div>
+        {(item.videoname || item.upload_time) && (
+          <div className="flex items-center gap-3 mt-1.5">
+            {item.videoname && item.videoname !== title && (
+              <span className="text-[10px] text-slate-500 truncate flex-1" title={item.videoname}>
+                {item.videoname}
+              </span>
+            )}
+            {item.upload_time && (
+              <span className="text-[10px] text-slate-600 shrink-0 ml-auto">
+                {item.upload_time.split(" ")[0]}
+              </span>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </button>
   );
 }

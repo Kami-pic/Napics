@@ -209,19 +209,29 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
         ))}
       </div>
       {/* 字幕搜索弹窗（插件已安装时才渲染） */}
-      {hasSubtitle && (
-        <SubtitleModal
-          open={showSubtitle}
-          onClose={() => setShowSubtitle(false)}
-          query={v.clean_name_cn || v.clean_name || v.file_name.replace(/\.[^.]+$/, "")}
-          videoPath={v.file_path}
-          cnName={v.clean_name_cn || ""}
-          enName={v.clean_name_en || ""}
-          originalName={v.clean_name_original || ""}
-          seasonNumber={(() => { const m = v.file_name.match(/S(\d+)/i); return m ? parseInt(m[1]) : undefined; })()}
-          episodeNumber={(() => { const m = v.file_name.match(/S\d+E(\d+)/i); return m ? parseInt(m[1]) : undefined; })()}
-        />
-      )}
+      {hasSubtitle && (() => {
+        // 与「搜索升级」用同一套名称与季集信息，保证搜索词一致
+        const seMatch = v.file_name.match(/S(\d+)E(\d+)/i);
+        const sNum = seMatch ? parseInt(seMatch[1]) : undefined;
+        const eNum = seMatch ? parseInt(seMatch[2]) : undefined;
+        const epTag = sNum !== undefined && eNum !== undefined
+          ? `S${String(sNum).padStart(2, "0")}E${String(eNum).padStart(2, "0")}`
+          : undefined;
+        return (
+          <SubtitleModal
+            open={showSubtitle}
+            onClose={() => setShowSubtitle(false)}
+            videoPath={v.file_path}
+            query={v.clean_name_cn || v.clean_name || v.file_name.replace(/\.[^.]+$/, "")}
+            cnName={v.clean_name_cn || ""}
+            enName={v.clean_name_en || ""}
+            originalName={v.clean_name_original || ""}
+            seasonNumber={sNum}
+            episodeNumber={eNum}
+            episodeTag={epTag}
+          />
+        );
+      })()}
     </div>
   );
 }
