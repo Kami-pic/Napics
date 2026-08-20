@@ -19,7 +19,6 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
   const [cleanEditValue, setCleanEditValue] = useState("");
   const [editingEn, setEditingEn] = useState(false);
   const [enEditValue, setEnEditValue] = useState("");
-  const [generating, setGenerating] = useState(false);
 
   useEffect(() => { setEditing(false); setEditingClean(false); setEditingEn(false); }, [path, video?.file_name]);
 
@@ -94,23 +93,6 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
       setEditingClean(false);
       if (isFolder) { onTreeRefresh?.(); } else { onRefresh?.(); }
     } catch { alert("保存失败"); }
-  };
-
-  // 按文件名自动生成搜索索引名（中文+英文），供字幕/资源搜索使用
-  const handleGenerateClean = async () => {
-    const filePath = video?.file_path || path;
-    if (!filePath) return;
-    setGenerating(true);
-    try {
-      const res = await fetch(`${BASE_URL}/library/clean-name/generate`, {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({file_path: filePath, is_folder: isFolder})
-      });
-      const data = await res.json();
-      if (data.status !== "ok") { alert("未能从文件名解析出名称，请手动填写"); return; }
-      if (isFolder) { onTreeRefresh?.(); } else { onRefresh?.(); }
-    } catch { alert("生成失败"); }
-    finally { setGenerating(false); }
   };
 
   const handleSaveEn = async (newEn: string) => {
@@ -195,13 +177,7 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
             ) : null}
           </span>
         )}
-        {!editingClean && !editingEn && (
-          <button onClick={handleGenerateClean} disabled={generating}
-            className="text-[10px] text-amber-500/70 hover:text-amber-400 flex-shrink-0 disabled:opacity-50"
-            title="按文件名自动生成搜索索引名（中文+英文），搜索字幕/资源会更准">
-            {generating ? "..." : "自动获取"}
-          </button>
-        )}
+
       </div>
     </div>
   );

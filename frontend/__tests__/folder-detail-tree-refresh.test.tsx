@@ -45,6 +45,9 @@ vi.mock("@/components/detail/DetailComponents", () => ({
   DeleteAction: () => <div>delete</div>,
   ConfidenceBadge: () => <div>confidence</div>,
   ScrapeInfo: () => <div>scrape</div>,
+  ActionButton: ({ label, onClick }: { label: string; onClick: () => void }) => (
+    <button onClick={onClick}>{label}</button>
+  ),
 }));
 
 const { mockApi } = vi.hoisted(() => ({

@@ -100,6 +100,31 @@ export function InfoRow({ label, value, warn, ok }: { label: string; value: stri
   );
 }
 
+// ── 操作按钮（详情页按钮行统一样式）──
+export function ActionButton({ label, onClick, busy, busyLabel = "处理中...", unavailable, title, emphasis }: {
+  label: string;
+  onClick: () => void;
+  /** 正在执行：禁用并显示 busyLabel */
+  busy?: boolean;
+  busyLabel?: string;
+  /** 当前场景不适用：禁用并置灰（如已封装的视频不需要标准结构） */
+  unavailable?: boolean;
+  title?: string;
+  emphasis?: boolean;
+}) {
+  const style = unavailable
+    ? "bg-white/[0.02] text-slate-600 cursor-not-allowed"
+    : emphasis
+    ? "bg-white/[0.06] hover:bg-white/10 text-slate-300"
+    : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300";
+  return (
+    <button onClick={onClick} disabled={busy || unavailable} title={title}
+      className={`py-2 rounded-lg text-xs disabled:opacity-50 ${style}`}>
+      {busy ? busyLabel : label}
+    </button>
+  );
+}
+
 // ── 提示按钮 ──
 export function TipButton({ icon, label, tip, onClick }: { icon: string; label: string; tip: string; onClick?: () => void }) {
   return (

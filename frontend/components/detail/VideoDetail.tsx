@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { formatSize, formatDuration } from "@/lib/utils";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
-import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge, ScrapeInfo } from "./DetailComponents";
+import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge, ScrapeInfo, ActionButton } from "./DetailComponents";
 import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
@@ -38,6 +38,7 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
   const [renameResult, setRenameResult] = useState(() => getCached(v.file_path).renameResult || "");
   const [renameLoading, setRenameLoading] = useState(false);
   const [structureLoading, setStructureLoading] = useState(false);
+  const [generatingIndex, setGeneratingIndex] = useState(false);
   const [structureResult, setStructureResult] = useState(() => getCached(v.file_path).structureResult || "");
 
   // 同步到缓存
@@ -95,6 +96,17 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
     } catch (e: any) { setRenameResult("失败: " + (e?.message || "请检查路径")); }
     setRenameLoading(false);
   };
+  // 生成检索名：按 NFO → 文件夹名 → 文件名 重算中英文索引名
+  const handleGenerateIndexName = async () => {
+    setGeneratingIndex(true);
+    try {
+      const res = await api.generateCleanName(v.file_path);
+      if (res.status !== "ok") { alert("未能解析出名称，请手动填写检索名"); return; }
+      onRefresh();
+    } catch { alert("生成失败"); }
+    setGeneratingIndex(false);
+  };
+
   const handleSupplement = async () => {
     try {
       const folder = v.file_path.substring(0, v.file_path.lastIndexOf("\\")) || v.file_path.substring(0, v.file_path.lastIndexOf("/"));
@@ -153,12 +165,16 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
         <DeleteAction onDelete={handleDelete} />
         <button onClick={async () => { await api.batchManage("remove", [v.file_path]); onRefresh(); }} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
       </div>
-      {/* 第三行：播放 / 标准结构 / 生成标准名 */}
-      <div className="space-y-2">
-        <PlayButton filePath={v.file_path} onPlay={onPlay} />
-        <button onClick={handleStructure} disabled={structureLoading || !isLooseVideo} className={`w-full py-2.5 rounded-lg text-sm disabled:opacity-50 ${isLooseVideo ? "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300" : "bg-white/[0.02] text-slate-600 cursor-not-allowed"}`}>{structureLoading ? "处理中..." : isLooseVideo ? "标准结构" : "✓ 已封装"}</button>
-        <button onClick={() => handleAutoRename(false, true)} disabled={renameLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">{renameLoading ? "处理中..." : "生成标准名"}</button>
+      {/* 第三行：生成检索名 / 生成标准名 / 标准结构 */}
+      <div className="grid grid-cols-3 gap-2">
+        <ActionButton label="生成检索名" emphasis busy={generatingIndex} onClick={handleGenerateIndexName}
+          title="按 NFO / 文件夹名 / 文件名生成中英文检索名，搜索字幕和资源会更准" />
+        <ActionButton label="生成标准名" busy={renameLoading} onClick={() => handleAutoRename(false, true)} />
+        <ActionButton label={isLooseVideo ? "标准结构" : "✓ 已封装"} busy={structureLoading}
+          unavailable={!isLooseVideo} onClick={handleStructure} />
       </div>
+      {/* 第四行：播放 */}
+      <PlayButton filePath={v.file_path} onPlay={onPlay} />
       {/* 标准结构结果 */}
       {structureResult && (
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-xs text-slate-300">

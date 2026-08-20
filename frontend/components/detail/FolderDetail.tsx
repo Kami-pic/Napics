@@ -8,7 +8,7 @@ import { formatSize } from "@/lib/utils";
 import { FOLDER_TYPE_LABELS, isAggregate as isAggregateType } from "@/lib/folderTypes";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
-import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge, ScrapeInfo } from "./DetailComponents";
+import { Poster, InfoRow, MoveAction, CopyAction, DeleteAction, ConfidenceBadge, ScrapeInfo, ActionButton } from "./DetailComponents";
 import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
@@ -18,6 +18,7 @@ import FeatureTip from "@/components/media/FeatureTip";
 export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, currentCategoryTag }: { node: FolderNode; onRefresh: () => void; onTreeRefresh?: () => void; onSearch: (q: string, ctx?: any) => void; currentCategoryTag: string }) {
   const [actionResult, setActionResult] = useState(() => getCached(node.path).actionResult || "");
   const [actionLoading, setActionLoading] = useState(() => getCached(node.path).actionLoading || false);
+  const [generatingIndex, setGeneratingIndex] = useState(false);
   const [lastSnapshotId, setLastSnapshotId] = useState<number | null>(null);
   const [posterKey, setPosterKey] = useState(0);
   const [posterDeleted, setPosterDeleted] = useState(false);
@@ -97,6 +98,51 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
     try { await api.batchManage("delete", [node.path]); onRefresh(); } catch { alert("删除失败"); }
   };
   const handleRemove = async () => { await api.batchManage("remove", allVideoPaths); onRefresh(); };
+
+  // 生成检索名：movie 文件夹落到视频条目，tv/season 按文件夹批量重算
+  const handleGenerateIndexName = async () => {
+    const isMovieFolder = folderType === "movie" && !!node.videos[0];
+    const targetPath = isMovieFolder ? node.videos[0].file_path : node.path;
+    if (!targetPath) return;
+    setGeneratingIndex(true);
+    try {
+      const res = await api.generateCleanName(targetPath, !isMovieFolder);
+      if (res.status !== "ok") { setActionResult("未能解析出名称，请手动填写检索名"); return; }
+      setActionResult(`检索名已更新：${res.cn || ""} ${res.en || ""}`.trim());
+      refreshFolderTree();
+    } catch (e: any) { setActionResult("生成检索名失败: " + (e?.message || String(e))); }
+    setGeneratingIndex(false);
+  };
+
+  // 标准结构预览（原先是一段内联 handler，抽出来便于复用按钮组件）
+  const handleStructurePreview = async () => {
+    setActionLoading(true);
+    setActionResult("");
+    try {
+      const res = await api.structureOrganize(node.path, true);
+      const ops = res.ops || [];
+      const videoExts = ['.mp4','.mkv','.avi','.rmvb','.rm','.flv','.ts','.m4v','.mov','.wmv'];
+      const videoOps = ops.filter((o: any) => {
+        const p = o.old || o.path || o.desc || '';
+        return videoExts.some(ext => p.toLowerCase().endsWith(ext)) || o.action === 'rename_dir' || o.action === 'rmdir';
+      });
+      const moveOps = videoOps.filter((o: any) => o.action === 'move');
+      const renameOps = videoOps.filter((o: any) => o.action === 'rename_dir');
+      if (ops.length) {
+        let msg = `预览-structure ${moveOps.length} 个视频`;
+        if (renameOps.length) msg += `，${renameOps.length} 个目录重命名`;
+        moveOps.slice(0, 8).forEach((o: any) => { msg += `\n📦 ${o.desc || ''}`; });
+        renameOps.slice(0, 3).forEach((o: any) => { msg += `\n✏️ ${o.desc || ''}`; });
+        if (moveOps.length > 8) msg += `\n  ... 还有 ${moveOps.length - 8} 个视频`;
+        setActionResult(msg);
+      } else {
+        setActionResult("结构已标准，无需调整");
+      }
+    } catch (e: any) {
+      setActionResult("操作失败: " + (e?.message || String(e)));
+    }
+    setActionLoading(false);
+  };
 
   const doAction = async (action: string, dryRun: boolean = true) => {
     setActionLoading(true); if (dryRun) setActionResult("");
@@ -419,11 +465,15 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           <button onClick={handleRemove} className="py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] text-xs text-slate-500">移除</button>
         </div>
       )}
-      {/* 第三行：自动刮削名 / 标准结构 / 一键整理 + AI开关（虚拟文件夹不显示） */}
+      {/* 第三行：生成检索名 / 自动重命名 / 标准结构 + 一键整理（虚拟文件夹不显示） */}
       {!node.is_virtual_library && (
       <div className="space-y-2">
-        <button onClick={() => doAction("rename_shadow")} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">自动重命名</button>
-        <button onClick={async () => { setActionLoading(true); setActionResult(""); try { const res = await api.structureOrganize(node.path, true); const ops = res.ops || []; const videoExts = ['.mp4','.mkv','.avi','.rmvb','.rm','.flv','.ts','.m4v','.mov','.wmv']; const videoOps = ops.filter((o: any) => { const p = o.old || o.path || o.desc || ''; return videoExts.some(ext => p.toLowerCase().endsWith(ext)) || o.action === 'rename_dir' || o.action === 'rmdir'; }); const moveOps = videoOps.filter((o: any) => o.action === 'move'); const renameOps = videoOps.filter((o: any) => o.action === 'rename_dir'); if (ops.length) { let msg = `预览-structure ${moveOps.length} 个视频`; if (renameOps.length) msg += `，${renameOps.length} 个目录重命名`; moveOps.slice(0, 8).forEach((o: any) => { msg += `\n📦 ${o.desc || ''}`; }); renameOps.slice(0, 3).forEach((o: any) => { msg += `\n✏️ ${o.desc || ''}`; }); if (moveOps.length > 8) msg += `\n  ... 还有 ${moveOps.length - 8} 个视频`; setActionResult(msg); } else { setActionResult("结构已标准，无需调整"); } } catch (e: any) { setActionResult("操作失败: " + (e?.message || String(e))); } setActionLoading(false); }} disabled={actionLoading} className="w-full py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-sm text-slate-300 disabled:opacity-50">标准结构</button>
+        <div className="grid grid-cols-3 gap-2">
+          <ActionButton label="生成检索名" emphasis busy={generatingIndex} onClick={handleGenerateIndexName}
+            title="按 NFO / 文件夹名 / 文件名生成中英文检索名，搜索字幕和资源会更准" />
+          <ActionButton label="自动重命名" busy={actionLoading} onClick={() => doAction("rename_shadow")} />
+          <ActionButton label="标准结构" busy={actionLoading} onClick={handleStructurePreview} />
+        </div>
         <div className="flex gap-2">
           {actionLoading && abortController ? (
             <button

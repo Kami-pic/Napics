@@ -12,6 +12,17 @@ export const systemApi = {
       `${BASE_URL}/media/subtitles?path=${encodeURIComponent(path)}`,
     ),
 
+  /** 按 NFO / 文件夹名 / 文件名重算检索名（中文+英文） */
+  generateCleanName: (path: string, isFolder = false) =>
+    request<{ status: string; updated: number; cn: string; en: string; display: string }>(
+      `${BASE_URL}/library/clean-name/generate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_path: path, is_folder: isFolder }),
+      },
+    ),
+
   refreshQuality: (paths?: string[]) =>
     request<{ status: string; updated: number; total: number }>(`${BASE_URL}/library/refresh-quality`, {
       method: "POST",
