@@ -19,6 +19,7 @@ from subtitle_keywords import (
     build_keyword_tags,
     keywords_for_source,
 )
+from subtitle_matching import build_match_candidates, enrich_items
 from subtitle_models import SubtitleSearchItem, SubtitleSourceStat
 
 logger = logging.getLogger(__name__)
@@ -161,6 +162,12 @@ def search_all_sources(
                 logger.warning(f"[subtitle] {source} 搜索异常: {e}")
                 stats.append(SubtitleSourceStat(source=source, error=str(e)))
 
+    # 相关性打分（复用 L2 匹配链），供排序与智能过滤使用
+    match_candidates = build_match_candidates(
+        cn_name=cn_name, en_name=en_name, original_name=original_name, query=query,
+    )
+    enrich_items(merged, match_candidates)
+
     merged = _dedupe_and_sort(merged)
     stats.sort(key=lambda s: _SOURCE_ORDER.get(s.source, 99))
     return merged, stats, primary_keyword
@@ -233,7 +240,11 @@ def _search_subdl(tags, *, season_number: int, episode_number: int, folder_type:
 
 
 def _dedupe_and_sort(items: List[SubtitleSearchItem]) -> List[SubtitleSearchItem]:
-    """按 (来源, ID) 去重，中文源优先、评分高优先"""
+    """按 (来源, ID) 去重后按相关性排序。
+
+    排序优先级：相关性分 > 非垃圾 > 中文源优先 > 用户评分。
+    相关性优先是因为多源合并后，"哪个源" 远不如 "是不是这部片" 重要。
+    """
     seen = set()
     unique: List[SubtitleSearchItem] = []
     for item in items:
@@ -243,7 +254,12 @@ def _dedupe_and_sort(items: List[SubtitleSearchItem]) -> List[SubtitleSearchItem
         seen.add(key)
         unique.append(item)
 
-    unique.sort(key=lambda i: (_SOURCE_ORDER.get(i.source, 99), -(i.vote_score or 0)))
+    unique.sort(key=lambda i: (
+        -(i.match_score or 0),
+        i.is_junk,
+        _SOURCE_ORDER.get(i.source, 99),
+        -(i.vote_score or 0),
+    ))
     return unique
 
 

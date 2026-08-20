@@ -31,6 +31,11 @@ class SubtitleSearchItem(BaseModel):
     hit_keyword: str = ""
     # 文件大小展示串（如 "223k"）
     file_size: str = ""
+    # 相关性匹配分（0-100，复用 L2 匹配链）
+    match_score: int = 0
+    # 智能过滤标记
+    is_junk: bool = False
+    junk_reasons: List[str] = Field(default_factory=list)
 
 
 class SubtitleFileItem(BaseModel):
