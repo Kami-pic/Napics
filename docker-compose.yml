@@ -8,8 +8,9 @@ services:
     #   context: .
     container_name: napics
     ports:
-      # 只需要这一个端口。后端在容器内监听 127.0.0.1，不对外暴露
-      - "${FRONTEND_PORT:-3032}:3000"
+      # 只需要这一个端口。后端在容器内监听 127.0.0.1，不对外暴露。
+      # 容器内前端固定监听 3032（见 Dockerfile 的 PORT），左边可自行改成宿主机端口。
+      - "${FRONTEND_PORT:-3032}:3032"
     volumes:
       # 配置与媒体库数据
       - napics-data:/app/data

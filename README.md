@@ -20,7 +20,7 @@
 ## 为什么是 Napics
 
 
-Napics 不负责播放，也不试图替代 Plex/Jellyfin。
+Napics 不试图替代 Plex/Jellyfin 做家庭影院。
 它解决的是：
 
 > 为什么你的媒体库总是越来越乱。
@@ -77,9 +77,17 @@ Napics 关注的是：
 - 基于媒体库偏好的个性化推荐
 - 季集完整性检测，缺什么搜什么
 
+### 在线预览与字幕
+
+- 浏览器内直接播放，无需跳转外部播放器
+- mp4 直接流式播放；mkv / ts / avi 走 ffmpeg 实时转封装
+- 内嵌字幕自动提取转 WebVTT，外挂 srt / ass / ssa / sub 自动识别编码
+- 多音轨切换，图形字幕（PGS / VobSub）会明确标注为不可渲染而非静默忽略
+- 字幕搜索插件可按剧集精确匹配并一键下载
+
 ### 插件拓展
 
-- 插件拓展能力。搜索/下载/订阅
+- 插件拓展能力。搜索/下载/订阅/播放/字幕
 - 聚合 BT / 网盘多源搜索，智能关键词回退
 - 期待更多的模块化的功能
 
@@ -121,6 +129,8 @@ Napics 关注的是：
 
 - Python 3.10+
 - Node.js 18+
+- ffmpeg / ffprobe —— 扫描视频元信息、播放 mkv 等格式、提取内嵌字幕都要用
+  （Docker 镜像已内置，源码部署需自行安装并确保在 PATH 中）
 
 ### 安装运行
 
@@ -175,7 +185,7 @@ start_all.bat
 | 目录挂载 | 你的视频目录 → 容器内**填写完全相同的路径** |
 | 目录挂载 | 一个空目录（存配置）→ 容器内 `/app/data` |
 
-4. 启动，访问 `http://<NAS-IP>:3000`
+4. 启动，访问 `http://<NAS-IP>:3032`
 
 **为什么建议 host 网络模式**：
 
@@ -186,21 +196,37 @@ start_all.bat
   不需要额外配置
 - 后端只监听 `127.0.0.1:8001`，局域网其他设备访问不到，安全性不降低
 
-用 host 模式时不需要端口映射，直接访问 `3000`。端口冲突可用环境变量 `PORT` 改。
+用 host 模式时不需要端口映射，直接访问 `3032`。端口冲突可用环境变量 `PORT` 改。
 
 如果只能用桥接网络，需要额外做两件事：给容器指定 DNS（如 `223.5.5.5`），
 以及把 NAS 上其他服务的地址填成 `http://host.docker.internal:端口`。
 
-可选环境变量：`TZ`（默认 `Asia/Shanghai`）、`PORT`（默认 `3000`）。
+可选环境变量：`TZ`（默认 `Asia/Shanghai`）、`PORT`（默认 `3032`）。
 
 #### 方式二：命令行
+
+推荐 host 网络（原因见上）：
 
 ```bash
 docker run -d \
   --name napics \
-  -p 3032:3000 \
+  --network host \
+  -e PORT=3032 \
+  -v /vol1/1000/视频:/vol1/1000/视频 \
+  -v napics-data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/kami-pic/napics:latest
+```
+
+只能用桥接网络时：
+
+```bash
+docker run -d \
+  --name napics \
+  -p 3032:3032 \
   -v /vol1/1000/视频:/media \
   -v napics-data:/app/data \
+  --dns 223.5.5.5 \
   --add-host host.docker.internal:host-gateway \
   --restart unless-stopped \
   ghcr.io/kami-pic/napics:latest
@@ -288,8 +314,27 @@ docker build -t napics:local .
 
 1. **TMDB API Key** — [申请地址](https://www.themoviedb.org/settings/api) （建议使用）
 2. **扫描路径** — 媒体库目录（支持网络路径）
-3. **可选插件** — （BT 下载 / OpenList）（可选）
+3. **可选插件** — （BT 下载 / OpenList / 在线播放 / 字幕搜索）（可选）
 4. **HTTP 代理** — 海外服务访问（可选）
+
+---
+
+## 已知限制
+
+在线播放部分：
+
+- **rmvb / rm 不支持浏览器播放**。这类文件用 RealVideo 编码，浏览器无法解码，
+  也不能像 mkv 那样只换容器，必须整段重编码视频流，NAS 上开销过大。请用本地播放器打开。
+- **图形字幕（PGS / VobSub）无法显示**。它们是图片而不是文本，需要 OCR 才能转成字幕。
+  播放器会把这类轨明确标注出来，不会让你误以为片源没有字幕。
+- **压制进画面的硬字幕无法关闭**。硬字幕是画面像素的一部分，检测不到也去不掉。
+- mkv / ts 首次加载有十几秒等待，转码是实时进行的。
+- 内嵌字幕首次提取需要读完整个文件（约 6 秒/GB），之后走缓存秒开。
+
+其他：
+
+- 单机单用户设计，没有账号体系，请勿直接暴露到公网。
+- 媒体库用 JSON 文件存储，十万级条目以上可能出现明显延迟。
 
 ---
 
@@ -299,6 +344,7 @@ docker build -t napics:local .
 |----|------|
 | 后端 | Python · FastAPI · Uvicorn |
 | 前端 | Next.js 16 · React 19 · Tailwind CSS 4 |
+| 媒体 | ffmpeg / ffprobe（元信息、转码、字幕提取） |
 | 数据 | JSON 文件持久化（无数据库依赖） |
 
 ---
