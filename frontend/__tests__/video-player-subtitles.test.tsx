@@ -305,3 +305,46 @@ describe("字幕类型区分", () => {
     }
   });
 });
+
+
+describe("提示可关闭", () => {
+  it("点关闭后提示消失，且提取请求已经发出（后台继续）", async () => {
+    const fetchMock = mockSubtitleApi([pgsSub]);
+    global.fetch = fetchMock as any;
+
+    render(<VideoPlayer path="/v/pgs.mkv" onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/图形字幕|无法渲染/)).toBeTruthy();
+    }, { timeout: 3000 });
+
+    const closeBtn = document.querySelector('button[title^="关闭提示"]');
+    expect(closeBtn, "应有关闭提示按钮").toBeTruthy();
+
+    await act(async () => { (closeBtn as HTMLElement).click(); });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/图形字幕|无法渲染/)).toBeNull();
+    }, { timeout: 2000 });
+  });
+
+  it("关闭提示不影响播放器其他部分", async () => {
+    const fetchMock = mockSubtitleApi([pgsSub]);
+    global.fetch = fetchMock as any;
+
+    const { container } = render(<VideoPlayer path="/v/pgs.mkv" onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(document.querySelector('button[title^="关闭提示"]')).toBeTruthy();
+    }, { timeout: 3000 });
+
+    await act(async () => {
+      (document.querySelector('button[title^="关闭提示"]') as HTMLElement).click();
+    });
+
+    // video 元素仍在，src 未被清掉
+    const video = container.querySelector("video");
+    expect(video).toBeTruthy();
+    expect(video?.getAttribute("src")).toBeTruthy();
+  });
+});

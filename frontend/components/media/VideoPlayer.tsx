@@ -47,6 +47,9 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
   const [subtitles, setSubtitles] = useState<SubtitleData[]>([]);
   const [activeSubIdx, setActiveSubIdx] = useState(0);
   const [subtitleNotice, setSubtitleNotice] = useState<string | null>(null);
+  // 用户主动关掉提示后不再弹，避免"正在提取""图形字幕"这类信息一直挡着画面。
+  // 只影响显示，后台提取照常进行。
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
   const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>([]);
   const [activeAudioIdx, setActiveAudioIdx] = useState(0);
   const [isTranscode, setIsTranscode] = useState(false);
@@ -82,6 +85,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     blobUrlsRef.current = [];
     writeSubtitles([]);
     setSubtitleNotice(null);
+    setNoticeDismissed(false);
     setAudioTracks([]);
     setActiveAudioIdx(0);
     setError(null);
@@ -269,6 +273,7 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
     blobUrlsRef.current = [];
     writeSubtitles([]);
     setSubtitleNotice(null);
+    setNoticeDismissed(false);   // 换片子要重新允许提示
     setActiveSubIdx(0);
     setAudioTracks([]);
     setActiveAudioIdx(0);
@@ -518,14 +523,24 @@ export function VideoPlayer({ path, onClose }: VideoPlayerProps) {
             <p className="text-red-400 text-sm px-4 text-center">{error}</p>
           </div>
         )}
-        {/* 字幕提示（提取失败 / 全是图形字幕 / 内嵌首次提取中） */}
-        {!error && (subtitleNotice || loadingIsEmbedded) && (
+        {/* 字幕提示（提取失败 / 全是图形字幕 / 内嵌首次提取中）。
+            可手动关掉：关掉只是不再打扰，后台提取继续跑完。 */}
+        {!error && !noticeDismissed && (subtitleNotice || loadingIsEmbedded) && (
           <div className="absolute top-3 left-3 z-20 max-w-[70%]">
-            <p className="text-[11px] text-amber-300/90 bg-black/70 rounded px-2.5 py-1.5 leading-snug">
-              {loadingIsEmbedded
-                ? "正在提取内嵌字幕，大文件需要数十秒…"
-                : subtitleNotice}
-            </p>
+            <div className="flex items-start gap-2 bg-black/70 rounded px-2.5 py-1.5">
+              <p className="text-[11px] text-amber-300/90 leading-snug">
+                {loadingIsEmbedded
+                  ? "正在提取内嵌字幕，大文件需要数十秒…"
+                  : subtitleNotice}
+              </p>
+              <button
+                onClick={() => setNoticeDismissed(true)}
+                title="关闭提示（提取继续在后台进行）"
+                className="text-slate-400 hover:text-white text-[13px] leading-none shrink-0 mt-px"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
         {/* 视频区域 */}

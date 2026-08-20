@@ -549,48 +549,65 @@ def list_subtitles(path: str = Query(..., description="视频文件路径")):
     subtitles = []
 
     # ── 外挂字幕 ──
+    # 复用 core 的匹配规则，不要在这里另写一套：
+    # 直接列目录会让整季剧集的每一集都带上全季的字幕；
+    # 只按同名匹配又会漏掉「字幕留发布组原名、视频已改中文名」的常见情况。
     video_dir = os.path.dirname(path)
-    if os.path.isdir(video_dir):
-        try:
-            for f in os.listdir(video_dir):
-                ext = os.path.splitext(f)[1].lower()
-                if ext not in SUBTITLE_EXTS:
-                    continue
-                full_path = os.path.join(video_dir, f)
-                if not os.path.isfile(full_path):
-                    continue
-                parts = os.path.splitext(f)[0].split(".")
-                lang = ""
-                if len(parts) >= 2:
-                    candidate = parts[-1].lower()
-                    if candidate in ("chs", "cht", "zh", "cn", "sc", "tc", "chi", "chinese"):
-                        lang = "zh"
-                    elif candidate in ("eng", "en", "english"):
-                        lang = "en"
-                    elif candidate in ("jpn", "jp", "ja", "japanese"):
-                        lang = "ja"
-                    elif candidate in ("kor", "ko", "korean"):
-                        lang = "ko"
-                    else:
-                        lang = candidate if len(candidate) <= 5 else ""
+    try:
+        from core.file_ops.sidecars import list_subtitle_files
+        external_names = list_subtitle_files(path)
+    except Exception as e:
+        logger.warning(f"[Playback] 外挂字幕匹配失败: {e}")
+        external_names = []
 
-                subtitles.append({
-                    "name": f,
-                    "path": full_path,
-                    "format": ext.lstrip("."),
-                    "kind": "external",
-                    "codec": ext.lstrip("."),
-                    "lang": lang,
-                    "url": f"/playback/subtitle/file?path={quote(full_path)}",
-                    "embedded": False,
-                    # 外挂字幕都是文本格式，一律可用。字段与内嵌字幕保持一致，
-                    # 免得消费端要区分两种结构。
-                    "unsupported": False,
-                    "unsupported_reason": "",
-                    "forced": False,
-                })
-        except OSError:
-            pass
+    for f in external_names:
+        full_path = os.path.join(video_dir, f)
+        if not os.path.isfile(full_path):
+            continue
+        ext = os.path.splitext(f)[1].lower()
+        parts = os.path.splitext(f)[0].split(".")
+        lang = ""
+        if len(parts) >= 2:
+            candidate = parts[-1].lower()
+            if candidate in ("chs", "cht", "zh", "cn", "sc", "tc", "chi", "chinese"):
+                lang = "zh"
+            elif candidate in ("eng", "en", "english"):
+                lang = "en"
+            elif candidate in ("jpn", "jp", "ja", "japanese"):
+                lang = "ja"
+            elif candidate in ("kor", "ko", "korean"):
+                lang = "ko"
+            else:
+                lang = candidate if len(candidate) <= 5 else ""
+
+        # .idx 只是 VobSub 的索引，真正的数据在同名 .sub 里，不单独列
+        if ext == ".idx":
+            continue
+
+        # 判断是否图形型外挂字幕：
+        #   .sup            蓝光 PGS，一定是图形
+        #   .sub + 同名.idx VobSub，图形
+        #   .sub 单独存在    MicroDVD，是文本（_sub_to_vtt 能转）
+        if ext == ".sup":
+            graphic_ext = True
+        elif ext == ".sub":
+            graphic_ext = os.path.isfile(os.path.splitext(full_path)[0] + ".idx")
+        else:
+            graphic_ext = False
+
+        subtitles.append({
+            "name": f,
+            "path": full_path,
+            "format": ext.lstrip("."),
+            "kind": "graphic" if graphic_ext else "external",
+            "codec": ext.lstrip("."),
+            "lang": lang,
+            "url": f"/playback/subtitle/file?path={quote(full_path)}",
+            "embedded": False,
+            "unsupported": graphic_ext,
+            "unsupported_reason": "图形字幕（需 OCR），浏览器无法渲染" if graphic_ext else "",
+            "forced": False,
+        })
 
     # ── 内嵌字幕（ffprobe 检测） ──
     embedded = _detect_embedded_subtitles(path)

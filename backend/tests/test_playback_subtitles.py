@@ -245,3 +245,79 @@ def test_ass_to_vtt_strips_style_tags():
     assert "带样式的字幕" in vtt
     assert "\\pos" not in vtt
     assert "{" not in vtt
+
+
+# ── 真实片源场景回归 ──
+
+@requires_ffmpeg
+def test_detects_both_when_external_name_differs_from_video(tmp_path, monkeypatch):
+    """外挂字幕文件名与视频名完全不同时也要检测到。
+
+    真实场景（克洛伊）：视频叫「克洛伊 (2010).mkv」，
+    外挂字幕叫「Chloe.2009.Bluray.1080p.DTS-HD.x264-Grym R3.srt」，
+    同目录还混着 nfo / jpg / txt。内封另有 1 条 subrip。
+    期望结果：2 条字幕，一条 external 一条 embedded。
+    """
+    srt_embed = tmp_path / "embed.srt"
+    srt_embed.write_text("1\n00:00:00,500 --> 00:00:02,000\nembedded\n", encoding="utf-8")
+
+    video = tmp_path / "克洛伊 (2010).mkv"
+    cmd = [
+        "ffmpeg", "-nostdin", "-y", "-v", "error",
+        "-f", "lavfi", "-i", "testsrc=duration=3:size=320x240:rate=10",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=3",
+        "-i", str(srt_embed),
+        "-map", "0:v", "-map", "1:a", "-map", "2:s",
+        "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-c:s", "srt",
+        "-metadata:s:s:0", "language=eng",
+        str(video),
+    ]
+    r = subprocess.run(cmd, capture_output=True, stdin=subprocess.DEVNULL, timeout=180)
+    if r.returncode != 0:
+        pytest.skip(f"造样本失败: {r.stderr[:200]}")
+    srt_embed.unlink()   # 这个只是制作素材，不能留在目录里当外挂字幕
+
+    # 异名外挂字幕 + 一堆干扰文件
+    (tmp_path / "Chloe.2009.Bluray.1080p.DTS-HD.x264-Grym R3.srt").write_text(
+        "1\n00:00:01,000 --> 00:00:03,000\nexternal\n", encoding="utf-8")
+    (tmp_path / "movie.nfo").write_text("<movie/>", encoding="utf-8")
+    (tmp_path / "poster.jpg").write_bytes(b"\xff\xd8\xff")
+    (tmp_path / "source.txt").write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    result = pb.list_subtitles(path=str(video))
+    subs = result["subtitles"]
+
+    external = [s for s in subs if s["kind"] == "external"]
+    embedded = [s for s in subs if s["kind"] == "embedded"]
+
+    assert len(external) == 1, f"应检测到 1 条外挂字幕，实际 {len(external)}: {[s['name'] for s in subs]}"
+    assert len(embedded) == 1, f"应检测到 1 条内封字幕，实际 {len(embedded)}"
+    assert len(subs) == 2, f"总数应为 2，实际 {len(subs)}"
+
+    summary = result["summary"]
+    assert summary["external"] == 1
+    assert summary["embedded"] == 1
+    assert summary["graphic"] == 0
+    assert summary["maybe_hardcoded"] is False
+
+
+@requires_ffmpeg
+def test_non_subtitle_files_not_picked_up(tmp_path, monkeypatch):
+    """nfo/jpg/txt 等不能被当成字幕文件"""
+    video = tmp_path / "v.mkv"
+    cmd = [
+        "ffmpeg", "-nostdin", "-y", "-v", "error",
+        "-f", "lavfi", "-i", "testsrc=duration=2:size=320x240:rate=10",
+        "-c:v", "libx264", "-preset", "ultrafast", str(video),
+    ]
+    r = subprocess.run(cmd, capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
+    if r.returncode != 0:
+        pytest.skip("造样本失败")
+
+    for name in ("movie.nfo", "poster.jpg", "fanart.jpg", "source.txt", "readme.md"):
+        (tmp_path / name).write_text("x", encoding="utf-8")
+
+    monkeypatch.setattr(pb, "guard_path", lambda *a, **k: None)
+    subs = pb.list_subtitles(path=str(video))["subtitles"]
+    assert subs == [], f"不该把非字幕文件当字幕: {[s['name'] for s in subs]}"
