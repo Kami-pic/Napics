@@ -295,3 +295,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Docker Hub 的仓库页面需要单独一份说明（面向拉镜像的人，不是开发者）。
+      # 只在 release 分支同步，避免 dev 的内容覆盖稳定版说明。
+      - name: 同步 Docker Hub 仓库说明
+        if: github.ref == 'refs/heads/release' && env.DOCKERHUB_USERNAME != ''
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/napics
+          readme-filepath: ./docker/README.dockerhub.md
+          short-description: "智能媒体资产管理系统：扫描、刮削、整理、质量分析与升级维护，单容器单端口部署"
