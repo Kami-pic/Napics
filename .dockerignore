@@ -55,7 +55,9 @@ _media/
 docker-compose.yml
 
 # ── 插件分层 ──
-# 主镜像只携带 10 个核心插件；社区搜索/RSS/下载实现由插件源安装到 /app/data/plugins。
+# 主镜像只携带核心插件；社区搜索/RSS/下载实现由插件源安装到 /app/data/plugins。
+# 这份白名单必须和 backend/plugin_manager.py 的 CORE_BUILTIN_PLUGIN_IDS 一一对应，
+# 少放行一个，镜像里就缺那个插件的代码，插件中心里它会直接消失。
 backend/plugins/*
 !backend/plugins/metadata-tmdb/
 !backend/plugins/metadata-tmdb/**
@@ -77,3 +79,7 @@ backend/plugins/*
 !backend/plugins/feature-local-match/**
 !backend/plugins/feature-subscribe/
 !backend/plugins/feature-subscribe/**
+!backend/plugins/feature-player/
+!backend/plugins/feature-player/**
+!backend/plugins/subtitle-search/
+!backend/plugins/subtitle-search/**
