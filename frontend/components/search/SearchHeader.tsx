@@ -1,7 +1,8 @@
 // 搜索弹窗顶栏 — 从 SearchModal.tsx 拆分
 "use client";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
-import FilterBar, { DEFAULT_FILTERS, type SourceStatus } from "./FilterBar";
+import FilterBar from "./FilterBar";
+import { DEFAULT_FILTERS, type SourceStatus } from "./filterUtils";
 import PanFilterBar, { PanFilterState } from "./PanFilterBar";
 import SearchSettingsPanel from "./SearchSettingsPanel";
 import SourceTabs from "./SourceTabs";

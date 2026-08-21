@@ -1,7 +1,7 @@
 // 搜索源 Tab 切换组件 — BT 和网盘共用，显示 loading/结果条数状态
 "use client";
 import { useMemo } from "react";
-import type { SourceStatus } from "./FilterBar";
+import type { SourceStatus } from "./filterUtils";
 
 export interface SourceTabsProps {
   type: "bt" | "pan";

@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { EnhancedSearchResult, FilterState, AddMediaInfo } from "@/types";
 import { api } from "@/lib/api";
-import FilterBar, { DEFAULT_FILTERS, applyFilters } from "../search/FilterBar";
+import FilterBar from "../search/FilterBar";
+import { DEFAULT_FILTERS, applyFilters } from "../search/filterUtils";
 
 interface AddMediaPanelProps {
   open: boolean;

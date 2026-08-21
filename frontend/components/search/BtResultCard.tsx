@@ -1,7 +1,7 @@
 // BT 搜索结果单条卡片
 "use client";
 import type { EnhancedSearchResult } from "@/types";
-import { INDEXER_TAG_STYLE } from "./FilterBar";
+import { INDEXER_TAG_STYLE } from "./filterUtils";
 
 const RES_RANK: Record<string, number> = { "": 0, SD: 0, "720p": 1, "1080p": 2, "2160p": 3 };
 

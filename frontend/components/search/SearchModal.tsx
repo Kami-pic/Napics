@@ -1,6 +1,6 @@
 // BT 搜索结果弹窗 — V2：结构化三行布局 + 分组模式 + 命中关键词标注
 "use client";
-import type { SourceStatus } from "./FilterBar";
+import type { SourceStatus } from "./filterUtils";
 import PanResultsView from "./PanResultsView";
 import BtResultCard from "./BtResultCard";
 import SearchHeader from "./SearchHeader";
