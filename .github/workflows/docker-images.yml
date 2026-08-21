@@ -227,6 +227,8 @@ jobs:
     # secrets 不能直接用在 step 的 if 条件里，必须先转成 env
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      # step 的 if 表达式读不到 step 级 env，判空用的变量必须挂在 job 上
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
@@ -296,14 +298,19 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Docker Hub 的仓库页面需要单独一份说明（面向拉镜像的人，不是开发者）。
-      # 只在 release 分支同步，避免 dev 的内容覆盖稳定版说明。
-      - name: 同步 Docker Hub 仓库说明
-        if: github.ref == 'refs/heads/release' && env.DOCKERHUB_USERNAME != ''
+      # 同步 Docker Hub 仓库页面的说明（面向拉镜像的人，内容见 docker/README.dockerhub.md）。
+      #
+      # 注意：这一步必须用 Docker Hub 的账号密码，不能用 access token。
+      # 改仓库描述走的是 PATCH /v2/repositories/...，该接口不接受 PAT，会直接 403。
+      # 密码放进 secrets 属于安全降级，而且账号开了 2FA 时密码登录也会失败，
+      # 所以默认不启用：没配 DOCKERHUB_PASSWORD 就跳过，描述改为手动粘贴一次
+      # （描述几乎不变，不值得为它把密码交给 CI）。
+      - name: 同步 Docker Hub 仓库说明（需配置 DOCKERHUB_PASSWORD）
+        if: github.ref == 'refs/heads/release' && env.DOCKERHUB_PASSWORD != ''
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
           repository: ${{ secrets.DOCKERHUB_USERNAME }}/napics
           readme-filepath: ./docker/README.dockerhub.md
           short-description: "智能媒体资产管理系统：扫描、刮削、整理、质量分析与升级维护，单容器单端口部署"
