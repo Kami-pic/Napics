@@ -188,7 +188,7 @@ start_all.bat
 
 | 来源 | 地址 | 说明 |
 |---|---|---|
-| Docker Hub | `kamipic/napics:latest` | 国内 NAS 通常已配加速器，最快 |
+| Docker Hub | `napics/napics:latest` | 国内 NAS 通常已配加速器，最快 |
 | GHCR 加速 | `ghcr.nju.edu.cn/kami-pic/napics:latest` | 教育网镜像站代理 |
 | GHCR 原始 | `ghcr.io/kami-pic/napics:latest` | 国内可能很慢或超时 |
 
