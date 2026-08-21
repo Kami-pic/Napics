@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import type { PanResult, PanSourceStatus } from "@/types";
-import { PanFilterState, applyPanFilters, PAN_TYPE_COLORS, PAN_TYPE_LABELS } from "./PanFilterBar";
+import { type PanFilterState, applyPanFilters, PAN_TYPE_COLORS, PAN_TYPE_LABELS } from "./panFilterUtils";
 
 // ── 网盘搜索结果视图（纯展示，筛选器已提到外层）──
 export default function PanResultsView({

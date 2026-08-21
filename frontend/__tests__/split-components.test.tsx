@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import type { PanResult, VideoInfo, FolderNode } from "@/types";
-import type { PanFilterState } from "@/components/search/PanFilterBar";
+import type { PanFilterState } from "@/components/search/panFilterUtils";
 
 // ── 测试数据工厂 ──
 
@@ -47,7 +47,7 @@ function makeVideo(overrides: Partial<VideoInfo> = {}): VideoInfo {
 
 describe("PanFilterBar 筛选逻辑", () => {
   it("默认筛选器不过滤任何结果", async () => {
-    const { applyPanFilters, DEFAULT_PAN_FILTERS } = await import("@/components/search/PanFilterBar");
+    const { applyPanFilters, DEFAULT_PAN_FILTERS } = await import("@/components/search/panFilterUtils");
     const results = [
       makePanResult({ pan_type: "quark", resolution: "2160p", is_complete: true }),
       makePanResult({ pan_type: "aliyun", resolution: "1080p", is_complete: false }),
@@ -57,7 +57,7 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("按网盘类型筛选 — 夸克", async () => {
-    const { applyPanFilters } = await import("@/components/search/PanFilterBar");
+    const { applyPanFilters } = await import("@/components/search/panFilterUtils");
     const results = [
       makePanResult({ pan_type: "quark" }),
       makePanResult({ pan_type: "aliyun" }),
@@ -70,7 +70,7 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("按来源筛选 — pansearch", async () => {
-    const { applyPanFilters } = await import("@/components/search/PanFilterBar");
+    const { applyPanFilters } = await import("@/components/search/panFilterUtils");
     const results = [
       makePanResult({ source: "pansearch" }),
       makePanResult({ source: "pansou" }),
@@ -84,7 +84,7 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("按分辨率筛选 — 4K", async () => {
-    const { applyPanFilters } = await import("@/components/search/PanFilterBar");
+    const { applyPanFilters } = await import("@/components/search/panFilterUtils");
     const results = [
       makePanResult({ resolution: "2160p" }),
       makePanResult({ resolution: "1080p" }),
@@ -95,7 +95,7 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("仅整季筛选 — 排除碎片", async () => {
-    const { applyPanFilters } = await import("@/components/search/PanFilterBar");
+    const { applyPanFilters } = await import("@/components/search/panFilterUtils");
     const results = [
       makePanResult({ is_complete: true, title: "整季包" }),
       makePanResult({ is_complete: false, title: "单集碎片" }),
@@ -107,7 +107,7 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("组合筛选 — 夸克 + 4K + 整季", async () => {
-    const { applyPanFilters } = await import("@/components/search/PanFilterBar");
+    const { applyPanFilters } = await import("@/components/search/panFilterUtils");
     const results = [
       makePanResult({ pan_type: "quark", resolution: "2160p", is_complete: true }),
       makePanResult({ pan_type: "quark", resolution: "1080p", is_complete: true }),
@@ -122,7 +122,7 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("常量导出完整性", async () => {
-    const mod = await import("@/components/search/PanFilterBar");
+    const mod = await import("@/components/search/panFilterUtils");
     expect(mod.PAN_TYPE_COLORS.quark).toBeDefined();
     expect(mod.PAN_TYPE_COLORS.aliyun).toBeDefined();
     expect(mod.PAN_TYPE_COLORS.baidu).toBeDefined();
@@ -135,7 +135,8 @@ describe("PanFilterBar 筛选逻辑", () => {
   });
 
   it("渲染筛选栏 — 显示 MultiSelect 下拉按钮", async () => {
-    const { default: PanFilterBar, DEFAULT_PAN_FILTERS } = await import("@/components/search/PanFilterBar");
+    const { default: PanFilterBar } = await import("@/components/search/PanFilterBar");
+    const { DEFAULT_PAN_FILTERS } = await import("@/components/search/panFilterUtils");
     render(
       <PanFilterBar
         activeSource="all"

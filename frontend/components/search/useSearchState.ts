@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus, ProviderCatalog, ProviderMetadata } from "@/types";
 import { api } from "@/lib/api";
 import { DEFAULT_FILTERS, applyFilters, type SourceStatus } from "./filterUtils";
-import { PanFilterState, DEFAULT_PAN_FILTERS } from "./PanFilterBar";
+import { type PanFilterState, DEFAULT_PAN_FILTERS } from "./panFilterUtils";
 
 export type SearchTab = "bt" | "pan";
 

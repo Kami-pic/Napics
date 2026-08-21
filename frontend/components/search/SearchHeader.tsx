@@ -3,7 +3,8 @@
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
 import FilterBar from "./FilterBar";
 import { DEFAULT_FILTERS, type SourceStatus } from "./filterUtils";
-import PanFilterBar, { PanFilterState } from "./PanFilterBar";
+import PanFilterBar from "./PanFilterBar";
+import { type PanFilterState } from "./panFilterUtils";
 import SearchSettingsPanel from "./SearchSettingsPanel";
 import SourceTabs from "./SourceTabs";
 import type { SearchTab, SourceTabState } from "./useSearchState";
