@@ -255,10 +255,18 @@ def test_plugin_connection(plugin_id: str):
             url = (getattr(conf, "qb_url", "") or "").rstrip("/")
             if not url:
                 return {"success": False, "error": "地址未配置"}
-            resp = _requests.get(
-                f"{url}/api/v2/app/version", timeout=5,
-                proxies={"http": None, "https": None},
+            # qB 的 API 需要先登录拿 SID，裸请求 /app/version 会被判 403
+            # （只有开了"对本地主机跳过身份验证"的 qB 才会放过未认证请求）
+            from downloader import QBittorrentClient
+            client = QBittorrentClient(
+                url,
+                getattr(conf, "qb_username", "") or "",
+                getattr(conf, "qb_password", "") or "",
             )
+            client.session.trust_env = False  # 与其他插件一致：不走环境变量代理
+            if not client._login():
+                return {"success": False, "error": "登录失败，请检查用户名和密码"}
+            resp = client.session.get(f"{url}/api/v2/app/version", timeout=5)
             results["status_code"] = resp.status_code
             results["version"] = resp.text.strip() if resp.status_code == 200 else ""
             results["success"] = resp.status_code == 200
