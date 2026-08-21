@@ -5,7 +5,7 @@
 #
 # 容器内结构：
 #   后端 FastAPI  监听 127.0.0.1:8001（不对外）
-#   前端 Next.js  监听 0.0.0.0:3000（唯一对外端口），把 /backend/* 转发给后端
+#   前端 Next.js  监听 0.0.0.0:3032（唯一对外端口），把 /backend/* 转发给后端
 #
 # 基础镜像选 python 官方镜像而不是 Debian 自带的 python3：
 # Debian bookworm 的 python3 是 3.11，而依赖版本是在 3.13+ 上验证的。

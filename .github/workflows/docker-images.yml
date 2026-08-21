@@ -71,8 +71,10 @@ jobs:
       - name: 启动容器
         run: |
           mkdir -p /tmp/napics-media
+          # 容器内固定监听 3032（Dockerfile 里 ENV PORT=3032），
+          # 右边写 3000 会导致怎么等都连不上、150 秒超时。
           docker run -d --name napics-smoke \
-            -p 3032:3000 \
+            -p 3032:3032 \
             -v /tmp/napics-media:/media \
             napics:smoke
 
@@ -113,9 +115,9 @@ jobs:
             echo "--- 容器内直连后端 ---"
             docker exec napics-smoke curl -sS -m 5 http://127.0.0.1:8001/ || echo "后端无响应"
             echo "--- 容器内直连前端 ---"
-            docker exec napics-smoke curl -sSL -m 5 -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3000/ || echo "前端无响应"
+            docker exec napics-smoke curl -sSL -m 5 -o /dev/null -w "前端 HTTP %{http_code}\n" http://127.0.0.1:3032/ || echo "前端无响应"
             echo "--- 容器内经前端转发 ---"
-            docker exec napics-smoke curl -sSL -m 5 http://127.0.0.1:3000/backend || echo "转发无响应"
+            docker exec napics-smoke curl -sSL -m 5 http://127.0.0.1:3032/backend || echo "转发无响应"
             exit 1
           fi
 

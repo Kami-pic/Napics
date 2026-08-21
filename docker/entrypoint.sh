@@ -62,15 +62,17 @@ fi
 # Docker 会把 HOSTNAME 环境变量设成容器 ID，而 Next.js standalone 用
 # process.env.HOSTNAME 决定监听地址 —— 不显式覆盖的话会绑到容器 ID 上，
 # 导致端口映射进来的请求访问不到。这里用 env 强制指定。
-log "启动前端 (0.0.0.0:${PORT:-3000})..."
+# 默认值必须和 Dockerfile 的 ENV PORT 一致。曾经这里兜底写 3000、
+# Dockerfile 写 3032，CI 的 smoke test 照着 3000 映射端口，结果每次都连不上。
+log "启动前端 (0.0.0.0:${PORT:-3032})..."
 cd /app/frontend || exit 1
-env HOSTNAME=0.0.0.0 PORT="${PORT:-3000}" node server.js &
+env HOSTNAME=0.0.0.0 PORT="${PORT:-3032}" node server.js &
 FRONTEND_PID=$!
 
 # 确认前端真的在监听，否则早点报错而不是让外部干等
 FRONTEND_READY=0
 for i in $(seq 1 60); do
-  if curl -fsS -o /dev/null "http://127.0.0.1:${PORT:-3000}/" 2>/dev/null; then
+  if curl -fsS -o /dev/null "http://127.0.0.1:${PORT:-3032}/" 2>/dev/null; then
     log "前端就绪（用时 ${i}s）"
     FRONTEND_READY=1
     break
@@ -105,7 +107,7 @@ else
   log "============================================================"
 fi
 
-log "启动完成，访问端口 ${PORT:-3000}"
+log "启动完成，访问端口 ${PORT:-3032}"
 
 # 任一进程退出就让容器退出，交给 Docker 的重启策略处理
 wait -n
