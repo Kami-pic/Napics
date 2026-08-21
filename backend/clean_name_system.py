@@ -107,6 +107,25 @@ _KNOWN_GROUPS = (
 # 尾部 "-发布组" 形态（白名单外的发布组靠形态识别）
 _TRAILING_GROUP_RE = re.compile(r'\s*-\s*([A-Za-z0-9][A-Za-z0-9._]{1,14})\s*$')
 
+# 质量/编码标签。用于判断 "-XXX" 到底是发布组还是作品名的一部分：
+# 发布命名里发布组是最后一段（x264-GROUP），后面不会再出现质量标签；
+# 而 "Ultimate Factories-BMW.HDTV.720p" 的 BMW 后面还跟着质量标签，说明它是节目主题。
+_QUALITY_TOKEN_RE = re.compile(
+    r'(?i)\b(?:2160p|1080[pi]?|720[pi]?|480p|BluRay|WEB-?DL|WEB-?HR|WEBRip|HDTV\w*|'
+    r'BDRip|DVDRip|Remux|UHD|x264|x265|H\.?26[45]|HEVC|AVC|XviD|DivX)\b'
+)
+
+
+def _group_token_is_topic(raw_base: str, token: str) -> bool:
+    """判断尾部 "-token" 是作品名的一部分（而非发布组）。
+    依据：token 在原始文件名里后面还跟着质量标签，说明它不是发布命名的末段。
+    raw_base 用未清洗的原始名，因为清洗会把质量标签删掉、位置信息就丢了。
+    """
+    idx = raw_base.lower().rfind("-" + token.lower())
+    if idx < 0:
+        return False  # 原名里找不到，保守按发布组处理（维持既有行为）
+    return bool(_QUALITY_TOKEN_RE.search(raw_base[idx + 1 + len(token):]))
+
 
 def strip_noise(filename: str) -> str:
     """Level 0：从脏文件名中去除所有非作品名内容。
@@ -153,7 +172,7 @@ def strip_noise(filename: str) -> str:
     # 5. 去质量标签
     name = re.sub(r'(?i)\.?(2160p|1080[pi]?|720[pi]?|480p|BluRay|WEB-?DL|WEB-?HR|WEBRip|HDTVrip|HDTV|BDRip|BDrip|DVDRip|Remux|UHD)(?=[^a-zA-Z]|$)', '', name)
     name = re.sub(r'(?i)(?<![a-zA-Z])(BD|HD|DVD|SD)(?=[^a-zA-Z]|$)', '', name)
-    name = re.sub(r'(?i)\.?(x264|x265|H\.?264|H\.?265|HEVC|AVC|AAC|DTS|DTS-HD|FLAC|TrueHD|Atmos|10bit|Main10|AC3|DD\+?\d?)\b', '', name)
+    name = re.sub(r'(?i)\.?(x264|x265|H\.?264|H\.?265|HEVC|AVC|XviD|DivX|MiniSD|AAC|DTS|DTS-HD|FLAC|TrueHD|Atmos|10bit|Main10|AC3|DD\+?\d?)\b', '', name)
     # 去 web 作为独立词（来自 WEB-DL 拆分后的残留）
     name = re.sub(r'(?i)\bweb\b', '', name)
     name = re.sub(r'(?i)(中英双字|中英字幕|双语双字|中文字幕|中字|英字|无水印|修复版|加长版|初版|dvd-?rmvb|UNCUT|KORSUB)', '', name)
@@ -192,11 +211,12 @@ def strip_noise(filename: str) -> str:
     # 10b. 去尾部未知发布组（如 x264-BARC0DE 里的 BARC0DE）。
     # _KNOWN_GROUPS 是白名单，覆盖不到的发布组会残留，
     # 还会被后续语言分离切成 "BARC 0 DE" 这种垃圾尾缀，同时污染清洗名和标准名。
-    # 只在 "-" 之前已是多词标题时才剥，避免误伤 X-MEN / Spider-Man 这类片名本身。
+    # 只在 "-" 之前已是多词标题时才剥，避免误伤 X-MEN / Spider-Man 这类片名本身；
+    # 后面还跟着质量标签的不剥，那是节目主题（Ultimate Factories-BMW.HDTV.720p）。
     group_match = _TRAILING_GROUP_RE.search(name)
     if group_match:
         head = name[:group_match.start()].strip()
-        if " " in head and len(head) >= 4:
+        if " " in head and len(head) >= 4 and not _group_token_is_topic(base, group_match.group(1)):
             name = head
 
     # 11. 清理分隔符

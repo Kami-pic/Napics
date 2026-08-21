@@ -437,6 +437,30 @@ class TestUnknownReleaseGroupStripped:
         assert "珍珠港" in result
         assert "Pearl Harbor" in result
 
+    def test_topic_before_quality_tag_kept(self):
+        """"-XXX" 后面还有质量标签的是节目主题，不是发布组，不能剥。
+        纪录片按集命名常见：Ultimate Factories-BMW.HDTV.720p 里的 BMW 是这一集讲什么，
+        剥掉就只剩系列名，搜索会搜到整个系列而不是这一集。
+        """
+        from clean_name_system import strip_noise
+
+        result = strip_noise("National.Geographic.Ultimate.Factories-BMW.HDTV.720p.MKV")
+        assert "BMW" in result
+        assert "720p" not in result
+
+    def test_xvid_divx_minisd_stripped(self):
+        """XviD / DivX / MiniSD 是编码与规格标签，必须和 x264 一样剥掉"""
+        from clean_name_system import strip_noise
+
+        result = strip_noise("不可撤销.Irreversible.2002.DVDRip.AC3.XviD-ReMAKe[www.ed2kers.com].avi")
+        assert "XviD" not in result and "xvid" not in result.lower()
+        assert "ReMAKe" not in result
+        assert "Irreversible" in result
+
+        result = strip_noise("肉体证据.Body.Of.Evidence.1993.HDTV.MiniSD-TLF.mkv")
+        assert "MiniSD" not in result
+        assert "Body Of Evidence" in result
+
 
 class TestBuildSearchIndexName:
     """搜索索引名取名优先级：NFO → 文件夹名补齐 → 文件名。
