@@ -17,12 +17,16 @@ cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8001
 # 前端
 cd frontend && npm run dev
 
-# 测试（后端）
-cd backend && python -X utf8 -m pytest tests/
+# 测试（后端）：必须指定具体测试文件，不要跑 pytest tests/
+cd backend && python -X utf8 -m pytest tests/test_playback_subtitles.py
+
+# 测试（前端）
+cd frontend && npm test
 ```
 
-前端测试用例与 vitest 配置已被 commit `7971abb` 误删，当前 `npx vitest --run` 会因找不到测试文件而失败。
-后端测试基建（`conftest.py` / `pytest.ini` / `test_support/`）同批被删，已恢复到本地工作区但仍被 `.gitignore` 排除。
+前端测试基建（`vitest.config.ts`、`__tests__/`）与后端测试基建（`conftest.py`、`pytest.ini`、`test_support/`）均在版本控制内，未被 `.gitignore` 排除。
+前端 `npm test`（即 `vitest --run`）可直接使用。
+后端**必须按文件名指定测试**：`tests/test_api_rename.py` 在收集期就会发出真实 HTTP 请求，因此 `pytest tests/` 全量收集不可用。
 
 ## 目录结构
 
