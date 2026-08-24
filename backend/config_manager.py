@@ -1,9 +1,26 @@
 import json
 import os
+import threading
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Callable, Dict, Optional, List
 
 from core.json_store import atomic_write_json
+
+# 媒体库写锁：按 media_library.json 的绝对路径共享，**不是实例级**。
+# ConfigManager 会被多处重新实例化（download_manager._trigger_local_refresh 就用
+# 默认 ConfigManager()），实例级锁在这些路径上等于没加。
+_LIBRARY_LOCKS: Dict[str, threading.RLock] = {}
+_LIBRARY_LOCKS_GUARD = threading.Lock()
+
+
+def _library_lock_for(lib_path: str) -> threading.RLock:
+    key = os.path.abspath(lib_path)
+    with _LIBRARY_LOCKS_GUARD:
+        lock = _LIBRARY_LOCKS.get(key)
+        if lock is None:
+            lock = threading.RLock()
+            _LIBRARY_LOCKS[key] = lock
+        return lock
 
 class IndexerPriorityConfig(BaseModel):
     """索引器优先级配置（用于 AppConfig 序列化）"""
@@ -212,6 +229,42 @@ class ConfigManager:
     @property
     def config(self) -> AppConfig:
         return self._config
+
+    @property
+    def library_lock(self) -> threading.RLock:
+        """媒体库写锁（可重入）。
+
+        临界区必须包住 `load_library → 修改 → save_library` **整段**：
+        只锁 save 挡不住丢更新（两边各自读到旧库、各自写回，后写覆盖先写）。
+        可重入是因为 /sync 单个请求内会两次落盘。
+
+        扫描、ffprobe、网络请求这类慢操作**不要**放进临界区 ——
+        持锁几分钟会让其他所有写媒体库的请求一起干等。
+        """
+        return _library_lock_for(self.lib_path)
+
+    def mutate_library(self, fn: Callable[[List[dict]], object]) -> bool:
+        """在锁内执行 load → fn(library) → save，返回是否真的落盘。
+
+        fn 的返回值决定落盘内容：
+        - `None`：保存 fn 原地修改后的 library；
+        - `False`：无需落盘（跳过一次整库序列化）；
+        - `list`：用返回的列表覆盖整库。
+        """
+        with self.library_lock:
+            library = self.load_library()
+            result = fn(library)
+            if result is False:
+                return False
+            if result is None:
+                self.save_library(library)
+                return True
+            if isinstance(result, list):
+                self.save_library(result)
+                return True
+            raise TypeError(
+                f"mutate_library 的回调只能返回 None / False / list，收到 {type(result).__name__}"
+            )
 
     def load_library(self) -> List[dict]:
         if os.path.exists(self.lib_path):
