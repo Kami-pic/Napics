@@ -88,3 +88,39 @@ def test_config_manager_roundtrip(workdir, monkeypatch):
     got = mgr.load_library()
     assert len(got) == 1
     assert got[0]["file_path"] == "/media/电影/a.mkv"
+
+
+def test_concurrent_writes_never_corrupt_or_raise(workdir):
+    """并发写同一个文件：不许抛异常，落盘内容必须是某一次写入的完整结果。
+
+    临时文件名原先固定为 `<path>.tmp`：两个线程同时写就会共用同一个句柄目标，
+    内容交错写坏，先完成的那个 os.replace 还会让后一个拿到 FileNotFoundError。
+    媒体库有写锁挡住这种并发，但 config.json 等其他调用方没有。
+    """
+    import threading
+
+    target = os.path.join(workdir, "data.json")
+    payloads = [[{"file_path": f"/media/{i}.mkv", "n": i}] * 50 for i in range(6)]
+    errors = []
+    ready = threading.Barrier(len(payloads))
+
+    def writer(data):
+        try:
+            ready.wait(timeout=5)
+            atomic_write_json(target, data, compact=True)
+        except Exception as e:  # noqa: BLE001 — 测试要把任何异常都记下来
+            errors.append(e)
+
+    threads = [threading.Thread(target=writer, args=(p,)) for p in payloads]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=10)
+
+    assert errors == [], f"并发写抛异常: {errors}"
+    with open(target, encoding="utf-8") as f:
+        loaded = json.load(f)          # 内容损坏时这里会 JSONDecodeError
+    assert loaded in payloads, "落盘内容不是任何一次完整写入的结果"
+    # 不留临时文件残骸
+    leftovers = [n for n in os.listdir(workdir) if n.endswith(".tmp")]
+    assert leftovers == [], f"残留临时文件: {leftovers}"
