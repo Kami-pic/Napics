@@ -9,6 +9,7 @@ import pytest
 
 import shared
 from routes import tools as tools_route
+from test_support.fake_library_store import LibraryMutationContract
 
 
 @pytest.fixture(autouse=True)
@@ -27,7 +28,7 @@ def _allow_fixture_dir(monkeypatch):
     shared.invalidate_allowed_roots_cache()
 
 
-class FakeConfigManager:
+class FakeConfigManager(LibraryMutationContract):
     def __init__(self, library, nas_root):
         self.library = library
         self.saved_library = None

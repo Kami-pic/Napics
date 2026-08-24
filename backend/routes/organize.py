@@ -52,24 +52,25 @@ def rollback_rename(snapshot_id: int):
         raise HTTPException(status_code=500, detail=str(res))
     
     # 更新媒体库：new_path → old_path
-    lib = config_m.load_library()
-    changed = False
-    for op in snapshot_data.get("ops", []):
-        old_p = op["old_path"]
-        new_p = op["new_path"]
-        # 文件路径直接替换
-        for v in lib:
-            fp = v.get("file_path", "")
-            if fp == new_p:
-                v["file_path"] = old_p
-                v["file_name"] = os.path.basename(old_p)
-                changed = True
-            elif fp.startswith(new_p + os.sep) or fp.startswith(new_p + "/"):
-                v["file_path"] = old_p + fp[len(new_p):]
-                changed = True
-    if changed:
-        config_m.save_library(lib)
-    
+    def _rollback_paths(lib):
+        changed = False
+        for op in snapshot_data.get("ops", []):
+            old_p = op["old_path"]
+            new_p = op["new_path"]
+            # 文件路径直接替换
+            for v in lib:
+                fp = v.get("file_path", "")
+                if fp == new_p:
+                    v["file_path"] = old_p
+                    v["file_name"] = os.path.basename(old_p)
+                    changed = True
+                elif fp.startswith(new_p + os.sep) or fp.startswith(new_p + "/"):
+                    v["file_path"] = old_p + fp[len(new_p):]
+                    changed = True
+        return None if changed else False
+
+    config_m.mutate_library(_rollback_paths)
+
     return {"status": "ok", "result": res}
 
 
@@ -154,31 +155,32 @@ def rename_videos(path: str, dry_run: bool = True, shadow_only: bool = False):
             file_renames = [(r["old_path"], r["new_path"]) for r in actual_result if not r.get("is_folder") and not r.get("unchanged")]
             folder_renames = [(r["old_path"], r["new_path"]) for r in actual_result if r.get("is_folder") and not r.get("unchanged")]
             
-            lib = config_m.load_library()
-            changed = False
-            
-            for old_p, new_p in file_renames:
-                for v in lib:
-                    if v.get("file_path") == old_p:
-                        v["file_path"] = new_p
-                        v["file_name"] = os.path.basename(new_p)
-                        changed = True
-                        break
-            
-            for old_folder, new_folder in folder_renames:
-                for v in lib:
-                    fp = v.get("file_path", "")
-                    if fp.startswith(old_folder + os.sep) or fp.startswith(old_folder + "/"):
-                        v["file_path"] = new_folder + fp[len(old_folder):]
-                        changed = True
-                    if changed:
-                        base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
-                        if base and v.get("file_path", "").startswith(base):
-                            rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
-                            v["folder_name"] = "" if rel == "." else rel
-            
-            if changed:
-                config_m.save_library(lib)
+            def _apply_renames(lib):
+                changed = False
+
+                for old_p, new_p in file_renames:
+                    for v in lib:
+                        if v.get("file_path") == old_p:
+                            v["file_path"] = new_p
+                            v["file_name"] = os.path.basename(new_p)
+                            changed = True
+                            break
+
+                for old_folder, new_folder in folder_renames:
+                    for v in lib:
+                        fp = v.get("file_path", "")
+                        if fp.startswith(old_folder + os.sep) or fp.startswith(old_folder + "/"):
+                            v["file_path"] = new_folder + fp[len(old_folder):]
+                            changed = True
+                        if changed:
+                            base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
+                            if base and v.get("file_path", "").startswith(base):
+                                rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
+                                v["folder_name"] = "" if rel == "." else rel
+
+                return None if changed else False
+
+            config_m.mutate_library(_apply_renames)
         
         return {"mode": "renamed", "shadow_filled": shadow_filled, "items": actual_result, "snapshot_id": snapshot_id}
     
@@ -308,30 +310,34 @@ def organize_structure(path: str, dry_run: bool = True):
 
 def _reconcile_library_after_organize(path: str):
     """整理完成后对目标路径做文件系统对账，清理已不存在的条目并重算质量分。"""
-    library = config_m.load_library()
-    before = len(library)
-    # 只对账整理路径下的文件
-    reconciled = []
+    removed = 0
     recalc_count = 0
-    for v in library:
-        fp = v.get("file_path", "")
-        if fp.startswith(path + os.sep) or fp.startswith(path + "/"):
-            if not os.path.exists(fp):
-                continue  # 文件已不存在，从媒体库中移除
-            # 检查文件大小是否变化，变化则重算质量分
-            try:
-                actual_size = round(os.path.getsize(fp) / (1024**3), 2)
-                lib_size = v.get("size_gb", 0)
-                if lib_size > 0 and abs(actual_size - lib_size) / lib_size > 0.05:
-                    v["size_gb"] = actual_size
-                    v.pop("quality_score", None)  # 清除旧分数，save_library 会重算
-                    recalc_count += 1
-            except OSError:
-                pass
-        reconciled.append(v)
-    removed = before - len(reconciled)
-    if removed > 0 or recalc_count > 0:
-        config_m.save_library(reconciled)
+
+    def _reconcile(library):
+        nonlocal removed, recalc_count
+        before = len(library)
+        # 只对账整理路径下的文件
+        reconciled = []
+        for v in library:
+            fp = v.get("file_path", "")
+            if fp.startswith(path + os.sep) or fp.startswith(path + "/"):
+                if not os.path.exists(fp):
+                    continue  # 文件已不存在，从媒体库中移除
+                # 检查文件大小是否变化，变化则重算质量分
+                try:
+                    actual_size = round(os.path.getsize(fp) / (1024**3), 2)
+                    lib_size = v.get("size_gb", 0)
+                    if lib_size > 0 and abs(actual_size - lib_size) / lib_size > 0.05:
+                        v["size_gb"] = actual_size
+                        v.pop("quality_score", None)  # 清除旧分数，save_library 会重算
+                        recalc_count += 1
+                except OSError:
+                    pass
+            reconciled.append(v)
+        removed = before - len(reconciled)
+        return reconciled if (removed > 0 or recalc_count > 0) else False
+
+    if config_m.mutate_library(_reconcile):
         logger.info(f"[organize] 对账完成: 移除 {removed} 条已不存在的记录, 重算 {recalc_count} 条质量分")
 
 

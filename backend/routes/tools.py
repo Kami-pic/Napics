@@ -152,13 +152,15 @@ def batch_manage(req: BatchRequest):
                 break
 
         # 同步从媒体库中移除（匹配文件路径和文件夹前缀）
-        library = config_m.load_library()
         deleted_set = set(success)
         # deleted_dirs：包含请求中的路径 + 实际删除的封装文件夹路径
         deleted_dirs = [s for s in success if os.path.sep in s or "/" in s]
-        library = [v for v in library if v.get("file_path") not in deleted_set
-                   and not any(v.get("file_path", "").startswith(d + os.sep) or v.get("file_path", "").startswith(d + "/") for d in deleted_dirs)]
-        config_m.save_library(library)
+        config_m.mutate_library(
+            lambda library: [v for v in library if v.get("file_path") not in deleted_set
+                             and not any(v.get("file_path", "").startswith(d + os.sep)
+                                         or v.get("file_path", "").startswith(d + "/")
+                                         for d in deleted_dirs)]
+        )
     
     elif req.action == "move":
         if not req.target_dir:
@@ -226,27 +228,29 @@ def batch_manage(req: BatchRequest):
                 failed.append({"path": p, "error": str(e)})
         # 更新 media_library.json 中的路径
         if path_map or dir_map:
-            library = config_m.load_library()
             base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
-            for v in library:
-                fp = v.get("file_path", "")
-                # 文件级匹配
-                if fp in path_map:
-                    v["file_path"] = path_map[fp]
-                    v["file_name"] = os.path.basename(path_map[fp])
-                    if base:
-                        rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
-                        v["folder_name"] = "" if rel == "." else rel
-                else:
-                    # 文件夹级前缀匹配
-                    for old_dir, new_dir in dir_map.items():
-                        if fp.startswith(old_dir + os.sep) or fp.startswith(old_dir + "/"):
-                            v["file_path"] = new_dir + fp[len(old_dir):]
-                            if base:
-                                rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
-                                v["folder_name"] = "" if rel == "." else rel
-                            break
-            config_m.save_library(library)
+
+            def _remap_paths(library):
+                for v in library:
+                    fp = v.get("file_path", "")
+                    # 文件级匹配
+                    if fp in path_map:
+                        v["file_path"] = path_map[fp]
+                        v["file_name"] = os.path.basename(path_map[fp])
+                        if base:
+                            rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
+                            v["folder_name"] = "" if rel == "." else rel
+                    else:
+                        # 文件夹级前缀匹配
+                        for old_dir, new_dir in dir_map.items():
+                            if fp.startswith(old_dir + os.sep) or fp.startswith(old_dir + "/"):
+                                v["file_path"] = new_dir + fp[len(old_dir):]
+                                if base:
+                                    rel = os.path.relpath(os.path.dirname(v["file_path"]), base)
+                                    v["folder_name"] = "" if rel == "." else rel
+                                break
+
+            config_m.mutate_library(_remap_paths)
     
     elif req.action == "copy":
         if not req.target_dir:
@@ -286,17 +290,18 @@ def batch_manage(req: BatchRequest):
     
     elif req.action == "remove":
         # 从媒体库中移除（不删除文件），并记录到排除列表防止同步拉回
-        library = config_m.load_library()
         remove_set = set(req.paths)
-        # 收集要排除的文件夹路径（去重）
         excluded_folders = set()
-        for v in library:
-            fp = v.get("file_path", "")
-            if fp in remove_set:
-                folder = os.path.dirname(fp)
-                excluded_folders.add(folder)
-        library = [v for v in library if v.get("file_path") not in remove_set]
-        config_m.save_library(library)
+
+        def _drop_removed(library):
+            # 收集要排除的文件夹路径（去重）
+            for v in library:
+                fp = v.get("file_path", "")
+                if fp in remove_set:
+                    excluded_folders.add(os.path.dirname(fp))
+            return [v for v in library if v.get("file_path") not in remove_set]
+
+        config_m.mutate_library(_drop_removed)
         # 保存排除列表
         config_m.add_excluded_paths(list(remove_set | excluded_folders))
         success = req.paths

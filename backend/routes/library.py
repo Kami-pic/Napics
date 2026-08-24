@@ -158,7 +158,7 @@ async def scan_path(path: str, library_name: str = ""):
                 is_reused = item.get("file_path") in reused_paths
                 if is_reused and not needs_refill(item):
                     continue
-                # 直接在内存条目上应用：这些条目随后由 save_library(final) 一次性落盘，
+                # 直接在内存条目上应用：这些条目随后在保存阶段一次性落盘，
                 # 避免每条都做一次全库读写
                 _, item_shadow_filled = fill_names_for_item(item)
                 if item_shadow_filled:

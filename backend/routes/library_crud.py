@@ -31,19 +31,36 @@ def refresh_quality_score(paths: List[str] = None):
     paths 为空：全局检测，只根据现有数据重算质量分（不跑 ffprobe）。
     """
     from quality_parser import compute_quality_score_from_video
-    library = config_m.load_library()
-    updated = 0
     path_set = set(paths) if paths else None
 
+    # ffprobe 是子进程 + 读文件头，必须在锁外跑完再进临界区应用结果，
+    # 否则一次质量检测就会把整个媒体库的写入卡住。
+    probed = {}
     if path_set:
-        lib_map = {v.get("file_path", ""): v for v in library}
         for fp in path_set:
-            v = lib_map.get(fp)
-            if not v or not os.path.exists(fp):
+            if not os.path.exists(fp):
                 continue
             try:
                 info = scanner.get_video_metadata(fp)
                 if info and info.height > 0:
+                    probed[fp] = info
+            except Exception as e:
+                logger.error(f"[refresh-quality] ffprobe 失败: {fp} — {e}")
+
+    total = 0
+    updated = 0
+
+    def _apply(library):
+        nonlocal total, updated
+        total = len(library)
+        if path_set:
+            lib_map = {v.get("file_path", ""): v for v in library}
+            for fp in path_set:
+                v = lib_map.get(fp)
+                if not v:
+                    continue
+                info = probed.get(fp)
+                if info is not None:
                     v["resolution"] = info.resolution
                     v["height"] = info.height
                     v["width"] = info.width
@@ -61,23 +78,21 @@ def refresh_quality_score(paths: List[str] = None):
                     v["bitrate_kbps"] = info.bitrate_kbps
                     v["size_gb"] = info.size_gb
                     v["is_low_res"] = info.is_low_res
-            except Exception as e:
-                logger.error(f"[refresh-quality] ffprobe 失败: {fp} — {e}")
-            new_score = compute_quality_score_from_video(v)
-            if new_score != v.get("quality_score", 0):
-                v["quality_score"] = new_score
-                updated += 1
-    else:
-        for v in library:
-            old_score = v.get("quality_score", 0)
-            new_score = compute_quality_score_from_video(v)
-            if new_score != old_score:
-                v["quality_score"] = new_score
-                updated += 1
+                new_score = compute_quality_score_from_video(v)
+                if new_score != v.get("quality_score", 0):
+                    v["quality_score"] = new_score
+                    updated += 1
+        else:
+            for v in library:
+                old_score = v.get("quality_score", 0)
+                new_score = compute_quality_score_from_video(v)
+                if new_score != old_score:
+                    v["quality_score"] = new_score
+                    updated += 1
+        return None if updated else False
 
-    if updated:
-        config_m.save_library(library)
-    return {"status": "ok", "updated": updated, "total": len(library)}
+    config_m.mutate_library(_apply)
+    return {"status": "ok", "updated": updated, "total": total}
 
 
 @router.post("/library/folder-type")
@@ -183,20 +198,23 @@ def update_media_library(name: str, req: dict):
     # 改名时同步更新 media_library.json 中的 folder_name 前缀
     new_name = target.name
     if new_name != old_name:
-        library = config_m.load_library()
         updated = 0
         old_prefix = old_name + os.sep
         old_prefix_slash = old_name + "/"
-        for v in library:
-            fn = v.get("folder_name", "")
-            if fn == old_name:
-                v["folder_name"] = new_name
-                updated += 1
-            elif fn.startswith(old_prefix) or fn.startswith(old_prefix_slash):
-                v["folder_name"] = new_name + fn[len(old_name):]
-                updated += 1
-        if updated > 0:
-            config_m.save_library(library)
+
+        def _rename_prefix(library):
+            nonlocal updated
+            for v in library:
+                fn = v.get("folder_name", "")
+                if fn == old_name:
+                    v["folder_name"] = new_name
+                    updated += 1
+                elif fn.startswith(old_prefix) or fn.startswith(old_prefix_slash):
+                    v["folder_name"] = new_name + fn[len(old_name):]
+                    updated += 1
+            return None if updated else False
+
+        if config_m.mutate_library(_rename_prefix):
             logger.info(f"[library] 媒体文件夹改名 '{old_name}' → '{new_name}'，更新 {updated} 条记录的 folder_name")
     return {"status": "ok"}
 
@@ -209,16 +227,22 @@ def delete_media_library(name: str):
     target = next((lib for lib in libs if lib.name == name), None)
     if not target:
         raise HTTPException(status_code=404, detail=f"library '{name}' not found")
-    library = config_m.load_library()
     paths_to_remove = set(target.paths)
-    kept = [v for v in library if not any(v.get("file_path", "").startswith(p) for p in paths_to_remove)]
-    if len(kept) < len(library):
-        config_m.save_library(kept)
-        logger.info(f"[library] 删除媒体库 '{name}'，清理 {len(library) - len(kept)} 条媒体记录")
+    removed = 0
+
+    def _drop_paths(library):
+        nonlocal removed
+        kept = [v for v in library
+                if not any(v.get("file_path", "").startswith(p) for p in paths_to_remove)]
+        removed = len(library) - len(kept)
+        return kept if removed else False
+
+    if config_m.mutate_library(_drop_paths):
+        logger.info(f"[library] 删除媒体库 '{name}'，清理 {removed} 条媒体记录")
     new_libs = [lib for lib in libs if lib.name != name]
     config.media_libraries = new_libs
     config_m.save(config)
-    return {"status": "ok", "removed_videos": len(library) - len(kept)}
+    return {"status": "ok", "removed_videos": removed}
 
 
 @router.post("/library/remove-path")
@@ -227,11 +251,15 @@ def remove_library_path(req: dict):
     path = req.get("path", "").strip()
     if not path:
         return {"status": "error", "message": "path required"}
-    library = config_m.load_library()
-    kept = [v for v in library if not v.get("file_path", "").startswith(path)]
-    removed = len(library) - len(kept)
-    if removed > 0:
-        config_m.save_library(kept)
+    removed = 0
+
+    def _drop_path(library):
+        nonlocal removed
+        kept = [v for v in library if not v.get("file_path", "").startswith(path)]
+        removed = len(library) - len(kept)
+        return kept if removed else False
+
+    if config_m.mutate_library(_drop_path):
         logger.info(f"[library] 删除路径 '{path}' 下 {removed} 条媒体记录")
     return {"status": "ok", "removed": removed}
 
@@ -264,7 +292,10 @@ def list_media_libraries():
 @router.post("/library/reset")
 def reset_library():
     """重置媒体库（清空扫描记录），用于测试首次引导"""
-    config_m.save_library([])
+    # 整库清空也要持锁：否则可能插在别处的 load → save 中间，
+    # 那次 save 会把刚清空的库整份写回来。
+    with config_m.library_lock:
+        config_m.save_library([])
     return {"status": "ok"}
 
 
@@ -282,60 +313,68 @@ def set_clean_name(req: dict):
     if not file_path:
         return {"status": "error", "message": "file_path required"}
 
-    library = config_m.load_library()
+    result = {"status": "not_found"}
 
-    if is_folder:
-        folder_norm = file_path.replace("\\", "/").rstrip("/") + "/"
-        updated = 0
-        for v in library:
-            v_folder = v.get("file_path", "").replace("\\", "/")
-            if v_folder.startswith(folder_norm) or os.path.dirname(v_folder).replace("\\", "/") + "/" == folder_norm:
-                if clean_name_en is not None:
-                    v["clean_name_en"] = clean_name_en
-                    v["clean_name_source"] = "manual"
-                    updated += 1
-                if clean_name:
-                    v["clean_name"] = clean_name
-                    v["clean_name_source"] = "manual"
-                    cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
-                    if cn_parts:
-                        v["clean_name_cn"] = "".join(cn_parts)
-                    updated += 1
-        if updated > 0:
-            config_m.save_library(library)
-            return {"status": "ok", "updated": updated}
-        # 文件夹下没有视频，尝试直接匹配
+    def _apply(library):
+        nonlocal result
+
+        if is_folder:
+            folder_norm = file_path.replace("\\", "/").rstrip("/") + "/"
+            updated = 0
+            for v in library:
+                v_folder = v.get("file_path", "").replace("\\", "/")
+                if v_folder.startswith(folder_norm) or os.path.dirname(v_folder).replace("\\", "/") + "/" == folder_norm:
+                    if clean_name_en is not None:
+                        v["clean_name_en"] = clean_name_en
+                        v["clean_name_source"] = "manual"
+                        updated += 1
+                    if clean_name:
+                        v["clean_name"] = clean_name
+                        v["clean_name_source"] = "manual"
+                        cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
+                        if cn_parts:
+                            v["clean_name_cn"] = "".join(cn_parts)
+                        updated += 1
+            if updated > 0:
+                result = {"status": "ok", "updated": updated}
+                return None
+            # 文件夹下没有视频，尝试直接匹配
+            for v in library:
+                if v.get("file_path") == file_path:
+                    if clean_name:
+                        v["clean_name"] = clean_name
+                        v["clean_name_source"] = "manual"
+                        cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
+                        if cn_parts:
+                            v["clean_name_cn"] = "".join(cn_parts)
+                    if clean_name_en is not None:
+                        v["clean_name_en"] = clean_name_en
+                        v["clean_name_source"] = "manual"
+                    result = {"status": "ok"}
+                    return None
+            result = {"status": "ok", "updated": 0}
+            return False
+
+        # 视频模式：精确匹配 file_path
         for v in library:
             if v.get("file_path") == file_path:
-                if clean_name:
+                if clean_name is not None:
                     v["clean_name"] = clean_name
-                    v["clean_name_source"] = "manual"
-                    cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
-                    if cn_parts:
-                        v["clean_name_cn"] = "".join(cn_parts)
+                    v["clean_name_source"] = "manual" if clean_name else ""
+                    if clean_name:
+                        cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
+                        if cn_parts:
+                            v["clean_name_cn"] = "".join(cn_parts)
                 if clean_name_en is not None:
                     v["clean_name_en"] = clean_name_en
                     v["clean_name_source"] = "manual"
-                config_m.save_library(library)
-                return {"status": "ok"}
-        return {"status": "ok", "updated": 0}
+                result = {"status": "ok"}
+                return None
+        result = {"status": "not_found"}
+        return False
 
-    # 视频模式：精确匹配 file_path
-    for v in library:
-        if v.get("file_path") == file_path:
-            if clean_name is not None:
-                v["clean_name"] = clean_name
-                v["clean_name_source"] = "manual" if clean_name else ""
-                if clean_name:
-                    cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
-                    if cn_parts:
-                        v["clean_name_cn"] = "".join(cn_parts)
-            if clean_name_en is not None:
-                v["clean_name_en"] = clean_name_en
-                v["clean_name_source"] = "manual"
-            config_m.save_library(library)
-            return {"status": "ok"}
-    return {"status": "not_found"}
+    config_m.mutate_library(_apply)
+    return result
 
 
 @router.get("/media/subtitles")
@@ -358,10 +397,15 @@ def generate_clean_name(req: dict):
     if not file_path:
         return {"status": "error", "message": "file_path required"}
 
-    library = config_m.load_library()
-    result = regenerate_clean_names(library, file_path, req.get("is_folder", False))
+    result = {}
+
+    def _regen(library):
+        nonlocal result
+        result = regenerate_clean_names(library, file_path, req.get("is_folder", False))
+        return None if result["updated"] else False
+
+    config_m.mutate_library(_regen)
     if result["updated"]:
-        config_m.save_library(library)
         return {"status": "ok", **result}
 
     # 把失败原因说清楚：路径对不上和解析失败要分开，否则线上排查只能靠猜

@@ -280,26 +280,28 @@ def _write_scrape_result(path: str, result):
                     os.remove(old_vnfo)
                 if result.media_type == "movie":
                     scraper._write_movie_nfo_for_video(vp, result)
-                library = config_m.load_library()
-                for v in library:
-                    if v.get("file_path") == vp:
-                        en = getattr(result, 'english_title', '') or ""
-                        orig = result.original_title or ""
-                        if not en and orig and orig != result.title:
-                            latin = sum(1 for c in orig if c.isascii() and c.isalpha())
-                            total = sum(1 for c in orig if c.isalpha())
-                            if total > 0 and latin / total > 0.5:
-                                en = orig
-                        sn = result.title
-                        if en and en != result.title:
-                            sn += " " + en
-                        if result.year:
-                            sn += f" ({result.year})"
-                        v["shadow_name"] = sn
-                        v["shadow_name_source"] = "tmdb"
-                        v["shadow_tmdb_id"] = result.tmdb_id
-                        config_m.save_library(library)
-                        break
+                def _fill_shadow(library, vp=vp, result=result):
+                    for v in library:
+                        if v.get("file_path") == vp:
+                            en = getattr(result, 'english_title', '') or ""
+                            orig = result.original_title or ""
+                            if not en and orig and orig != result.title:
+                                latin = sum(1 for c in orig if c.isascii() and c.isalpha())
+                                total = sum(1 for c in orig if c.isalpha())
+                                if total > 0 and latin / total > 0.5:
+                                    en = orig
+                            sn = result.title
+                            if en and en != result.title:
+                                sn += " " + en
+                            if result.year:
+                                sn += f" ({result.year})"
+                            v["shadow_name"] = sn
+                            v["shadow_name_source"] = "tmdb"
+                            v["shadow_tmdb_id"] = result.tmdb_id
+                            return None
+                    return False
+
+                config_m.mutate_library(_fill_shadow)
         except OSError:
             pass
     elif os.path.isfile(path):
@@ -429,29 +431,31 @@ def read_scrape_data(path: str, no_fallback: bool = False):
             title = data.get("title", "")
             if title:
                 from clean_name_system import clean_from_scrape, safe_update_clean_name
-                library = config_m.load_library()
-                changed = False
                 norm_path = os.path.normpath(path)
                 video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
-                for v in library:
-                    fp = v.get("file_path", "")
-                    fp_dir = os.path.normpath(os.path.dirname(fp))
-                    if fp == path or fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
-                        if os.path.splitext(fp)[1].lower() not in video_exts:
-                            continue
-                        if not v.get("clean_name_cn") and not v.get("clean_name_en"):
-                            result = clean_from_scrape(
-                                title=title,
-                                original_title=data.get("original_title", ""),
-                                english_title=data.get("english_title", ""),
-                                year=data.get("year", ""),
-                                filename=v.get("file_name", ""),
-                                source="nfo",
-                            )
-                            if safe_update_clean_name(v, result):
-                                changed = True
-                if changed:
-                    config_m.save_library(library)
+
+                def _heal_clean_names(library):
+                    changed = False
+                    for v in library:
+                        fp = v.get("file_path", "")
+                        fp_dir = os.path.normpath(os.path.dirname(fp))
+                        if fp == path or fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
+                            if os.path.splitext(fp)[1].lower() not in video_exts:
+                                continue
+                            if not v.get("clean_name_cn") and not v.get("clean_name_en"):
+                                result = clean_from_scrape(
+                                    title=title,
+                                    original_title=data.get("original_title", ""),
+                                    english_title=data.get("english_title", ""),
+                                    year=data.get("year", ""),
+                                    filename=v.get("file_name", ""),
+                                    source="nfo",
+                                )
+                                if safe_update_clean_name(v, result):
+                                    changed = True
+                    return None if changed else False
+
+                config_m.mutate_library(_heal_clean_names)
         except Exception:
             pass
         return {"status": "ok", "data": data}
