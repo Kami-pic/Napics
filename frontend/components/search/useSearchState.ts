@@ -5,6 +5,7 @@ import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus, Pro
 import { api } from "@/lib/api";
 import { SEARCH_SSE_TIMEOUT_MS, AI_RECOMMEND_RESULT_LIMIT } from "@/lib/domain/search";
 import { DEFAULT_FILTERS, applyFilters, type SourceStatus } from "./filterUtils";
+import { useSearchLifecycle } from "./useSearchLifecycle";
 import { type PanFilterState, DEFAULT_PAN_FILTERS } from "./panFilterUtils";
 
 export type SearchTab = "bt" | "pan";
@@ -45,6 +46,12 @@ export function useSearchState({
   open, query, defaultSavePath, currentResolution, mediaType,
   cnName, enName, originalName, folderType, seasonNumber, episodeTag,
 }: UseSearchStateParams) {
+  // 取消与代际门禁独立于 open 存在：路由搜索页没有"关闭弹窗"这个时机
+  const {
+    generationRef, activeEsRef, beginNewSearch, cancelCurrentSearch,
+    setSseTimeout, clearSseTimeout, releaseEventSource, nextController,
+  } = useSearchLifecycle();
+
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<EnhancedSearchResult[]>([]);
   const [keyword, setKeyword] = useState(query);
@@ -202,27 +209,42 @@ export function useSearchState({
     btSources.filter(source => !source.capabilities.includes("seeders")).map(source => source.name)
   ), [btSources]);
 
-  useEffect(() => { setKeyword(query); }, [query]);
+  // query 或媒体上下文变化 = 换了要搜的东西，之前"用户手改过词"的判断随之失效，
+  // 否则来自媒体详情的结构化搜索会被上一轮的手动输入状态污染。
+  useEffect(() => {
+    setKeyword(query);
+    userEditedRef.current = false;
+    allKeywordRef.current = query;
+    panAllKeywordRef.current = query;
+  }, [query, cnName, enName, originalName, folderType, seasonNumber]);
+
+  /** 清掉一次搜索产生的全部结果态（换词、清空搜索词都走这里）。不动缓存和用户选择。 */
+  const resetSearchResults = useCallback(() => {
+    setResults([]); setError(""); setToast(null); setHitKeyword("");
+    setSearching(false); setSearchingStep("");
+    setSourceStatuses({}); setSourceKeywordInfo({}); setSourceTabStates({});
+    setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
+    setAiRecommended(new Map());
+    userEditedRef.current = false;
+  }, []);
 
   useEffect(() => {
     if (open && query) doSearch(query);
+    // 搜索词被清空：取消在途请求并清干净，不留上一次的结果和错误
+    if (open && !query) { cancelCurrentSearch(); resetSearchResults(); }
     if (open) {
       // 检查 AI 推荐是否可用
       api.getAIStatus().then(s => setAiAvailable(s.enabled && s.features?.search_recommend)).catch(() => setAiAvailable(false));
     }
     if (!open) {
-      setResults([]); setError(""); setToast(null); setHitKeyword("");
-      setFilters(DEFAULT_FILTERS); setDownloadingUrl(null);
-      setSearchingStep(""); setSearching(false); setSavePath("");
-      searchCache.current.clear(); userEditedRef.current = false;
-      // 关闭 SSE 并递增搜索 ID，确保残留消息被丢弃
-      searchIdRef.current++;
-      if (activeEsRef.current) { activeEsRef.current.close(); activeEsRef.current = null; }
-      setPanResults([]); setPanGroups({}); setPanSourceStatuses([]); setPanTotal(0); setPanSearching(false);
+      cancelCurrentSearch();
+      resetSearchResults();
+      setFilters(DEFAULT_FILTERS); setDownloadingUrl(null); setSavePath("");
+      searchCache.current.clear();
       panCache.current.clear();
       setActiveTab("bt");
-      setBtActiveSource("all"); setPanActiveSource("all"); setSourceTabStates({}); setSourceKeywordInfo({});
-      setAiRecommended(new Map()); setAiRecommendEnabled(false);
+      setBtActiveSource("all"); setPanActiveSource("all");
+      setAiRecommendEnabled(false);
     }
   }, [open, query]);
 
@@ -232,13 +254,12 @@ export function useSearchState({
 
   // 跟踪用户是否手动修改过搜索词
   const userEditedRef = useRef(false);
-  // 跟踪当前 SSE 连接，新搜索开始时关闭旧的（防止结果混入）
-  const activeEsRef = useRef<EventSource | null>(null);
-  // 搜索 ID：每次搜索递增，onmessage 中检查是否匹配当前搜索，防止旧结果混入
-  const searchIdRef = useRef(0);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
+
+    // 先取消旧搜索再看缓存：否则上一次未完成的流会在缓存结果显示后把它覆盖掉
+    const thisSearchId = beginNewSearch();
 
     // 检查缓存
     const cacheKey = q;
@@ -247,16 +268,10 @@ export function useSearchState({
       setResults(cached.results);
       setHitKeyword(q);
       setKeyword(q);
+      setSearching(false);
+      setSearchingStep("");
       return;
     }
-
-    // 关闭上一次未完成的 SSE 连接
-    if (activeEsRef.current) {
-      activeEsRef.current.close();
-      activeEsRef.current = null;
-    }
-    // 递增搜索 ID，后续 onmessage 中检查是否匹配
-    const thisSearchId = ++searchIdRef.current;
 
     setSearching(true); setResults([]); setError(""); setToast(null);
     setHitKeyword(""); setSourceStatuses({}); setSourceKeywordInfo({});
@@ -281,22 +296,23 @@ export function useSearchState({
       let sseErrorMessage = "";
 
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, SEARCH_SSE_TIMEOUT_MS);
+        setSseTimeout(() => { es.close(); reject(new Error("timeout")); }, SEARCH_SSE_TIMEOUT_MS);
 
         es.onmessage = (event) => {
-          // 搜索 ID 不匹配 → 旧搜索的残留消息，丢弃
-          if (searchIdRef.current !== thisSearchId) { es.close(); activeEsRef.current = null; return; }
+          // 代际不匹配 → 旧搜索的残留消息，丢弃。
+          // 置空 ref 必须带条件，否则会抹掉新搜索刚写进去的连接。
+          if (generationRef.current !== thisSearchId) { es.close(); releaseEventSource(es, thisSearchId); return; }
           try {
             const data = JSON.parse(event.data);
             if (data.type === "status") {
-              if (searchIdRef.current !== thisSearchId) return;
+              if (generationRef.current !== thisSearchId) return;
               setSourceStatuses(prev => ({
                 ...prev,
                 [data.source]: { status: data.status as SourceStatus["status"], count: data.count ?? 0 },
               }));
               setSearchingStep(`${data.source}: 搜索中...`);
             } else if (data.type === "source_done") {
-              if (searchIdRef.current !== thisSearchId) return;
+              if (generationRef.current !== thisSearchId) return;
               setSourceStatuses(prev => ({
                 ...prev,
                 [data.source]: { status: (data.status === "done" ? "done" : "failed") as SourceStatus["status"], count: data.count ?? 0 },
@@ -315,7 +331,7 @@ export function useSearchState({
                   quality_rank: r.quality_rank ?? 0,
                 }));
                 sseResults = [...sseResults, ...newItems];
-                if (searchIdRef.current === thisSearchId) {
+                if (generationRef.current === thisSearchId) {
                   setResults([...sseResults]);
                   setSearching(false);
                   setSearchingStep("");
@@ -326,25 +342,31 @@ export function useSearchState({
               if (data.error) {
                 sseErrorMessage = data.message || "没有可用的搜索源";
               }
-              clearTimeout(timeout);
+              clearSseTimeout();
               es.close();
-              activeEsRef.current = null;
+              releaseEventSource(es, thisSearchId);
               resolve();
             }
           } catch { /* 忽略解析错误 */ }
         };
-        es.onerror = () => { clearTimeout(timeout); es.close(); activeEsRef.current = null; reject(new Error("sse_error")); };
+        es.onerror = () => {
+          clearSseTimeout();
+          es.close();
+          releaseEventSource(es, thisSearchId);
+          reject(new Error("sse_error"));
+        };
       });
 
       if (sseDone && sseResults.length > 0) {
         searchCache.current.set(cacheKey, { results: sseResults, totalRaw: sseResults.length });
         // 异步 AI 推荐（仅用户开启时调用）
-        if (searchIdRef.current === thisSearchId) {
+        if (generationRef.current === thisSearchId) {
           setAiRecommended(new Map());
           if (aiRecommendEnabled) {
-            api.aiSearchRecommend(q, sseResults.slice(0, AI_RECOMMEND_RESULT_LIMIT), currentResolution ? { resolution: currentResolution } : undefined)
+            const aiController = nextController("bt");
+            api.aiSearchRecommend(q, sseResults.slice(0, AI_RECOMMEND_RESULT_LIMIT), currentResolution ? { resolution: currentResolution } : undefined, aiController.signal)
               .then(r => {
-                if (searchIdRef.current !== thisSearchId) return;
+                if (generationRef.current !== thisSearchId) return;
                 if (r.recommended?.length) {
                   const m = new Map<number, string>();
                   r.recommended.forEach((item: any) => m.set(item.index, item.reason));
@@ -355,7 +377,7 @@ export function useSearchState({
           }
         }
       }
-      if (searchIdRef.current === thisSearchId) {
+      if (generationRef.current === thisSearchId) {
         setResults(sseResults);
         setHitKeyword(q);
         // 后端明确报了"无可用源"：直接显示原因，不要走静默的空结果
@@ -365,9 +387,10 @@ export function useSearchState({
       }
     } catch (e: any) {
       // SSE 失败，fallback 到普通搜索（仅当前搜索仍有效时）
-      if (searchIdRef.current !== thisSearchId) return;
+      if (generationRef.current !== thisSearchId) return;
       try {
-        const d = await api.searchSingle(q, { skip_filter: true });
+        const fallbackController = nextController("bt");
+        const d = await api.searchSingle(q, { skip_filter: true }, fallbackController.signal);
         const raw: EnhancedSearchResult[] = (d.bt_results || []).map((r: any) => ({
           ...r,
           quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },
@@ -376,12 +399,12 @@ export function useSearchState({
         if (raw.length > 0) {
           searchCache.current.set(q, { results: raw, totalRaw: d.total_raw || raw.length });
         }
-        if (searchIdRef.current === thisSearchId) {
+        if (generationRef.current === thisSearchId) {
           setResults(raw);
           setHitKeyword(q);
         }
       } catch (e: any) {
-        if (searchIdRef.current === thisSearchId) {
+        if (generationRef.current === thisSearchId) {
           const msg = e?.message || "";
           if (msg.includes("timeout") || msg.includes("超时")) {
             setError("搜索超时，请检查网络连接或代理配置");
@@ -395,24 +418,33 @@ export function useSearchState({
         }
       }
     }
-    if (searchIdRef.current === thisSearchId) {
+    if (generationRef.current === thisSearchId) {
       setSearching(false);
       setSearchingStep("");
     }
-  }, [cnName, enName, originalName, seasonNumber]);
+  }, [cnName, enName, originalName, seasonNumber, aiRecommendEnabled, currentResolution,
+      beginNewSearch, generationRef, activeEsRef, setSseTimeout, clearSseTimeout, releaseEventSource, nextController]);
 
   // ── 网盘搜索 ──
+  // 网盘与单源搜索原先完全没有代际门禁：连续切换时先发起的响应回得晚就会盖掉后发起的。
+  // 这里不递增代际（切 Tab 属于同一次搜索），只按当前代际做门禁，并 abort 本通道的旧请求。
   const doPanSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
+    const gen = generationRef.current;
+    const controller = nextController("pan");
+    const stale = () => generationRef.current !== gen || controller.signal.aborted;
+
     const cached = panCache.current.get(q);
     if (cached) {
       setPanResults(cached.results); setPanGroups(cached.groups);
       setPanSourceStatuses(cached.statuses); setPanTotal(cached.total);
+      setPanSearching(false);
       return;
     }
     setPanSearching(true); setPanResults([]); setPanGroups({}); setError("");
     try {
-      const d = await api.searchPan(q, mediaType);
+      const d = await api.searchPan(q, mediaType, controller.signal);
+      if (stale()) return;
       const results: PanResult[] = d.results || [];
       const groups: Record<string, PanResult[]> = d.groups || {};
       const statuses: PanSourceStatus[] = d.source_statuses || [];
@@ -429,15 +461,21 @@ export function useSearchState({
         if (msg) setError(msg);
       }
     } catch (e: any) {
+      // 被取消不是失败，不该弹错误
+      if (stale()) return;
       setPanResults([]);
       setError(e?.message ? `网盘搜索失败：${e.message}` : "网盘搜索失败，请检查网络或网盘搜索源配置");
     }
+    if (stale()) return;
     setPanSearching(false);
-  }, [mediaType]);
+  }, [mediaType, generationRef, nextController]);
 
   // ── 单源搜索（BT Tab 切换到具体源时使用）──
   const doSourceSearch = useCallback(async (source: string, kw: string) => {
     if (!kw.trim() || !source) return;
+    const gen = generationRef.current;
+    const controller = nextController("source");
+    const stale = () => generationRef.current !== gen || controller.signal.aborted;
     // 更新该源 Tab 状态为搜索中
     setSourceTabStates(prev => ({
       ...prev,
@@ -454,7 +492,8 @@ export function useSearchState({
         return candidates.filter(c => c.toLowerCase() !== kw.toLowerCase()).join(",");
       })();
 
-      const d = await api.searchSource(source, kw, fallbacks || undefined);
+      const d = await api.searchSource(source, kw, fallbacks || undefined, controller.signal);
+      if (stale()) return;
       if (d.error) {
         setError(d.error);
         setSourceTabStates(prev => ({
@@ -486,12 +525,14 @@ export function useSearchState({
         }));
       }
     } catch {
+      // 被取消不算失败，不该把该源 Tab 写成空结果
+      if (stale()) return;
       setSourceTabStates(prev => ({
         ...prev,
         [source]: { keyword: kw, results: [], searchedKeywords: [kw], hitKeyword: "", searching: false },
       }));
     }
-  }, [cnName, enName, query, sourceDefaultKeywords]);
+  }, [cnName, enName, query, sourceDefaultKeywords, generationRef, nextController]);
 
   // 切换源 Tab 时的处理
   // 保存"全部"模式下的搜索词，切回时恢复
@@ -636,6 +677,8 @@ export function useSearchState({
     userEditedRef,
     // 搜索函数
     doSearch, doPanSearch, doSourceSearch,
+    // 生命周期：路由页离开、切后台时由调用方主动取消
+    cancelCurrentSearch, resetSearchResults,
     handleBtSourceSelect, handlePanSourceSelect,
     handleDownload,
     // 计算结果
