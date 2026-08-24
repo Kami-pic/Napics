@@ -2,6 +2,7 @@
 "use client";
 import type { ViewMode } from "@/types";
 import { api } from "@/lib/api";
+import { iterSseEvents } from "@/lib/sse/framer";
 
 interface ToolbarProps {
   viewMode: ViewMode;
@@ -35,33 +36,24 @@ export default function Toolbar({
         setTimeout(() => setSyncMsg(""), 4000);
         return;
       }
-      const reader = response.body?.getReader();
-      if (!reader) { setSyncing(false); return; }
-      const decoder = new TextDecoder();
-      let buffer = "";
+      if (!response.body) { setSyncing(false); return; }
       let lastDone = false;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop() || "";
-        for (const part of parts) {
-          if (!part.startsWith("data: ")) continue;
-          try {
-            const data = JSON.parse(part.replace("data: ", ""));
-            if (data.type === "status") setSyncMsg(data.message);
-            else if (data.type === "progress") {
-              const fileName = data.file || "";
-              const truncName = fileName.length > 30 ? fileName.slice(0, 12) + "..." + fileName.slice(-12) : fileName;
-              setSyncMsg(`${data.current}/${data.total}${truncName ? " " + truncName : ""}`);
-            }
-            else if (data.type === "done") {
-              setSyncMsg(`+${data.added} -${data.removed}`);
-              lastDone = true;
-            }
-          } catch {}
-        }
+      for await (const part of iterSseEvents(response.body)) {
+        if (!part.startsWith("data: ")) continue;
+        // framer 会吐出流末尾未闭合的残留，这里可能是半截 JSON
+        try {
+          const data = JSON.parse(part.replace("data: ", ""));
+          if (data.type === "status") setSyncMsg(data.message);
+          else if (data.type === "progress") {
+            const fileName = data.file || "";
+            const truncName = fileName.length > 30 ? fileName.slice(0, 12) + "..." + fileName.slice(-12) : fileName;
+            setSyncMsg(`${data.current}/${data.total}${truncName ? " " + truncName : ""}`);
+          }
+          else if (data.type === "done") {
+            setSyncMsg(`+${data.added} -${data.removed}`);
+            lastDone = true;
+          }
+        } catch {}
       }
       if (lastDone) onRefresh();
       else if (!syncMsg) setSyncMsg("完成");

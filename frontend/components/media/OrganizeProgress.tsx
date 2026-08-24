@@ -2,6 +2,7 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import { api } from "@/lib/api";
+import { iterSseEvents } from "@/lib/sse/framer";
 import type { OrganizeProgressEvent } from "@/types";
 
 interface Props {
@@ -47,36 +48,25 @@ export default function OrganizeProgress({ open, path, onClose, onComplete }: Pr
         setError(detail || `请求失败（HTTP ${response.status}）`);
         return;
       }
-      const reader = response.body?.getReader();
-      if (!reader) {
+      if (!response.body) {
         setError("服务端没有返回数据流");
         return;
       }
 
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop() || "";
-
-        for (const part of parts) {
-          if (!part.startsWith("data: ")) continue;
-          try {
-            const evt: OrganizeProgressEvent = JSON.parse(part.replace("data: ", ""));
-            setEvents(prev => [...prev, evt]);
-            if (evt.status === "completed") {
-              setCompleted(true);
-              onComplete();
-            }
-            if (evt.status === "error") {
-              setError(evt.error || "未知错误");
-            }
-          } catch { /* skip */ }
-        }
+      for await (const part of iterSseEvents(response.body)) {
+        if (!part.startsWith("data: ")) continue;
+        // framer 会吐出流末尾未闭合的残留，这里可能是半截 JSON
+        try {
+          const evt: OrganizeProgressEvent = JSON.parse(part.replace("data: ", ""));
+          setEvents(prev => [...prev, evt]);
+          if (evt.status === "completed") {
+            setCompleted(true);
+            onComplete();
+          }
+          if (evt.status === "error") {
+            setError(evt.error || "未知错误");
+          }
+        } catch { /* skip */ }
       }
     } catch (e: any) {
       setError(e.message || "连接失败");

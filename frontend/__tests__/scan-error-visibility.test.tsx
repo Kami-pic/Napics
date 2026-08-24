@@ -5,6 +5,7 @@
 // 于是全部被跳过 —— 表现为「进度条一闪而过、什么都没扫、也没有任何报错」，
 // 用户无法得知真实原因（路径在容器内不存在）。
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { iterSseEvents } from "@/lib/sse/framer";
 
 /** 构造一个 HTTP 错误响应（带 FastAPI 风格的 detail） */
 function errorResponse(status: number, detail: string): Response {
@@ -58,21 +59,11 @@ async function consumeScanStream(response: Response, path: string) {
     throw new Error(reason);
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) return [];
-  const decoder = new TextDecoder();
-  let buffer = "";
+  if (!response.body) return [];
   const received: any[] = [];
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value as Uint8Array, { stream: true });
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() || "";
-    for (const part of parts) {
-      if (!part.startsWith("data: ")) continue;
-      try { received.push(JSON.parse(part.replace("data: ", ""))); } catch { /* skip */ }
-    }
+  for await (const part of iterSseEvents(response.body)) {
+    if (!part.startsWith("data: ")) continue;
+    try { received.push(JSON.parse(part.replace("data: ", ""))); } catch { /* skip */ }
   }
   return received;
 }

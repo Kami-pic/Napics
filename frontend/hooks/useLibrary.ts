@@ -3,6 +3,15 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { VideoInfo, AppConfig, ScanProgress, FilterType, ViewMode, LibraryStats, FolderNode } from "@/types";
 import { api } from "@/lib/api";
+import { iterSseEvents } from "@/lib/sse/framer";
+
+/** /scan 的 SSE 事件载荷 */
+type ScanEvent = {
+  type: "start" | "progress" | "done";
+  total: number;
+  file?: VideoInfo;
+  raw_file_name: string;
+};
 
 const DEFAULT_CONFIG: AppConfig = {
   prowlarr_url: "", prowlarr_api_key: "", tmdb_api_key: "",
@@ -227,32 +236,22 @@ export function useLibrary() {
             : (detail || `HTTP ${response.status}`);
           throw new Error(reason);
         }
-        const reader = response.body?.getReader();
-        if (!reader) continue;
-        const decoder = new TextDecoder();
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() || "";
-          for (const part of parts) {
-            if (!part.startsWith("data: ")) continue;
-            try {
-              const data = JSON.parse(part.replace("data: ", ""));
-              if (data.type === "start") setScanProgress(prev => ({ ...prev, total: prev.total + data.total }));
-              else if (data.type === "progress") {
-                if (data.file && !existingPaths.has(data.file.file_path)) {
-                  accumulated.push(data.file); existingPaths.add(data.file.file_path);
-                  setVideos([...accumulated]);
-                }
-                setScanProgress(prev => ({ ...prev, current: prev.current + 1, lastFile: data.file?.file_name || data.raw_file_name }));
-              } else if (data.type === "done") {
-                // 扫描完成，主动退出循环不等连接关闭
-                reader.cancel();
-              }
-            } catch {}
+        if (!response.body) continue;
+        for await (const part of iterSseEvents(response.body, controller.signal)) {
+          if (!part.startsWith("data: ")) continue;
+          // framer 会吐出流末尾未闭合的残留，这里可能是半截 JSON
+          let data: ScanEvent;
+          try { data = JSON.parse(part.replace("data: ", "")); } catch { continue; }
+          if (data.type === "start") setScanProgress(prev => ({ ...prev, total: prev.total + data.total }));
+          else if (data.type === "progress") {
+            if (data.file && !existingPaths.has(data.file.file_path)) {
+              accumulated.push(data.file); existingPaths.add(data.file.file_path);
+              setVideos([...accumulated]);
+            }
+            setScanProgress(prev => ({ ...prev, current: prev.current + 1, lastFile: data.file?.file_name || data.raw_file_name }));
+          } else if (data.type === "done") {
+            // 扫描完成，主动退出循环不等连接关闭（break 会让 framer cancel reader）
+            break;
           }
         }
       }
