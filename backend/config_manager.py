@@ -13,7 +13,7 @@ _LIBRARY_LOCKS: Dict[str, threading.RLock] = {}
 _LIBRARY_LOCKS_GUARD = threading.Lock()
 
 
-def _library_lock_for(lib_path: str) -> threading.RLock:
+def library_lock_for(lib_path: str) -> threading.RLock:
     key = os.path.abspath(lib_path)
     with _LIBRARY_LOCKS_GUARD:
         lock = _LIBRARY_LOCKS.get(key)
@@ -241,7 +241,7 @@ class ConfigManager:
         扫描、ffprobe、网络请求这类慢操作**不要**放进临界区 ——
         持锁几分钟会让其他所有写媒体库的请求一起干等。
         """
-        return _library_lock_for(self.lib_path)
+        return library_lock_for(self.lib_path)
 
     def mutate_library(self, fn: Callable[[List[dict]], object]) -> bool:
         """在锁内执行 load → fn(library) → save，返回是否真的落盘。

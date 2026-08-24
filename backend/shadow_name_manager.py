@@ -49,20 +49,41 @@ def apply_auto_fill(item: dict, shadow_name: str, source: str,
 
 
 class ShadowNameManager:
-    def __init__(self, library_path: str = "media_library.json"):
-        self.library_path = library_path
+    """影子名读写。
+
+    生产环境（shared.py）传入 config_manager，读写全部走它 ——
+    这样才能拿到原子写、按 file_path 去重、以及 save_library 后的索引 / 完整度回调。
+    只传 library_path 的用法保留给测试夹具，此时自己做原子写。
+
+    两种模式都持同一把按库文件路径共享的锁，不会和 ConfigManager 的写入互相覆盖。
+    """
+
+    def __init__(self, library_path: str = "media_library.json", config_manager=None):
+        self._cm = config_manager
+        self.library_path = config_manager.lib_path if config_manager else library_path
 
     # ── 内部读写 ──
 
+    @property
+    def _lock(self):
+        from config_manager import library_lock_for
+        return library_lock_for(self.library_path)
+
     def _load_library(self) -> list:
+        if self._cm is not None:
+            return self._cm.load_library()
         if os.path.exists(self.library_path):
             with open(self.library_path, "r", encoding="utf-8", errors="replace") as f:
                 return json.load(f)
         return []
 
     def _save_library(self, data: list) -> None:
-        with open(self.library_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+        if self._cm is not None:
+            self._cm.save_library(data)
+            return
+        # 直接 json.dump 会在写到一半时留下截断的媒体库，且并发写必然损坏
+        from core.json_store import atomic_write_json
+        atomic_write_json(self.library_path, data, compact=True)
 
     def _find_item(self, library: list, file_path: str) -> Optional[dict]:
         for item in library:
@@ -88,14 +109,15 @@ class ShadowNameManager:
             source: str = "manual",
             tmdb_id: Optional[int] = None) -> None:
         """设置影子名（任何来源均可写入，包括覆盖已有值）"""
-        library = self._load_library()
-        item = self._find_item(library, file_path)
-        if item is None:
-            return
-        item["shadow_name"] = shadow_name
-        item["shadow_name_source"] = source
-        item["shadow_tmdb_id"] = tmdb_id
-        self._save_library(library)
+        with self._lock:
+            library = self._load_library()
+            item = self._find_item(library, file_path)
+            if item is None:
+                return
+            item["shadow_name"] = shadow_name
+            item["shadow_name_source"] = source
+            item["shadow_tmdb_id"] = tmdb_id
+            self._save_library(library)
 
     def auto_fill(self, file_path: str, shadow_name: str,
                   source: str, tmdb_id: Optional[int] = None,
@@ -104,25 +126,27 @@ class ShadowNameManager:
         优先级：manual(4) > nfo(3) > tmdb(3) > douban/bangumi(2) > scrape(2) > parsed(1)
         返回 True 表示填充成功，False 表示已有更高优先级被跳过
         organize_status: "ok" | "scrape_failed" """
-        library = self._load_library()
-        item = self._find_item(library, file_path)
-        if item is None:
-            return False
-        if not apply_auto_fill(item, shadow_name, source, tmdb_id, organize_status):
-            return False
-        self._save_library(library)
-        return True
+        with self._lock:
+            library = self._load_library()
+            item = self._find_item(library, file_path)
+            if item is None:
+                return False
+            if not apply_auto_fill(item, shadow_name, source, tmdb_id, organize_status):
+                return False
+            self._save_library(library)
+            return True
 
     def clear(self, file_path: str) -> None:
         """清除影子名，移除所有影子名相关字段"""
-        library = self._load_library()
-        item = self._find_item(library, file_path)
-        if item is None:
-            return
-        item.pop("shadow_name", None)
-        item.pop("shadow_name_source", None)
-        item.pop("shadow_tmdb_id", None)
-        self._save_library(library)
+        with self._lock:
+            library = self._load_library()
+            item = self._find_item(library, file_path)
+            if item is None:
+                return
+            item.pop("shadow_name", None)
+            item.pop("shadow_name_source", None)
+            item.pop("shadow_tmdb_id", None)
+            self._save_library(library)
 
     def get_search_name(self, file_path: str) -> str:
         """获取用于搜索的名称：优先影子名，fallback 到原始文件名"""
@@ -142,6 +166,7 @@ class ShadowNameManager:
         返回 {"generated": int, "skipped": int, "failed": int}"""
         library = self._load_library()
         stats = {"generated": 0, "skipped": 0, "failed": 0}
+        generated: dict = {}
 
         for item in library:
             # 已有手动影子名 → 跳过
@@ -210,14 +235,28 @@ class ShadowNameManager:
                     pass
 
             if shadow_name:
-                item["shadow_name"] = shadow_name
-                item["shadow_name_source"] = source
-                item["shadow_tmdb_id"] = tmdb_id
+                generated[file_path] = {
+                    "shadow_name": shadow_name,
+                    "shadow_name_source": source,
+                    "shadow_tmdb_id": tmdb_id,
+                }
                 stats["generated"] += 1
             else:
                 stats["failed"] += 1
 
-        self._save_library(library)
+        if not generated:
+            return stats
+
+        # 上面的循环每条都可能发 TMDB 请求，几百条就是好几分钟，
+        # 绝不能整段持锁。所以只在这里进临界区，按 file_path 把结果贴回最新库 ——
+        # 直接写回 library 快照会抹掉这期间别处新增的条目。
+        with self._lock:
+            latest = self._load_library()
+            for item in latest:
+                patch = generated.get(item.get("file_path"))
+                if patch:
+                    item.update(patch)
+            self._save_library(latest)
         return stats
 
     @staticmethod

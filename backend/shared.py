@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 # ── 全局单例 ──
 
 config_m = config_manager.ConfigManager()
-shadow_m = ShadowNameManager(library_path=config_m.lib_path)
+shadow_m = ShadowNameManager(config_manager=config_m)
 indexer_m = IndexerPriorityManager(config_path=config_m.config_path)
 indexer_m.load()
 torrent_bl = TorrentBlacklist(path=os.path.join(config_m.data_dir, "torrent_blacklist.json"))
@@ -370,20 +370,21 @@ def _is_top_category(path: str) -> bool:
 
 def _sync_library_paths(ops: list):
     """整理操作后同步更新 media_library.json 中的文件路径"""
-    library = config_m.load_library()
-    changed = False
-    for op in ops:
-        if op.get("action") == "move" and op.get("old") and op.get("new"):
-            for v in library:
-                if v.get("file_path") == op["old"]:
-                    v["file_path"] = op["new"]
-                    base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
-                    if base:
-                        rel = os.path.relpath(os.path.dirname(op["new"]), base)
-                        v["folder_name"] = "" if rel == "." else rel
-                    changed = True
-    if changed:
-        config_m.save_library(library)
+    def _apply(library):
+        changed = False
+        for op in ops:
+            if op.get("action") == "move" and op.get("old") and op.get("new"):
+                for v in library:
+                    if v.get("file_path") == op["old"]:
+                        v["file_path"] = op["new"]
+                        base = config_m.config.scan_paths[0] if config_m.config.scan_paths else ""
+                        if base:
+                            rel = os.path.relpath(os.path.dirname(op["new"]), base)
+                            v["folder_name"] = "" if rel == "." else rel
+                        changed = True
+        return None if changed else False
+
+    config_m.mutate_library(_apply)
 
 
 # ── 名称可信度优先级 ──
@@ -429,28 +430,30 @@ def _update_clean_names_after_scrape(path: str, scrape_result: dict):
         english_title = self_data.get("english_title", "")
         year = self_data.get("year", "")
 
-        library = config_m.load_library()
-        changed = False
         video_exts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".rmvb", ".rm", ".flv", ".ts", ".m4v"}
         norm_path = os.path.normpath(path)
-        for v in library:
-            fp = v.get("file_path", "")
-            fp_dir = os.path.normpath(os.path.dirname(fp))
-            if fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
-                ext = os.path.splitext(fp)[1].lower()
-                if ext in video_exts:
-                    result = clean_from_scrape(
-                        title=title,
-                        original_title=original_title,
-                        english_title=english_title,
-                        year=year,
-                        filename=v.get("file_name", ""),
-                        source="scrape",
-                    )
-                    if safe_update_clean_name(v, result):
-                        changed = True
-        if changed:
-            config_m.save_library(library)
+
+        def _apply(library):
+            changed = False
+            for v in library:
+                fp = v.get("file_path", "")
+                fp_dir = os.path.normpath(os.path.dirname(fp))
+                if fp_dir == norm_path or fp_dir.startswith(norm_path + os.sep):
+                    ext = os.path.splitext(fp)[1].lower()
+                    if ext in video_exts:
+                        result = clean_from_scrape(
+                            title=title,
+                            original_title=original_title,
+                            english_title=english_title,
+                            year=year,
+                            filename=v.get("file_name", ""),
+                            source="scrape",
+                        )
+                        if safe_update_clean_name(v, result):
+                            changed = True
+            return None if changed else False
+
+        config_m.mutate_library(_apply)
     except Exception:
         pass
 

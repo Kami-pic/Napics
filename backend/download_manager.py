@@ -406,20 +406,28 @@ class DownloadManager:
             try:
                 from config_manager import ConfigManager
                 cm = ConfigManager()
-                library = cm.load_library()
-                if not library:
+                if not cm.load_library():
                     return
-                # 找到 save_path 下的新文件，和 library 对比
+                # 扫描放在锁外：scan_folder 会跑 ffprobe，持锁做这个会把
+                # 整个媒体库的写入卡住几十秒。
                 import scanner
                 new_files = scanner.scan_folder(save_path)
                 if not new_files:
                     return
-                existing_paths = {v.get("file_path") for v in library}
-                added = [f for f in new_files if f.get("file_path") not in existing_paths]
-                if added:
+
+                added_count = 0
+
+                def _append_new(library):
+                    nonlocal added_count
+                    existing_paths = {v.get("file_path") for v in library}
+                    added = [f for f in new_files if f.get("file_path") not in existing_paths]
+                    added_count = len(added)
+                    if not added:
+                        return False
                     library.extend(added)
-                    cm.save_library(library)
-                    logger.info(f"[DownloadManager] 局部刷新：{save_path} 新增 {len(added)} 个文件")
+
+                if cm.mutate_library(_append_new):
+                    logger.info(f"[DownloadManager] 局部刷新：{save_path} 新增 {added_count} 个文件")
             except Exception as e:
                 logger.error(f"[DownloadManager] 局部刷新失败: {e}")
         threading.Thread(target=_do_refresh, daemon=True).start()

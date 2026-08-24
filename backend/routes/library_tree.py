@@ -484,7 +484,17 @@ def get_library_tree():
     # 自愈持久化
     if library_dirty[0]:
         try:
-            config_m.save_library(videos)
+            healed = {v["file_path"]: v for v in videos if v.get("file_path")}
+
+            def _apply_healed(latest):
+                """只把补全过的条目替换掉，其余沿用最新落盘内容。
+
+                videos 是构树开始时读到的快照，直接整份写回会抹掉这期间
+                别处新增的条目；反过来也不能把期间已删除的条目复活。
+                """
+                return [healed.get(v.get("file_path"), v) for v in latest]
+
+            config_m.mutate_library(_apply_healed)
             logger.info("[tree] 自愈：已补全视频条目的结构化清洗名并持久化")
         except Exception as e:
             logger.warning(f"[tree] 自愈持久化失败: {e}")

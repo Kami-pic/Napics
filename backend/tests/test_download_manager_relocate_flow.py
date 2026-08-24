@@ -13,6 +13,22 @@ from download_manager import DownloadManager, DownloadTask
 from file_relocator import RelocateResult
 
 
+class MutableLibraryFake:
+    """按 ConfigManager.mutate_library 的语义转发到假的 load / save。
+
+    真实实现会在锁内做 load → fn → save；这里只需保证契约一致，
+    下面几个假 ConfigManager 继承它即可。
+    """
+
+    def mutate_library(self, fn):
+        library = self.load_library()
+        result = fn(library)
+        if result is False:
+            return False
+        self.save_library(library if result is None else result)
+        return True
+
+
 class FakeSubscriptionManager:
     def __init__(self, sub):
         self.sub = sub
@@ -929,7 +945,7 @@ def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
         existing_path = str(tmp_dir / "library" / "Show" / "Show.S01E01.1080p.mkv")
         new_path = str(tmp_dir / "library" / "Show" / "Show.S01E02.2160p.mkv")
 
-        class FakeConfigManagerForRefresh:
+        class FakeConfigManagerForRefresh(MutableLibraryFake):
             def load_library(self):
                 return [{"file_path": existing_path, "title": "Show"}]
 
@@ -965,7 +981,7 @@ def test_trigger_local_refresh_skips_when_library_is_empty(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
 
-        class FakeConfigManagerForRefresh:
+        class FakeConfigManagerForRefresh(MutableLibraryFake):
             def load_library(self):
                 return []
 
@@ -990,7 +1006,7 @@ def test_trigger_local_refresh_skips_when_scan_returns_empty(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
 
-        class FakeConfigManagerForRefresh:
+        class FakeConfigManagerForRefresh(MutableLibraryFake):
             def load_library(self):
                 return [{"file_path": "existing"}]
 
@@ -1016,7 +1032,7 @@ def test_trigger_local_refresh_skips_when_no_new_files(monkeypatch):
         save_event = threading.Event()
         existing_path = str(tmp_dir / "library" / "Show" / "Show.S01E01.1080p.mkv")
 
-        class FakeConfigManagerForRefresh:
+        class FakeConfigManagerForRefresh(MutableLibraryFake):
             def load_library(self):
                 return [{"file_path": existing_path, "title": "Show"}]
 

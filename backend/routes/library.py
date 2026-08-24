@@ -145,9 +145,6 @@ async def scan_path(path: str, library_name: str = ""):
                             yield "data: " + json.dumps({"type": "progress", "raw_file_name": os.path.basename(fp), "current": progress_count, "total": total_count}) + "\n\n"
 
             # 4. 保存阶段
-            kept = [v for v in existing if not v.get("file_path", "").startswith(path)]
-            final = kept + results
-
             from scan_name_filler import fill_names_for_item, needs_refill
             # 生成检索名 + 标准名，来源优先级 NFO → 文件夹名 → 文件名。
             # 复用的旧条目也要按当前算法补算一次：同尺寸文件走复用分支时会整份沿用旧值，
@@ -175,11 +172,22 @@ async def scan_path(path: str, library_name: str = ""):
             _all_configured_paths = list(config_m.config.scan_paths or [])
             for lib in (config_m.config.media_libraries or []):
                 _all_configured_paths.extend(lib.paths)
-            if _all_configured_paths:
-                final = [v for v in final if not v.get("file_path") or
-                         any(v["file_path"].startswith(p) for p in _all_configured_paths)]
 
-            config_m.save_library(final)
+            def _merge(latest):
+                """本次扫描只对 path 下的条目负责，其余一律沿用最新落盘内容。
+
+                合并必须基于**锁内重新读到的**库，不能用扫描开始时的 existing 快照 ——
+                ffprobe 可能跑了好几分钟，期间下载归位、刮削、桌面整理写进去的条目
+                都会被那份旧快照抹掉。
+                """
+                kept = [v for v in latest if not v.get("file_path", "").startswith(path)]
+                merged = kept + results
+                if _all_configured_paths:
+                    merged = [v for v in merged if not v.get("file_path") or
+                              any(v["file_path"].startswith(p) for p in _all_configured_paths)]
+                return merged
+
+            config_m.mutate_library(_merge)
             yield "data: " + json.dumps({"type": "done", "total": len(results), "shadow_filled": shadow_filled}) + "\n\n"
 
         except Exception as e:
@@ -188,9 +196,11 @@ async def scan_path(path: str, library_name: str = ""):
             traceback.print_exc()
             if results:
                 try:
-                    existing = config_m.load_library()
-                    kept = [v for v in existing if not v.get("file_path", "").startswith(path)]
-                    config_m.save_library(kept + results)
+                    # 与正常分支同一套合并规则，只是不做孤立条目清理
+                    config_m.mutate_library(
+                        lambda latest: [v for v in latest
+                                        if not v.get("file_path", "").startswith(path)] + results
+                    )
                 except Exception:
                     pass
             yield "data: " + json.dumps({"type": "error", "message": str(e)}) + "\n\n"
@@ -329,9 +339,10 @@ def quick_sync():
                     logger.error(f"[sync] 文件处理失败: {fp} — {e}")
 
             current_lib.extend(new_videos)
-            config_m.save_library(current_lib)
 
-            # 扫描后自动从 NFO 填充影子名
+            # 填名放在落盘之前。原先是「先落盘 → 再填名 → 只有影子名被填过才二次落盘」，
+            # 于是"有检索名、无影子名"的新增视频，检索名永远不会持久化。
+            # 合并成一次落盘同时省掉一次整库序列化。
             shadow_filled = 0
             sync_tmdb = _tmdb_client()
             from scan_name_filler import fill_search_index_name
@@ -364,9 +375,24 @@ def quick_sync():
                     except Exception:
                         pass
 
-            # 影子名有变更才二次落盘（new_videos 的条目与 current_lib 共享同一对象）
-            if shadow_filled:
-                config_m.save_library(current_lib)
+            _snapshot_paths = set(v.get("file_path", "") for v in library)
+            _new_paths = set(v.get("file_path", "") for v in new_videos)
+
+            def _merge_sync(latest):
+                """同步只负责「文件系统里有/没有」，不负责删掉别处刚写进来的条目。
+
+                current_lib 派生自本次同步开始时的库快照，而文件系统遍历可能跑了几分钟。
+                期间下载归位入库的新条目既不在快照里、也不在遍历结果里，
+                直接写回 current_lib 会把它们静默删掉。
+                """
+                concurrent = [v for v in latest
+                              if v.get("file_path")
+                              and v["file_path"] not in _snapshot_paths
+                              and v["file_path"] not in _new_paths
+                              and v["file_path"] not in removed]
+                return current_lib + concurrent
+
+            config_m.mutate_library(_merge_sync)
 
             yield "data: " + json.dumps({"type": "done", "added": len(new_videos), "removed": len(removed), "total": len(current_lib), "shadow_filled": shadow_filled}) + "\n\n"
 
