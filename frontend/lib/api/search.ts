@@ -21,17 +21,19 @@ export const searchApi = {
 
   // 单关键词搜索（不回退，供前端逐轮调用）
   // 如果 /search/single 不存在（后端未重启），自动 fallback 到 /search
-  searchSingle: async (keyword: string, options?: { media_type?: string; skip_filter?: boolean }) => {
+  searchSingle: async (keyword: string, options?: { media_type?: string; skip_filter?: boolean }, signal?: AbortSignal) => {
     const p = new URLSearchParams({ keyword });
     if (options?.media_type) p.set("media_type", options.media_type);
     if (options?.skip_filter) p.set("skip_filter", "true");
     try {
-      return await request<any>(`${BASE_URL}/search/single?${p.toString()}`);
-    } catch {
+      return await request<any>(`${BASE_URL}/search/single?${p.toString()}`, { signal });
+    } catch (e) {
+      // 主动取消不该被当成"端点不存在"而触发 fallback，否则取消后又发一次请求
+      if (signal?.aborted) throw e;
       // fallback: 用旧的 /search 接口
       const fp = new URLSearchParams({ query: keyword });
       if (options?.media_type) fp.set("media_type", options.media_type);
-      const d = await request<any>(`${BASE_URL}/search?${fp.toString()}`);
+      const d = await request<any>(`${BASE_URL}/search?${fp.toString()}`, { signal });
       return { ...d, keyword };
     }
   },
@@ -48,14 +50,14 @@ export const searchApi = {
   },
 
   // 单源搜索（指定源 + 搜索词 + 可选回退词）
-  searchSource: (source: string, keyword: string, fallbackKeywords?: string) =>
-    request<any>(`${BASE_URL}/api/search/source?source=${encodeURIComponent(source)}&keyword=${encodeURIComponent(keyword)}${fallbackKeywords ? `&fallback_keywords=${encodeURIComponent(fallbackKeywords)}` : ""}`),
+  searchSource: (source: string, keyword: string, fallbackKeywords?: string, signal?: AbortSignal) =>
+    request<any>(`${BASE_URL}/api/search/source?source=${encodeURIComponent(source)}&keyword=${encodeURIComponent(keyword)}${fallbackKeywords ? `&fallback_keywords=${encodeURIComponent(fallbackKeywords)}` : ""}`, { signal }),
 
   // ── 网盘搜索 API ──
-  searchPan: (keyword: string, mediaType?: string) => {
+  searchPan: (keyword: string, mediaType?: string, signal?: AbortSignal) => {
     const p = new URLSearchParams({ keyword });
     if (mediaType) p.set("media_type", mediaType);
-    return request<any>(`${BASE_URL}/search/pan?${p.toString()}`);
+    return request<any>(`${BASE_URL}/search/pan?${p.toString()}`, { signal });
   },
 
   // ── 搜索源管理 ──

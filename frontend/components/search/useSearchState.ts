@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus, ProviderCatalog, ProviderMetadata } from "@/types";
 import { api } from "@/lib/api";
+import { SEARCH_SSE_TIMEOUT_MS, AI_RECOMMEND_RESULT_LIMIT } from "@/lib/domain/search";
 import { DEFAULT_FILTERS, applyFilters, type SourceStatus } from "./filterUtils";
 import { type PanFilterState, DEFAULT_PAN_FILTERS } from "./panFilterUtils";
 
@@ -280,7 +281,7 @@ export function useSearchState({
       let sseErrorMessage = "";
 
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, 90000);
+        const timeout = setTimeout(() => { es.close(); reject(new Error("timeout")); }, SEARCH_SSE_TIMEOUT_MS);
 
         es.onmessage = (event) => {
           // 搜索 ID 不匹配 → 旧搜索的残留消息，丢弃
@@ -341,7 +342,7 @@ export function useSearchState({
         if (searchIdRef.current === thisSearchId) {
           setAiRecommended(new Map());
           if (aiRecommendEnabled) {
-            api.aiSearchRecommend(q, sseResults.slice(0, 20), currentResolution ? { resolution: currentResolution } : undefined)
+            api.aiSearchRecommend(q, sseResults.slice(0, AI_RECOMMEND_RESULT_LIMIT), currentResolution ? { resolution: currentResolution } : undefined)
               .then(r => {
                 if (searchIdRef.current !== thisSearchId) return;
                 if (r.recommended?.length) {
