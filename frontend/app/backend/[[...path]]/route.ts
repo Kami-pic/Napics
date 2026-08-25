@@ -43,12 +43,30 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
   return headers;
 }
 
+// 长度头能不能留取决于响应形态，不是一刀切。
+//
+// 保留：媒体的 200 / 206 / HEAD。上游被强制 identity，透传不改变字节，
+// 所以上游给的 content-length 就是真实长度。删掉它的代价是 Safari 拿不到
+// 时长、也不会发 Range 请求，播放页无法 seek。
+// 不保留：SSE（长度未知，带上就是错的）和带 content-encoding 的响应
+// （长度与浏览器实际要解码的内容对不上，且这里会把 encoding 头删掉）。
+function shouldKeepContentLength(upstream: Response): boolean {
+  if (upstream.status !== 200 && upstream.status !== 206) return false;
+  const encoding = (upstream.headers.get("content-encoding") || "").toLowerCase();
+  if (encoding && encoding !== "identity") return false;
+  return !(upstream.headers.get("content-type") || "").includes("text/event-stream");
+}
+
 function buildClientHeaders(upstream: Response): Headers {
   const headers = new Headers();
+  const keepLength = shouldKeepContentLength(upstream);
   upstream.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    // content-length / content-encoding 在流式透传下不再准确
-    if (HOP_BY_HOP.has(lower) || lower === "content-length" || lower === "content-encoding") {
+    // content-encoding 在流式透传下不再准确；content-length 只在可判定时保留
+    if (HOP_BY_HOP.has(lower) || lower === "content-encoding") {
+      return;
+    }
+    if (lower === "content-length" && !keepLength) {
       return;
     }
     // set-cookie 必须逐个 append：forEach 给出的是多个值用逗号拼起来的字符串，
