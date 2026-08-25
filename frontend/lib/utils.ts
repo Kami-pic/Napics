@@ -71,3 +71,25 @@ export function splitByLanguage(text: string): { cn: string; en: string } {
   }
   return { cn: cnParts.join(""), en: enParts.join(" ").replace(/\s+/g, " ").trim() };
 }
+
+/** 自然排序比较：数字部分按数值比较，其余按字符串。
+ *  "第2集" 要排在 "第10集" 前面，纯字符串比较做不到。
+ *  桌面 EpisodeList 与移动端集列表共用同一份，不要各写一个。 */
+export function naturalCompare(a: string, b: string): number {
+  const re = /(\d+)|(\D+)/g;
+  const aParts = a.match(re) || [];
+  const bParts = b.match(re) || [];
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const ap = aParts[i] || "";
+    const bp = bParts[i] || "";
+    const an = Number(ap);
+    const bn = Number(bp);
+    if (!isNaN(an) && !isNaN(bn)) {
+      if (an !== bn) return an - bn;
+    } else {
+      const cmp = ap.localeCompare(bp, undefined, { sensitivity: "base" });
+      if (cmp !== 0) return cmp;
+    }
+  }
+  return 0;
+}

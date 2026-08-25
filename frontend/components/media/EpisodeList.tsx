@@ -2,27 +2,7 @@
 "use client";
 import { useMemo } from "react";
 import type { VideoInfo } from "@/types";
-import { formatSize } from "@/lib/utils";
-
-/** 自然排序比较：数字部分按数值比较，其余按字符串 */
-function naturalCompare(a: string, b: string): number {
-  const re = /(\d+)|(\D+)/g;
-  const aParts = a.match(re) || [];
-  const bParts = b.match(re) || [];
-  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-    const ap = aParts[i] || "";
-    const bp = bParts[i] || "";
-    const an = Number(ap);
-    const bn = Number(bp);
-    if (!isNaN(an) && !isNaN(bn)) {
-      if (an !== bn) return an - bn;
-    } else {
-      const cmp = ap.localeCompare(bp, undefined, { sensitivity: "base" });
-      if (cmp !== 0) return cmp;
-    }
-  }
-  return 0;
-}
+import { formatSize, naturalCompare } from "@/lib/utils";
 
 export default function EpisodeList({ videos, selectedPaths, onToggleSelect, onPlay, onSearch, onVideoDetail, batchMode, sortAsc = true }: {
   videos: VideoInfo[]; selectedPaths: Set<string>; onToggleSelect: (p: string) => void;
