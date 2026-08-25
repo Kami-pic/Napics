@@ -1,5 +1,5 @@
 import MobileShell from "@/components/mobile/MobileShell";
-import MobileStateView from "@/components/mobile/MobileStateView";
+import MobileNativePlayer from "@/components/mobile/MobileNativePlayer";
 import { parsePathParam } from "@/lib/mobile/mobileRouteUtils";
 
 // 播放页不传 title、不加左右留白：播放器要占满整个视口。
@@ -13,11 +13,7 @@ export default async function MobilePlayPage({
 
   return (
     <MobileShell padded={false}>
-      <MobileStateView
-        state={path ? "empty" : "error"}
-        emptyText="原生播放正在开发中"
-        errorText="缺少视频路径，无法播放"
-      />
+      <MobileNativePlayer path={path} />
     </MobileShell>
   );
 }

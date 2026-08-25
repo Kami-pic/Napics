@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import type { FolderNode, VideoInfo } from "@/types";
-import { useMobileLibrary } from "@/hooks/useMobileLibrary";
+import { useMobileLibrary } from "@/hooks/mobile/useMobileLibrary";
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
 import { folderTarget, videoTarget, findParentPath } from "@/lib/mobile/libraryNav";
 import { libraryUrl, playUrl } from "@/lib/mobile/mobileRouteUtils";

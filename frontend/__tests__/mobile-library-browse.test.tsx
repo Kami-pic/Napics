@@ -6,7 +6,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import MobileLibraryClient from "@/components/mobile/MobileLibraryClient";
-import MobileLibraryTreeProvider from "@/components/mobile/MobileLibraryTreeProvider";
+import MobileLibraryTreeProvider, { useMobileLibraryTree } from "@/components/mobile/MobileLibraryTreeProvider";
 import { libraryUrl, libraryDetailUrl, playUrl } from "@/lib/mobile/mobileRouteUtils";
 import {
   LIBRARY_TREE,
@@ -38,6 +38,12 @@ beforeEach(() => {
   mockApi.getLibraryTree.mockReset();
   mockApi.getLibraryTree.mockResolvedValue(LIBRARY_TREE);
 });
+
+/** 代替快速同步：只做它成功后做的那一件事 —— 调 Provider.reload */
+function SyncProbe() {
+  const { reload } = useMobileLibraryTree();
+  return <button type="button" data-testid="sync-reload" onClick={() => void reload()}>同步</button>;
+}
 
 async function mount(path: string) {
   render(
@@ -179,6 +185,37 @@ describe("返回键", () => {
     await mount(TV_LIBRARY_NODE.path);
     fireEvent.click(screen.getByLabelText("返回"));
     expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl(""));
+  });
+});
+
+describe("同步后缓存失效", () => {
+  it("树 reload 后媒体库页能看到新入库的视频", async () => {
+    // 第一次返回的扁平剧只有一集
+    const oneEpisode = {
+      ...LIBRARY_TREE,
+      children: LIBRARY_TREE.children.map(top =>
+        top === TV_LIBRARY_NODE
+          ? {
+            ...TV_LIBRARY_NODE,
+            children: [{ ...TV_FLAT_NODE, videos: [TV_FLAT_NODE.videos[2]] }],
+          }
+          : top,
+      ),
+    };
+    mockApi.getLibraryTree.mockResolvedValueOnce(oneEpisode);
+
+    render(
+      <MobileLibraryTreeProvider>
+        <MobileLibraryClient path={TV_FLAT_NODE.path} />
+        <SyncProbe />
+      </MobileLibraryTreeProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByRole("listitem").length).toBe(1));
+
+    // 快速同步成功后走的就是 Provider.reload（见 useMobileQuickSync 的 done 分支）
+    mockApi.getLibraryTree.mockResolvedValue(LIBRARY_TREE);
+    await act(async () => { fireEvent.click(screen.getByTestId("sync-reload")); });
+    await waitFor(() => expect(screen.getAllByRole("listitem").length).toBe(3));
   });
 });
 
