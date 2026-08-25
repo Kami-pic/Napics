@@ -10,7 +10,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -29,6 +28,12 @@ export interface MobileLibraryTreeState {
   version: number;
   /** 重新拉取；并发调用只会产生一个请求 */
   reload: () => Promise<void>;
+  /**
+   * 确保树已经加载过一次（幂等）。
+   * **需要树的页面必须自己调它** —— Provider 挂在 app/m/layout.tsx 上，
+   * 如果在这里自动加载，`/m/search` 和 `/m/play` 也会白拉一棵整树。
+   */
+  ensureLoaded: () => void;
   /** 判断某个视频路径是否已在库里（归位后确认入库用）。O(1) */
   hasVideoPath: (filePath: string) => boolean;
   /**
@@ -99,7 +104,7 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
 
   // 在途请求：重复调用 reload 时复用同一个 promise，不叠加请求
   const inFlightRef = useRef<Promise<void> | null>(null);
-  // Strict Mode 下 effect 跑两次，没有闸门就会打两次整树请求
+  // 是否已经加载过。同时兼作 Strict Mode 的闸门（effect 跑两次不会打两次请求）
   const startedRef = useRef(false);
   const indexRef = useRef<VideoIndex>({ paths: new Set(), dirs: new Set() });
 
@@ -127,7 +132,7 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
     return task;
   }, []);
 
-  useEffect(() => {
+  const ensureLoaded = useCallback(() => {
     if (startedRef.current) return;
     startedRef.current = true;
     void reload();
@@ -145,8 +150,9 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
   }, []);
 
   const value = useMemo<MobileLibraryTreeState>(() => ({
-    tree, ready, loading, loadFailed, version, reload, hasVideoPath, hasVideoUnder,
-  }), [tree, ready, loading, loadFailed, version, reload, hasVideoPath, hasVideoUnder]);
+    tree, ready, loading, loadFailed, version,
+    reload, ensureLoaded, hasVideoPath, hasVideoUnder,
+  }), [tree, ready, loading, loadFailed, version, reload, ensureLoaded, hasVideoPath, hasVideoUnder]);
 
   return (
     <MobileLibraryTreeContext.Provider value={value}>

@@ -7,6 +7,7 @@
 // 那是 react-hooks 规则明确禁止的写法。
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useEffect } from "react";
 
 import MobileLibraryTreeProvider, {
   useMobileLibraryTree,
@@ -51,7 +52,9 @@ function makeTree(videoPaths: string[]) {
 }
 
 function Probe({ label, probePath }: { label: string; probePath?: string }) {
-  const { ready, tree, version, loadFailed, reload, hasVideoPath } = useMobileLibraryTree();
+  const { ready, tree, version, loadFailed, reload, ensureLoaded, hasVideoPath } = useMobileLibraryTree();
+  // 需要树的页面必须自己触发加载（Provider 不自动拉，否则 /m/search 也会白拉）
+  useEffect(() => { ensureLoaded(); }, [ensureLoaded]);
   return (
     <div>
       <div data-testid={label}>
@@ -154,6 +157,25 @@ describe("移动端整树缓存", () => {
     fireEvent.click(screen.getByTestId("a-reload"));
 
     await waitFor(() => expect(screen.getByTestId("a")).toHaveTextContent("ok|命中"));
+  });
+
+  it("没有消费者调 ensureLoaded 时不发请求（/m/search、/m/play 不该白拉整树）", async () => {
+    function Bystander() {
+      // 只读状态，不调 ensureLoaded
+      const { ready } = useMobileLibraryTree();
+      return <div data-testid="bystander">{ready ? "ready" : "idle"}</div>;
+    }
+    renderProvider(<Bystander />);
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mockApi.getLibraryTree).not.toHaveBeenCalled();
+    expect(screen.getByTestId("bystander")).toHaveTextContent("idle");
+  });
+
+  it("ensureLoaded 幂等：多个消费者都调也只请求一次", async () => {
+    renderProvider(<><Probe label="a" /><Probe label="b" /></>);
+    await waitFor(() => expect(screen.getByTestId("a")).toHaveTextContent("ready"));
+    expect(mockApi.getLibraryTree).toHaveBeenCalledTimes(1);
   });
 
   it("在 Provider 外使用会明确报错", () => {

@@ -63,7 +63,15 @@ export function useMobileDownloads(): MobileDownloadsState {
   // 让 confirming → timeout 的判定能重新计算
   const [clockTick, setClockTick] = useState(0);
 
-  const { hasVideoPath, hasVideoUnder, reload: reloadTree, version: treeVersion } = useMobileLibraryTree();
+  const {
+    hasVideoPath, hasVideoUnder, reload: reloadTree,
+    ensureLoaded: ensureTreeLoaded, version: treeVersion,
+  } = useMobileLibraryTree();
+
+  // 下载页要靠整树确认入库，所以在这里显式触发一次。
+  // Provider 不会自动加载 —— 它挂在 /m 的 layout 上，自动加载会让
+  // /m/search 和 /m/play 也白拉一棵整树。
+  useEffect(() => { ensureTreeLoaded(); }, [ensureTreeLoaded]);
 
   /** 归位过去的东西是否已经在库里。
    *  逐条按精确路径判断：条目是文件就查路径本身，是目录就查它下面有没有视频。
