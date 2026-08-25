@@ -1,17 +1,17 @@
 """
 路由模块：library_crud
-从 library.py 拆分 — 媒体库 CRUD + 完整度 + 质量分 + clean_name
+媒体库 CRUD（虚拟库增删改、路径移除、重置）+ 质量分刷新 + 字幕列举
+
+清洗名拆到 library_clean_name.py，完整度拆到 library_completeness.py
 """
 import os
-import re
 import logging
-import threading
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from shared import config_m, _tmdb_client
+from shared import config_m
 import scanner, organizer
 
 logger = logging.getLogger(__name__)
@@ -299,84 +299,6 @@ def reset_library():
     return {"status": "ok"}
 
 
-@router.post("/library/clean-name")
-def set_clean_name(req: dict):
-    """手动修改清洗名（manual 来源，最高优先级）
-
-    支持字段：clean_name（display/cn）、clean_name_en（英文名）
-    支持 is_folder=true 时按文件夹路径匹配其下所有视频
-    """
-    file_path = req.get("file_path", "")
-    clean_name = req.get("clean_name", "")
-    clean_name_en = req.get("clean_name_en")
-    is_folder = req.get("is_folder", False)
-    if not file_path:
-        return {"status": "error", "message": "file_path required"}
-
-    result = {"status": "not_found"}
-
-    def _apply(library):
-        nonlocal result
-
-        if is_folder:
-            folder_norm = file_path.replace("\\", "/").rstrip("/") + "/"
-            updated = 0
-            for v in library:
-                v_folder = v.get("file_path", "").replace("\\", "/")
-                if v_folder.startswith(folder_norm) or os.path.dirname(v_folder).replace("\\", "/") + "/" == folder_norm:
-                    if clean_name_en is not None:
-                        v["clean_name_en"] = clean_name_en
-                        v["clean_name_source"] = "manual"
-                        updated += 1
-                    if clean_name:
-                        v["clean_name"] = clean_name
-                        v["clean_name_source"] = "manual"
-                        cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
-                        if cn_parts:
-                            v["clean_name_cn"] = "".join(cn_parts)
-                        updated += 1
-            if updated > 0:
-                result = {"status": "ok", "updated": updated}
-                return None
-            # 文件夹下没有视频，尝试直接匹配
-            for v in library:
-                if v.get("file_path") == file_path:
-                    if clean_name:
-                        v["clean_name"] = clean_name
-                        v["clean_name_source"] = "manual"
-                        cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
-                        if cn_parts:
-                            v["clean_name_cn"] = "".join(cn_parts)
-                    if clean_name_en is not None:
-                        v["clean_name_en"] = clean_name_en
-                        v["clean_name_source"] = "manual"
-                    result = {"status": "ok"}
-                    return None
-            result = {"status": "ok", "updated": 0}
-            return False
-
-        # 视频模式：精确匹配 file_path
-        for v in library:
-            if v.get("file_path") == file_path:
-                if clean_name is not None:
-                    v["clean_name"] = clean_name
-                    v["clean_name_source"] = "manual" if clean_name else ""
-                    if clean_name:
-                        cn_parts = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+', clean_name)
-                        if cn_parts:
-                            v["clean_name_cn"] = "".join(cn_parts)
-                if clean_name_en is not None:
-                    v["clean_name_en"] = clean_name_en
-                    v["clean_name_source"] = "manual"
-                result = {"status": "ok"}
-                return None
-        result = {"status": "not_found"}
-        return False
-
-    config_m.mutate_library(_apply)
-    return result
-
-
 @router.get("/media/subtitles")
 def get_media_subtitles(path: str):
     """列出视频的外挂字幕文件（下载字幕后前端据此刷新字幕状态）"""
@@ -386,116 +308,3 @@ def get_media_subtitles(path: str):
         return {"status": "error", "files": [], "count": 0}
     files = list_subtitle_files(path)
     return {"status": "ok", "files": files, "count": len(files)}
-
-
-@router.post("/library/clean-name/generate")
-def generate_clean_name(req: dict):
-    """按文件名自动生成搜索索引名（中文+英文），用户点按钮显式触发"""
-    from clean_name_system import regenerate_clean_names
-
-    file_path = req.get("file_path", "")
-    if not file_path:
-        return {"status": "error", "message": "file_path required"}
-
-    result = {}
-
-    def _regen(library):
-        nonlocal result
-        result = regenerate_clean_names(library, file_path, req.get("is_folder", False))
-        return None if result["updated"] else False
-
-    config_m.mutate_library(_regen)
-    if result["updated"]:
-        return {"status": "ok", **result}
-
-    # 把失败原因说清楚：路径对不上和解析失败要分开，否则线上排查只能靠猜
-    reason = result.get("reason", "")
-    if reason == "not_in_library":
-        message = f"媒体库里没有这条记录，路径可能不一致：{file_path}"
-    elif reason == "unparsable":
-        message = f"匹配到 {result.get('matched', 0)} 条记录，但从 NFO / 文件夹名 / 文件名都解析不出名称"
-    else:
-        message = "缺少 file_path"
-    logger.warning(f"[clean-name/generate] 失败({reason}): {file_path}")
-    return {"status": "failed", "message": message, **result}
-
-
-@router.get("/library/completeness")
-def get_completeness(path: str, tmdb_id: Optional[int] = None, refresh: bool = False):
-    """获取 TV 文件夹的季集完整度（基于 TMDB 数据源）"""
-    from plugin_guard import is_feature_allowed, is_metadata_allowed
-    if not is_feature_allowed("completeness"):
-        return {"status": "plugin_not_installed", "message": "请先安装「季集完整性检测」插件"}
-    if not is_metadata_allowed("tmdb"):
-        return {"status": "metadata_plugin_not_installed", "message": "请先安装「TMDB 元数据」插件"}
-
-    from completeness import (
-        collect_local_episodes, get_tmdb_id_from_folder, compute_completeness,
-        get_cached_completeness, save_completeness_to_cache, refresh_completeness_for_path,
-    )
-
-    if not path:
-        raise HTTPException(400, "缺少 path 参数")
-
-    logger.info(f"[completeness] API 请求: path={path}, refresh={refresh}, tmdb_id={tmdb_id}")
-
-    if not refresh:
-        cached = get_cached_completeness(path)
-        if cached and cached.get("status") == "ok":
-            logger.info(f"[completeness] 返回缓存: {cached.get('completeness_pct')}%")
-            return cached
-
-    tid = tmdb_id
-    if not tid:
-        tid = get_tmdb_id_from_folder(path)
-    if not tid:
-        logger.warning(f"[completeness] 无 TMDB ID: {path}")
-        return {"status": "no_tmdb_id", "message": "未找到 TMDB ID，请先刮削此文件夹"}
-
-    tc = _tmdb_client()
-    if not tc:
-        return {"status": "no_tmdb_client", "message": "TMDB 未配置"}
-
-    logger.info(f"[completeness] 重新计算: tmdb_id={tid}, refresh={refresh}")
-    result = refresh_completeness_for_path(tc, path, clear_tmdb_cache=refresh)
-    if result:
-        logger.info(f"[completeness] 计算完成: {result.get('completeness_pct')}%, local={result.get('local_total')}")
-        return result
-
-    logger.info(f"[completeness] 兜底计算")
-    local_episodes = collect_local_episodes(path)
-    result = compute_completeness(tc, tid, local_episodes)
-    if result.get("status") == "ok":
-        save_completeness_to_cache(path, result)
-    return result
-
-
-@router.post("/library/completeness/refresh-all")
-def refresh_all_completeness():
-    """批量预计算所有 TV 文件夹的完整度（后台运行）"""
-    import plugin_guard
-    from completeness import batch_refresh_all
-
-    if not plugin_guard.is_feature_allowed("completeness"):
-        return {"status": "plugin_not_installed", "message": "请先安装「季集完整性检测」插件"}
-    if not plugin_guard.is_metadata_allowed("tmdb"):
-        return {"status": "metadata_plugin_not_installed", "message": "请先安装「TMDB 元数据」插件"}
-
-    tc = _tmdb_client()
-    if not tc:
-        return {"status": "error", "message": "TMDB 未配置"}
-
-    nas_paths = config_m.config.scan_paths or []
-    category_tags = config_m.config.category_tags or {}
-
-    def _run():
-        try:
-            if not plugin_guard.is_feature_allowed("completeness") or not plugin_guard.is_metadata_allowed("tmdb"):
-                return
-            batch_refresh_all(tc, nas_paths, category_tags)
-        except Exception as e:
-            logger.error(f"[completeness] 批量预计算异常: {e}")
-
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-    return {"status": "started", "message": "批量预计算已启动，请查看后端日志"}

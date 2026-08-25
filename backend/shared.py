@@ -458,6 +458,21 @@ def _update_clean_names_after_scrape(path: str, scrape_result: dict):
         pass
 
 
+def is_under_path(file_path: str, base: str) -> bool:
+    """file_path 是否位于 base 目录之下（或就是它本身）。
+
+    不能直接用 `startswith(base)`：那样 `D:\\影视2\\a.mkv` 会被当成
+    `D:\\影视` 的子路径。扫描 / 同步判断"这条属于哪个库"时踩过这个坑 ——
+    两个名字有共同前缀的平级目录会互相误判，扫一个库会连带处理另一个库的条目。
+    """
+    if not file_path or not base:
+        return False
+    trimmed = base.rstrip("\\/")
+    if file_path == trimmed:
+        return True
+    return file_path.startswith(trimmed + os.sep) or file_path.startswith(trimmed + "/")
+
+
 # ── 路径访问白名单 ──
 # 后端有大量路由接受用户传入的 path 参数后直接读写/删除文件。由于后端不做鉴权
 # 且 CORS 全开，任何网页都能调用这些接口。没有白名单的话，构造一个 path 就能

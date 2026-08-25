@@ -25,8 +25,9 @@ def test_atomic_write_creates_valid_json(workdir):
 
     with open(target, "r", encoding="utf-8") as f:
         assert json.load(f) == [{"name": "测试影片", "n": 1}]
-    # 临时文件必须被清理
-    assert not os.path.exists(target + ".tmp")
+    # 临时文件必须被清理。注意名字是 mkstemp 生成的（data.json.XXXXXX.tmp），
+    # 断言固定的 target + ".tmp" 会永远为真，等于什么都没测。
+    assert [n for n in os.listdir(workdir) if n.endswith(".tmp")] == []
 
 
 def test_atomic_write_keeps_chinese_readable(workdir):
@@ -65,7 +66,7 @@ def test_original_file_intact_when_write_fails(workdir):
 
     with open(target, encoding="utf-8") as f:
         assert json.load(f) == {"good": True}
-    assert not os.path.exists(target + ".tmp")
+    assert [n for n in os.listdir(workdir) if n.endswith(".tmp")] == []
 
 
 def test_config_manager_roundtrip(workdir, monkeypatch):
@@ -124,3 +125,39 @@ def test_concurrent_writes_never_corrupt_or_raise(workdir):
     # 不留临时文件残骸
     leftovers = [n for n in os.listdir(workdir) if n.endswith(".tmp")]
     assert leftovers == [], f"残留临时文件: {leftovers}"
+
+
+def test_cleanup_stale_temp_files_removes_leftovers(workdir):
+    """进程被硬杀时留下的唯一命名临时文件要能被清掉。
+
+    唯一命名解决了并发互踩，代价是残骸不会被下次写入覆盖（以前是固定的
+    `<path>.tmp`，写一次就没了）。所以需要一个显式的清扫入口。
+    """
+    from core.json_store import cleanup_stale_temp_files
+
+    target = os.path.join(workdir, "media_library.json")
+    atomic_write_json(target, [{"file_path": "/a.mkv"}], compact=True)
+
+    # 手工造三个残骸 + 一个不该被碰的同目录文件
+    for suffix in ("aaaa", "bbbb", "cccc"):
+        with open(f"{target}.{suffix}.tmp", "w", encoding="utf-8") as f:
+            f.write("半截内容")
+    other = os.path.join(workdir, "config.json.zzzz.tmp")
+    with open(other, "w", encoding="utf-8") as f:
+        f.write("别人的残骸")
+
+    removed = cleanup_stale_temp_files(target)
+
+    assert removed == 3
+    assert [n for n in os.listdir(workdir) if n.startswith("media_library.json.")] == []
+    # 只清自己的：另一个文件的残骸不能被顺手删掉
+    assert os.path.exists(other)
+    # 正式文件必须完好
+    with open(target, encoding="utf-8") as f:
+        assert json.load(f) == [{"file_path": "/a.mkv"}]
+
+
+def test_cleanup_is_safe_when_nothing_to_clean(workdir):
+    from core.json_store import cleanup_stale_temp_files
+
+    assert cleanup_stale_temp_files(os.path.join(workdir, "never_written.json")) == 0

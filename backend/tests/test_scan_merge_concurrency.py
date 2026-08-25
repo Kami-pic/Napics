@@ -162,15 +162,15 @@ def test_sibling_directory_with_shared_prefix_is_not_treated_as_child():
     平级目录会互相误判：扫描一个库会把另一个库的条目一起当成自己的、
     连带被覆盖或清理掉。
     """
-    from routes.library import _is_under
+    from shared import is_under_path
 
-    assert _is_under(r"D:\影视\电影\a.mkv", r"D:\影视")
-    assert _is_under(r"D:\影视\电影\a.mkv", "D:\\影视\\")     # 末尾分隔符不影响
-    assert _is_under(r"D:\影视", r"D:\影视")                  # 自己算在内
-    assert _is_under("/vol1/media/a.mkv", "/vol1/media")      # POSIX 分隔符
+    assert is_under_path(r"D:\影视\电影\a.mkv", r"D:\影视")
+    assert is_under_path(r"D:\影视\电影\a.mkv", "D:\\影视\\")     # 末尾分隔符不影响
+    assert is_under_path(r"D:\影视", r"D:\影视")                  # 自己算在内
+    assert is_under_path("/vol1/media/a.mkv", "/vol1/media")      # POSIX 分隔符
 
-    assert not _is_under(r"D:\影视2\电影\a.mkv", r"D:\影视")
-    assert not _is_under(r"D:\影视备份\a.mkv", r"D:\影视")
-    assert not _is_under("/vol1/media2/a.mkv", "/vol1/media")
-    assert not _is_under("", r"D:\影视")
-    assert not _is_under(r"D:\影视\a.mkv", "")
+    assert not is_under_path(r"D:\影视2\电影\a.mkv", r"D:\影视")
+    assert not is_under_path(r"D:\影视备份\a.mkv", r"D:\影视")
+    assert not is_under_path("/vol1/media2/a.mkv", "/vol1/media")
+    assert not is_under_path("", r"D:\影视")
+    assert not is_under_path(r"D:\影视\a.mkv", "")

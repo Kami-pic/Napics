@@ -4,7 +4,7 @@ import threading
 from pydantic import BaseModel
 from typing import Callable, Dict, Optional, List
 
-from core.json_store import atomic_write_json
+from core.json_store import atomic_write_json, cleanup_stale_temp_files
 
 # 媒体库写锁：按 media_library.json 的绝对路径共享，**不是实例级**。
 # ConfigManager 会被多处重新实例化（download_manager._trigger_local_refresh 就用
@@ -14,7 +14,14 @@ _LIBRARY_LOCKS_GUARD = threading.Lock()
 
 
 def library_lock_for(lib_path: str) -> threading.RLock:
-    key = os.path.abspath(lib_path)
+    """按库文件路径取锁。
+
+    锁是**进程内**的：多 worker / 多进程部署时互斥失效。
+    Napics 目前是单进程 uvicorn，这个前提成立；哪天加了 worker 就要换成文件锁。
+    """
+    # normcase 而不是只 abspath：Windows 上 D:\a\lib.json 和 d:\A\lib.json
+    # 是同一个文件，不归一化会拿到两把互不相干的锁
+    key = os.path.normcase(os.path.abspath(lib_path))
     with _LIBRARY_LOCKS_GUARD:
         lock = _LIBRARY_LOCKS.get(key)
         if lock is None:
@@ -164,6 +171,9 @@ class ConfigManager:
         os.makedirs(self.data_dir, exist_ok=True)
         self.config_path = config_path or os.path.join(self.data_dir, "config.json")
         self.lib_path = os.path.join(self.data_dir, "media_library.json")
+        # 上次进程被硬杀时可能留下临时文件（唯一命名，不会被下次写入覆盖）
+        cleanup_stale_temp_files(self.lib_path)
+        cleanup_stale_temp_files(self.config_path)
         self._config = self.load()
         self._on_library_save_callbacks = []  # save_library 后的回调列表
 

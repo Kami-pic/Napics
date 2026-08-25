@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config_manager
 import scanner
-from routes import library as library_routes
+from routes import library_sync as library_routes
 
 
 def _consume(response) -> list:
@@ -94,9 +94,9 @@ def test_sync_writes_library_once(sync_env, monkeypatch):
     """
     mgr, _ = sync_env
     writes = []
-    original = mgr.save_library
+    original_save = mgr.save_library
     monkeypatch.setattr(
-        mgr, "save_library", lambda data: (writes.append(len(data)), original(data))[1],
+        mgr, "save_library", lambda data: (writes.append(len(data)), original_save(data))[1],
     )
 
     _consume(library_routes.quick_sync())
@@ -113,7 +113,6 @@ def test_sync_keeps_entries_added_by_others_while_scanning(sync_env, monkeypatch
     mgr, video_path = sync_env
     concurrent_entry = {"file_path": "/other/新片.mkv", "file_name": "新片.mkv", "height": 1080}
 
-    real_scan_folder = None  # 占位，保持结构清晰
     original_load = mgr.load_library
     injected = {"done": False}
 

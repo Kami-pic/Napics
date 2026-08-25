@@ -35,6 +35,31 @@ def _replace_with_retry(tmp_path: str, path: str) -> None:
             time.sleep(_REPLACE_BACKOFF_SEC * (attempt + 1))
 
 
+def cleanup_stale_temp_files(path: str) -> int:
+    """清掉目标文件遗留的临时文件，返回清掉的个数。
+
+    唯一命名的好处是并发写不会互相踩，代价是进程被硬杀（服务重启、任务管理器
+    结束进程）时留下的残骸没人覆盖。启动时扫一遍即可，正常路径的残骸由
+    atomic_write_json 自己的 except 分支清理。
+    """
+    target_dir = os.path.dirname(os.path.abspath(path)) or "."
+    prefix = os.path.basename(path) + "."
+    removed = 0
+    try:
+        for name in os.listdir(target_dir):
+            if name.startswith(prefix) and name.endswith(".tmp"):
+                try:
+                    os.remove(os.path.join(target_dir, name))
+                    removed += 1
+                except OSError:
+                    pass
+    except OSError:
+        return 0
+    if removed:
+        logger.info(f"[json_store] 清理了 {removed} 个残留临时文件: {path}")
+    return removed
+
+
 def atomic_write_json(path: str, data: Any, *, compact: bool = False, indent: int = 4) -> None:
     """原子写入 JSON 文件。
 

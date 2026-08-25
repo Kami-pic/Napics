@@ -179,8 +179,9 @@ describe("移动端下载任务页", () => {
     visibility.mockRestore();
   });
 
-  it("卸载后到达的轮询响应不再写 state（不报 setState on unmounted）", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("卸载后 timer 停掉，迟到的轮询响应不再引起任何请求或渲染", async () => {
+    // 断言可观测行为。不要用 "setState on unmounted" 警告 ——
+    // React 18.3 起不再发出，那种断言恒成立、什么都没验证。
     let releaseProgress!: (v: unknown) => void;
     mockApi.getDownloadTasks.mockResolvedValue({ tasks: [makeTask({ status: "downloading" })] });
     mockApi.getDownloadProgress.mockReturnValue(new Promise(res => { releaseProgress = res; }));
@@ -189,13 +190,17 @@ describe("移动端下载任务页", () => {
     const { unmount } = renderPage();
     await flush();
     await act(async () => { vi.advanceTimersByTime(DOWNLOAD_POLL_INTERVAL_MS); });
+    expect(mockApi.getDownloadProgress).toHaveBeenCalledTimes(1);
 
     unmount();
-    await act(async () => { releaseProgress({ tasks: [{ id: "t1", progress: 0.99 }] }); });
+    // 卸载后 interval 必须已经停掉：再推三个周期也不该有新请求
+    await act(async () => { vi.advanceTimersByTime(DOWNLOAD_POLL_INTERVAL_MS * 3); });
+    expect(mockApi.getDownloadProgress).toHaveBeenCalledTimes(1);
 
-    const warned = consoleError.mock.calls.flat().join(" ");
-    expect(warned).not.toMatch(/unmounted|not wrapped in act/i);
-    consoleError.mockRestore();
+    // 迟到的响应到达时组件已卸载，不该抛错也不该再触发请求
+    await act(async () => { releaseProgress({ tasks: [{ id: "t1", progress: 0.99 }] }); });
+    expect(mockApi.getDownloadProgress).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("99%")).not.toBeInTheDocument();
   });
 
   it("回归：往已有剧集目录追加新集时，不能因为目录里有旧集就说已入库", async () => {

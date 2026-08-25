@@ -29,8 +29,11 @@ from routes.discover import router as discover_router
 from routes.filesystem import router as filesystem_router
 from routes.download import router as download_router
 from routes.library import router as library_router
+from routes.library_sync import router as library_sync_router
 from routes.library_tree import router as library_tree_router
 from routes.library_crud import router as library_crud_router
+from routes.library_clean_name import router as library_clean_name_router
+from routes.library_completeness import router as library_completeness_router
 from routes.organize import router as organize_router
 from routes.rename import router as rename_router
 from routes.organize_stream import router as organize_stream_router
@@ -88,8 +91,11 @@ app.include_router(discover_router)
 app.include_router(filesystem_router)
 app.include_router(download_router)
 app.include_router(library_router)
+app.include_router(library_sync_router)
 app.include_router(library_tree_router)
 app.include_router(library_crud_router)
+app.include_router(library_clean_name_router)
+app.include_router(library_completeness_router)
 app.include_router(organize_router)
 app.include_router(rename_router)
 app.include_router(organize_stream_router)
