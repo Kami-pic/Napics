@@ -2,7 +2,7 @@
 //
 // 能力边界：mock 掉 useRouter 后能断言"调了 push 还是 replace、参数是什么",
 // **不能**断言真实浏览器历史栈深度。Android 系统返回键只能真机验证。
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import MobileLibraryClient from "@/components/mobile/MobileLibraryClient";
@@ -16,6 +16,8 @@ import {
   TV_SINGLE_SEASON_NODE,
   TV_FLAT_NODE,
   TV_EMPTY_SEASON_NODE,
+  TV_WITH_EXTRAS_NODE,
+  TV_SINGLE_SEASON_WITH_SP_NODE,
   TV_LIBRARY_NODE,
 } from "./helpers/libraryTreeFixture";
 
@@ -85,9 +87,15 @@ describe("加载态与异常态", () => {
     expect(screen.getByText(/不在媒体库里/)).toBeTruthy();
   });
 
-  it("季目录全空 → 空态文案", async () => {
+  it("季目录全空 → 空态文案，并给出下一步（搜索 / 同步）", async () => {
     await mount(TV_EMPTY_SEASON_NODE.path);
     expect(screen.getByText("这个目录里还没有已入库的视频")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "搜索资源" }));
+    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain("/m/search");
+
+    fireEvent.click(screen.getByRole("button", { name: "去同步" }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith("/m/downloads");
   });
 });
 
@@ -138,6 +146,26 @@ describe("分级浏览与跳转", () => {
       expect.stringContaining("Friends E2.mkv"),
       expect.stringContaining("Friends E10.mkv"),
     ]);
+  });
+
+  it("多季剧的剧场版单独一段且不编号，不会被当成正片下一集", async () => {
+    await mount(TV_WITH_EXTRAS_NODE.path);
+    expect(screen.getByLabelText("季列表")).toBeTruthy();
+
+    const extras = screen.getByLabelText("其他视频（剧场版 / 特别篇）");
+    const rows = within(extras).getAllByRole("listitem");
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain("剧场版 咆哮.mkv");
+    // 不编号：这一段里不该出现 01 这种序号
+    expect(rows[0].textContent).not.toMatch(/^0\d/);
+  });
+
+  it("单季剧的 SP 也走独立分段，正片集号仍从 01 开始", async () => {
+    await mount(TV_SINGLE_SEASON_WITH_SP_NODE.path);
+    const main = screen.getByLabelText("视频列表");
+    expect(within(main).getAllByRole("listitem").length).toBe(2);
+    const extras = screen.getByLabelText("其他视频（剧场版 / 特别篇）");
+    expect(within(extras).getAllByRole("listitem").length).toBe(1);
   });
 
   it("collection 的子目录和直属视频同屏，两者都能点", async () => {

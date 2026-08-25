@@ -86,6 +86,53 @@ describe("异常态", () => {
     await waitFor(() => expect(screen.getByText(/没有刮削信息/)).toBeTruthy());
     expect(screen.getByText(MOVIE_VIDEO.file_name)).toBeTruthy();
   });
+
+  it("刮削读取中显示加载态，不先闪一下「没有刮削信息」", async () => {
+    // status 的 idle 既是"还没读"也是"读完没数据"，所以这里必须靠 reading
+    let resolveScrape: (v: unknown) => void = () => {};
+    mockApi.readScrape.mockReturnValue(new Promise(r => { resolveScrape = r; }));
+    await mount(MOVIE_VIDEO.file_path);
+    expect(screen.getByText("正在读取刮削信息…")).toBeTruthy();
+    expect(screen.queryByText(/没有刮削信息/)).toBeNull();
+
+    await act(async () => { resolveScrape(SCRAPE_OK); });
+    expect(screen.queryByText("正在读取刮削信息…")).toBeNull();
+  });
+
+  it("刮削请求失败与「没有刮削信息」是两种文案", async () => {
+    mockApi.readScrape.mockRejectedValue(new Error("boom"));
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText(/刮削信息读取失败/)).toBeTruthy());
+    expect(screen.queryByText(/在桌面端整理后这里会显示/)).toBeNull();
+  });
+
+  it("视频不在库里时错误态有「回媒体库」出口", async () => {
+    await mount("D:\\影视\\电影\\不存在.mkv");
+    fireEvent.click(screen.getByRole("button", { name: "回媒体库" }));
+    expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl("D:\\影视\\电影"));
+  });
+});
+
+describe("季集定位", () => {
+  it("剧集详情显示 SxxExx，页头和正文标题不重复", async () => {
+    mockApi.readScrape.mockResolvedValue({
+      status: "ok",
+      data: { tmdb_id: 1, title: "三体", media_type: "tv" },
+    });
+    await mount(EPISODE.file_path);
+    // 页头是剧名（刮削标题），h2 是"季集 · 本文件清洗名"，不是同一串字
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("三体"));
+
+    const h2 = screen.getByRole("heading", { level: 2 });
+    expect(h2.textContent).toContain("S01E01");
+    expect(h2.textContent).not.toBe("三体");
+  });
+
+  it("电影没有季集号时不硬造标签", async () => {
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText("2008")).toBeTruthy());
+    expect(screen.queryByText(/S\d\dE\d\d/)).toBeNull();
+  });
 });
 
 describe("刮削信息与基本信息", () => {

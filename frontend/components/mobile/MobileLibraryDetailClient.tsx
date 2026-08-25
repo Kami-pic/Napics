@@ -10,7 +10,12 @@ import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
-import { findVideoByPath, videoDisplayName, episodeSeasonNumber } from "@/lib/mobile/libraryNav";
+import {
+  findVideoByPath,
+  videoDisplayName,
+  episodeSeasonNumber,
+  episodeNumber,
+} from "@/lib/mobile/libraryNav";
 import { playUrl, searchUrl, libraryUrl } from "@/lib/mobile/mobileRouteUtils";
 import { useScrape } from "@/components/detail/useScrape";
 import MobileShell from "./MobileShell";
@@ -31,11 +36,12 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
   const video = ready && !loadFailed ? findVideoByPath(tree, path) : null;
 
   // useScrape 在 path 为空时不发请求，可以无条件调用（hook 不能有条件调用）
-  const { data: scrape, reading: scrapeReading } = useScrape(
+  const { data: scrape, reading: scrapeReading, status: scrapeStatus } = useScrape(
     video ? videoDisplayName(video) : "",
     video ? video.file_path : "",
     false,
   );
+  const scrapeFailed = scrapeStatus === "failed";
 
   const openPlay = useCallback(() => {
     router.push(playUrl(path));
@@ -77,10 +83,39 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
   }
 
   const title = video ? videoDisplayName(video) : "详情";
+  // 从"季 → 集"点进来后，标题往往只剩剧名，用户看不出这是第几集
+  const seasonNo = video ? episodeSeasonNumber(video.file_name) : null;
+  const episodeNo = video ? episodeNumber(video.file_name) : null;
+  const episodeLabel = seasonNo !== null && episodeNo !== null
+    ? `S${String(seasonNo).padStart(2, "0")}E${String(episodeNo).padStart(2, "0")}`
+    : "";
+
+  // 错误态要有出口：树里找不到这个视频时，用户能做的是回媒体库或去同步
+  const errorAction = (
+    <button
+      type="button"
+      onClick={() => router.push(libraryUrl(parentDir))}
+      className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-text)]"
+      style={{ minHeight: "var(--m-touch-min)", background: "var(--m-surface-raised)" }}
+    >
+      回媒体库
+    </button>
+  );
 
   return (
-    <MobileShell title={title} subtitle={scrape?.title || undefined} onBack={path ? onBack : undefined}>
-      <MobileStateView state={state} loadingText="正在读取媒体库…" errorText={errorText}>
+    // 页头放剧名/片名（刮削标题优先），正文 h2 放"季集 + 本文件的清洗名" ——
+    // 两处都填同一个字符串的话，60px 内会出现两遍一样的标题。
+    <MobileShell
+      title={scrape?.title || title}
+      subtitle={episodeLabel || undefined}
+      onBack={path ? onBack : undefined}
+    >
+      <MobileStateView
+        state={state}
+        loadingText="正在读取媒体库…"
+        errorText={errorText}
+        errorAction={errorAction}
+      >
         {video && (
           <div className="flex flex-col gap-4 pt-3">
             <div className="flex gap-3">
@@ -90,7 +125,9 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
                 fallbackText={title}
               />
               <div className="min-w-0 flex-1">
-                <h2 className="text-[16px] font-semibold text-[var(--m-text)]">{scrape?.title || title}</h2>
+                <h2 className="text-[16px] font-semibold text-[var(--m-text)]">
+                  {episodeLabel ? `${episodeLabel} · ${title}` : title}
+                </h2>
                 <p className="mt-1 flex flex-wrap gap-x-2 text-[12px] text-[var(--m-text-dim)]">
                   {scrape?.year && <span>{scrape.year}</span>}
                   {scrape?.rating ? <span>TMDB {scrape.rating.toFixed(1)}</span> : null}
@@ -103,7 +140,9 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
                 )}
                 {!scrapeReading && !scrape && (
                   <p className="mt-2 text-[12px] text-[var(--m-text-dim)]">
-                    没有刮削信息（在桌面端整理后这里会显示简介与海报）
+                    {scrapeFailed
+                      ? "刮削信息读取失败，可下拉重进或在桌面端检查"
+                      : "没有刮削信息（在桌面端整理后这里会显示简介与海报）"}
                   </p>
                 )}
               </div>

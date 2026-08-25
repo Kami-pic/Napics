@@ -18,7 +18,10 @@ export default function MobileSeasonList({ seasons, onOpen }: MobileSeasonListPr
             <button
               type="button"
               onClick={() => onOpen(season)}
-              className="flex w-full items-center gap-3 rounded-[var(--m-radius)] px-3 text-left active:bg-[var(--m-surface-raised)]"
+              // 徽标里的季号是纯视觉冗余（被 aria-hidden），清洗名未必含"第一季"，
+              // 所以季号要并进 label，读屏才知道这是第几季
+              aria-label={`${num === null ? "特别篇" : `第 ${num} 季`} ${nodeDisplayName(season)}，${season.video_count} 集`}
+              className="flex w-full items-center gap-3 rounded-[var(--m-radius)] px-3 py-[var(--m-row-py)] text-left active:bg-[var(--m-surface-raised)]"
               style={{
                 minHeight: "var(--m-touch-min)",
                 background: "var(--m-surface)",
@@ -26,7 +29,7 @@ export default function MobileSeasonList({ seasons, onOpen }: MobileSeasonListPr
               }}
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[13px] text-[var(--m-text-muted)]"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--m-radius-sm)] text-[13px] text-[var(--m-text-muted)]"
                 style={{ background: "var(--m-surface-raised)" }}
                 aria-hidden="true"
               >

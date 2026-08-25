@@ -229,34 +229,6 @@ export const PLAIN_LEAF_NODE = makeNode({
   ],
 });
 
-/** 一级分类节点（虚拟库） */
-export const TV_LIBRARY_NODE = makeNode({
-  name: "剧集",
-  path: "E:\\剧集库",
-  folder_type: "mixed",
-  is_top_category: true,
-  is_virtual_library: true,
-  category_tag: "tv",
-  children: [TV_MULTI_SEASON_NODE, TV_SINGLE_SEASON_NODE, TV_FLAT_NODE, TV_EMPTY_SEASON_NODE, MIXED_NODE],
-});
-
-export const MOVIE_LIBRARY_NODE = makeNode({
-  name: "电影",
-  path: `${MEDIA_ROOT}\\电影`,
-  folder_type: "mixed",
-  is_top_category: true,
-  category_tag: "movie",
-  children: [MOVIE_NODE, SERIES_NODE, COLLECTION_NODE],
-});
-
-/** 根节点：name 固定是"媒体库"，path 是空串 */
-export const LIBRARY_TREE = makeNode({
-  name: "媒体库",
-  path: "",
-  clean_name: "媒体库",
-  children: [MOVIE_LIBRARY_NODE, TV_LIBRARY_NODE, PLAIN_LEAF_NODE],
-});
-
 /**
  * 多季剧 + 剧目录下的直属剧场版。
  *
@@ -308,4 +280,40 @@ export const TV_SINGLE_SEASON_WITH_SP_NODE = makeNode({
   videos: [
     makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\孤独摇滚\\SP 特别篇.mkv`, file_name: "SP 特别篇.mkv" }),
   ],
+});
+
+/** 一级分类节点（虚拟库） */
+export const TV_LIBRARY_NODE = makeNode({
+  name: "剧集",
+  path: "E:\\剧集库",
+  folder_type: "mixed",
+  is_top_category: true,
+  is_virtual_library: true,
+  category_tag: "tv",
+  children: [
+    TV_MULTI_SEASON_NODE,
+    TV_SINGLE_SEASON_NODE,
+    TV_FLAT_NODE,
+    TV_EMPTY_SEASON_NODE,
+    TV_WITH_EXTRAS_NODE,
+    TV_SINGLE_SEASON_WITH_SP_NODE,
+    MIXED_NODE,
+  ],
+});
+
+export const MOVIE_LIBRARY_NODE = makeNode({
+  name: "电影",
+  path: `${MEDIA_ROOT}\\电影`,
+  folder_type: "mixed",
+  is_top_category: true,
+  category_tag: "movie",
+  children: [MOVIE_NODE, SERIES_NODE, COLLECTION_NODE],
+});
+
+/** 根节点：name 固定是"媒体库"，path 是空串 */
+export const LIBRARY_TREE = makeNode({
+  name: "媒体库",
+  path: "",
+  clean_name: "媒体库",
+  children: [MOVIE_LIBRARY_NODE, TV_LIBRARY_NODE, PLAIN_LEAF_NODE],
 });

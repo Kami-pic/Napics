@@ -20,8 +20,15 @@ export interface MobileLibraryView {
   kind: MobileLibraryViewKind;
   /** 子目录卡片（已排序）。kind 为 seasons 时就是季节点 */
   folders: FolderNode[];
-  /** 直接可点进详情的视频（已自然排序） */
+  /** 正片：季内集，或本目录的直属视频（已自然排序） */
   videos: VideoInfo[];
+  /**
+   * 剧目录下的散片（剧场版、SP、没归进季目录的集）。
+   *
+   * 单独一段而不是接在 `videos` 后面：集列表打的是位置序号，混在一起
+   * `SP 特别篇.mkv` 会顶着"03"排在 S01E02 后面，看起来像第 3 集。
+   */
+  extraVideos: VideoInfo[];
   /** 页头主标题 */
   title: string;
   /** 页头副标题：单季剧显示季名，其他情况为空 */
@@ -168,6 +175,12 @@ export function episodeSeasonNumber(fileName: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+/** 从集文件名里取集号，如 "三体 S01E05.mkv" → 5。用于详情页与播放页的定位标签 */
+export function episodeNumber(fileName: string): number | null {
+  const match = (fileName || "").match(/S\d{1,3}E(\d{1,4})/i);
+  return match ? Number(match[1]) : null;
+}
+
 /** 普通目录排序：按显示名自然序 */
 function sortedFolders(children: FolderNode[]): FolderNode[] {
   return [...(children || [])].sort((a, b) => naturalCompare(nodeDisplayName(a), nodeDisplayName(b)));
@@ -215,7 +228,8 @@ export function resolveLibraryView(node: FolderNode): MobileLibraryView {
       return {
         kind: "seasons",
         folders: seasons,
-        videos: ownVideos,
+        videos: [],
+        extraVideos: ownVideos,
         title,
         subtitle: "",
         isEmpty: false,
@@ -223,17 +237,20 @@ export function resolveLibraryView(node: FolderNode): MobileLibraryView {
     }
     if (seasons.length === 1) {
       // 单季不该逼用户多点一层。直接摊开该季的集，季名放副标题。
-      // 季内集在前、剧目录下的散片在后，各自排序，不混在一起排。
+      // 剧目录下的散片走 extraVideos 单独一段，不和正片共用集号。
       const only = seasons[0];
       const seasonVideos = sortedVideos(only.videos || []);
-      const videos = [...seasonVideos, ...ownVideos];
       return {
         kind: "episodes",
         folders: sortedFolders(only.children || []),
-        videos,
+        videos: seasonVideos,
+        extraVideos: ownVideos,
         title,
         subtitle: nodeDisplayName(only),
-        isEmpty: videos.length === 0 && (only.children || []).length === 0,
+        isEmpty:
+          seasonVideos.length === 0
+          && ownVideos.length === 0
+          && (only.children || []).length === 0,
       };
     }
     // 扁平剧：集直接挂在剧目录下
@@ -241,6 +258,7 @@ export function resolveLibraryView(node: FolderNode): MobileLibraryView {
       kind: "episodes",
       folders: [],
       videos: ownVideos,
+      extraVideos: [],
       title,
       subtitle: "",
       isEmpty: ownVideos.length === 0,
@@ -253,6 +271,7 @@ export function resolveLibraryView(node: FolderNode): MobileLibraryView {
       kind: "episodes",
       folders: [],
       videos: ownVideos,
+      extraVideos: [],
       title,
       subtitle: "",
       isEmpty: ownVideos.length === 0,
@@ -265,6 +284,7 @@ export function resolveLibraryView(node: FolderNode): MobileLibraryView {
     kind: "folders",
     folders,
     videos: ownVideos,
+    extraVideos: [],
     title,
     subtitle: "",
     isEmpty: false,

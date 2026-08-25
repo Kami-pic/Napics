@@ -8,7 +8,7 @@ import type { FolderNode, VideoInfo } from "@/types";
 import { useMobileLibrary } from "@/hooks/mobile/useMobileLibrary";
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
 import { folderTarget, videoTarget, findParentPath } from "@/lib/mobile/libraryNav";
-import { libraryUrl, playUrl } from "@/lib/mobile/mobileRouteUtils";
+import { libraryUrl, playUrl, searchUrl, MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
 import MobileShell from "./MobileShell";
 import MobileStateView from "./MobileStateView";
 import MobileFolderList from "./MobileFolderList";
@@ -53,6 +53,27 @@ export default function MobileLibraryClient({ path }: MobileLibraryClientProps) 
         state={state}
         loadingText="正在读取媒体库…"
         emptyText="这个目录里还没有已入库的视频"
+        // 空态给下一步：目录空要么是还没下载，要么是下载了没入库
+        emptyAction={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => router.push(searchUrl({ q: view?.title || "", tab: "bt" }))}
+              className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-on-accent)]"
+              style={{ minHeight: "var(--m-touch-min)", background: "var(--m-accent)" }}
+            >
+              搜索资源
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(MOBILE_ROUTES.downloads)}
+              className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-text)]"
+              style={{ minHeight: "var(--m-touch-min)", background: "var(--m-surface-raised)" }}
+            >
+              去同步
+            </button>
+          </div>
+        }
         errorText={errorText}
         onRetry={state === "error" ? () => void reload() : undefined}
       >
@@ -66,6 +87,16 @@ export default function MobileLibraryClient({ path }: MobileLibraryClientProps) 
           )}
           {view && view.videos.length > 0 && (
             <MobileEpisodeList videos={view.videos} onOpenDetail={openDetail} onPlay={openPlay} />
+          )}
+          {/* 剧目录下的剧场版/SP：单独一段且不编号，不然会被当成正片的下一集 */}
+          {view && view.extraVideos.length > 0 && (
+            <MobileEpisodeList
+              videos={view.extraVideos}
+              onOpenDetail={openDetail}
+              onPlay={openPlay}
+              title="其他视频（剧场版 / 特别篇）"
+              numbered={false}
+            />
           )}
         </div>
       </MobileStateView>

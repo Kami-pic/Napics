@@ -80,7 +80,7 @@ describe("行为矩阵：一屏显示什么", () => {
   it("虚拟库 → 进入后按剧目呈现，仍是目录卡片", () => {
     const view = resolveLibraryView(TV_LIBRARY_NODE);
     expect(view.kind).toBe("folders");
-    expect(view.folders.length).toBe(5);
+    expect(view.folders.length).toBe(TV_LIBRARY_NODE.children.length);
   });
 
   it("TV 多季 → 季列表", () => {
@@ -126,17 +126,14 @@ describe("行为矩阵：一屏显示什么", () => {
     const view = resolveLibraryView(TV_WITH_EXTRAS_NODE);
     expect(view.kind).toBe("seasons");
     expect(view.folders.map(f => f.name)).toEqual(["Season 1", "Season 2"]);
-    expect(view.videos.map(v => v.file_name)).toEqual(["剧场版 咆哮.mkv"]);
+    expect(view.extraVideos.map(v => v.file_name)).toEqual(["剧场版 咆哮.mkv"]);
   });
 
-  it("单季剧：季内集在前，剧目录下的 SP 在后", () => {
+  it("单季剧：季内集是正片段，SP 走单独一段（不能共用集号）", () => {
     const view = resolveLibraryView(TV_SINGLE_SEASON_WITH_SP_NODE);
     expect(view.kind).toBe("episodes");
-    expect(view.videos.map(v => v.file_name)).toEqual([
-      "S01E01.mkv",
-      "S01E02.mkv",
-      "SP 特别篇.mkv",
-    ]);
+    expect(view.videos.map(v => v.file_name)).toEqual(["S01E01.mkv", "S01E02.mkv"]);
+    expect(view.extraVideos.map(v => v.file_name)).toEqual(["SP 特别篇.mkv"]);
   });
 
   it("季目录全空的剧 → 空态，不是白屏", () => {

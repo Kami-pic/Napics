@@ -32,13 +32,11 @@ export default function MobileFolderList({ folders, onOpen, ariaLabel = "目录�
             <button
               type="button"
               onClick={() => onOpen(node)}
-              className="flex w-full items-center gap-3 rounded-[var(--m-radius)] px-3 text-left active:bg-[var(--m-surface-raised)]"
+              className="flex w-full items-center gap-3 rounded-[var(--m-radius)] px-3 py-[var(--m-row-py)] text-left active:bg-[var(--m-surface-raised)]"
               style={{
                 minHeight: "var(--m-touch-min)",
                 background: "var(--m-surface)",
                 border: "1px solid var(--m-border)",
-                paddingTop: 10,
-                paddingBottom: 10,
               }}
             >
               <span className="min-w-0 flex-1">
@@ -46,7 +44,7 @@ export default function MobileFolderList({ folders, onOpen, ariaLabel = "目录�
                 <span className="mt-0.5 flex items-center gap-2 text-[12px] text-[var(--m-text-dim)]">
                   {label && (
                     <span
-                      className="rounded px-1.5 py-px text-[11px] text-[var(--m-text-muted)]"
+                      className="rounded-[var(--m-radius-sm)] px-1.5 py-px text-[11px] text-[var(--m-text-muted)]"
                       style={{ background: "var(--m-surface-raised)" }}
                     >
                       {label}
