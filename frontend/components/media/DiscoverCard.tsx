@@ -2,7 +2,14 @@
 "use client";
 import { memo, useState } from "react";
 import type { DoubanHotItem } from "@/types";
+import { resolveLocalStatusTag, type LocalStatusTone } from "@/lib/discoverStatus";
 import { proxyUrl } from "./discoverUtils";
+
+const TONE_COLORS: Record<LocalStatusTone, string> = {
+  owned: "text-emerald-400 bg-emerald-500/20",
+  upgrade: "text-amber-400 bg-amber-500/20",
+  subscribe: "text-violet-400 bg-violet-500/20",
+};
 
 export interface DiscoverCardProps {
   item: DoubanHotItem;
@@ -40,20 +47,10 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
   const ratingColorMap = { douban: "text-yellow-400", tmdb: "text-blue-400", bangumi: "text-pink-400" };
   const ratingColor = ratingColorMap[ratingSource] || "text-yellow-400";
   const hasRating = item.rating > 0;
-  const localStatus = item.local_status;
 
-  // 状态标签：优先级 已有+订阅合并 > 已有 > 可升级 > 已订阅
-  const statusTag = localStatus === "owned_high" && isSubscribed
-    ? { text: "✓ 已有·订阅", color: "text-emerald-400 bg-emerald-500/20" }
-    : localStatus === "owned_low" && isSubscribed
-    ? { text: "↑ 升级·订阅", color: "text-amber-400 bg-amber-500/20" }
-    : localStatus === "owned_high"
-    ? { text: "✓ 已有", color: "text-emerald-400 bg-emerald-500/20" }
-    : localStatus === "owned_low"
-    ? { text: "↑ 可升级", color: "text-amber-400 bg-amber-500/20" }
-    : isSubscribed
-    ? { text: "📌 已订阅", color: "text-violet-400 bg-violet-500/20" }
-    : null;
+  // 状态标签：优先级判定在 lib/discoverStatus.ts，和移动端共用一份
+  const statusTag = resolveLocalStatusTag(item.local_status, isSubscribed);
+  const statusColor = statusTag ? TONE_COLORS[statusTag.tone] : "";
 
   return (
     <div data-discover-card style={style}
@@ -100,7 +97,7 @@ const DiscoverCard = memo(function DiscoverCard({ item, index, isActive, showRan
           <div className="flex items-center mt-1 gap-1">
             <p className="text-[11px] text-slate-400 truncate flex-1 min-w-0">{meta.join(" · ") || "—"}</p>
             {statusTag && (
-              <span className={`text-[10px] ${statusTag.color} px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap`}>
+              <span className={`text-[10px] ${statusColor} px-1.5 py-0.5 rounded leading-none flex-shrink-0 whitespace-nowrap`}>
                 {statusTag.text}
               </span>
             )}
