@@ -46,12 +46,6 @@ export function useSearchState({
   open, query, defaultSavePath, currentResolution, mediaType,
   cnName, enName, originalName, folderType, seasonNumber, episodeTag,
 }: UseSearchStateParams) {
-  // 取消与代际门禁独立于 open 存在：路由搜索页没有"关闭弹窗"这个时机
-  const {
-    generationRef, activeEsRef, beginNewSearch, cancelCurrentSearch,
-    setSseTimeout, clearSseTimeout, releaseEventSource, nextController,
-  } = useSearchLifecycle();
-
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<EnhancedSearchResult[]>([]);
   const [keyword, setKeyword] = useState(query);
@@ -130,6 +124,31 @@ export function useSearchState({
   const [panActiveSource, setPanActiveSource] = useState("all");
   // 每个单源 Tab 的独立状态
   const [sourceTabStates, setSourceTabStates] = useState<Record<string, SourceTabState>>({});
+
+  /** 取消时复位全部 loading 标志。
+   *  被取消的请求走不到自己的收尾（收尾带代际门禁，否则会污染新请求的状态），
+   *  所以这三个标志只能在取消动作里清。漏了它们，读 searching / panSearching 的
+   *  按钮 disabled 会永久卡死，桌面只能关弹窗重开，路由页连这个时机都没有。 */
+  const resetLoadingFlags = useCallback(() => {
+    setSearching(false);
+    setSearchingStep("");
+    setPanSearching(false);
+    setSourceTabStates(prev => {
+      const stillSearching = Object.values(prev).some(state => state.searching);
+      if (!stillSearching) return prev;
+      const next: Record<string, SourceTabState> = {};
+      for (const [name, state] of Object.entries(prev)) {
+        next[name] = state.searching ? { ...state, searching: false } : state;
+      }
+      return next;
+    });
+  }, []);
+
+  // 取消与代际门禁独立于 open 存在：路由搜索页没有"关闭弹窗"这个时机
+  const {
+    generationRef, activeEsRef, beginNewSearch, cancelCurrentSearch,
+    setSseTimeout, clearSseTimeout, releaseEventSource, nextController,
+  } = useSearchLifecycle(resetLoadingFlags);
   // ── 固定源列表（打开时加载一次）──
   const [btSources, setBtSources] = useState<SearchSourceView[]>([]);
   const [panSources, setPanSources] = useState<SearchSourceView[]>([]);
@@ -301,7 +320,15 @@ export function useSearchState({
         es.onmessage = (event) => {
           // 代际不匹配 → 旧搜索的残留消息，丢弃。
           // 置空 ref 必须带条件，否则会抹掉新搜索刚写进去的连接。
-          if (generationRef.current !== thisSearchId) { es.close(); releaseEventSource(es, thisSearchId); return; }
+          // 必须 resolve：光 return 会让这个 Promise 永不 settle，
+          // 后面的 await 永久挂起，连闭包里的结果数组一起留在内存里。
+          if (generationRef.current !== thisSearchId) {
+            es.close();
+            releaseEventSource(es, thisSearchId);
+            clearSseTimeout();
+            resolve();
+            return;
+          }
           try {
             const data = JSON.parse(event.data);
             if (data.type === "status") {

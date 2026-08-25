@@ -29,8 +29,18 @@ export interface SearchLifecycle {
 
 export type SearchChannel = "bt" | "pan" | "source";
 
-export function useSearchLifecycle(): SearchLifecycle {
+/**
+ * @param onCancel 取消时的额外清理。**必须在这里复位 loading 标志** ——
+ *   各个搜索函数的收尾都带代际门禁（防止旧响应污染新请求的状态），
+ *   被取消的那次因此走不到自己的收尾。少了这个回调，`searching` /
+ *   `panSearching` 会永久停在 true，读它们的按钮 disabled 就再也解不开。
+ */
+export function useSearchLifecycle(onCancel?: () => void): SearchLifecycle {
   const generationRef = useRef(0);
+  // 存 ref 里：回调每次渲染都是新函数，直接进依赖会让 cancelCurrentSearch 身份不停变化，
+  // 连带 pagehide / cleanup 的 effect 反复重挂
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => { onCancelRef.current = onCancel; }, [onCancel]);
   const activeEsRef = useRef<EventSource | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controllersRef = useRef<Record<SearchChannel, AbortController | null>>({
@@ -74,6 +84,8 @@ export function useSearchLifecycle(): SearchLifecycle {
     abortChannel("bt");
     abortChannel("pan");
     abortChannel("source");
+    // 被取消的请求走不到自己的收尾（代际门禁挡住了），loading 标志只能在这里复位
+    onCancelRef.current?.();
   }, [abortChannel, clearSseTimeout]);
 
   const beginNewSearch = useCallback(() => {

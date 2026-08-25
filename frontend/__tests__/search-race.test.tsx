@@ -144,6 +144,57 @@ describe("搜索竞态：旧响应不得覆盖新结果", () => {
     expect(result.current.error).toBe("");
   });
 
+  it("回归：被取消的网盘搜索必须复位 panSearching，否则搜索按钮永久禁用", async () => {
+    // 收尾带代际门禁，被取消的那次走不到自己的 setPanSearching(false)。
+    // 桌面 SearchHeader 的 disabled 直接读这个标志：卡住就只能关弹窗重开，
+    // 而移动端路由页连这个时机都没有。
+    const pending = deferred<any>();
+    mockApi.searchPan.mockReturnValueOnce(pending.promise);
+
+    const { result } = renderSearch();
+    act(() => { void result.current.doPanSearch("词"); });
+    await waitFor(() => expect(result.current.panSearching).toBe(true));
+
+    act(() => { result.current.cancelCurrentSearch(); });
+    expect(result.current.panSearching).toBe(false);
+
+    // 迟到的响应也不能把它又设回 true
+    await act(async () => { pending.resolve(panPayload("迟到")); });
+    expect(result.current.panSearching).toBe(false);
+  });
+
+  it("回归：被取消的单源搜索必须复位该源 Tab 的 searching", async () => {
+    const pending = deferred<any>();
+    mockApi.searchSource.mockReturnValueOnce(pending.promise);
+
+    const { result } = renderSearch();
+    act(() => { void result.current.doSourceSearch("sourceA", "词"); });
+    await waitFor(() => expect(result.current.sourceTabStates.sourceA?.searching).toBe(true));
+
+    act(() => { result.current.cancelCurrentSearch(); });
+    expect(result.current.sourceTabStates.sourceA?.searching).toBe(false);
+
+    await act(async () => { pending.resolve(sourcePayload("迟到")); });
+    expect(result.current.sourceTabStates.sourceA?.searching).toBe(false);
+  });
+
+  it("回归：新的全量搜索会先把上一轮网盘的 loading 清掉", async () => {
+    const panPending = deferred<any>();
+    mockApi.searchPan.mockReturnValueOnce(panPending.promise);
+    mockApi.searchStream.mockReturnValue("/backend/api/search/stream?query=x");
+
+    const { result } = renderSearch();
+    act(() => { void result.current.doPanSearch("旧词"); });
+    await waitFor(() => expect(result.current.panSearching).toBe(true));
+
+    // 切回 BT Tab 回车 → beginNewSearch → abort pan 通道
+    act(() => { void result.current.doSearch("新词"); });
+    expect(result.current.panSearching).toBe(false);
+
+    await act(async () => { panPending.resolve(panPayload("迟到")); });
+    expect(result.current.panSearching).toBe(false);
+  });
+
   it("重复调用 cancelCurrentSearch 不抛错（幂等）", () => {
     const { result } = renderSearch();
     expect(() => {
