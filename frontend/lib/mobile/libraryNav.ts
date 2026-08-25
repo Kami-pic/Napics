@@ -58,6 +58,20 @@ export function findNode(root: FolderNode | null, targetPath: string): FolderNod
   return null;
 }
 
+/** 按 file_path 找视频条目。详情页与播放页只拿到路径，元信息要从树里取 */
+export function findVideoByPath(root: FolderNode | null, filePath: string): VideoInfo | null {
+  if (!root || !filePath) return null;
+  const stack: FolderNode[] = [root];
+  while (stack.length) {
+    const current = stack.pop()!;
+    for (const video of current.videos || []) {
+      if (video.file_path === filePath) return video;
+    }
+    for (const child of current.children || []) stack.push(child);
+  }
+  return null;
+}
+
 /**
  * 找父节点的 path，给页头返回键当 fallback 目标。
  *
@@ -141,6 +155,17 @@ export function seasonNumber(name: string): number | null {
   const cn = name.match(/第\s*([零一二三四五六七八九十]{1,3})\s*[季部]/);
   if (cn) return parseCnNumber(cn[1]);
   return null;
+}
+
+/**
+ * 从集文件名里取季号，如 "三体 S01E05.mkv" → 1。
+ *
+ * 不能用 `seasonNumber()`：它要求季号后面是词边界，而 `S01E05` 里数字紧跟字母，
+ * 边界不成立。这两个场景的输入形状不同，各用各的正则。
+ */
+export function episodeSeasonNumber(fileName: string): number | null {
+  const match = (fileName || "").match(/S(\d{1,3})E\d{1,4}/i);
+  return match ? Number(match[1]) : null;
 }
 
 /** 普通目录排序：按显示名自然序 */

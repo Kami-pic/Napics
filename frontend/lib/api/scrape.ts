@@ -26,6 +26,9 @@ export const scrapeApi = {
     }
     return res.json();
   },
+  /** 远程图片经后端代理加载（后端那侧才有 HTTP 代理，浏览器直连 TMDB 图床会超时） */
+  getProxiedImage: (url: string) => `${BASE_URL}/proxy/image?url=${encodeURIComponent(url)}`,
+
   getLocalPoster: (path: string, cover: boolean = false) => `${BASE_URL}/scrape/poster?path=${encodeURIComponent(path)}${cover ? "&cover=true" : ""}`,
 
   setPosterFromUrl: (path: string, url: string, cover: boolean = false) => request<any>(`${BASE_URL}/scrape/poster-url?path=${encodeURIComponent(path)}&url=${encodeURIComponent(url)}&cover=${cover}`, { method: "POST" }),

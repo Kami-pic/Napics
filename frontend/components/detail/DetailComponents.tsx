@@ -77,7 +77,7 @@ export function Poster({ url, fallbackName, localPath, aspect = "video", posterD
             api.readScrape(localPath, true).then(r => {
               if (r.status === "ok" && r.data?.poster_url) {
                 // 通过后端代理加载远程封面（走 HTTP 代理）
-                const proxyUrl = `${BASE_URL}/proxy/image?url=${encodeURIComponent(r.data.poster_url)}`;
+                const proxyUrl = api.getProxiedImage(r.data.poster_url);
                 setRemoteSrc(proxyUrl);
                 setStage("remote"); setLoaded(false); setError(false);
               }
