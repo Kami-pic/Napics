@@ -25,6 +25,40 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ── 移动端（/m）设计 token ──
+   组件里一律写 bg-[var(--m-bg)] / h-[var(--m-nav-h)] 这种形式，
+   不写字面色值和字面尺寸。桌面页不读这些变量，改动不会波及 / 与 /manage。 */
+:root {
+  /* 尺寸：只放"CSS 需要"的值。JS 逻辑真正读取的（网格列数、分页条数）在 lib/mobile/mobileConstants.ts */
+  --m-nav-h: 56px;              /* 底部导航条高度 */
+  --m-touch-min: 44px;          /* 最小触控目标，iOS HIG 的下限 */
+  --m-safe-top: env(safe-area-inset-top, 0px);
+  --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --m-page-px: 16px;            /* 页面左右内边距 */
+  /* 页面底部留白：底栏 + home indicator 安全区 + 一点呼吸空间。
+     少了这个，列表最后一项会被底栏压住，手指点不到。 */
+  --m-page-pb: calc(var(--m-nav-h) + var(--m-safe-bottom) + 12px);
+  --m-header-h: 48px;
+  --m-radius: 12px;
+
+  /* 配色：与桌面同一套暗色基调，但集中在这里，不再散落成字面值 */
+  --m-bg: #0f0f0f;
+  --m-surface: #141414;
+  --m-surface-raised: #1c1c1c;
+  --m-border: rgba(255, 255, 255, 0.06);
+  --m-border-strong: rgba(255, 255, 255, 0.12);
+  --m-text: #f5f5f5;
+  --m-text-muted: #94a3b8;
+  --m-text-dim: #64748b;
+  --m-accent: #3b82f6;
+  --m-accent-weak: rgba(59, 130, 246, 0.12);
+  --m-on-accent: #ffffff;
+  --m-success: #22c55e;
+  --m-danger: #ef4444;
+  --m-warning: #f59e0b;
+  --m-overlay: rgba(0, 0, 0, 0.6);
+}
+
 /* 滚动条 — 极细极淡，始终可见 */
 * {
   scrollbar-width: thin;
