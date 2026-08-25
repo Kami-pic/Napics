@@ -9,6 +9,7 @@ import { configApi } from "./config";
 import { systemApi } from "./system";
 import { aiApi } from "./ai";
 import { authApi } from "./auth";
+import { subtitleApi } from "./subtitle";
 
 export const api = {
   ...configApi,
@@ -21,6 +22,7 @@ export const api = {
   ...subscribeApi,
   ...aiApi,
   ...authApi,
+  // subtitleApi 的 search / download 与 searchApi、downloadApi 撞名，
+  // 展开进来会静默覆盖，所以挂成命名空间：api.subtitle.search(...)。
+  subtitle: subtitleApi,
 };
-// subtitleApi 没有展开进来：它的 search / download 方法名与 searchApi、downloadApi
-// 冲突，展开会静默覆盖。需要时直接 import { subtitleApi } from "@/lib/api/subtitle"。
