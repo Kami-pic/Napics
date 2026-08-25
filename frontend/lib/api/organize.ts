@@ -15,8 +15,9 @@ export const organizeApi = {
   fullOrganize: (path: string, dryRun: boolean = true, useAi: boolean = false, signal?: AbortSignal) => request<any>(`${BASE_URL}/organize/full?path=${encodeURIComponent(path)}&dry_run=${dryRun}&use_ai=${useAi}`, { method: "POST", signal }),
   fullOrganizeExecute: (path: string, actionPlan: any, useAi: boolean = false) => request<any>(`${BASE_URL}/organize/full?path=${encodeURIComponent(path)}&dry_run=false&use_ai=${useAi}`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({action_plan: actionPlan}) }),
   rename: (oldPath: string, newName: string) => request<any>(`${BASE_URL}/rename?old_path=${encodeURIComponent(oldPath)}&new_name=${encodeURIComponent(newName)}`, { method: "POST" }),
-  // quickSync 返回 fetch Response，不走 request
-  quickSync: () => fetch(`${BASE_URL}/sync`),
+  // quickSync 返回 fetch Response，不走 request。
+  // signal 用于页面离开 / 切后台时断流（移动端路由页没有"关闭弹窗"这个时机）
+  quickSync: (signal?: AbortSignal) => fetch(`${BASE_URL}/sync`, { signal }),
 
   // 散落季合并
   mergeScatteredSeasons: (path: string, dryRun: boolean = true) =>

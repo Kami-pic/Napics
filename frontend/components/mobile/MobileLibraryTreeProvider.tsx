@@ -31,6 +31,17 @@ export interface MobileLibraryTreeState {
   reload: () => Promise<void>;
   /** 判断某个视频路径是否已在库里（归位后确认入库用）。O(1) */
   hasVideoPath: (filePath: string) => boolean;
+  /**
+   * 该目录下是否已有视频入库。
+   * 归位确认只能用这个：归位搬过去的文件名来自沙盒，前端并不知道最终文件名，
+   * 只知道 save_path。
+   */
+  hasVideoUnder: (dirPath: string) => boolean;
+}
+
+/** 统一分隔符再比前缀：save_path 和 file_path 同源，但可能混用 \ 与 / */
+function normalizeDir(dirPath: string): string {
+  return dirPath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
 }
 
 const MobileLibraryTreeContext = createContext<MobileLibraryTreeState | null>(null);
@@ -104,9 +115,19 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
     return pathsRef.current.has(filePath);
   }, []);
 
+  const hasVideoUnder = useCallback((dirPath: string) => {
+    const prefix = normalizeDir(dirPath);
+    if (!prefix) return false;
+    for (const path of pathsRef.current) {
+      const normalized = path.replace(/\\/g, "/").toLowerCase();
+      if (normalized.startsWith(prefix + "/")) return true;
+    }
+    return false;
+  }, []);
+
   const value = useMemo<MobileLibraryTreeState>(() => ({
-    tree, ready, loading, loadFailed, version, reload, hasVideoPath,
-  }), [tree, ready, loading, loadFailed, version, reload, hasVideoPath]);
+    tree, ready, loading, loadFailed, version, reload, hasVideoPath, hasVideoUnder,
+  }), [tree, ready, loading, loadFailed, version, reload, hasVideoPath, hasVideoUnder]);
 
   return (
     <MobileLibraryTreeContext.Provider value={value}>
