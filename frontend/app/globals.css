@@ -39,7 +39,10 @@ body {
      少了这个，列表最后一项会被底栏压住，手指点不到。 */
   --m-page-pb: calc(var(--m-nav-h) + var(--m-safe-bottom) + 12px);
   --m-header-h: 48px;
-  --m-radius: 12px;
+  --m-radius: 12px;        /* 卡片、列表行 */
+  --m-radius-sm: 8px;      /* 按钮、徽标、次级控件 */
+  --m-radius-pill: 999px;  /* 胶囊：Tab、状态 chip、字幕轨切换 */
+  --m-row-py: 10px;        /* 列表行的纵向内边距 */
 
   /* 配色：与桌面同一套暗色基调，但集中在这里，不再散落成字面值 */
   --m-bg: #0f0f0f;
@@ -49,7 +52,10 @@ body {
   --m-border-strong: rgba(255, 255, 255, 0.12);
   --m-text: #f5f5f5;
   --m-text-muted: #94a3b8;
-  --m-text-dim: #64748b;
+  /* 次要文字。#64748b 对 --m-surface 只有 3.87:1，不到 WCAG AA 的 4.5:1 ——
+     而移动端把缩放锁掉了，读不清也放不大，没有补偿路径。提到 5.4:1。
+     承载它的是集数、分辨率、文件大小、未选中 Tab 这些全都要读的信息。 */
+  --m-text-dim: #8b98a9;
   --m-accent: #3b82f6;
   --m-accent-weak: rgba(59, 130, 246, 0.12);
   --m-on-accent: #ffffff;
@@ -64,9 +70,12 @@ body {
 
    overscroll-behavior: none  — 去掉橡皮筋回弹与下拉刷新，滚到顶/底就停住。
                                 滚动容器和 html/body 都要设，只设一边挡不住。
-   touch-action: pan-y        — 只允许纵向拖动：顺带禁掉双指缩放和横向拖页。
    overflow-x: hidden         — 兜底，防某个子元素超宽把整页拖出横向滚动条。
-   -webkit-text-size-adjust   — 阻止 iOS 横屏时自动放大字号。 */
+   -webkit-text-size-adjust   — 阻止 iOS 横屏时自动放大字号。
+
+   **这里刻意不写 touch-action**：它按祖先链求交，在根节点上写 pan-y 会让子树里
+   所有横向滚动容器（搜索页的源状态行）都拖不动。禁缩放交给
+   MobileGestureLock 拦 Safari 的 gesture 事件。 */
 :root:has(.m-app),
 :root:has(.m-app) body {
   overscroll-behavior: none;
@@ -76,10 +85,9 @@ body {
 
 .m-app {
   overscroll-behavior: none;
-  touch-action: pan-y;
   overflow-x: hidden;
-  /* 长按不弹系统的复制/查询菜单（媒体路径这类文本没有选中的意义）。
-     输入框和播放器自己的控件要排除，否则搜索框没法选中文本。 */
+  /* 长按不弹系统的复制/查询菜单。输入框、播放器、以及显式标了 .m-selectable
+     的文本（文件路径这类要复制的内容）要排除。 */
   -webkit-user-select: none;
   user-select: none;
   /* 点按时不闪灰色高亮块，交互反馈统一交给 active: 样式 */
@@ -88,9 +96,10 @@ body {
 
 .m-app input,
 .m-app textarea,
-.m-app video {
-  -webkit-user-select: auto;
-  user-select: auto;
+.m-app video,
+.m-app .m-selectable {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* 滚动条 — 极细极淡，始终可见 */

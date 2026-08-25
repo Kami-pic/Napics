@@ -142,23 +142,37 @@ describe("播放器渲染", () => {
     expect(track.getAttribute("srclang")).toBe("zh");
   });
 
-  it("带 crossOrigin，否则直连独立后端时跨源 track 会静默不加载", async () => {
+  it("同源部署不加 crossOrigin：加了会让媒体请求变 CORS 模式，访问密码的 cookie 就不发了", async () => {
+    // 默认 BASE_URL 是相对路径 /backend，即同源
     await mount(MP4);
-    expect(screen.getByTestId("mobile-video").getAttribute("crossorigin")).toBe("anonymous");
+    expect(screen.getByTestId("mobile-video").getAttribute("crossorigin")).toBeNull();
   });
 
-  it("提供字幕开关：iOS 内联播放没有 CC 菜单，没有开关就关不掉", async () => {
+  it("提供字幕开关，且关闭时真的把 textTracks 置为 disabled", async () => {
     await mount(MP4);
     await waitFor(() => expect(document.querySelectorAll("track").length).toBe(1));
-    const group = screen.getByRole("group", { name: "字幕" });
-    const off = within(group).getByRole("button", { name: "关闭" });
-    const first = within(group).getByRole("button", { name: "钢铁侠.chs.srt" });
-    expect(first.getAttribute("aria-pressed")).toBe("true");
+
+    // jsdom 没实现 HTMLMediaElement.textTracks，注入替身 —— 不注入的话
+    // selectSubtitle 会提前 return，断言 default 属性只是自欺
+    const video = screen.getByTestId("mobile-video") as HTMLVideoElement;
+    const tracks = [{ mode: "showing" }];
+    Object.defineProperty(video, "textTracks", {
+      configurable: true,
+      value: Object.assign(tracks, { length: tracks.length }),
+    });
+
+    const group = screen.getByRole("radiogroup", { name: "字幕" });
+    const off = within(group).getByRole("radio", { name: "关闭" });
+    const first = within(group).getByRole("radio", { name: "钢铁侠.chs.srt" });
+    expect(first.getAttribute("aria-checked")).toBe("true");
 
     fireEvent.click(off);
-    expect(off.getAttribute("aria-pressed")).toBe("true");
-    expect(first.getAttribute("aria-pressed")).toBe("false");
-    expect(document.querySelector("track")!.hasAttribute("default")).toBe(false);
+    expect(off.getAttribute("aria-checked")).toBe("true");
+    expect(first.getAttribute("aria-checked")).toBe("false");
+    expect(tracks[0].mode).toBe("disabled");
+
+    fireEvent.click(first);
+    expect(tracks[0].mode).toBe("showing");
   });
 
   it("没有外挂字幕时不渲染字幕开关", async () => {
@@ -166,7 +180,7 @@ describe("播放器渲染", () => {
       subtitles: [], summary: { maybe_hardcoded: false },
     }), { headers: { "content-type": "application/json" } })));
     await mount(MP4);
-    expect(screen.queryByRole("group", { name: "字幕" })).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: "字幕" })).toBeNull();
   });
 
   it("换视频时不残留上一个视频的报错和字幕提示", async () => {
@@ -220,7 +234,23 @@ describe("可播性与失败提示", () => {
   it("media error 事件 → 明确说是编码不支持，不是空白", async () => {
     await mount(MP4);
     fireEvent.error(screen.getByTestId("mobile-video"));
-    expect(screen.getByRole("alert").textContent).toMatch(/编码不受浏览器支持/);
+    expect(screen.getAllByRole("alert").some(el => /编码不受浏览器支持/.test(el.textContent || ""))).toBe(true);
+  });
+
+  it("换视频时旧文件迟到的 error 不算在新视频头上", async () => {
+    const { rerender } = render(<MobileNativePlayer path={MKV} />);
+    await act(async () => { await Promise.resolve(); });
+    rerender(<MobileNativePlayer path={MP4} />);
+    await act(async () => { await Promise.resolve(); });
+
+    // 旧资源被中断时浏览器补发的 error，code 是 MEDIA_ERR_ABORTED
+    const video = screen.getByTestId("mobile-video") as HTMLVideoElement;
+    Object.defineProperty(video, "error", {
+      configurable: true,
+      value: { code: 1 },   // MEDIA_ERR_ABORTED
+    });
+    fireEvent.error(video);
+    expect(screen.queryByText(/编码不受浏览器支持/)).toBeNull();
   });
 });
 

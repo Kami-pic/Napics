@@ -16,8 +16,9 @@ export default function MobileMediaInfoList({ video }: MobileMediaInfoListProps)
   const subtitleText = video.subtitle_text_count;
   const subtitleGraphic = video.subtitle_graphic_count;
 
+  // 顺序：技术规格在前（决定"能不能播、要不要洗版"），溯源字段收尾。
+  // 文件名不放首位 —— 它和页面上方的标题高度重复（清洗名就是从它算出来的）。
   const rows: [string, string][] = [
-    ["文件名", video.file_name],
     ["分辨率", video.resolution],
     ["大小", formatSize(video.size_gb)],
     ["时长", duration ? formatDuration(duration) : ""],
@@ -32,6 +33,7 @@ export default function MobileMediaInfoList({ video }: MobileMediaInfoListProps)
           : `${video.subtitle_count} 条（文本 ${subtitleText ?? 0} / 图形 ${subtitleGraphic ?? 0}）`
         : "",
     ],
+    ["文件名", video.file_name],
     ["路径", video.file_path],
   ];
 
@@ -45,7 +47,9 @@ export default function MobileMediaInfoList({ video }: MobileMediaInfoListProps)
         .map(([label, value]) => (
           <div key={label} className="flex gap-3 text-[13px]">
             <dt className="w-16 shrink-0 text-[var(--m-text-dim)]">{label}</dt>
-            <dd className="min-w-0 flex-1 break-all text-[var(--m-text-muted)]">{value}</dd>
+            {/* m-selectable：文件名和路径是用户会长按复制发给自己的内容，
+                /m 全局禁了文本选中，这里要开回来 */}
+            <dd className="m-selectable min-w-0 flex-1 break-all text-[var(--m-text-muted)]">{value}</dd>
           </div>
         ))}
     </dl>

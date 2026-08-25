@@ -23,6 +23,22 @@ const EXTENSION_MIME: Record<string, string> = {
   mov: "video/quicktime",
 };
 
+/**
+ * 后端是不是跨源的。
+ *
+ * 默认 `BASE_URL` 是相对路径 `/backend`（同源，走 Next 代理）；只有显式设了
+ * `NEXT_PUBLIC_API_URL` 直连独立后端时才是绝对地址。
+ *
+ * 这个判断决定 `<video>` 要不要加 `crossOrigin` —— **两种情况必须区别对待**：
+ * 同源下加了它会把媒体请求变成 CORS 模式，而 `anonymous` 的凭据策略不发 cookie，
+ * 开了访问密码后 `/playback/*` 会直接 401（它不在鉴权白名单里，
+ * 而访问密码走 cookie 正是因为 `<video src>` 带不了自定义头），
+ * 视频从"能播"退回"整个播不了"。
+ */
+export function isCrossOriginBackend(): boolean {
+  return /^https?:\/\//i.test(BASE_URL);
+}
+
 /** 取小写扩展名（不带点）。无扩展名返回空串 */
 export function videoExtension(path: string): string {
   const name = path.split(/[\\/]/).pop() || "";

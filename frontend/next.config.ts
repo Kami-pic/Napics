@@ -13,10 +13,18 @@ import type { NextConfig } from "next";
  * 这个字段在 production build 里不生效，不影响部署。
  */
 function localIPv4s(): string[] {
+  // 显式指定优先：`NAPICS_DEV_ORIGINS=10.1.2.3,host.local npm run dev`
+  const explicit = (process.env.NAPICS_DEV_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
+  if (explicit.length > 0) return explicit;
+
   return Object.values(os.networkInterfaces())
     .flat()
     .filter(info => info && info.family === "IPv4" && !info.internal)
-    .map(info => info!.address);
+    .map(info => info!.address)
+    // 只放行 RFC1918 私网地址。os.networkInterfaces() 还会给出 Tailscale
+    // （100.64/10 CGNAT）、Docker bridge、Hyper-V 这些虚拟网卡的地址，
+    // 把 tailnet 的 Origin 一起放进 dev 白名单没有必要。
+    .filter(addr => /^(?:192\.168\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(addr));
 }
 
 const nextConfig: NextConfig = {

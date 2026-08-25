@@ -10,7 +10,7 @@
 // - **不做 Blob 字幕和内嵌字幕提取**。内嵌提取要全量 demux 整个文件；
 //   外挂字幕后端已经转好 WebVTT，直接给 <track> 用 URL 就行。
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { useMobilePlugins } from "./MobileProviders";
@@ -20,6 +20,7 @@ import {
   resolveSubtitleUrl,
   canPlayNatively,
   videoExtension,
+  isCrossOriginBackend,
 } from "@/lib/domain/playback";
 import { libraryUrl } from "@/lib/mobile/mobileRouteUtils";
 import MobileStateView from "./MobileStateView";
@@ -161,7 +162,14 @@ export default function MobileNativePlayer({ path }: MobileNativePlayerProps) {
     }
   }, [patch]);
 
-  const onError = useCallback(() => {
+  const onError = useCallback((event: SyntheticEvent<HTMLVideoElement>) => {
+    const video = event.currentTarget;
+    // 换视频时 React 只改 src，元素不卸载，旧资源被中断时还会补一次 error。
+    // 不校验来源就会对着能播的新视频报"编码不受支持"。
+    // 1 = MEDIA_ERR_ABORTED。用字面量而不是 MediaError.MEDIA_ERR_ABORTED：
+    // 那个全局在 jsdom 里不存在，引用它会让 handler 抛 ReferenceError。
+    if (video.error?.code === 1) return;
+    if (video.currentSrc && !video.currentSrc.endsWith(buildStreamUrl(path))) return;
     patch({
       error: `这个文件的编码不受浏览器支持（${videoExtension(path) || "未知格式"}），用桌面端播放`,
     });
@@ -203,9 +211,10 @@ export default function MobileNativePlayer({ path }: MobileNativePlayerProps) {
         controls
         playsInline
         preload="metadata"
-        // 直连独立后端（NEXT_PUBLIC_API_URL）时字幕是跨源的，没有这个属性
-        // <track> 会被静默拒绝加载：字幕条数显示正常，但一个字都不出。
-        crossOrigin="anonymous"
+        // 只在跨源部署下加：那时不加，<track> 会被静默拒绝加载（字幕条数正常但
+        // 一个字都不出）。**同源下不能加** —— 它会把媒体请求变成 CORS 模式，
+        // anonymous 不发 cookie，开了访问密码后连视频本体都 401。
+        {...(isCrossOriginBackend() ? { crossOrigin: "anonymous" as const } : {})}
         onError={onError}
         className="max-h-[70dvh] w-full bg-black"
       >
@@ -225,8 +234,10 @@ export default function MobileNativePlayer({ path }: MobileNativePlayerProps) {
         {current.error && (
           <p role="alert" className="text-[13px] text-[var(--m-danger)]">{current.error}</p>
         )}
+        {/* 这条是首帧就存在的页面状态，不是刚发生的事件 —— 用 status 不用 alert，
+            assertive 打断留给真正的运行期错误（上面那条 current.error） */}
         {!current.error && !current.nativeSupported && (
-          <p role="alert" className="text-[13px] text-[var(--m-warning)]">
+          <p role="status" className="text-[13px] text-[var(--m-warning)]">
             浏览器可能无法播放这个格式（{videoExtension(path) || "未知格式"}），
             如果一直黑屏请用桌面端
           </p>
