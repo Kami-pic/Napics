@@ -1,5 +1,7 @@
 // 搜索源状态：哪些源在搜、哪些出了结果、哪些失败。
-// 横向滚动，每项满足最小触控目标 —— 不是靠文字周围的视觉留白撑大。
+//
+// 横向滚动、**纯展示不可点**，所以每项 32px 而不是 44px 的触控下限。
+// 将来要给它加点击行为（比如点某源筛结果），高度必须先提到 var(--m-touch-min)。
 "use client";
 
 export type MobileSourceState = "idle" | "searching" | "done" | "failed" | "disabled";

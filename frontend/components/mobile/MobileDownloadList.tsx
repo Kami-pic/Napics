@@ -1,11 +1,15 @@
 // 下载任务列表 + 快速同步恢复入口
 "use client";
+import { useRouter } from "next/navigation";
+
 import MobileStateView from "./MobileStateView";
 import MobileDownloadTaskCard from "./MobileDownloadTaskCard";
 import { useMobileDownloads } from "@/hooks/mobile/useMobileDownloads";
 import { useMobileQuickSync } from "@/hooks/mobile/useMobileQuickSync";
+import { MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
 
 export default function MobileDownloadList() {
+  const router = useRouter();
   const { entries, loading, loadFailed, hasAttention, refresh } = useMobileDownloads();
   const sync = useMobileQuickSync();
 
@@ -17,6 +21,17 @@ export default function MobileDownloadList() {
         state={state}
         loadingText="正在读取下载任务…"
         emptyText="还没有下载任务"
+        // 空态给下一步，和搜索页、媒体库的空态一个口径
+        emptyAction={
+          <button
+            type="button"
+            onClick={() => router.push(MOBILE_ROUTES.search)}
+            className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-on-accent)]"
+            style={{ minHeight: "var(--m-touch-min)", background: "var(--m-accent)" }}
+          >
+            去搜索资源
+          </button>
+        }
         errorText="下载任务读取失败"
         onRetry={() => { void refresh(); }}
       >

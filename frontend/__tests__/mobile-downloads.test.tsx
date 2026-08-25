@@ -20,6 +20,15 @@ const { mockApi } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api", () => ({ api: mockApi }));
 
+// 空态里的"去搜索资源"按钮要 router
+const { mockRouter } = vi.hoisted(() => ({
+  mockRouter: { push: vi.fn(), replace: vi.fn(), back: vi.fn() },
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => mockRouter,
+  usePathname: () => "/m/downloads",
+}));
+
 const SAVE_PATH = String.raw`\\NAS\share\视频\电视剧\某剧 S01`;
 
 function makeTask(over: Partial<Record<string, unknown>> = {}) {
