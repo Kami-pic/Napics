@@ -69,6 +69,65 @@ def _get_remuxed_file(video_path: str, audio_index: int) -> str | None:
     return None
 
 
+# ── Range 解析 ──
+
+
+class RangeNotSatisfiable(Exception):
+    """Range 语法合法但无法在当前文件上满足，调用方应返回 416。"""
+
+
+def parse_range_header(range_header: str, file_size: int) -> tuple[int, int] | None:
+    """解析单段 Range 请求头，返回闭区间 `(start, end)`。
+
+    三种结果，对应 RFC 9110 §14 的三种处理：
+    - 返回 `(start, end)`：可满足，调用方返回 206。
+    - 返回 `None`：**语法非法**（不是 `bytes=` 单位、数字解析失败等）。
+      规范要求忽略该头，调用方按完整响应 200 处理。
+    - 抛 `RangeNotSatisfiable`：语法合法但不可满足（越界 / 倒置 / 空文件 /
+      `-0` 后缀），调用方返回 416 + `Content-Range: bytes */size`。
+
+    多段（`bytes=0-1,5-6`）只服务第一段：规范允许，且比 416 更兼容播放器。
+    旧实现在这里抛 ValueError 然后回退成"整文件 206"，属于伪装成部分响应的全量返回。
+    """
+    header = (range_header or "").strip()
+    if not header.lower().startswith("bytes="):
+        return None
+
+    spec = header[len("bytes="):].strip()
+    if not spec:
+        return None
+    # 多段只取首段
+    spec = spec.split(",")[0].strip()
+
+    if "-" not in spec:
+        return None
+    first, _, last = spec.partition("-")
+    first, last = first.strip(), last.strip()
+
+    try:
+        if not first:
+            # suffix range：bytes=-N → 末尾 N 字节
+            if not last:
+                return None
+            suffix_len = int(last)
+            if suffix_len <= 0 or file_size == 0:
+                raise RangeNotSatisfiable()
+            start = max(0, file_size - suffix_len)
+            return start, file_size - 1
+        start = int(first)
+        end = int(last) if last else file_size - 1
+    except ValueError:
+        return None
+
+    if start < 0 or end < 0:
+        return None
+    # 空文件没有任何可满足的字节区间；越界与倒置都不可满足
+    if file_size == 0 or start >= file_size or start > end:
+        raise RangeNotSatisfiable()
+
+    return start, min(end, file_size - 1)
+
+
 @router.head("/playback/stream")
 @router.get("/playback/stream")
 def stream_file(
@@ -125,19 +184,24 @@ def stream_file(
     # 解析 Range 请求头
     range_header = request.headers.get("range") if request else None
 
+    parsed = None
     if range_header:
-        # 格式：bytes=start-end
         try:
-            range_spec = range_header.replace("bytes=", "").strip()
-            parts = range_spec.split("-")
-            start = int(parts[0]) if parts[0] else 0
-            end = int(parts[1]) if parts[1] else file_size - 1
-        except (ValueError, IndexError):
-            start, end = 0, file_size - 1
+            parsed = parse_range_header(range_header, file_size)
+        except RangeNotSatisfiable:
+            return Response(
+                content=b"",
+                status_code=416,
+                media_type=content_type,
+                headers={
+                    "Content-Range": f"bytes */{file_size}",
+                    "Accept-Ranges": "bytes",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
 
-        # 限制范围
-        start = max(0, min(start, file_size - 1))
-        end = min(end, file_size - 1)
+    if parsed is not None:
+        start, end = parsed
         content_length = end - start + 1
 
         def range_iterator(chunk_size: int = 1024 * 1024):
