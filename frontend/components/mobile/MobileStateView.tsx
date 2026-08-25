@@ -15,6 +15,8 @@ export interface MobileStateViewProps {
   errorText?: string;
   /** 空状态下的引导操作，如"去搜索" */
   emptyAction?: ReactNode;
+  /** 错误状态下的出口，如"回媒体库"。没有返回入口的全屏错误页就是死路 */
+  errorAction?: ReactNode;
   onRetry?: () => void;
 }
 
@@ -25,6 +27,7 @@ export default function MobileStateView({
   emptyText = "这里还没有内容",
   errorText = "加载失败",
   emptyAction,
+  errorAction,
   onRetry,
 }: MobileStateViewProps) {
   if (state === "ready") return <>{children}</>;
@@ -69,6 +72,7 @@ export default function MobileStateView({
               重试
             </button>
           )}
+          {errorAction}
         </>
       )}
     </div>

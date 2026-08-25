@@ -8,7 +8,9 @@ export function useScrape(name: string, path: string, autoScrape: boolean = fals
   const cacheKey = path || name;
   const cached = getCached(cacheKey);
   const [data, setData] = useState<ScrapeResult | null>(cached.scrapeData || null);
-  const [loading, setLoading] = useState(false);
+  // 首次读取是否还在路上。status 区分不了"还没读"和"读完了没有数据"
+  // （两者都是 idle），调用方据此会把加载中误显示成"没有刮削信息"。
+  const [reading, setReading] = useState(false);
   const [scrapeLoading, setScrapeLoading] = useState(cached.scrapeLoading || false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "failed" | "not_found">(
     (cached.scrapeStatus as any) || "idle"
@@ -55,6 +57,7 @@ export function useScrape(name: string, path: string, autoScrape: boolean = fals
     }
     // 重置状态（path 变化时清除旧数据）
     setData(null); setStatus("idle"); setConfidence(null); setPendingConfirm(false);
+    setReading(!!path);
 
     (async () => {
       try {
@@ -69,6 +72,8 @@ export function useScrape(name: string, path: string, autoScrape: boolean = fals
         if (!cancelled) { setStatus("idle"); }
       } catch {
         if (!cancelled) setStatus("failed");
+      } finally {
+        if (!cancelled) setReading(false);
       }
     })();
 
@@ -98,5 +103,5 @@ export function useScrape(name: string, path: string, autoScrape: boolean = fals
     }).catch(() => { setStatus("failed"); alert("刮削请求失败"); }).finally(() => setScrapeLoading(false));
   };
 
-  return { data, loading: scrapeLoading, status, rescrape, reload, setData, confidence, pendingConfirm, setPendingConfirm };
+  return { data, loading: scrapeLoading, reading, status, rescrape, reload, setData, confidence, pendingConfirm, setPendingConfirm };
 }

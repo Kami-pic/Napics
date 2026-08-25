@@ -151,6 +151,40 @@ def test_head_keeps_full_length_and_accept_ranges(client, video):
     assert r.headers["accept-ranges"] == "bytes"
 
 
+def test_head_and_get_agree_on_range(client, video):
+    """播放器会用 HEAD 探测某个 Range 能不能满足。
+    HEAD 恒返回 200 + 全长而 GET 返回 416，探测结果就是错的。"""
+    head_ok = client.head("/playback/stream", params={"path": video}, headers={"Range": "bytes=0-99"})
+    assert head_ok.status_code == 206
+    assert head_ok.headers["content-range"] == f"bytes 0-99/{SIZE}"
+    assert head_ok.headers["content-length"] == "100"
+    assert head_ok.content == b""
+
+    head_bad = client.head(
+        "/playback/stream", params={"path": video}, headers={"Range": f"bytes={SIZE + 10}-"},
+    )
+    assert head_bad.status_code == 416
+    assert head_bad.headers["content-range"] == f"bytes */{SIZE}"
+
+
+def test_single_byte_range(client, video):
+    """`bytes=0-0` 是播放器探测 Range 支持的常用手法"""
+    r = _get(client, video, "bytes=0-0")
+    assert r.status_code == 206
+    assert r.headers["content-range"] == f"bytes 0-0/{SIZE}"
+    assert r.headers["content-length"] == "1"
+    assert r.content == BODY[0:1]
+
+
+def test_end_beyond_eof_is_clamped(client, video):
+    """end 超过文件尾按 EOF 处理，不是 416"""
+    r = _get(client, video, "bytes=0-99999")
+    assert r.status_code == 206
+    assert r.headers["content-range"] == f"bytes 0-{SIZE - 1}/{SIZE}"
+    assert r.headers["content-length"] == str(SIZE)
+    assert r.content == BODY
+
+
 def test_zero_length_suffix_range_returns_416(client, video):
     """`bytes=-0` 请求「末尾 0 字节」，语法合法但不可满足"""
     r = _get(client, video, "bytes=-0")

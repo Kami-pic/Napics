@@ -24,6 +24,8 @@ import {
   TV_SINGLE_SEASON_NODE,
   TV_FLAT_NODE,
   TV_EMPTY_SEASON_NODE,
+  TV_WITH_EXTRAS_NODE,
+  TV_SINGLE_SEASON_WITH_SP_NODE,
   MIXED_NODE,
   PLAIN_LEAF_NODE,
   TV_LIBRARY_NODE,
@@ -70,7 +72,8 @@ describe("行为矩阵：一屏显示什么", () => {
   it("根节点 → 一级分类卡片", () => {
     const view = resolveLibraryView(LIBRARY_TREE);
     expect(view.kind).toBe("folders");
-    expect(view.folders.map(f => f.name)).toEqual(["电影", "剧集", "未分类"].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })));
+    // 期望顺序写死。用与实现同一套比较器现算的话，实现改坏时期望值会跟着变
+    expect(view.folders.map(f => f.name)).toEqual(["电影", "剧集", "未分类"]);
     expect(view.isEmpty).toBe(false);
   });
 
@@ -84,6 +87,7 @@ describe("行为矩阵：一屏显示什么", () => {
     const view = resolveLibraryView(TV_MULTI_SEASON_NODE);
     expect(view.kind).toBe("seasons");
     expect(view.folders.map(f => f.name)).toEqual(["Season 1", "Season 2"]);
+    // 这个夹具的剧目录下没有散片，所以视频段为空（有散片的情况见下一条）
     expect(view.videos).toEqual([]);
     expect(view.title).toBe("三体");
   });
@@ -115,6 +119,23 @@ describe("行为矩阵：一屏显示什么", () => {
       "三体 S01E01.mkv",
       "三体 S01E02.mkv",
       "三体 S01E10.mkv",
+    ]);
+  });
+
+  it("多季剧的直属剧场版必须同屏，否则那个文件在移动端完全不可达", () => {
+    const view = resolveLibraryView(TV_WITH_EXTRAS_NODE);
+    expect(view.kind).toBe("seasons");
+    expect(view.folders.map(f => f.name)).toEqual(["Season 1", "Season 2"]);
+    expect(view.videos.map(v => v.file_name)).toEqual(["剧场版 咆哮.mkv"]);
+  });
+
+  it("单季剧：季内集在前，剧目录下的 SP 在后", () => {
+    const view = resolveLibraryView(TV_SINGLE_SEASON_WITH_SP_NODE);
+    expect(view.kind).toBe("episodes");
+    expect(view.videos.map(v => v.file_name)).toEqual([
+      "S01E01.mkv",
+      "S01E02.mkv",
+      "SP 特别篇.mkv",
     ]);
   });
 

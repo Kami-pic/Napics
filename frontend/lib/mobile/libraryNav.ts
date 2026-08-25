@@ -210,12 +210,23 @@ export function resolveLibraryView(node: FolderNode): MobileLibraryView {
   if (node.folder_type === "tv") {
     const seasons = seasonNodes(node);
     if (seasons.length >= 2) {
-      return { kind: "seasons", folders: seasons, videos: [], title, subtitle: "", isEmpty: false };
+      // ownVideos 不能丢：`Season 1/` 旁边放 `剧场版.mkv`、`SP01.mkv` 是常见布局，
+      // 这些文件留在 tv 节点自己的 videos 里。丢掉它们在移动端就彻底不可达。
+      return {
+        kind: "seasons",
+        folders: seasons,
+        videos: ownVideos,
+        title,
+        subtitle: "",
+        isEmpty: false,
+      };
     }
     if (seasons.length === 1) {
-      // 单季不该逼用户多点一层。直接摊开该季的集，季名放副标题
+      // 单季不该逼用户多点一层。直接摊开该季的集，季名放副标题。
+      // 季内集在前、剧目录下的散片在后，各自排序，不混在一起排。
       const only = seasons[0];
-      const videos = sortedVideos(only.videos || []);
+      const seasonVideos = sortedVideos(only.videos || []);
+      const videos = [...seasonVideos, ...ownVideos];
       return {
         kind: "episodes",
         folders: sortedFolders(only.children || []),

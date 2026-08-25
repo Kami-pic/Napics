@@ -256,3 +256,56 @@ export const LIBRARY_TREE = makeNode({
   clean_name: "媒体库",
   children: [MOVIE_LIBRARY_NODE, TV_LIBRARY_NODE, PLAIN_LEAF_NODE],
 });
+
+/**
+ * 多季剧 + 剧目录下的直属剧场版。
+ *
+ * `Season 1/` 旁边躺着 `剧场版.mkv` 是真实常见布局（library_tree.py 会把它留在
+ * tv 节点自己的 videos 里）。丢掉这一段，文件在移动端就完全不可达。
+ */
+export const TV_WITH_EXTRAS_NODE = makeNode({
+  name: "进击的巨人",
+  path: `${MEDIA_ROOT}\\剧集\\进击的巨人`,
+  folder_type: "tv",
+  parent_category_tag: "tv",
+  children: [
+    makeNode({
+      name: "Season 1",
+      path: `${MEDIA_ROOT}\\剧集\\进击的巨人\\Season 1`,
+      folder_type: "season",
+      videos: [makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\进击的巨人\\Season 1\\S01E01.mkv`, file_name: "S01E01.mkv" })],
+    }),
+    makeNode({
+      name: "Season 2",
+      path: `${MEDIA_ROOT}\\剧集\\进击的巨人\\Season 2`,
+      folder_type: "season",
+      videos: [makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\进击的巨人\\Season 2\\S02E01.mkv`, file_name: "S02E01.mkv" })],
+    }),
+  ],
+  videos: [
+    makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\进击的巨人\\剧场版 咆哮.mkv`, file_name: "剧场版 咆哮.mkv" }),
+  ],
+});
+
+/** 单季剧 + 剧目录下的 SP */
+export const TV_SINGLE_SEASON_WITH_SP_NODE = makeNode({
+  name: "孤独摇滚",
+  path: `${MEDIA_ROOT}\\剧集\\孤独摇滚`,
+  folder_type: "tv",
+  parent_category_tag: "tv",
+  children: [
+    makeNode({
+      name: "Season 1",
+      path: `${MEDIA_ROOT}\\剧集\\孤独摇滚\\Season 1`,
+      folder_type: "season",
+      clean_name: "孤独摇滚 第一季",
+      videos: [
+        makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\孤独摇滚\\Season 1\\S01E02.mkv`, file_name: "S01E02.mkv" }),
+        makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\孤独摇滚\\Season 1\\S01E01.mkv`, file_name: "S01E01.mkv" }),
+      ],
+    }),
+  ],
+  videos: [
+    makeVideo({ file_path: `${MEDIA_ROOT}\\剧集\\孤独摇滚\\SP 特别篇.mkv`, file_name: "SP 特别篇.mkv" }),
+  ],
+});

@@ -31,7 +31,7 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
   const video = ready && !loadFailed ? findVideoByPath(tree, path) : null;
 
   // useScrape 在 path 为空时不发请求，可以无条件调用（hook 不能有条件调用）
-  const { data: scrape, status: scrapeStatus } = useScrape(
+  const { data: scrape, reading: scrapeReading } = useScrape(
     video ? videoDisplayName(video) : "",
     video ? video.file_path : "",
     false,
@@ -96,10 +96,12 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
                   {scrape?.rating ? <span>TMDB {scrape.rating.toFixed(1)}</span> : null}
                   {scrape?.genres?.length ? <span>{scrape.genres.slice(0, 3).join(" / ")}</span> : null}
                 </p>
-                {scrapeStatus === "loading" && (
+                {/* 用 reading 而不是 status：status 的 idle 既是"还没读"也是
+                    "读完了没有数据"，用它判断会让每次进页面都先闪一下"没有刮削信息" */}
+                {scrapeReading && (
                   <p className="mt-2 text-[12px] text-[var(--m-text-dim)]">正在读取刮削信息…</p>
                 )}
-                {scrapeStatus !== "success" && scrapeStatus !== "loading" && (
+                {!scrapeReading && !scrape && (
                   <p className="mt-2 text-[12px] text-[var(--m-text-dim)]">
                     没有刮削信息（在桌面端整理后这里会显示简介与海报）
                   </p>

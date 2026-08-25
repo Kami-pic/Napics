@@ -169,20 +169,11 @@ def stream_file(
     }
     content_type = mime_map.get(ext, "application/octet-stream")
 
-    # HEAD 请求：只返回文件元信息
-    if request and request.method == "HEAD":
-        return Response(
-            content=b"",
-            media_type=content_type,
-            headers={
-                "Content-Length": str(file_size),
-                "Accept-Ranges": "bytes",
-                "Access-Control-Allow-Origin": "*",
-            },
-        )
-
-    # 解析 Range 请求头
+    # 解析 Range 请求头。**HEAD 也要走这一遍**：播放器会用 HEAD 探测某个 Range
+    # 能不能满足，如果 HEAD 恒返回 200 + 全长而同一个 Range 的 GET 返回 416，
+    # 探测结果就是错的。
     range_header = request.headers.get("range") if request else None
+    is_head = bool(request and request.method == "HEAD")
 
     parsed = None
     if range_header:
@@ -199,6 +190,22 @@ def stream_file(
                     "Access-Control-Allow-Origin": "*",
                 },
             )
+
+    # HEAD 只回元信息，不读文件内容
+    if is_head:
+        headers = {
+            "Accept-Ranges": "bytes",
+            "Access-Control-Allow-Origin": "*",
+        }
+        if parsed is None:
+            headers["Content-Length"] = str(file_size)
+            status = 200
+        else:
+            start, end = parsed
+            headers["Content-Length"] = str(end - start + 1)
+            headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+            status = 206
+        return Response(content=b"", status_code=status, media_type=content_type, headers=headers)
 
     if parsed is not None:
         start, end = parsed

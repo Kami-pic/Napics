@@ -50,6 +50,11 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
 // 时长、也不会发 Range 请求，播放页无法 seek。
 // 不保留：SSE（长度未知，带上就是错的）和带 content-encoding 的响应
 // （长度与浏览器实际要解码的内容对不上，且这里会把 encoding 头删掉）。
+//
+// 这条规则**不只作用于媒体**，普通 JSON 的 200 也会带上长度。取舍是有意的：
+// 上游中途断流（SMB 掉线、后端重启）时，带长度头会让浏览器报网络错误而不是
+// 把截断的内容当完整响应交给 JSON.parse。媒体侧更需要这个行为 —— 浏览器
+// 会自己用 Range 重取缺的部分。
 function shouldKeepContentLength(upstream: Response): boolean {
   if (upstream.status !== 200 && upstream.status !== 206) return false;
   const encoding = (upstream.headers.get("content-encoding") || "").toLowerCase();

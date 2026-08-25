@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import type { ScrapeResult, MatchConfidence } from "@/types";
 import { api } from "@/lib/api";
-import { BASE_URL } from "@/lib/api/base";
 
 // ── 可编辑标题 ──
 export function EditableTitle({ name, path, onRenamed }: { name: string; path: string; onRenamed: () => void }) {

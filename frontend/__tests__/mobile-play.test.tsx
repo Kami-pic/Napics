@@ -2,17 +2,26 @@
 //
 // jsdom 实情：`canPlayType` 存在但**恒返回空串**，所以"可播"的正分支必须 stub 它；
 // 不 stub 就等于永远走"格式不支持"分支。
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import MobileNativePlayer, { pickExternalSubtitles } from "@/components/mobile/MobileNativePlayer";
 import { buildStreamUrl, resolveSubtitleUrl } from "@/lib/domain/playback";
+import { libraryUrl } from "@/lib/mobile/mobileRouteUtils";
 
 const { mockPlugins } = vi.hoisted(() => ({
   mockPlugins: { value: { hasPlayer: true, ready: true } },
 }));
 vi.mock("@/components/mobile/MobileProviders", () => ({
   useMobilePlugins: () => mockPlugins.value,
+}));
+
+const { mockRouter } = vi.hoisted(() => ({
+  mockRouter: { push: vi.fn(), replace: vi.fn(), back: vi.fn() },
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => mockRouter,
+  usePathname: () => "/m/play",
 }));
 
 const MP4 = "D:\\影视\\电影\\钢铁侠 Iron Man (2008)\\钢铁侠 Iron Man (2008).mp4";
@@ -56,6 +65,7 @@ let canPlaySpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   mockPlugins.value = { hasPlayer: true, ready: true };
+  mockRouter.push.mockReset();
   // 默认 stub 成"能播"，测不可播的用例里单独改
   canPlaySpy = vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockReturnValue("maybe");
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(subtitleResponse()), {
@@ -79,6 +89,15 @@ describe("字幕过滤（纯函数）", () => {
     expect(picked.length).toBe(1);
     expect(picked[0].name).toBe("钢铁侠.chs.srt");
     expect(picked[0].url).toBe(resolveSubtitleUrl(subtitleResponse().subtitles[0].url));
+  });
+
+  it("语言识别不出就留空，不兜成 zh（无后缀字幕很可能是英文）", () => {
+    const picked = pickExternalSubtitles([
+      { name: "a.srt", url: "/x", embedded: false, unsupported: false },
+      { name: "b.简体.srt", lang: "简体", url: "/y", embedded: false, unsupported: false },
+      { name: "c.srt", lang: "EN", url: "/z", embedded: false, unsupported: false },
+    ]);
+    expect(picked.map(s => s.lang)).toEqual(["", "", "en"]);
   });
 
   it("没有 url 的条目丢掉，不产出空 src 的 track", () => {
@@ -121,7 +140,45 @@ describe("播放器渲染", () => {
     expect(track.getAttribute("src")).toContain("/playback/subtitle/file");
     expect(track.getAttribute("src")).not.toContain("%25");
     expect(track.getAttribute("srclang")).toBe("zh");
-    expect(screen.getByText(/外挂字幕 1 条/)).toBeTruthy();
+  });
+
+  it("带 crossOrigin，否则直连独立后端时跨源 track 会静默不加载", async () => {
+    await mount(MP4);
+    expect(screen.getByTestId("mobile-video").getAttribute("crossorigin")).toBe("anonymous");
+  });
+
+  it("提供字幕开关：iOS 内联播放没有 CC 菜单，没有开关就关不掉", async () => {
+    await mount(MP4);
+    await waitFor(() => expect(document.querySelectorAll("track").length).toBe(1));
+    const group = screen.getByRole("group", { name: "字幕" });
+    const off = within(group).getByRole("button", { name: "关闭" });
+    const first = within(group).getByRole("button", { name: "钢铁侠.chs.srt" });
+    expect(first.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(off);
+    expect(off.getAttribute("aria-pressed")).toBe("true");
+    expect(first.getAttribute("aria-pressed")).toBe("false");
+    expect(document.querySelector("track")!.hasAttribute("default")).toBe(false);
+  });
+
+  it("没有外挂字幕时不渲染字幕开关", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      subtitles: [], summary: { maybe_hardcoded: false },
+    }), { headers: { "content-type": "application/json" } })));
+    await mount(MP4);
+    expect(screen.queryByRole("group", { name: "字幕" })).toBeNull();
+  });
+
+  it("换视频时不残留上一个视频的报错和字幕提示", async () => {
+    const { rerender } = render(<MobileNativePlayer path={MKV} />);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.error(screen.getByTestId("mobile-video"));
+    expect(screen.getByRole("alert").textContent).toMatch(/mkv/);
+
+    rerender(<MobileNativePlayer path={MP4} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByText(/编码不受浏览器支持/)).toBeNull();
+    expect(screen.getByTestId("mobile-video").getAttribute("src")).toBe(buildStreamUrl(MP4));
   });
 
   it("只有内嵌/图形字幕时说明原因，而不是假装没字幕", async () => {
@@ -179,6 +236,20 @@ describe("前置条件", () => {
     await mount(MP4);
     expect(screen.getByText(/feature-player/)).toBeTruthy();
     expect(screen.queryByTestId("mobile-video")).toBeNull();
+  });
+
+  // 播放页没有页头返回键也没有底栏，错误态缺了出口按钮就是死屏
+  it("插件不可用的错误态能回媒体库", async () => {
+    mockPlugins.value = { hasPlayer: false, ready: true };
+    await mount(MP4);
+    fireEvent.click(screen.getByRole("button", { name: "回媒体库" }));
+    expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl());
+  });
+
+  it("缺 path 的错误态也能回媒体库", async () => {
+    await mount("");
+    fireEvent.click(screen.getByRole("button", { name: "回媒体库" }));
+    expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl());
   });
 
   it("插件状态还没到 → 加载态，不先渲染播放器再撤回", async () => {
