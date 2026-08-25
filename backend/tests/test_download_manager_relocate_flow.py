@@ -820,6 +820,10 @@ def test_relocate_to_save_path_moves_files_and_cleans_empty_sandbox(monkeypatch)
         assert (save_path / "Show.S01E01.2160p.srt").exists()
         assert not download_dir.exists()
         assert refresh_calls == [str(save_path)]
+        # 归位结果必须可判定，前端要靠它区分"真的搬过去了"和"一个都没搬"
+        assert task.relocate_status == "moved"
+        assert task.relocated_count == 2
+        assert task.error == ""
 
     _with_temp_dir("download_manager_relocate_move", run)
 
@@ -851,8 +855,41 @@ def test_relocate_to_save_path_skips_existing_destination_and_keeps_sandbox(monk
         assert duplicate_file.read_bytes() == b"new"
         assert download_dir.exists()
         assert refresh_calls == []
+        # 原先这里既不写 error 也不改状态，前端完全区分不出"归位成功"和
+        # "因为目标已存在同名文件，一个文件都没搬"。必须留下明确信号。
+        assert task.relocate_status == "skipped_existing"
+        assert task.relocated_count == 0
+        assert "Show.S01E01.2160p.mkv" in task.error
+        assert task.error != ""
 
     _with_temp_dir("download_manager_relocate_skip_duplicate", run)
+
+
+def test_relocate_to_save_path_marks_empty_sandbox_distinctly(monkeypatch):
+    """沙盒里本来就没文件 ≠ 同名冲突：前者说明下载器把文件放到了别处，
+    后者说明目标目录已经有同名文件。两种情况用户的处置完全不同，不能合并成一种。"""
+    def run(tmp_dir):
+        save_path = tmp_dir / "library" / "Show"
+        download_dir = tmp_dir / "downloads" / "task-1"
+        download_dir.mkdir(parents=True, exist_ok=True)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        task = _make_task(
+            status="completed",
+            save_path=str(save_path),
+            download_dir=str(download_dir),
+        )
+        refresh_calls = []
+        monkeypatch.setattr(dm, "_trigger_local_refresh", lambda path: refresh_calls.append(path))
+
+        dm._relocate_to_save_path(task)
+
+        assert task.relocate_status == "empty"
+        assert task.relocated_count == 0
+        assert task.error != ""
+        assert refresh_calls == []
+
+    _with_temp_dir("download_manager_relocate_empty_sandbox", run)
 
 
 def test_relocate_to_save_path_records_error_when_move_raises(monkeypatch):
@@ -876,7 +913,9 @@ def test_relocate_to_save_path_records_error_when_move_raises(monkeypatch):
         dm._relocate_to_save_path(task)
 
         assert task.status == "downloading"
+        # 异常路径的行为不变，只是多了一个可判定的状态字段
         assert task.error == "转移失败: denied"
+        assert task.relocate_status == "failed"
         assert broken_file.exists()
         assert refresh_calls == []
 

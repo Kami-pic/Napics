@@ -394,6 +394,10 @@ export interface DownloadTask {
   eta: string;
   phase: "" | "cloud_download" | "local_sync";
   error: string;
+  /** 归位结果。status 为 completed 只代表下载器侧完成，不代表文件已经到 save_path。
+   *  "" 未执行 | moved 已搬 | skipped_existing 目标已存在同名文件 | empty 沙盒无文件 | failed 出错 */
+  relocate_status: "" | "moved" | "skipped_existing" | "empty" | "failed";
+  relocated_count: number;
   is_season_pack: boolean;
   season_number: number;
   created_at: string;

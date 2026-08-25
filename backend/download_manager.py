@@ -52,6 +52,12 @@ class DownloadTask(BaseModel):
     eta: str = ""                 # "00:15:30"（内存）
     phase: str = ""               # OpenList: "cloud_download" | "local_sync"
     error: str = ""
+    # 归位结果。下载器侧 completed ≠ 文件已经到 save_path，
+    # 没有这个字段前端区分不出"搬过去了"和"一个文件都没搬"。
+    # "" 未执行 | "moved" 已搬 | "skipped_existing" 目标已存在同名文件
+    # | "empty" 沙盒里没有文件 | "failed" 搬运过程出错
+    relocate_status: str = ""
+    relocated_count: int = 0
     is_season_pack: bool = False
     season_number: int = 0
     organized: bool = False        # 已执行整理替换，跳过 qB 状态同步
@@ -376,19 +382,41 @@ class DownloadManager:
         try:
             os.makedirs(task.save_path, exist_ok=True)
             moved = 0
-            for item in os.listdir(task.download_dir):
+            skipped: List[str] = []
+            entries = os.listdir(task.download_dir)
+            for item in entries:
                 src = os.path.join(task.download_dir, item)
                 dst = os.path.join(task.save_path, item)
                 # 同名文件跳过（避免覆盖）
                 if os.path.exists(dst):
+                    skipped.append(item)
                     continue
                 shutil.move(src, dst)
                 moved += 1
+
+            task.relocated_count = moved
             if moved > 0:
                 logger.info(f"[DownloadManager] 已转移 {moved} 个文件到 {task.save_path}")
+                task.relocate_status = "moved"
                 task.status = "completed"
                 # 自动触发局部刷新（后台线程，不阻塞）
                 self._trigger_local_refresh(task.save_path)
+            elif skipped:
+                # 走的是正常返回路径，不是异常 —— 以前这里什么都不写，
+                # 于是"目标已有同名文件、一个都没搬"和"归位成功"在前端长得一模一样。
+                task.relocate_status = "skipped_existing"
+                task.error = (
+                    f"目标目录已存在同名文件，未搬动：{'、'.join(skipped[:3])}"
+                    + ("…" if len(skipped) > 3 else "")
+                )
+                logger.warning(
+                    f"[DownloadManager] 归位未搬动任何文件（目标已存在同名）: {task.save_path}"
+                )
+            else:
+                # 沙盒是空的：下载器很可能把文件放到了别处，和同名冲突不是一回事
+                task.relocate_status = "empty"
+                task.error = "下载目录里没有找到文件，归位未执行"
+                logger.warning(f"[DownloadManager] 沙盒为空，无文件可归位: {task.download_dir}")
             # 清理空沙盒
             try:
                 if os.path.isdir(task.download_dir) and not os.listdir(task.download_dir):
@@ -397,6 +425,7 @@ class DownloadManager:
                 pass
         except Exception as e:
             logger.error(f"[DownloadManager] 转移失败: {e}")
+            task.relocate_status = "failed"
             task.error = f"转移失败: {e}"
 
     def _trigger_local_refresh(self, save_path: str):
