@@ -3,24 +3,33 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { DownloadTask } from "@/types";
 import { api } from "@/lib/api";
+import {
+  DOWNLOAD_POLL_INTERVAL_MS,
+  describeDownloadStatus,
+  mergeProgressIntoTasks,
+  type DownloadTone,
+} from "@/lib/domain/download";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 import { FileTree } from "./FileTreeNode";
 
 type StatusFilter = "" | "downloading" | "completed" | "awaiting_confirm" | "archived" | "failed";
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending: { label: "等待中", color: "text-slate-400" },
-  downloading: { label: "下载中", color: "text-blue-400" },
-  cloud_done: { label: "云端完成", color: "text-cyan-400" },
-  completed: { label: "已完成", color: "text-green-400" },
-  relocating: { label: "归位中", color: "text-purple-400" },
-  awaiting_confirm: { label: "待整理", color: "text-yellow-400" },
-  archived: { label: "已归档", color: "text-slate-500" },
-  failed: { label: "失败", color: "text-red-400" },
-  lost: { label: "丢失", color: "text-red-500" },
-  unknown: { label: "未知", color: "text-slate-600" },
-  cancelled: { label: "已取消", color: "text-slate-500" },
+// 标签文案统一来自 lib/domain/download.ts，这里只负责把语义 tone 翻成本页的配色。
+// lost / unknown 现在是"正在核对 / 状态待确认"而不是"丢失 / 未知"——
+// 它们是对账态，显示成失败会让用户以为下载废了。
+const TONE_COLOR: Record<DownloadTone, string> = {
+  pending: "text-slate-400",
+  active: "text-blue-400",
+  success: "text-green-400",
+  warning: "text-yellow-400",
+  danger: "text-red-400",
+  muted: "text-slate-500",
 };
+
+function statusView(status: string) {
+  const meta = describeDownloadStatus(status);
+  return { label: meta.label, color: TONE_COLOR[meta.tone] };
+}
 
 interface Props {
   open: boolean;
@@ -79,14 +88,10 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
         if (view === "wash") return; // 详情页暂停全局轮询
         try {
           const d = await api.getDownloadProgress();
-          const progressMap = new Map<string, any>((d.tasks || []).map((t: any) => [t.id, t]));
-          setTasks(prev => prev.map(t => {
-            const updated = progressMap.get(t.id);
-            if (updated) return { ...t, ...updated };
-            return t;
-          }));
+          // progress 只返回 downloading / unknown 子集，只能按 id 合并
+          setTasks(prev => mergeProgressIntoTasks(prev, d.tasks || []));
         } catch { /* ignore */ }
-      }, 4000);
+      }, DOWNLOAD_POLL_INTERVAL_MS);
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [open, loadTasks, view]);
@@ -223,7 +228,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
               {(["", "downloading", "completed", "archived", "failed"] as StatusFilter[]).map(s => (
                 <button key={s} onClick={() => setFilter(s)}
                   className={`px-3 py-1 rounded-lg text-[11px] transition-colors ${filter === s ? "bg-blue-600 text-white" : "bg-white/[0.04] text-slate-500 hover:text-slate-300"}`}>
-                  {s === "" ? "全部" : (s === "downloading" ? "活跃中" : STATUS_LABELS[s]?.label || s)}
+                  {s === "" ? "全部" : (s === "downloading" ? "活跃中" : statusView(s).label)}
                 </button>
               ))}
             </div>
@@ -243,7 +248,7 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                 </div>
               )}
               {tasks.map(task => {
-                const st = STATUS_LABELS[task.status] || { label: task.status, color: "text-slate-500" };
+                const st = statusView(task.status);
                 const canView = !!task.save_path && ["completed", "awaiting_confirm", "archived"].includes(task.status);
                 const canWash = ["completed", "awaiting_confirm"].includes(task.status);
                 const isSyncing = confirmingId === task.id;

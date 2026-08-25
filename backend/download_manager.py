@@ -1,7 +1,9 @@
 """下载任务队列管理器：持久化任务队列 + 沙盒隔离 + 进度监控 + 启动恢复。
 
 核心设计：
-- 状态机：pending → downloading → completed → relocating → archived | failed | lost
+- 状态机：pending → downloading → completed → awaiting_confirm → archived | failed | lost
+  （曾写过 relocating / cloud_done 两个状态，代码里从未赋过值，已从文档移除；
+   归位结果记在 relocate_status 字段，不占用 status）
 - OpenList 双阶段：downloading(cloud_download) → downloading(local_sync) → completed
 - 持久化策略：核心状态变更立刻落盘，高频进度只在内存更新（防抖落盘）
 - 沙盒隔离：每个任务在 downloads/{task_id}/ 独立目录

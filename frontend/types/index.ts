@@ -388,7 +388,10 @@ export interface DownloadTask {
   channel: "qb" | "alist";
   downloader_hash: string;
   category_hint: string;
-  status: "pending" | "downloading" | "cloud_done" | "completed" | "relocating" | "awaiting_confirm" | "archived" | "failed" | "lost" | "unknown" | "cancelled";
+  /** 后端 download_manager 实际会赋的九个取值。
+   *  曾经列过的 cloud_done / relocating 全代码库没有赋值点，是死配置，已删。
+   *  语义与标签见 lib/domain/download.ts。 */
+  status: "pending" | "downloading" | "completed" | "awaiting_confirm" | "archived" | "failed" | "lost" | "unknown" | "cancelled";
   progress: number;
   speed: string;
   eta: string;
