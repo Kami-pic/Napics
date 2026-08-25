@@ -94,8 +94,9 @@ VOLUME ["/app/data"]
 EXPOSE 3032
 
 # 探测前端→后端的转发链路，一次覆盖两个进程
-# URL 不带尾斜杠：/backend/ 会被 Next.js 308 重定向，curl 需要 -L 才能跟随
+# 打 /healthz 而不是 /backend 根路径：后端的访问密码启用后，业务接口会返回 401，
+# 而 /healthz 在鉴权白名单里，容器不会因为设了密码就被判成不健康。
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -fsSL http://127.0.0.1:3032/backend || exit 1
+    CMD curl -fsSL http://127.0.0.1:3032/backend/healthz || exit 1
 
 CMD ["/app/entrypoint.sh"]

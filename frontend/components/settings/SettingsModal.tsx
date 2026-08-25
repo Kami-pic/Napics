@@ -6,6 +6,7 @@ import { BASE_URL } from "@/lib/api/base";
 import PathInput from "./PathInput";
 import { AISettingsSection } from "./AISettingsSection";
 import LicenseSection from "./LicenseSection";
+import AccessPasswordSection from "./AccessPasswordSection";
 import type { AppConfig, ProviderMetadata } from "@/types";
 
 interface SettingsModalProps {
@@ -227,6 +228,11 @@ export default function SettingsModal({ open, onClose, config, onSave, setConfig
               )}
             </div>
           ))}
+
+          {/* 访问控制 */}
+          <div className="pt-3 border-t border-white/[0.06]">
+            <AccessPasswordSection />
+          </div>
 
           {/* Pro 授权（暂时隐藏）*/}
           {/* <div className="pt-3 border-t border-white/[0.06]">

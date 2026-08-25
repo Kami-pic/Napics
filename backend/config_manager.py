@@ -162,6 +162,14 @@ class AppConfig(BaseModel):
     # 字幕搜索源凭据（assrt.net / SubDL；SubHD 无需凭据）
     assrt_token: str = ""
     subdl_api_key: str = ""
+    # ── 访问控制 ──
+    # 留空 = 不启用，任何人都能访问（现有部署升级后行为不变）。
+    # 存的是 pbkdf2 hash，不是明文：config.json 会被备份、会被贴进 issue。
+    access_password_hash: str = ""
+    # 会话 token 的签名密钥，设置密码时自动生成。换掉它 = 所有设备立即登出。
+    access_token_secret: str = ""
+    # 会话有效期（天）。手机上不该每次打开都重新登录。
+    access_session_days: int = 30
 
 class ConfigManager:
     def __init__(self, config_path: str = None):

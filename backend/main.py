@@ -24,6 +24,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
+from routes.auth import router as auth_router
 from routes.config import router as config_router
 from routes.discover import router as discover_router
 from routes.filesystem import router as filesystem_router
@@ -74,6 +75,72 @@ class ConditionalGZipMiddleware(GZipMiddleware):
         return await super().__call__(scope, receive, send)
 
 
+# ── 访问控制 ──
+# 不设访问密码时完全不生效（现有部署升级后行为不变）。
+# 必须在后端做：只在前端路由上加门的话，直接打 /backend/fs/list 就绕过了。
+#
+# 白名单只包含"没有它就设不了密码 / 登不了录"的路径，以及 API 文档。
+_AUTH_FREE_PREFIXES = (
+    '/auth/',
+    '/docs',
+    '/redoc',
+    '/openapi.json',
+)
+
+# 健康检查必须免鉴权：Dockerfile 的 HEALTHCHECK 和 entrypoint 的就绪探测都打这里，
+# 拦下来会让容器在启用访问密码后被判成不健康、反复重启。
+# 这两个端点只返回固定字符串，不泄漏任何信息。
+_AUTH_FREE_EXACT = ('/', '/healthz')
+
+
+class AccessControlMiddleware:
+    """纯 ASGI 中间件，不用 BaseHTTPMiddleware。
+
+    后者会把响应包一层 memory stream 转发，对 SSE 的实时性有已知风险；
+    而这个项目的扫描 / 同步 / 搜索全靠 SSE 推进度，不能冒这个险。
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get('type') != 'http':
+            return await self.app(scope, receive, send)
+
+        from starlette.datastructures import Headers
+        from starlette.responses import JSONResponse
+        from http.cookies import SimpleCookie
+        from core.access_guard import SESSION_COOKIE, verify_token
+        from shared import config_m
+
+        config = config_m.config
+        if not config.access_password_hash:
+            return await self.app(scope, receive, send)
+
+        path = scope.get('path', '')
+        # CORS 预检不带 cookie，拦下来会让跨源请求全部失败
+        if scope.get('method') == 'OPTIONS':
+            return await self.app(scope, receive, send)
+        if path in _AUTH_FREE_EXACT or path.startswith(_AUTH_FREE_PREFIXES):
+            return await self.app(scope, receive, send)
+
+        cookie_header = Headers(scope=scope).get('cookie', '')
+        jar = SimpleCookie()
+        try:
+            jar.load(cookie_header)
+        except Exception:
+            jar = SimpleCookie()
+        morsel = jar.get(SESSION_COOKIE)
+        if verify_token(morsel.value if morsel else '', config.access_token_secret):
+            return await self.app(scope, receive, send)
+
+        response = JSONResponse({'detail': '未授权，请先输入访问密码'}, status_code=401)
+        return await response(scope, receive, send)
+
+
+app.add_middleware(AccessControlMiddleware)
+
+
 # 先注册 gzip，再注册 CORS，使 CORS 处于最外层
 app.add_middleware(ConditionalGZipMiddleware, minimum_size=1024)
 
@@ -86,6 +153,7 @@ app.add_middleware(
 )
 
 # 注册所有路由
+app.include_router(auth_router)
 app.include_router(config_router)
 app.include_router(discover_router)
 app.include_router(filesystem_router)
@@ -118,6 +186,12 @@ app.include_router(plugins_router)
 @app.get('/')
 def read_root():
     return {'message': 'NAS Video Upgrader API is running'}
+
+
+@app.get('/healthz')
+def healthz():
+    """存活探测。免鉴权（见 _AUTH_FREE_EXACT），只返回固定内容。"""
+    return {'status': 'ok'}
 
 
 @app.on_event("startup")

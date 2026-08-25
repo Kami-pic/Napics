@@ -8,6 +8,7 @@ import { subscribeApi } from "./subscribe";
 import { configApi } from "./config";
 import { systemApi } from "./system";
 import { aiApi } from "./ai";
+import { authApi } from "./auth";
 
 export const api = {
   ...configApi,
@@ -19,4 +20,7 @@ export const api = {
   ...discoverApi,
   ...subscribeApi,
   ...aiApi,
+  ...authApi,
 };
+// subtitleApi 没有展开进来：它的 search / download 方法名与 searchApi、downloadApi
+// 冲突，展开会静默覆盖。需要时直接 import { subtitleApi } from "@/lib/api/subtitle"。

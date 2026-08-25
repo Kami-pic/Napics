@@ -37,7 +37,8 @@ BACKEND_PID=$!
 # 等后端就绪再起前端，避免首屏请求打空
 BACKEND_READY=0
 for i in $(seq 1 90); do
-  if curl -fsS "http://127.0.0.1:8001/" >/dev/null 2>&1; then
+  # 打 /healthz：它在访问密码的鉴权白名单里，设了密码也不会 401
+  if curl -fsS "http://127.0.0.1:8001/healthz" >/dev/null 2>&1; then
     log "后端就绪（用时 ${i}s）"
     BACKEND_READY=1
     break

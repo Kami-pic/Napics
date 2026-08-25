@@ -51,8 +51,14 @@ function buildClientHeaders(upstream: Response): Headers {
     if (HOP_BY_HOP.has(lower) || lower === "content-length" || lower === "content-encoding") {
       return;
     }
+    // set-cookie 必须逐个 append：forEach 给出的是多个值用逗号拼起来的字符串，
+    // 直接 set 会产出一个畸形的 cookie 头，浏览器整条丢弃 —— 登录就永远不生效。
+    if (lower === "set-cookie") return;
     headers.set(key, value);
   });
+  for (const cookie of upstream.headers.getSetCookie?.() ?? []) {
+    headers.append("set-cookie", cookie);
+  }
   // 明确关闭中间层缓冲（部分反向代理会读这个头）
   if ((headers.get("content-type") || "").includes("text/event-stream")) {
     headers.set("cache-control", "no-cache, no-transform");
