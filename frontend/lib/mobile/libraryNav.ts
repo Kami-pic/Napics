@@ -65,6 +65,45 @@ export function findNode(root: FolderNode | null, targetPath: string): FolderNod
   return null;
 }
 
+/** 同一目录内的相邻集。播放页的上一集/下一集只在同季内走，不跨季 */
+export interface EpisodeNeighbors {
+  /** 在同目录列表里的位置，从 1 开始；找不到时为 0 */
+  index: number;
+  total: number;
+  prev: VideoInfo | null;
+  next: VideoInfo | null;
+}
+
+/**
+ * 找同目录（同季）内的相邻集。
+ *
+ * 刻意只在**同一个节点的 videos** 里找：跨季连播要处理季边界、特别篇、
+ * 排序不连续，收益不抵复杂度。目录里只有一个视频（电影）时 total 为 1，
+ * 调用方据此不渲染切集控件。
+ */
+export function findEpisodeNeighbors(root: FolderNode | null, filePath: string): EpisodeNeighbors {
+  const empty: EpisodeNeighbors = { index: 0, total: 0, prev: null, next: null };
+  if (!root || !filePath) return empty;
+
+  const stack: FolderNode[] = [root];
+  while (stack.length) {
+    const current = stack.pop()!;
+    const videos = current.videos || [];
+    if (videos.some(v => v.file_path === filePath)) {
+      const sorted = sortedVideos(videos);
+      const at = sorted.findIndex(v => v.file_path === filePath);
+      return {
+        index: at + 1,
+        total: sorted.length,
+        prev: at > 0 ? sorted[at - 1] : null,
+        next: at >= 0 && at < sorted.length - 1 ? sorted[at + 1] : null,
+      };
+    }
+    for (const child of current.children || []) stack.push(child);
+  }
+  return empty;
+}
+
 /** 按 file_path 找视频条目。详情页与播放页只拿到路径，元信息要从树里取 */
 export function findVideoByPath(root: FolderNode | null, filePath: string): VideoInfo | null {
   if (!root || !filePath) return null;

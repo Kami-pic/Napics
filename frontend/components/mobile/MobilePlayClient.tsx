@@ -10,15 +10,18 @@ import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
+import type { VideoInfo } from "@/types";
 import {
   findVideoByPath,
+  findEpisodeNeighbors,
   videoDisplayName,
   episodeSeasonNumber,
   episodeNumber,
 } from "@/lib/mobile/libraryNav";
-import { libraryDetailUrl } from "@/lib/mobile/mobileRouteUtils";
+import { libraryDetailUrl, playUrl } from "@/lib/mobile/mobileRouteUtils";
 import MobileShell from "./MobileShell";
 import MobileNativePlayer from "./MobileNativePlayer";
+import MobileEpisodeSwitcher from "./MobileEpisodeSwitcher";
 
 export interface MobilePlayClientProps {
   path: string;
@@ -46,6 +49,14 @@ export default function MobilePlayClient({ path }: MobilePlayClientProps) {
     router.push(libraryDetailUrl(path));
   }, [router, path]);
 
+  const neighbors = findEpisodeNeighbors(tree, path);
+
+  // 切集用 replace 而不是 push：连着看五集不该在历史栈里堆五层，
+  // 返回键的语义应该始终是"回到进来时的那个列表/详情"。
+  const goTo = useCallback((target: VideoInfo | null) => {
+    if (target) router.replace(playUrl(target.file_path));
+  }, [router]);
+
   return (
     <MobileShell
       title={path ? title : "播放"}
@@ -54,6 +65,18 @@ export default function MobilePlayClient({ path }: MobilePlayClientProps) {
       padded={false}
     >
       <MobileNativePlayer path={path} />
+      {path && neighbors.total > 1 && (
+        <div className="px-[var(--m-page-px)] pt-3">
+          <MobileEpisodeSwitcher
+            index={neighbors.index}
+            total={neighbors.total}
+            hasPrev={!!neighbors.prev}
+            hasNext={!!neighbors.next}
+            onPrev={() => goTo(neighbors.prev)}
+            onNext={() => goTo(neighbors.next)}
+          />
+        </div>
+      )}
     </MobileShell>
   );
 }
