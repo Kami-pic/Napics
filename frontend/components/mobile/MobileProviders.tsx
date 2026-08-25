@@ -11,6 +11,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { AppConfig } from "@/types";
 import { api } from "@/lib/api";
 import { useInstalledPlugins, type InstalledPluginsState } from "@/hooks/useInstalledPlugins";
+import MobileLibraryTreeProvider from "./MobileLibraryTreeProvider";
 
 // ── 插件 ──
 
@@ -89,7 +90,9 @@ function MobilePluginProvider({ children }: { children: ReactNode }) {
 export default function MobileProviders({ children }: { children: ReactNode }) {
   return (
     <MobilePluginProvider>
-      <MobileConfigProvider>{children}</MobileConfigProvider>
+      <MobileConfigProvider>
+        <MobileLibraryTreeProvider>{children}</MobileLibraryTreeProvider>
+      </MobileConfigProvider>
     </MobilePluginProvider>
   );
 }
