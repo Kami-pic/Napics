@@ -19,6 +19,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _is_under(file_path: str, base: str) -> bool:
+    """file_path 是否位于 base 目录之下（或就是它本身）。
+
+    不能直接用 `startswith(base)`：那样 `D:\\影视2\\a.mkv` 会被当成
+    `D:\\影视` 的子路径，扫描一个库时会把另一个库的条目一起判进来 / 删掉。
+    """
+    if not file_path or not base:
+        return False
+    trimmed = base.rstrip("\\/")
+    if file_path == trimmed:
+        return True
+    return file_path.startswith(trimmed + os.sep) or file_path.startswith(trimmed + "/")
+
+
 @router.get("/scan")
 async def scan_path(path: str, library_name: str = ""):
     """EventSource 实时返回扫描进度。
@@ -173,6 +187,8 @@ async def scan_path(path: str, library_name: str = ""):
             for lib in (config_m.config.media_libraries or []):
                 _all_configured_paths.extend(lib.paths)
 
+            from scan_name_filler import merge_scanned_names
+
             def _merge(latest):
                 """本次扫描只对 path 下的条目负责，其余一律沿用最新落盘内容。
 
@@ -180,11 +196,25 @@ async def scan_path(path: str, library_name: str = ""):
                 ffprobe 可能跑了好几分钟，期间下载归位、刮削、桌面整理写进去的条目
                 都会被那份旧快照抹掉。
                 """
-                kept = [v for v in latest if not v.get("file_path", "").startswith(path)]
-                merged = kept + results
+                latest_map = {v["file_path"]: v for v in latest if v.get("file_path")}
+                kept = [v for v in latest if not _is_under(v.get("file_path", ""), path)]
+
+                rebuilt = []
+                for item in results:
+                    fp = item.get("file_path", "")
+                    base = latest_map.get(fp) if fp in reused_paths else None
+                    if base is None:
+                        # 新 probe 出来的条目，扫描结果就是全部事实
+                        rebuilt.append(item)
+                        continue
+                    # 复用分支的 item 是扫描开始时的旧快照。整份写回会把期间
+                    # 刮削写进这条的东西回滚掉，所以以最新条目为底做字段级合并。
+                    rebuilt.append(merge_scanned_names(base, item))
+
+                merged = kept + rebuilt
                 if _all_configured_paths:
                     merged = [v for v in merged if not v.get("file_path") or
-                              any(v["file_path"].startswith(p) for p in _all_configured_paths)]
+                              any(_is_under(v["file_path"], p) for p in _all_configured_paths)]
                 return merged
 
             config_m.mutate_library(_merge)
@@ -199,7 +229,7 @@ async def scan_path(path: str, library_name: str = ""):
                     # 与正常分支同一套合并规则，只是不做孤立条目清理
                     config_m.mutate_library(
                         lambda latest: [v for v in latest
-                                        if not v.get("file_path", "").startswith(path)] + results
+                                        if not _is_under(v.get("file_path", ""), path)] + results
                     )
                 except Exception:
                     pass
@@ -286,7 +316,7 @@ def quick_sync():
                 for fp in lib_paths:
                     if not fp:
                         continue
-                    if not any(fp.startswith(base) for base in nas_paths):
+                    if not any(_is_under(fp, base) for base in nas_paths):
                         orphaned.add(fp)
                 removed = removed | orphaned
 
@@ -330,7 +360,7 @@ def quick_sync():
                     if info:
                         best_base = ""
                         for base in nas_paths:
-                            if fp.startswith(base) and len(base) > len(best_base):
+                            if _is_under(fp, base) and len(base) > len(best_base):
                                 best_base = base
                         if best_base:
                             info.folder_name = _get_folder_name(fp, best_base)
@@ -379,18 +409,37 @@ def quick_sync():
             _new_paths = set(v.get("file_path", "") for v in new_videos)
 
             def _merge_sync(latest):
-                """同步只负责「文件系统里有/没有」，不负责删掉别处刚写进来的条目。
+                """同步只负责「文件系统里有 / 没有」这一件事。
 
-                current_lib 派生自本次同步开始时的库快照，而文件系统遍历可能跑了几分钟。
-                期间下载归位入库的新条目既不在快照里、也不在遍历结果里，
-                直接写回 current_lib 会把它们静默删掉。
+                current_lib 派生自同步开始时的库快照，而文件系统遍历可能跑了几分钟。
+                这期间别处对库做的三类改动都必须尊重：
+                - 新增（下载归位入库）：不在快照里，直接补进来；
+                - 删除（批处理 / 回收站）：不能因为快照里还有就复活；
+                - 字段更新（刮削写 shadow_name / clean_name）：本次同步不改已有条目的
+                  任何字段，所以保留下来的条目一律用最新库的版本，不用几分钟前的快照对象。
                 """
-                concurrent = [v for v in latest
-                              if v.get("file_path")
-                              and v["file_path"] not in _snapshot_paths
-                              and v["file_path"] not in _new_paths
-                              and v["file_path"] not in removed]
-                return current_lib + concurrent
+                latest_map = {v["file_path"]: v for v in latest if v.get("file_path")}
+                deleted_elsewhere = _snapshot_paths - set(latest_map)
+
+                merged = []
+                for v in current_lib:
+                    fp = v.get("file_path", "")
+                    if fp in _new_paths:
+                        merged.append(v)          # 本次新增，只有这里有
+                        continue
+                    if fp in deleted_elsewhere:
+                        continue                  # 别处已经删了，不复活
+                    merged.append(latest_map.get(fp, v))
+
+                # 期间别处新增的条目
+                merged.extend(
+                    v for v in latest
+                    if v.get("file_path")
+                    and v["file_path"] not in _snapshot_paths
+                    and v["file_path"] not in _new_paths
+                    and v["file_path"] not in removed
+                )
+                return merged
 
             config_m.mutate_library(_merge_sync)
 

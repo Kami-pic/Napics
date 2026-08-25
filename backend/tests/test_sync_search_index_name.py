@@ -133,3 +133,67 @@ def test_sync_keeps_entries_added_by_others_while_scanning(sync_env, monkeypatch
     paths = {v["file_path"] for v in mgr.load_library()}
     assert video_path in paths
     assert "/other/新片.mkv" in paths, "同步把并发写入的条目删掉了"
+
+
+def test_sync_does_not_resurrect_entries_deleted_elsewhere(sync_env, monkeypatch):
+    """同步期间用户删掉的条目不能被写回来。
+
+    current_lib 是从同步开始时的快照派生的。如果文件系统遍历发生在删除之前，
+    该路径既在 fs_files 里、也不在 removed 里，会被当成"还存在"写回去 ——
+    用户看到刚删掉的东西自己回来了。
+    """
+    mgr, video_path = sync_env
+    # 库里先有这条（同步开始时的快照会读到它）
+    mgr.save_library([{"file_path": video_path, "file_name": "钢铁侠 Iron Man (2008).mkv", "height": 1080}])
+
+    original_load = mgr.load_library
+    calls = {"n": 0}
+
+    def load_with_concurrent_delete():
+        calls["n"] += 1
+        data = original_load()
+        # 第二次读库（落盘阶段的锁内重读）时，模拟别处已经把这条删掉了
+        if calls["n"] >= 2:
+            return [v for v in data if v.get("file_path") != video_path]
+        return data
+
+    monkeypatch.setattr(mgr, "load_library", load_with_concurrent_delete)
+
+    _consume(library_routes.quick_sync())
+
+    monkeypatch.setattr(mgr, "load_library", original_load)
+    paths = {v["file_path"] for v in mgr.load_library()}
+    assert video_path not in paths, "同步把别处删掉的条目复活了"
+
+
+def test_sync_keeps_fields_written_by_others(sync_env, monkeypatch):
+    """同步期间刮削写进已有条目的字段不能被回滚。
+
+    同步不修改已有条目的任何字段，所以保留下来的条目必须用锁内重读到的版本，
+    而不是几分钟前的快照对象。
+    """
+    mgr, video_path = sync_env
+    mgr.save_library([{"file_path": video_path, "file_name": "钢铁侠 Iron Man (2008).mkv", "height": 1080}])
+
+    original_load = mgr.load_library
+    calls = {"n": 0}
+
+    def load_with_concurrent_scrape():
+        calls["n"] += 1
+        data = original_load()
+        if calls["n"] >= 2:
+            # 模拟刮削在同步期间给这条写了标准名
+            for item in data:
+                if item.get("file_path") == video_path:
+                    item["shadow_name"] = "Iron Man (2008)"
+                    item["shadow_name_source"] = "tmdb"
+            return data
+        return data
+
+    monkeypatch.setattr(mgr, "load_library", load_with_concurrent_scrape)
+
+    _consume(library_routes.quick_sync())
+
+    monkeypatch.setattr(mgr, "load_library", original_load)
+    saved = {v["file_path"]: v for v in mgr.load_library()}
+    assert saved[video_path].get("shadow_name") == "Iron Man (2008)", "刮削结果被同步回滚了"

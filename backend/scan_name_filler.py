@@ -25,6 +25,21 @@ logger = logging.getLogger(__name__)
 # 文件名带 SxxExx 的按剧集处理，否则按电影处理
 _EPISODE_RE = re.compile(r"S\d+E\d+", re.IGNORECASE)
 
+# 扫描期间可能被填名逻辑写入的字段。
+#
+# 存在的理由：扫描要跑几分钟 ffprobe，落盘时必须用锁内重新读到的库做合并，
+# 否则期间刮削 / 整理写进已有条目的东西会被扫描开始时的快照覆盖回去。
+# 而"复用"分支的条目本身就是那份旧快照，所以合并时要以最新条目为底、
+# 只把下面这些真正由扫描负责的字段盖上去。
+#
+# 改动 fill_names_for_item 涉及的字段时必须同步这里，
+# tests/test_scan_name_filler.py 有一条测试会比对两者。
+SCAN_MANAGED_NAME_FIELDS = frozenset({
+    "clean_name", "clean_name_cn", "clean_name_en", "clean_name_original", "clean_name_source",
+    "shadow_name", "shadow_name_source", "shadow_tmdb_id", "organize_status",
+    "names_filled_v",
+})
+
 # 填名算法版本。扫描时同尺寸文件走"复用"分支、直接沿用旧条目，
 # 若不比对版本号，算法改好后老条目永远不会被重算——用户重扫看不到任何变化。
 # 版本不一致的条目在下次扫描时补算一次，算完打上版本号，之后不再重复读 NFO。
@@ -60,6 +75,43 @@ def fill_search_index_name(item: dict) -> Tuple[bool, str]:
         return False, ""
 
     return safe_update_clean_name(item, result), result.display
+
+
+def merge_scanned_names(base: dict, scanned: dict) -> dict:
+    """把扫描算出的名字合并到最新库条目上，返回新 dict。
+
+    存在的理由：扫描的"复用"分支直接沿用扫描开始时的旧条目，落盘时如果整份写回，
+    这期间刮削 / 整理写进同一条的东西会被几分钟前的快照覆盖掉。
+
+    只覆盖扫描负责的字段还不够 —— 填名时的优先级判断是基于**旧数据**做的：
+    扫描开始时这条没有标准名，于是填了个 parsed 的；而期间刮削写了 tmdb 的。
+    无条件覆盖等于把高优先级的名字降级成低优先级的。所以这里按来源优先级再判一次。
+    """
+    from clean_name_system import NAME_SOURCE_PRIORITY
+    from shadow_name_manager import _SOURCE_PRIORITY as SHADOW_SOURCE_PRIORITY
+
+    merged = dict(base)
+    # 目录归属由本次扫描重算（虚拟媒体库前缀可能变了），无条件采用
+    if "folder_name" in scanned:
+        merged["folder_name"] = scanned["folder_name"]
+    if _VERSION_FIELD in scanned:
+        merged[_VERSION_FIELD] = scanned[_VERSION_FIELD]
+
+    def _wins(field: str, table: dict) -> bool:
+        return table.get(scanned.get(field, ""), 0) >= table.get(base.get(field, ""), 0)
+
+    if _wins("clean_name_source", NAME_SOURCE_PRIORITY):
+        for key in ("clean_name", "clean_name_cn", "clean_name_en",
+                    "clean_name_original", "clean_name_source"):
+            if key in scanned:
+                merged[key] = scanned[key]
+
+    if _wins("shadow_name_source", SHADOW_SOURCE_PRIORITY):
+        for key in ("shadow_name", "shadow_name_source", "shadow_tmdb_id", "organize_status"):
+            if key in scanned:
+                merged[key] = scanned[key]
+
+    return merged
 
 
 def fill_standard_name(item: dict, fallback_display: str = "") -> bool:
