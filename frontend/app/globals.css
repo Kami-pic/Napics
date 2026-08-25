@@ -59,6 +59,40 @@ body {
   --m-overlay: rgba(0, 0, 0, 0.6);
 }
 
+/* ── 移动端（/m）手势锁定 ──
+   只在 /m 段生效（.m-app 由 app/m/layout.tsx 挂），桌面页不受影响。
+
+   overscroll-behavior: none  — 去掉橡皮筋回弹与下拉刷新，滚到顶/底就停住。
+                                滚动容器和 html/body 都要设，只设一边挡不住。
+   touch-action: pan-y        — 只允许纵向拖动：顺带禁掉双指缩放和横向拖页。
+   overflow-x: hidden         — 兜底，防某个子元素超宽把整页拖出横向滚动条。
+   -webkit-text-size-adjust   — 阻止 iOS 横屏时自动放大字号。 */
+:root:has(.m-app),
+:root:has(.m-app) body {
+  overscroll-behavior: none;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+.m-app {
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  overflow-x: hidden;
+  /* 长按不弹系统的复制/查询菜单（媒体路径这类文本没有选中的意义）。
+     输入框和播放器自己的控件要排除，否则搜索框没法选中文本。 */
+  -webkit-user-select: none;
+  user-select: none;
+  /* 点按时不闪灰色高亮块，交互反馈统一交给 active: 样式 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-app input,
+.m-app textarea,
+.m-app video {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
 /* 滚动条 — 极细极淡，始终可见 */
 * {
   scrollbar-width: thin;
