@@ -401,6 +401,12 @@ export interface DownloadTask {
    *  "" 未执行 | moved 已搬 | skipped_existing 目标已存在同名文件 | empty 沙盒无文件 | failed 出错 */
   relocate_status: "" | "moved" | "skipped_existing" | "empty" | "failed";
   relocated_count: number;
+  /** 实际搬到 save_path 的目标路径（最多 50 条）。可能是文件也可能是目录。
+   *  入库确认必须按它判断 —— 只看 save_path 目录下有没有视频的话，
+   *  往已有剧集目录追加新集时会恒为已入库。 */
+  relocated_files: string[];
+  /** 归位时刻（ISO）。入库确认超时以它为基准 */
+  relocated_at: string;
   is_season_pack: boolean;
   season_number: number;
   created_at: string;

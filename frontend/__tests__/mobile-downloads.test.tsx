@@ -198,6 +198,131 @@ describe("移动端下载任务页", () => {
     consoleError.mockRestore();
   });
 
+  it("回归：往已有剧集目录追加新集时，不能因为目录里有旧集就说已入库", async () => {
+    // 这是单集补全和洗版最常见的场景。判据若是"save_path 下有任何视频"，
+    // 第一次渲染就会是"已进入媒体库"，而新集可能根本还没入库。
+    const newEpisode = `${SAVE_PATH}\\某剧.S01E06.mkv`;
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({
+        status: "completed", progress: 1,
+        relocate_status: "moved", relocated_count: 1,
+        relocated_files: [newEpisode],
+        relocated_at: new Date().toISOString(),
+      })],
+    });
+    // 库里已经有 E01–E05，但没有 E06
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([
+      `${SAVE_PATH}\\某剧.S01E01.mkv`,
+      `${SAVE_PATH}\\某剧.S01E05.mkv`,
+    ]));
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("已归位 1 个文件")).toBeInTheDocument());
+    expect(screen.getByText("正在确认是否进入媒体库…")).toBeInTheDocument();
+    expect(screen.queryByText("已进入媒体库")).not.toBeInTheDocument();
+  });
+
+  it("新集真的入库后才显示已进入媒体库", async () => {
+    const newEpisode = `${SAVE_PATH}\\某剧.S01E06.mkv`;
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({
+        status: "completed", progress: 1,
+        relocate_status: "moved", relocated_count: 1,
+        relocated_files: [newEpisode],
+        relocated_at: new Date().toISOString(),
+      })],
+    });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([
+      `${SAVE_PATH}\\某剧.S01E01.mkv`,
+      newEpisode,
+    ]));
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("已进入媒体库")).toBeInTheDocument());
+  });
+
+  it("归位的是目录（种子里是文件夹）时，按目录下有没有视频判断", async () => {
+    const movedDir = `${SAVE_PATH}\\某剧 S01`;
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({
+        status: "completed", progress: 1,
+        relocate_status: "moved", relocated_count: 1,
+        relocated_files: [movedDir],
+        relocated_at: new Date().toISOString(),
+      })],
+    });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([`${movedDir}\\E01.mkv`]));
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("已进入媒体库")).toBeInTheDocument());
+  });
+
+  it("库里看不到时按退避重试拉树，不是只拉一次就放弃", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({
+        status: "completed", progress: 1,
+        relocate_status: "moved", relocated_count: 1,
+        relocated_files: [`${SAVE_PATH}\\某剧.S01E06.mkv`],
+        relocated_at: new Date().toISOString(),
+      })],
+    });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([]));
+
+    vi.useFakeTimers();
+    renderPage();
+    await flush();
+    const afterFirst = mockApi.getLibraryTree.mock.calls.length;
+
+    // 后端局部刷新是跑 ffprobe 的后台线程，第一次拉树时往往还没写完库。
+    // 只刷一次就再也不刷的话，确认状态没有任何自愈路径。
+    await act(async () => { vi.advanceTimersByTime(10_000); });
+    await flush();
+
+    expect(mockApi.getLibraryTree.mock.calls.length).toBeGreaterThan(afterFirst);
+  });
+
+  it("超时之后不再重试拉树，交给用户手动同步", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({
+        status: "completed", progress: 1,
+        relocate_status: "moved", relocated_count: 1,
+        relocated_files: [`${SAVE_PATH}\\某剧.S01E06.mkv`],
+        // 归位时刻已经在超时窗口之外
+        relocated_at: new Date(Date.now() - LIBRARY_CONFIRM_TIMEOUT_MS - 10_000).toISOString(),
+      })],
+    });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([]));
+
+    vi.useFakeTimers();
+    renderPage();
+    await flush();
+    // fake timer 下不能用 waitFor（它自己也要推时钟），直接断言
+    expect(screen.getByText(/等待入库超时/)).toBeInTheDocument();
+    const afterFirst = mockApi.getLibraryTree.mock.calls.length;
+
+    await act(async () => { vi.advanceTimersByTime(30_000); });
+    await flush();
+
+    expect(mockApi.getLibraryTree.mock.calls.length).toBe(afterFirst);
+  });
+
+  it("超时基准用后端的 relocated_at，页面重开不会重新数 60 秒", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({
+        status: "completed", progress: 1,
+        relocate_status: "moved", relocated_count: 1,
+        relocated_files: [`${SAVE_PATH}\\某剧.S01E06.mkv`],
+        relocated_at: new Date(Date.now() - LIBRARY_CONFIRM_TIMEOUT_MS - 5_000).toISOString(),
+      })],
+    });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([]));
+
+    renderPage();
+    // 刚挂载就该是超时态，而不是从头数
+    await waitFor(() => expect(screen.getByText(/等待入库超时/)).toBeInTheDocument());
+  });
+
   it("归位成功但媒体库里还没出现时，显示确认中而不是已入库", async () => {
     mockApi.getDownloadTasks.mockResolvedValue({
       tasks: [makeTask({ status: "completed", progress: 1, relocate_status: "moved", relocated_count: 2 })],

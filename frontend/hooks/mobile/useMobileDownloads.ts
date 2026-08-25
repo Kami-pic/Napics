@@ -24,6 +24,12 @@ import { useMobileLibraryTree } from "@/components/mobile/MobileLibraryTreeProvi
 /** 归位完成后等多久还没在媒体库里看到文件，就提示用户手动同步 */
 export const LIBRARY_CONFIRM_TIMEOUT_MS = 60_000;
 
+/** 整树刷新的重试退避（毫秒）。
+ *  后端的局部刷新是跑 ffprobe 的后台线程，前端第一次拉树时它往往还没写库。
+ *  只刷一次就再也不刷，确认状态会没有任何自愈路径、一律走到超时。
+ *  整树请求不便宜，所以按退避重试而不是每轮都拉。 */
+const TREE_RETRY_DELAYS_MS = [3_000, 6_000, 12_000, 24_000];
+
 /** 入库确认状态。completed 不等于已入库，中间还有归位 + 局部刷新两步异步 */
 export type LibraryConfirmState =
   | "not_applicable"   // 还没归位成功，谈不上入库
@@ -57,16 +63,25 @@ export function useMobileDownloads(): MobileDownloadsState {
   // 让 confirming → timeout 的判定能重新计算
   const [clockTick, setClockTick] = useState(0);
 
-  const { hasVideoUnder, reload: reloadTree, version: treeVersion } = useMobileLibraryTree();
+  const { hasVideoPath, hasVideoUnder, reload: reloadTree, version: treeVersion } = useMobileLibraryTree();
+
+  /** 归位过去的东西是否已经在库里。
+   *  逐条按精确路径判断：条目是文件就查路径本身，是目录就查它下面有没有视频。
+   *  拿不到 relocated_files（旧任务）时才退回"save_path 下有没有视频"这个粗判据。 */
+  const isInLibrary = useCallback((task: DownloadTask) => {
+    const paths = task.relocated_files ?? [];
+    if (paths.length === 0) return hasVideoUnder(task.save_path);
+    return paths.some(path => hasVideoPath(path) || hasVideoUnder(path));
+  }, [hasVideoPath, hasVideoUnder]);
 
   // 代际：轮询响应回来时如果代际已变（刷新过 / 组件重挂载），一律丢弃
   const generationRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tasksRef = useRef<DownloadTask[]>([]);
-  // 任务首次归位成功的时刻，用来判断入库确认是否超时
-  const relocatedAtRef = useRef<Map<string, number>>(new Map());
-  // 已经为哪些任务触发过整树刷新，避免每轮轮询都重拉整棵树
-  const treeRefreshedRef = useRef<Set<string>>(new Set());
+  // 后端没给 relocated_at 的旧任务，退回用"前端首次观察到 moved"的时刻
+  const fallbackRelocatedAtRef = useRef<Map<string, number>>(new Map());
+  // 每个任务的整树刷新记录：试了几次、上次什么时候。用于退避重试
+  const treeRetryRef = useRef<Map<string, { attempts: number; lastAt: number }>>(new Map());
 
   // 轮询回调需要读到最新任务列表，但它挂在 timer 上不参与渲染，所以走 ref。
   // 在 effect 里同步而不是渲染期直接写：渲染期写外部状态是 react-hooks 明确禁止的。
@@ -91,8 +106,9 @@ export function useMobileDownloads(): MobileDownloadsState {
   /** 一次轮询：progress 驱动对账，返回值只合并不替换 */
   const pollOnce = useCallback(async () => {
     const current = tasksRef.current;
-    // 全是终态就不打了 —— progress 有副作用，空转等于让后端白做一轮对账
-    if (current.length > 0 && !needsPolling(current)) return;
+    // 没有任何需要驱动的任务就不打了 —— progress 是带副作用的 GET，
+    // 空转等于让后端白做一轮对账。零任务和加载失败也算没有需要驱动的。
+    if (!needsPolling(current)) return;
 
     const generation = generationRef.current;
     try {
@@ -138,34 +154,61 @@ export function useMobileDownloads(): MobileDownloadsState {
     };
   }, [pollOnce, refresh]);
 
-  // 归位成功的任务需要确认是否真的进了媒体库。
-  // 每个任务只触发一次整树刷新 —— 整树很贵，不能每轮轮询都拉。
+  /** 归位时刻：优先用后端记的，页面重开后不会重新数一遍超时 */
+  const relocatedAt = useCallback((task: DownloadTask) => {
+    if (task.relocated_at) {
+      const parsed = Date.parse(task.relocated_at);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    let fallback = fallbackRelocatedAtRef.current.get(task.id);
+    if (fallback === undefined) {
+      fallback = Date.now();
+      fallbackRelocatedAtRef.current.set(task.id, fallback);
+    }
+    return fallback;
+  }, []);
+
+  // 归位成功但库里还看不到的任务，按退避重新拉树。
+  // 后端局部刷新是跑 ffprobe 的后台线程，第一次拉树时它往往还没写完库。
   useEffect(() => {
+    const now = Date.now();
     let shouldReload = false;
+
     for (const task of tasks) {
       if (task.relocate_status !== "moved" || !task.save_path) continue;
-      if (!relocatedAtRef.current.has(task.id)) {
-        relocatedAtRef.current.set(task.id, Date.now());
+      if (isInLibrary(task)) {
+        treeRetryRef.current.delete(task.id);
+        continue;
       }
-      if (!hasVideoUnder(task.save_path) && !treeRefreshedRef.current.has(task.id)) {
-        treeRefreshedRef.current.add(task.id);
+      // 超时之后不再重试，交给用户手动同步
+      if (now - relocatedAt(task) > LIBRARY_CONFIRM_TIMEOUT_MS) continue;
+
+      const record = treeRetryRef.current.get(task.id);
+      if (!record) {
+        treeRetryRef.current.set(task.id, { attempts: 1, lastAt: now });
+        shouldReload = true;
+        continue;
+      }
+      const delay = TREE_RETRY_DELAYS_MS[Math.min(record.attempts, TREE_RETRY_DELAYS_MS.length - 1)];
+      if (now - record.lastAt >= delay) {
+        treeRetryRef.current.set(task.id, { attempts: record.attempts + 1, lastAt: now });
         shouldReload = true;
       }
     }
-    if (shouldReload) void reloadTree();
-  }, [tasks, hasVideoUnder, reloadTree]);
 
-  // confirming 状态需要随时间推进变成 timeout，否则界面会永远停在"确认中"
+    if (shouldReload) void reloadTree();
+  }, [tasks, clockTick, isInLibrary, relocatedAt, reloadTree]);
+
+  // 推动时钟：confirming 既要能变成 timeout，也要能触发上面的退避重试。
+  // 依赖只放布尔量 —— 放 tasks 的话这个 interval 会被每轮轮询拆掉重建，一次都触发不了。
+  const waitingForLibrary = tasks.some(
+    task => task.relocate_status === "moved" && task.save_path && !isInLibrary(task),
+  );
   useEffect(() => {
-    const waiting = tasks.some(
-      task => task.relocate_status === "moved"
-        && task.save_path
-        && !hasVideoUnder(task.save_path),
-    );
-    if (!waiting) return;
-    const timer = setInterval(() => setClockTick(t => t + 1), 5000);
+    if (!waitingForLibrary) return;
+    const timer = setInterval(() => setClockTick(t => t + 1), 3000);
     return () => clearInterval(timer);
-  }, [tasks, hasVideoUnder, treeVersion]);
+  }, [waitingForLibrary]);
 
   const entries = useMemo<MobileDownloadEntry[]>(() => {
     void clockTick;      // 让超时判定随时钟重算
@@ -178,10 +221,10 @@ export function useMobileDownloads(): MobileDownloadsState {
 
       let library: LibraryConfirmState = "not_applicable";
       if (task.relocate_status === "moved" && task.save_path) {
-        if (hasVideoUnder(task.save_path)) {
+        if (isInLibrary(task)) {
           library = "confirmed";
         } else {
-          const since = relocatedAtRef.current.get(task.id) ?? now;
+          const since = relocatedAt(task);
           library = now - since > LIBRARY_CONFIRM_TIMEOUT_MS ? "timeout" : "confirming";
         }
       }
@@ -195,7 +238,7 @@ export function useMobileDownloads(): MobileDownloadsState {
 
       return { task, status, relocate, library, needsAttention };
     });
-  }, [tasks, hasVideoUnder, clockTick, treeVersion]);
+  }, [tasks, isInLibrary, relocatedAt, clockTick, treeVersion]);
 
   return {
     entries,

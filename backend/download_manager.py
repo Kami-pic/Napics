@@ -36,6 +36,10 @@ SANDBOX_ROOT = "downloads"
 # 落盘防抖间隔（秒）— 高频进度更新时最多这么久写一次磁盘
 _SAVE_DEBOUNCE_SECONDS = 30
 
+# relocated_files 最多记多少条。整季种子可能几十个文件，
+# 全记会让 download_tasks.json 膨胀；真实数量看 relocated_count。
+_MAX_RELOCATED_PATHS = 50
+
 
 # ── 数据模型 ──
 
@@ -60,6 +64,13 @@ class DownloadTask(BaseModel):
     # | "empty" 沙盒里没有文件 | "failed" 搬运过程出错
     relocate_status: str = ""
     relocated_count: int = 0
+    # 实际搬到 save_path 的目标路径。前端靠它精确确认入库 ——
+    # 只看"save_path 目录下有没有视频"的话，往已有剧集目录追加新集时恒为已入库。
+    # 条目可能是目录（种子里是文件夹），所以两种形态都可能出现。
+    relocated_files: List[str] = []
+    # 归位发生的时刻（ISO）。入库确认超时以它为基准，
+    # 用前端"第一次观察到 moved"的时刻会导致页面重开后重新数一遍。
+    relocated_at: str = ""
     is_season_pack: bool = False
     season_number: int = 0
     organized: bool = False        # 已执行整理替换，跳过 qB 状态同步
@@ -385,6 +396,7 @@ class DownloadManager:
             os.makedirs(task.save_path, exist_ok=True)
             moved = 0
             skipped: List[str] = []
+            moved_paths: List[str] = []
             entries = os.listdir(task.download_dir)
             for item in entries:
                 src = os.path.join(task.download_dir, item)
@@ -395,11 +407,16 @@ class DownloadManager:
                     continue
                 shutil.move(src, dst)
                 moved += 1
+                # 只留前 50 条：整季种子可能几十个文件，真实数量看 relocated_count
+                if len(moved_paths) < _MAX_RELOCATED_PATHS:
+                    moved_paths.append(dst)
 
             task.relocated_count = moved
+            task.relocated_files = moved_paths
             if moved > 0:
                 logger.info(f"[DownloadManager] 已转移 {moved} 个文件到 {task.save_path}")
                 task.relocate_status = "moved"
+                task.relocated_at = datetime.now().isoformat()
                 task.status = "completed"
                 # 自动触发局部刷新（后台线程，不阻塞）
                 self._trigger_local_refresh(task.save_path)

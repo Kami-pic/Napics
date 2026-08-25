@@ -52,19 +52,42 @@ export function useMobileLibraryTree(): MobileLibraryTreeState {
   return ctx;
 }
 
-/** 全树递归收集视频路径。只在每次加载后做一次，之后查找都是 O(1) */
-function collectVideoPaths(node: FolderNode | null): Set<string> {
+interface VideoIndex {
+  /** 原样的 file_path，用于精确匹配 */
+  paths: Set<string>;
+  /** 每个视频的全部祖先目录（已归一化），用于"这个目录下有没有视频"的判断。
+   *  预先展开是为了让查询是一次 Set.has 而不是遍历全库做前缀匹配 ——
+   *  下载页轮询期间每个已归位任务每轮会查好几次，2600 条库下遍历太浪费。 */
+  dirs: Set<string>;
+}
+
+/** 全树递归建索引。只在每次加载后做一次，之后查找都是 O(1) */
+function buildVideoIndex(node: FolderNode | null): VideoIndex {
   const paths = new Set<string>();
-  if (!node) return paths;
+  const dirs = new Set<string>();
+  if (!node) return { paths, dirs };
+
   const stack: FolderNode[] = [node];
   while (stack.length) {
     const current = stack.pop()!;
     for (const video of current.videos || []) {
-      if (video.file_path) paths.add(video.file_path);
+      const filePath = video.file_path;
+      if (!filePath) continue;
+      paths.add(filePath);
+      // 把该视频的每一级父目录都记下来
+      let dir = normalizeDir(filePath.slice(0, Math.max(
+        filePath.lastIndexOf("\\"), filePath.lastIndexOf("/"),
+      )));
+      while (dir && !dirs.has(dir)) {
+        dirs.add(dir);
+        const cut = dir.lastIndexOf("/");
+        if (cut <= 0) break;
+        dir = dir.slice(0, cut);
+      }
     }
     for (const child of current.children || []) stack.push(child);
   }
-  return paths;
+  return { paths, dirs };
 }
 
 export default function MobileLibraryTreeProvider({ children }: { children: ReactNode }) {
@@ -78,7 +101,7 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
   const inFlightRef = useRef<Promise<void> | null>(null);
   // Strict Mode 下 effect 跑两次，没有闸门就会打两次整树请求
   const startedRef = useRef(false);
-  const pathsRef = useRef<Set<string>>(new Set());
+  const indexRef = useRef<VideoIndex>({ paths: new Set(), dirs: new Set() });
 
   const reload = useCallback(async () => {
     if (inFlightRef.current) return inFlightRef.current;
@@ -88,7 +111,7 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
       try {
         const next = await api.getLibraryTree();
         setTree(next);
-        pathsRef.current = collectVideoPaths(next);
+        indexRef.current = buildVideoIndex(next);
         setLoadFailed(false);
         setVersion(v => v + 1);
       } catch {
@@ -112,17 +135,13 @@ export default function MobileLibraryTreeProvider({ children }: { children: Reac
 
   const hasVideoPath = useCallback((filePath: string) => {
     if (!filePath) return false;
-    return pathsRef.current.has(filePath);
+    return indexRef.current.paths.has(filePath);
   }, []);
 
   const hasVideoUnder = useCallback((dirPath: string) => {
-    const prefix = normalizeDir(dirPath);
-    if (!prefix) return false;
-    for (const path of pathsRef.current) {
-      const normalized = path.replace(/\\/g, "/").toLowerCase();
-      if (normalized.startsWith(prefix + "/")) return true;
-    }
-    return false;
+    const key = normalizeDir(dirPath);
+    if (!key) return false;
+    return indexRef.current.dirs.has(key);
   }, []);
 
   const value = useMemo<MobileLibraryTreeState>(() => ({

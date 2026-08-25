@@ -84,7 +84,9 @@ export function mergeProgressIntoTasks<T extends { id: string }>(
   for (const item of progressTasks) {
     if (item?.id) byId.set(item.id, item);
   }
-  if (byId.size === 0) return [...tasks];
+  // 空 patch 时返回原数组：返回新数组会让调用方每次轮询都触发一次
+  // 无意义的重渲染，下游 memo 和 effect 跟着全部重算
+  if (byId.size === 0) return tasks as T[];
   return tasks.map(task => {
     const patch = byId.get(task.id);
     return patch ? { ...task, ...patch } : task;

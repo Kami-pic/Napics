@@ -824,6 +824,14 @@ def test_relocate_to_save_path_moves_files_and_cleans_empty_sandbox(monkeypatch)
         assert task.relocate_status == "moved"
         assert task.relocated_count == 2
         assert task.error == ""
+        # 前端要靠这些精确路径确认入库。只给 save_path 的话，
+        # 往已有剧集目录追加新集时"目录下有视频"恒成立，确认就失去了意义。
+        assert sorted(task.relocated_files) == sorted([
+            str(save_path / "Show.S01E01.2160p.mkv"),
+            str(save_path / "Show.S01E01.2160p.srt"),
+        ])
+        # 超时基准取后端时刻，前端重开页面不会重新数一遍
+        assert task.relocated_at != ""
 
     _with_temp_dir("download_manager_relocate_move", run)
 
