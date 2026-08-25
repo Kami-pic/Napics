@@ -5,6 +5,7 @@
 
 export const MOBILE_ROUTES = {
   discover: "/m",
+  discoverDetail: "/m/discover/detail",
   library: "/m/library",
   libraryDetail: "/m/library/detail",
   search: "/m/search",
@@ -27,6 +28,17 @@ export const MOBILE_QUERY_KEYS = {
   season: "season",
   resolution: "res",
   savePath: "save",
+  // ── 发现 ──
+  title: "title",
+  year: "year",
+  /** 详情数据源：douban / tmdb / bangumi，来自榜单 tab 的 ratingSource */
+  detailSource: "src",
+  /** 条目在该源里的 id（豆瓣 id 或 bangumi subject id） */
+  itemId: "id",
+  /** 原始副标题，/media/info 用它辅助匹配 */
+  subtitle: "sub",
+  localStatus: "ls",
+  localFolder: "lf",
 } as const;
 
 export type MobileSearchTab = "bt" | "pan";
@@ -67,6 +79,80 @@ function buildUrl(route: string, params: Record<string, string | number | undefi
   }
   const qs = sp.toString();
   return qs ? `${route}?${qs}` : route;
+}
+
+// ── 发现 ──
+
+/**
+ * 发现首页。tab 写进 URL 是为了"从哪进回哪里"：详情页返回时能落回原来的榜单，
+ * 而不是一律弹回第一个 tab。切 tab 用 replace，不往历史栈里堆。
+ */
+export function discoverUrl(tab?: string): string {
+  return buildUrl(MOBILE_ROUTES.discover, { [MOBILE_QUERY_KEYS.tab]: tab });
+}
+
+/** 从 query 里取发现榜单 tab；缺失时返回空串，由调用方决定默认 tab */
+export function parseDiscoverTab(source: QuerySource): string {
+  return readParam(source, MOBILE_QUERY_KEYS.tab);
+}
+
+/** 发现详情页能重建的全部状态。榜单条目不落盘，所以全部经 URL 传递 */
+export interface MobileDiscoverDetailQuery {
+  title: string;
+  year?: string;
+  /** movie / tv，来自条目自身或榜单 tab 的 mediaType */
+  mediaType?: string;
+  /** 详情数据源，对应榜单 tab 的 ratingSource */
+  source?: string;
+  /** 该源里的条目 id */
+  id?: string;
+  subtitle?: string;
+  cnName?: string;
+  enName?: string;
+  originalName?: string;
+  /** 后端注入的本地状态，用于决定是否显示"查看本地" */
+  localStatus?: string;
+  /** 本地媒体库里的文件夹路径 */
+  localFolder?: string;
+  /** 来源榜单 tab，返回时用 */
+  tab?: string;
+}
+
+export function discoverDetailUrl(query: MobileDiscoverDetailQuery): string {
+  const K = MOBILE_QUERY_KEYS;
+  return buildUrl(MOBILE_ROUTES.discoverDetail, {
+    [K.title]: query.title,
+    [K.year]: query.year,
+    [K.mediaType]: query.mediaType,
+    [K.detailSource]: query.source,
+    [K.itemId]: query.id,
+    [K.subtitle]: query.subtitle,
+    [K.cnName]: query.cnName,
+    [K.enName]: query.enName,
+    [K.originalName]: query.originalName,
+    // local_status 为 none 时不占 URL，解析端把缺失当 none
+    [K.localStatus]: query.localStatus === "none" ? undefined : query.localStatus,
+    [K.localFolder]: query.localFolder,
+    [K.tab]: query.tab,
+  });
+}
+
+export function parseDiscoverDetailQuery(source: QuerySource): MobileDiscoverDetailQuery {
+  const K = MOBILE_QUERY_KEYS;
+  return {
+    title: readParam(source, K.title),
+    year: readParam(source, K.year) || undefined,
+    mediaType: readParam(source, K.mediaType) || undefined,
+    source: readParam(source, K.detailSource) || undefined,
+    id: readParam(source, K.itemId) || undefined,
+    subtitle: readParam(source, K.subtitle) || undefined,
+    cnName: readParam(source, K.cnName) || undefined,
+    enName: readParam(source, K.enName) || undefined,
+    originalName: readParam(source, K.originalName) || undefined,
+    localStatus: readParam(source, K.localStatus) || undefined,
+    localFolder: readParam(source, K.localFolder) || undefined,
+    tab: readParam(source, K.tab) || undefined,
+  };
 }
 
 // ── 媒体库 ──
@@ -149,7 +235,9 @@ export function parseSearchQuery(source: QuerySource): MobileSearchQuery {
 
 /** 当前 pathname 对应哪个底部 Tab；下钻页归属它所属的 Tab */
 export function activeNavKey(pathname: string): MobileNavKey | null {
+  // /m 是发现首页本身，/m/discover/* 是它的下钻页，都归发现 Tab
   if (pathname === MOBILE_ROUTES.discover) return "discover";
+  if (pathname.startsWith("/m/discover")) return "discover";
   if (pathname.startsWith(MOBILE_ROUTES.library)) return "library";
   if (pathname.startsWith(MOBILE_ROUTES.search)) return "search";
   if (pathname.startsWith(MOBILE_ROUTES.downloads)) return "downloads";

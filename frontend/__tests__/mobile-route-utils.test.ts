@@ -16,6 +16,10 @@ import {
   parseSearchQuery,
   activeNavKey,
   shouldShowBottomNav,
+  discoverUrl,
+  parseDiscoverTab,
+  discoverDetailUrl,
+  parseDiscoverDetailQuery,
 } from "@/lib/mobile/mobileRouteUtils";
 
 /** 从生成的 URL 里取出 query 部分，模拟浏览器/Next 的解析 */
@@ -98,6 +102,46 @@ describe("搜索 URL", () => {
   });
 });
 
+describe("发现 URL", () => {
+  it("榜单 tab 往返一致，缺省时不带 query", () => {
+    expect(parseDiscoverTab(queryOf(discoverUrl("douban_tv_hot")))).toBe("douban_tv_hot");
+    expect(discoverUrl()).toBe(MOBILE_ROUTES.discover);
+    expect(discoverUrl("")).toBe(MOBILE_ROUTES.discover);
+    expect(parseDiscoverTab({})).toBe("");
+  });
+
+  it("详情上下文完整往返（含中文、韩文、含空格的本地路径）", () => {
+    const query = {
+      title: "奇怪的律师禹英禑 第一季",
+      year: "2022",
+      mediaType: "tv",
+      source: "douban",
+      id: "35651341",
+      subtitle: "Extraordinary Attorney Woo / 이상한 변호사 우영우",
+      cnName: "奇怪的律师禹英禑",
+      enName: "Extraordinary Attorney Woo",
+      originalName: "이상한 변호사 우영우",
+      localStatus: "owned_low",
+      localFolder: String.raw`\\NAS\share\视频\电视剧\奇怪的律师禹英禑 (2022)`,
+      tab: "douban_tv_hot",
+    };
+    expect(parseDiscoverDetailQuery(queryOf(discoverDetailUrl(query)))).toEqual(query);
+  });
+
+  it("local_status 为 none 时不占 URL，解析回来是 undefined", () => {
+    const url = discoverDetailUrl({ title: "教父", localStatus: "none", localFolder: "" });
+    expect(url).not.toContain("ls=");
+    const parsed = parseDiscoverDetailQuery(queryOf(url));
+    expect(parsed.localStatus).toBeUndefined();
+    expect(parsed.localFolder).toBeUndefined();
+    expect(parsed.title).toBe("教父");
+  });
+
+  it("只有标题时其余字段不写进 URL", () => {
+    expect(discoverDetailUrl({ title: "教父" })).toBe(`${MOBILE_ROUTES.discoverDetail}?title=%E6%95%99%E7%88%B6`);
+  });
+});
+
 describe("底部导航状态", () => {
   it("四个主 Tab 各自的路由能被识别", () => {
     for (const item of MOBILE_NAV_ITEMS) {
@@ -122,8 +166,13 @@ describe("底部导航状态", () => {
     expect(shouldShowBottomNav("/m/library/detail")).toBe(true);
   });
 
-  it("发现页只认精确路径，不能把 /m/library 也算成发现", () => {
+  it("发现首页认精确路径，不能把 /m/library 也算成发现", () => {
     expect(activeNavKey(MOBILE_ROUTES.discover)).toBe("discover");
     expect(activeNavKey(MOBILE_ROUTES.library)).toBe("library");
+  });
+
+  it("发现详情归发现 Tab，且显示底栏", () => {
+    expect(activeNavKey(MOBILE_ROUTES.discoverDetail)).toBe("discover");
+    expect(shouldShowBottomNav(MOBILE_ROUTES.discoverDetail)).toBe(true);
   });
 });
