@@ -39,6 +39,7 @@ export const MOBILE_QUERY_KEYS = {
   subtitle: "sub",
   localStatus: "ls",
   localFolder: "lf",
+  cover: "cover",
 } as const;
 
 export type MobileSearchTab = "bt" | "pan";
@@ -110,6 +111,8 @@ export interface MobileDiscoverDetailQuery {
   cnName?: string;
   enName?: string;
   originalName?: string;
+  /** 榜单卡片上那张海报。带上它，详情页第一帧就有图，不用等 /media/info */
+  cover?: string;
   /** 后端注入的本地状态，用于决定是否显示"查看本地" */
   localStatus?: string;
   /** 本地媒体库里的文件夹路径 */
@@ -130,6 +133,7 @@ export function discoverDetailUrl(query: MobileDiscoverDetailQuery): string {
     [K.cnName]: query.cnName,
     [K.enName]: query.enName,
     [K.originalName]: query.originalName,
+    [K.cover]: query.cover,
     // local_status 为 none 时不占 URL，解析端把缺失当 none
     [K.localStatus]: query.localStatus === "none" ? undefined : query.localStatus,
     [K.localFolder]: query.localFolder,
@@ -149,6 +153,7 @@ export function parseDiscoverDetailQuery(source: QuerySource): MobileDiscoverDet
     cnName: readParam(source, K.cnName) || undefined,
     enName: readParam(source, K.enName) || undefined,
     originalName: readParam(source, K.originalName) || undefined,
+    cover: readParam(source, K.cover) || undefined,
     localStatus: readParam(source, K.localStatus) || undefined,
     localFolder: readParam(source, K.localFolder) || undefined,
     tab: readParam(source, K.tab) || undefined,

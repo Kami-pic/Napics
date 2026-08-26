@@ -59,6 +59,8 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
       cnName: item.clean_name_cn,
       enName: item.clean_name_en,
       originalName: item.clean_name_original,
+      // 卡片上的海报直接带过去，详情页第一帧就有图（/media/info 冷缓存要 6 秒）
+      cover: item.cover_url,
       localStatus: item.local_status,
       localFolder: item.local_folder,
       tab: activeTab,

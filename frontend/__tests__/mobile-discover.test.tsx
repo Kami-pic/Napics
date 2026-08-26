@@ -449,6 +449,28 @@ describe("发现详情", () => {
     expect(mockRouter.push).toHaveBeenCalledWith(discoverUrl("douban_animation"));
   });
 
+  it("详情还在路上时页面已经可用：标题、海报、两个出口都不等它", async () => {
+    // /media/info 冷缓存实测 6 秒起，整页 loading 会让不依赖详情的出口也点不到
+    mockApi.mediaInfo.mockReturnValue(new Promise(() => {}));
+    render(<MobileDiscoverDetailClient query={{
+      title: "还在加载的片", year: "2026", source: "tmdb", tab: "combined",
+      cover: "https://img9.doubanio.com/view/photo/x.jpg",
+      localStatus: "owned_high", localFolder: "D:\\影视\\还在加载的片",
+    } as never} />);
+    await act(async () => { await Promise.resolve(); });
+
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("还在加载的片");
+    expect(screen.getByText("正在读取影片信息…")).toBeTruthy();
+    // 卡片那张海报先顶上，不是空白框
+    expect(document.querySelector("img")?.getAttribute("src")).toContain("doubanio.com");
+
+    // 两个出口立刻可用
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /搜索资源/ })); });
+    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain(MOBILE_ROUTES.search);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "查看本地" })); });
+    expect(mockRouter.push).toHaveBeenLastCalledWith(libraryUrl("D:\\影视\\还在加载的片"));
+  });
+
   it("详情请求一直不返回时超时收场，搜索资源仍可用", async () => {
     // fake timer 必须在 render 之前装：先 render 再装推不动已建立的 timer
     vi.useFakeTimers();

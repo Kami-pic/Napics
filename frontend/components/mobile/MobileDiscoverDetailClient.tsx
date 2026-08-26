@@ -138,17 +138,15 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
   const hasLocal = Boolean(localFolder) && localStatus !== "none" && Boolean(localStatus);
   const notFound = Boolean(detail) && !detail?.found;
 
+  // **详情永不阻塞整页**：/media/info 要串行问 TMDB / 豆瓣 / Bangumi，实测冷缓存 6 秒
+  // 起步，弱网更久。整页 loading 会让"搜索资源""查看本地"这两个本来就不依赖详情的
+  // 出口也点不到，用户看到的就是"点进去转圈几十秒然后失败"。
+  // 骨架（标题 / 年份 / 卡片海报 / 两个按钮）全部来自 URL，第一帧就能用。
   let state: "loading" | "error" | "ready" = "ready";
   let errorText = "";
   if (!title) {
     state = "error";
     errorText = "缺少影片信息，无法打开详情";
-  } else if (loading && !detail) {
-    state = "loading";
-  } else if (failed && !detail) {
-    // 详情拉不到不等于这一页没用：标题和清洗名都在 URL 里，搜索资源仍然可用，
-    // 所以这里不走整页 error，只在正文里说明。
-    state = "ready";
   }
 
   const errorAction = (
@@ -177,7 +175,8 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
         {title && (
           <div className="flex flex-col gap-4 pt-3">
             <div className="flex gap-3">
-              <RemotePoster url={detail?.poster_url} fallbackText={title} />
+              {/* 详情的海报更大更全，但要等 6 秒；先用榜单卡片那张顶上 */}
+              <RemotePoster url={detail?.poster_url || query.cover} fallbackText={title} />
               <div className="min-w-0 flex-1">
                 <h2 className="text-[16px] font-semibold text-[var(--m-text)]">
                   {detail?.title || title}
@@ -185,6 +184,11 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
                 {(detail?.original_title || query.originalName || query.enName) && (
                   <p className="mt-0.5 truncate text-[12px] text-[var(--m-text-dim)]">
                     {detail?.original_title || query.originalName || query.enName}
+                  </p>
+                )}
+                {loading && (
+                  <p className="mt-2 text-[12px] text-[var(--m-text-dim)]" role="status">
+                    正在读取影片信息…
                   </p>
                 )}
                 {failed && (
