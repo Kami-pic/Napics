@@ -65,10 +65,14 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
     return (
       <div key={node.path}>
         <div onClick={() => onNavigate(node)}
-          className={`group flex items-center gap-2 py-2 px-4 rounded-lg cursor-pointer text-[13px] transition-all ${
+          className={`group flex items-center gap-2 py-2 rounded-lg cursor-pointer text-[13px] transition-all ${
+            // 折叠态只剩一个图标，用 justify-center + px-2 与底部「发现/插件/设置」
+            // 三个按钮取同一套写法，否则图标会靠左、和下面的对不齐。
+            collapsed ? "justify-center px-2" : "px-4"
+          } ${
             isActive ? "bg-blue-500/10 text-blue-400" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
           }`}
-          style={{ paddingLeft: collapsed ? '0.75rem' : isRoot ? '1rem' : `${1 + (level - 1) * 0.9}rem` }}>
+          style={collapsed ? undefined : { paddingLeft: isRoot ? '1rem' : `${1 + (level - 1) * 0.9}rem` }}>
           {/* 根目录不显示展开箭头，也不占位 */}
           {!collapsed && !isRoot && hasChildren && (
             <button onClick={(e) => toggleExpand(node.path, e)}

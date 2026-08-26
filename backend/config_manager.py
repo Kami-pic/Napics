@@ -77,13 +77,18 @@ class PluginSourceConfig(BaseModel):
 
 
 class AppConfig(BaseModel):
-    prowlarr_url: str = "http://127.0.0.1:9696"
+    # 三个外部服务的地址一律留空，由用户在插件中心填。
+    # 以前这里默认 http://127.0.0.1:<端口>，后果有两个：插件配置弹窗一打开就预填了
+    # 一个几乎不可能正确的地址（Napics 多数跑在 NAS/容器里，服务在别的机器上），
+    # 用户点「测试连接」是真的在连本机、必然失败；而 `if not conf.qb_url` 这类
+    # 「是否已配置」的判断也会恒为 True，把未配置伪装成已配置。
+    prowlarr_url: str = ""
     prowlarr_api_key: str = ""
     tmdb_api_key: str = ""
-    qb_url: str = "http://127.0.0.1:8080"
-    qb_username: str = "admin"
+    qb_url: str = ""
+    qb_username: str = "admin"  # qB 出厂用户名就是 admin，这个默认值是对的
     qb_password: str = ""
-    alist_url: str = "http://127.0.0.1:5244"
+    alist_url: str = ""
     alist_token: str = ""
     scan_paths: List[str] = []        # 扫描路径（自动识别模式，忽略根目录平铺内容）
     exclude_dirs: str = ""

@@ -11,8 +11,8 @@
             "key": "qb_url",
             "label": "qBittorrent 地址",
             "type": "url",
-            "description": "Napics 后端可访问的 qBittorrent Web UI 地址",
-            "placeholder": "http://host.docker.internal:8080",
+            "description": "填 Napics 后端能访问到的地址。同机部署用 127.0.0.1；qB 在 NAS 或别的机器上填它的局域网 IP；Napics 在 Docker 里而 qB 在宿主机上填 host.docker.internal",
+            "placeholder": "http://<主机地址>:8080",
             "required": true
         },
         {

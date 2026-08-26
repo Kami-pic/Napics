@@ -6,6 +6,23 @@
     "category": "download",
     "icon": "📥",
     "requires_config": ["alist_url", "alist_token"],
+    "config_schema": [
+        {
+            "key": "alist_url",
+            "label": "OpenList/Alist 地址",
+            "type": "url",
+            "description": "与「OpenList 浏览」插件共用同一份配置，默认端口 5244。同机部署用 127.0.0.1；OpenList 在 NAS 或别的机器上填它的局域网 IP；Napics 在 Docker 里而 OpenList 在宿主机上填 host.docker.internal",
+            "placeholder": "http://<主机地址>:5244",
+            "required": true
+        },
+        {
+            "key": "alist_token",
+            "label": "OpenList Token",
+            "type": "password",
+            "description": "OpenList 管理后台生成的访问 Token",
+            "required": true
+        }
+    ],
     "depends_on": [],
     "provides": ["DownloadBackend:openlist"],
     "risk_level": "medium"
