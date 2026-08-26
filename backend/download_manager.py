@@ -448,7 +448,14 @@ class DownloadManager:
             task.error = f"转移失败: {e}"
 
     def _trigger_local_refresh(self, save_path: str):
-        """下载完成后自动触发该文件夹的局部刷新（后台线程）。"""
+        """下载完成后自动触发该文件夹的局部刷新（后台线程）。
+
+        这里曾经调 `scanner.scan_folder()` —— **那个函数从来不存在**（scanner 只有
+        `scan_directory`）。每次归位都稳定抛 AttributeError，被下面的 except 吞掉，
+        只留一行"局部刷新失败"。后果是下载归位成功的文件从来没进过 media_library.json，
+        目录树里没有它的节点，下载面板的「📂 查看」必然找不到目标、点了没反应。
+        测试用 `SimpleNamespace(scan_folder=...)` mock 掉了 scanner，所以测不出来。
+        """
         import threading
         def _do_refresh():
             try:
@@ -456,10 +463,36 @@ class DownloadManager:
                 cm = ConfigManager()
                 if not cm.load_library():
                     return
-                # 扫描放在锁外：scan_folder 会跑 ffprobe，持锁做这个会把
-                # 整个媒体库的写入卡住几十秒。
+
+                # folder_name 必须相对**扫描根**算，不能相对 save_path。
+                # scan_directory 自己填的 folder_name 是相对它的入参的，直接用会把
+                # 条目挂到树的错误层级（save_path 就是影片目录时 folder_name 为空串，
+                # 整条会挂到库根节点上）。
+                import library_paths
+                base, _lib_name = library_paths.resolve_base(save_path, cm.config)
+                if not base:
+                    # 下到媒体库之外了。硬算 folder_name 会得到 `..\..\` 开头的相对
+                    # 路径，建树时 `..` 会变成一个节点名，比不入库更糟。
+                    logger.info(
+                        f"[DownloadManager] 局部刷新跳过：{save_path} 不在任何扫描路径下"
+                    )
+                    return
+
+                # 扫描放在锁外：这里会跑 ffprobe，持锁做这个会把整个媒体库的写入
+                # 卡住几十秒。
                 import scanner
-                new_files = scanner.scan_folder(save_path)
+                exclude_str = cm.config.exclude_dirs or ""
+                scanned = scanner.scan_directory(save_path, exclude_str)
+                if not scanned:
+                    return
+
+                new_files = []
+                for info in scanned:
+                    folder_name = library_paths.compute_folder_name(info.file_path, cm.config)
+                    if folder_name is None:
+                        continue
+                    info.folder_name = folder_name
+                    new_files.append(info.dict())
                 if not new_files:
                     return
 

@@ -1,5 +1,6 @@
 """download_manager 下载完成到自动归位的行为保护测试。"""
 
+import os
 import sys
 import threading
 import shutil
@@ -9,6 +10,9 @@ from pathlib import Path
 
 import requests
 
+# 局部刷新的夹具要按 scanner 的真实契约造数据，所以这里持有真模块的引用 ——
+# 测试内部会用 monkeypatch 把 sys.modules["scanner"] 换成假的，这个引用不受影响。
+import scanner as real_scanner
 from download_manager import DownloadManager, DownloadTask
 from file_relocator import RelocateResult
 from test_support.fake_library_store import LibraryMutationContract
@@ -970,14 +974,53 @@ def test_relocate_to_save_path_returns_early_when_download_dir_is_not_directory(
     assert refresh_calls == []
 
 
+def _video_info(file_path: str):
+    """按 scanner 的真实契约造一条扫描结果。
+
+    这几个测试原来的夹具是 `SimpleNamespace(scan_folder=lambda path: [dict, ...])`，
+    两处都和真实 scanner 不符：`scan_folder` 这个函数**不存在**（只有
+    `scan_directory`），返回的也是 `VideoInfo` 对象而非 dict。于是生产代码里那行
+    `scanner.scan_folder(save_path)` 每次归位都稳定抛 AttributeError、被 except
+    吞掉，而测试全绿 —— 下载归位的文件因此从来没进过媒体库，「📂 查看」必然
+    找不到目标。夹具必须照真实契约来，否则测的是夹具自己。
+    """
+    return real_scanner.VideoInfo(
+        file_path=file_path,
+        file_name=Path(file_path).name,
+        folder_name="",
+        size_gb=1.0,
+        duration_min=42.0,
+        resolution="1080p",
+        height=1080,
+        width=1920,
+        bitrate_kbps=5000.0,
+        codec="h264",
+        container="mkv",
+        audio_codec="aac",
+        audio_channels=2,
+        subtitle_count=0,
+        hdr_type="SDR",
+        has_poster=False,
+        is_low_res=False,
+    )
+
+
+def _refresh_config(scan_root):
+    """局部刷新要用 config 找扫描根，folder_name 必须相对它算。"""
+    return SimpleNamespace(scan_paths=[str(scan_root)], media_libraries=[], exclude_dirs="")
+
+
 def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
         saved_libraries = []
-        existing_path = str(tmp_dir / "library" / "Show" / "Show.S01E01.1080p.mkv")
-        new_path = str(tmp_dir / "library" / "Show" / "Show.S01E02.2160p.mkv")
+        scan_root = tmp_dir / "library"
+        existing_path = str(scan_root / "Show" / "Show.S01E01.1080p.mkv")
+        new_path = str(scan_root / "Show" / "Show.S01E02.2160p.mkv")
 
         class FakeConfigManagerForRefresh(LibraryMutationContract):
+            config = _refresh_config(scan_root)
+
             def load_library(self):
                 return [{"file_path": existing_path, "title": "Show"}]
 
@@ -987,33 +1030,119 @@ def test_trigger_local_refresh_adds_only_new_files_on_real_thread(monkeypatch):
 
         fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
         fake_scanner = SimpleNamespace(
-            scan_folder=lambda path: [
-                {"file_path": existing_path, "title": "Show"},
-                {"file_path": new_path, "title": "Show"},
-            ]
+            VideoInfo=real_scanner.VideoInfo,
+            scan_directory=lambda path, exclude_str="": [
+                _video_info(existing_path),
+                _video_info(new_path),
+            ],
         )
 
         monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
         monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
 
         dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
-        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+        dm._trigger_local_refresh(str(scan_root / "Show"))
 
         assert save_event.wait(1.5) is True
         assert len(saved_libraries) == 1
-        assert saved_libraries[0] == [
-            {"file_path": existing_path, "title": "Show"},
-            {"file_path": new_path, "title": "Show"},
-        ]
+        assert [v.get("file_path") for v in saved_libraries[0]] == [existing_path, new_path]
 
     _with_temp_dir("download_manager_local_refresh_thread", run)
+
+
+def test_trigger_local_refresh_computes_folder_name_from_scan_root(monkeypatch):
+    """folder_name 必须相对**扫描根**，不是相对 save_path。
+
+    `scan_directory(save_path)` 自己填的 folder_name 是相对它的入参的：save_path
+    就是影片目录时会得到空串，整条被挂到目录树的库根节点上；save_path 是分类目录
+    时会丢掉分类那一段。目录树完全按 folder_name 重建，挂错层就等于「查看」跳不到。
+    """
+    def run(tmp_dir):
+        save_event = threading.Event()
+        saved_libraries = []
+        scan_root = tmp_dir / "library"
+        new_path = str(scan_root / "电影" / "某片 (2024)" / "某片 (2024).mkv")
+
+        class FakeConfigManagerForRefresh(LibraryMutationContract):
+            config = _refresh_config(scan_root)
+
+            def load_library(self):
+                return [{"file_path": "existing"}]
+
+            def save_library(self, library):
+                saved_libraries.append(list(library))
+                save_event.set()
+
+        fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
+        fake_scanner = SimpleNamespace(
+            VideoInfo=real_scanner.VideoInfo,
+            # save_path 就是影片目录，scan_directory 会把 folder_name 填成空串
+            scan_directory=lambda path, exclude_str="": [_video_info(new_path)],
+        )
+
+        monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
+        monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        dm._trigger_local_refresh(str(scan_root / "电影" / "某片 (2024)"))
+
+        assert save_event.wait(1.5) is True
+        added = [v for v in saved_libraries[0] if v.get("file_path") == new_path]
+        assert len(added) == 1
+        assert added[0]["folder_name"] == os.path.join("电影", "某片 (2024)")
+
+    _with_temp_dir("download_manager_local_refresh_folder_name", run)
+
+
+def test_trigger_local_refresh_skips_when_save_path_outside_scan_roots(monkeypatch):
+    """save_path 在媒体库之外时不入库。
+
+    硬算 folder_name 会得到 `..\\..\\` 开头的相对路径，建树时 `..` 会成为一个
+    节点名 —— 比不入库更糟。
+    """
+    def run(tmp_dir):
+        save_event = threading.Event()
+        scanned = []
+
+        class FakeConfigManagerForRefresh(LibraryMutationContract):
+            config = _refresh_config(tmp_dir / "library")
+
+            def load_library(self):
+                return [{"file_path": "existing"}]
+
+            def save_library(self, library):
+                save_event.set()
+
+        def _scan(path, exclude_str=""):
+            scanned.append(path)
+            return [_video_info(str(tmp_dir / "elsewhere" / "x.mkv"))]
+
+        fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
+        fake_scanner = SimpleNamespace(
+            VideoInfo=real_scanner.VideoInfo, scan_directory=_scan
+        )
+
+        monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
+        monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
+
+        dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
+        dm._trigger_local_refresh(str(tmp_dir / "elsewhere"))
+
+        assert save_event.wait(0.3) is False
+        # 连扫描都不该发起：跑 ffprobe 是纯浪费
+        assert scanned == []
+
+    _with_temp_dir("download_manager_local_refresh_outside", run)
 
 
 def test_trigger_local_refresh_skips_when_library_is_empty(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
+        scan_root = tmp_dir / "library"
 
         class FakeConfigManagerForRefresh(LibraryMutationContract):
+            config = _refresh_config(scan_root)
+
             def load_library(self):
                 return []
 
@@ -1021,13 +1150,18 @@ def test_trigger_local_refresh_skips_when_library_is_empty(monkeypatch):
                 save_event.set()
 
         fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
-        fake_scanner = SimpleNamespace(scan_folder=lambda path: [{"file_path": "x"}])
+        fake_scanner = SimpleNamespace(
+            VideoInfo=real_scanner.VideoInfo,
+            scan_directory=lambda path, exclude_str="": [
+                _video_info(str(scan_root / "Show" / "x.mkv"))
+            ],
+        )
 
         monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
         monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
 
         dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
-        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+        dm._trigger_local_refresh(str(scan_root / "Show"))
 
         assert save_event.wait(0.3) is False
 
@@ -1037,8 +1171,11 @@ def test_trigger_local_refresh_skips_when_library_is_empty(monkeypatch):
 def test_trigger_local_refresh_skips_when_scan_returns_empty(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
+        scan_root = tmp_dir / "library"
 
         class FakeConfigManagerForRefresh(LibraryMutationContract):
+            config = _refresh_config(scan_root)
+
             def load_library(self):
                 return [{"file_path": "existing"}]
 
@@ -1046,13 +1183,16 @@ def test_trigger_local_refresh_skips_when_scan_returns_empty(monkeypatch):
                 save_event.set()
 
         fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
-        fake_scanner = SimpleNamespace(scan_folder=lambda path: [])
+        fake_scanner = SimpleNamespace(
+            VideoInfo=real_scanner.VideoInfo,
+            scan_directory=lambda path, exclude_str="": [],
+        )
 
         monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
         monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
 
         dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
-        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+        dm._trigger_local_refresh(str(scan_root / "Show"))
 
         assert save_event.wait(0.3) is False
 
@@ -1062,9 +1202,12 @@ def test_trigger_local_refresh_skips_when_scan_returns_empty(monkeypatch):
 def test_trigger_local_refresh_skips_when_no_new_files(monkeypatch):
     def run(tmp_dir):
         save_event = threading.Event()
-        existing_path = str(tmp_dir / "library" / "Show" / "Show.S01E01.1080p.mkv")
+        scan_root = tmp_dir / "library"
+        existing_path = str(scan_root / "Show" / "Show.S01E01.1080p.mkv")
 
         class FakeConfigManagerForRefresh(LibraryMutationContract):
+            config = _refresh_config(scan_root)
+
             def load_library(self):
                 return [{"file_path": existing_path, "title": "Show"}]
 
@@ -1073,14 +1216,15 @@ def test_trigger_local_refresh_skips_when_no_new_files(monkeypatch):
 
         fake_config_manager = SimpleNamespace(ConfigManager=FakeConfigManagerForRefresh)
         fake_scanner = SimpleNamespace(
-            scan_folder=lambda path: [{"file_path": existing_path, "title": "Show"}]
+            VideoInfo=real_scanner.VideoInfo,
+            scan_directory=lambda path, exclude_str="": [_video_info(existing_path)],
         )
 
         monkeypatch.setitem(sys.modules, "config_manager", fake_config_manager)
         monkeypatch.setitem(sys.modules, "scanner", fake_scanner)
 
         dm = DownloadManager(qb_client=None, alist_client=None, base_path=".")
-        dm._trigger_local_refresh(str(tmp_dir / "library" / "Show"))
+        dm._trigger_local_refresh(str(scan_root / "Show"))
 
         assert save_event.wait(0.3) is False
 

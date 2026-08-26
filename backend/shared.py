@@ -458,19 +458,10 @@ def _update_clean_names_after_scrape(path: str, scrape_result: dict):
         pass
 
 
-def is_under_path(file_path: str, base: str) -> bool:
-    """file_path 是否位于 base 目录之下（或就是它本身）。
-
-    不能直接用 `startswith(base)`：那样 `D:\\影视2\\a.mkv` 会被当成
-    `D:\\影视` 的子路径。扫描 / 同步判断"这条属于哪个库"时踩过这个坑 ——
-    两个名字有共同前缀的平级目录会互相误判，扫一个库会连带处理另一个库的条目。
-    """
-    if not file_path or not base:
-        return False
-    trimmed = base.rstrip("\\/")
-    if file_path == trimmed:
-        return True
-    return file_path.startswith(trimmed + os.sep) or file_path.startswith(trimmed + "/")
+# 路径归属判断的实现搬到了 library_paths（那个模块必须零项目内依赖，才能在
+# download_manager 的后台线程里 import 而不连带构造 ConfigManager 单例）。
+# 这里保留转发，`from shared import is_under_path` 的现有调用方不用改。
+from library_paths import is_under_path  # noqa: E402  (re-export)
 
 
 # ── 路径访问白名单 ──
