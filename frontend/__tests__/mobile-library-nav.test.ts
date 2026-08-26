@@ -42,6 +42,15 @@ describe("findNode", () => {
     expect(season?.folder_type).toBe("season");
   });
 
+  it("分隔符、末尾斜杠、大小写不一致仍能命中", () => {
+    // path 会从三个不同来源进来（树、下载任务的 save_path、发现条目的 local_folder），
+    // 写法不一致时严格相等会误报"这个目录不在媒体库里"。Windows 与 SMB 都不区分大小写。
+    const target = TV_MULTI_SEASON_NODE.path;
+    expect(findNode(LIBRARY_TREE, target.replace(/\\/g, "/"))).toBe(TV_MULTI_SEASON_NODE);
+    expect(findNode(LIBRARY_TREE, `${target}\\`)).toBe(TV_MULTI_SEASON_NODE);
+    expect(findNode(LIBRARY_TREE, target.toUpperCase())).toBe(TV_MULTI_SEASON_NODE);
+  });
+
   it("不存在的 path 返回 null，页面据此显示明确错误而不是白屏", () => {
     expect(findNode(LIBRARY_TREE, "D:\\不存在\\目录")).toBeNull();
   });

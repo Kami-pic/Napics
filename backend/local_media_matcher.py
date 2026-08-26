@@ -66,8 +66,16 @@ class LocalMediaMatcher:
                     "max_height": 0,
                     "max_score": 0,
                     "folder": fn,
+                    # 绝对目录：folder_name 是相对路径（虚拟库时还带库名前缀），
+                    # 前端要用它跳转到媒体库目录树，而树节点的 path 是绝对路径。
+                    # 给相对路径的话前端一定匹配不上，只能报"目录不在媒体库里"。
+                    "abs_folder": "",
                 }
             info = folders[fn]
+            if not info["abs_folder"]:
+                fp = v.get("file_path", "")
+                if fp:
+                    info["abs_folder"] = os.path.dirname(fp)
             cn = v.get("clean_name", "").strip()
             if cn:
                 info["clean_names"].add(cn)
@@ -105,7 +113,8 @@ class LocalMediaMatcher:
             else:
                 quality = "low"
             entry = {
-                "folder": fn,
+                # 对外给绝对目录，拿不到时才退回相对（旧条目可能没有 file_path）
+                "folder": info.get("abs_folder") or fn,
                 "max_height": info["max_height"],
                 "quality": quality,
                 "quality_score": max_score,

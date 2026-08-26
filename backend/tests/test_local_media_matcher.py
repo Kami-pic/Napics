@@ -118,6 +118,31 @@ def test_match_batch(matcher):
     print("✅ test_match_batch 通过")
 
 
+def test_local_folder_is_absolute(matcher):
+    """local_folder 必须是绝对目录。
+
+    前端（桌面「查看本地」、移动端发现详情的「查看本地」）拿这个值去媒体库目录树里
+    找节点，而树节点的 path 是绝对路径。返回 folder_name 原值（相对目录，虚拟库时
+    还带库名前缀）会让两端一律报"这个目录不在媒体库里"。
+    """
+    status, folder = matcher.match({"tmdb_id": 535167, "title": "流浪地球", "year": "2019"})
+    assert status == "owned_high"
+    assert folder == "\\\\NAS\\电影\\流浪地球"
+    # 对照：不能是 folder_name 那种相对路径
+    assert not folder.startswith("电影\\")
+
+
+def test_match_batch_injects_absolute_folder(matcher):
+    """批量注入的 local_folder 同样是绝对目录，且未命中时为空串。"""
+    items = [
+        {"tmdb_id": 535167, "title": "流浪地球", "year": "2019"},
+        {"title": "完全不存在的电影", "year": "2025"},
+    ]
+    matcher.match_batch(items)
+    assert items[0]["local_folder"] == "\\\\NAS\\电影\\流浪地球"
+    assert items[1]["local_folder"] == ""
+
+
 def test_id_cache():
     """测试 ID 映射缓存"""
     matcher = LocalMediaMatcher()

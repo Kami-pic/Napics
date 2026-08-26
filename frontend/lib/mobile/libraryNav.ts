@@ -52,6 +52,16 @@ export function videoDisplayName(video: VideoInfo): string {
   return video.clean_name || video.file_name || "";
 }
 
+/** 路径比较用的归一化：统一分隔符、去末尾分隔符、忽略大小写。
+ *  Windows 与 SMB 都是大小写不敏感的，而路径可能来自不同来源
+ *  （树节点 / 下载任务的 save_path / 发现条目的 local_folder），
+ *  写法不一致时严格相等会误判成"不在媒体库里"。 */
+function samePath(a: string, b: string): boolean {
+  if (a === b) return true;
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  return norm(a) === norm(b);
+}
+
 /** 按 path 在树里找节点。根节点 path 是空串，所以空 path 直接返回根 */
 export function findNode(root: FolderNode | null, targetPath: string): FolderNode | null {
   if (!root) return null;
@@ -59,7 +69,7 @@ export function findNode(root: FolderNode | null, targetPath: string): FolderNod
   const stack: FolderNode[] = [root];
   while (stack.length) {
     const current = stack.pop()!;
-    if (current.path === targetPath) return current;
+    if (samePath(current.path, targetPath)) return current;
     for (const child of current.children || []) stack.push(child);
   }
   return null;
@@ -111,7 +121,7 @@ export function findVideoByPath(root: FolderNode | null, filePath: string): Vide
   while (stack.length) {
     const current = stack.pop()!;
     for (const video of current.videos || []) {
-      if (video.file_path === filePath) return video;
+      if (samePath(video.file_path, filePath)) return video;
     }
     for (const child of current.children || []) stack.push(child);
   }
