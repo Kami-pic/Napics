@@ -1,6 +1,6 @@
 // 锁定移动端搜索页：URL 是唯一触发源、BT 与网盘两套独立交互、
 // 提交下载走 qb 且不选通道、网盘复制必须带提取码。
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import MobileSearchClient from "@/components/mobile/MobileSearchClient";
@@ -130,7 +130,8 @@ describe("搜索触发方式", () => {
     expect(mockEventSourceInstances.length).toBe(0);
 
     fireEvent.change(screen.getByLabelText("搜索词"), { target: { value: "教父" } });
-    fireEvent.click(screen.getByRole("button", { name: "搜索" }));
+    // 底栏也有一个叫「搜索」的 Tab，所以限定在内容区里找提交按钮
+    fireEvent.click(within(screen.getByRole("main")).getByRole("button", { name: "搜索" }));
 
     expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("q=%E6%95%99%E7%88%B6"));
     // URL 还没真正变（测试里 router 是 mock），所以不该有新的搜索发起
@@ -139,7 +140,7 @@ describe("搜索触发方式", () => {
 
   it("空搜索词不提交", async () => {
     renderSearch(makeQuery({ q: "" }));
-    expect(screen.getByRole("button", { name: "搜索" })).toBeDisabled();
+    expect(within(screen.getByRole("main")).getByRole("button", { name: "搜索" })).toBeDisabled();
   });
 
   it("切换到网盘 Tab 会改 URL 并发起网盘搜索", async () => {

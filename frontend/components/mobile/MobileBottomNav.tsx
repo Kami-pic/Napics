@@ -7,6 +7,7 @@ import {
   activeNavKey,
   type MobileNavKey,
 } from "@/lib/mobile/mobileRouteUtils";
+import { useMobilePlugins } from "./MobileProviders";
 
 /** 每个 Tab 的图标。单独放这里，避免路由常量文件被迫依赖 JSX */
 const NAV_ICONS: Record<MobileNavKey, string> = {
@@ -19,7 +20,16 @@ const NAV_ICONS: Record<MobileNavKey, string> = {
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { hasDiscover, ready } = useMobilePlugins();
   const active = activeNavKey(pathname);
+
+  // 「发现」和「搜索」都依赖 feature-discover（前者是榜单，后者是豆瓣片名搜索）。
+  // 没装就不显示这两个 Tab —— 留着它们只能进去看一句"不可用"，白占两格。
+  // 插件状态还没查完时按"有"渲染：闪一下再消失比闪一下再出现好看。
+  const items = MOBILE_NAV_ITEMS.filter(item => {
+    if (item.key !== "discover" && item.key !== "search") return true;
+    return !ready || hasDiscover;
+  });
 
   return (
     <nav
@@ -31,7 +41,7 @@ export default function MobileBottomNav() {
       }}
       aria-label="主导航"
     >
-      {MOBILE_NAV_ITEMS.map(item => {
+      {items.map(item => {
         const isActive = active === item.key;
         return (
           <button

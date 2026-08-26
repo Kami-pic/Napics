@@ -27,6 +27,11 @@ const { mockApi } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api", () => ({ api: mockApi }));
 
+// MobileShell 会渲染底栏，底栏要读插件可用性
+vi.mock("@/components/mobile/MobileProviders", () => ({
+  useMobilePlugins: () => ({ hasDiscover: true, ready: true }),
+}));
+
 const MOVIE_VIDEO = MOVIE_NODE.videos[0];
 const EPISODE = TV_MULTI_SEASON_NODE.children[1].videos[2];   // 三体 S01E01.mkv
 

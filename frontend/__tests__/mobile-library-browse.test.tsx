@@ -39,6 +39,11 @@ const { mockApi } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api", () => ({ api: mockApi }));
 
+// MobileShell 会渲染底栏，底栏要读插件可用性
+vi.mock("@/components/mobile/MobileProviders", () => ({
+  useMobilePlugins: () => ({ hasDiscover: true, ready: true }),
+}));
+
 beforeEach(() => {
   mockRouter.push.mockReset();
   mockRouter.replace.mockReset();

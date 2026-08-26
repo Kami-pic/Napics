@@ -6,12 +6,14 @@
 // 页面只负责把 URL 参数规范化后交给这里，业务逻辑在 useMobileSearch。
 "use client";
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import type { EnhancedSearchResult, PanResult } from "@/types";
 import { useMobileSearch } from "@/hooks/mobile/useMobileSearch";
 import { useMobileConfig } from "./MobileProviders";
 import { copyText } from "@/lib/mobile/clipboard";
 import type { MobileSearchQuery } from "@/lib/mobile/mobileRouteUtils";
+import MobileShell from "./MobileShell";
 import MobileSearchHeader from "./MobileSearchHeader";
 import MobileKeywordChain from "./MobileKeywordChain";
 import MobileBtResults from "./MobileBtResults";
@@ -25,9 +27,15 @@ export interface MobileSearchClientProps {
 }
 
 export default function MobileSearchClient({ query }: MobileSearchClientProps) {
+  const router = useRouter();
   const { search, draft, setDraft, submit, retry, switchTab, tab } = useMobileSearch(query);
   const { defaultSavePath } = useMobileConfig();
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  // 这一页一定是从别处 push 进来的（媒体库详情 / 发现详情 / 片名搜索），
+  // 所以 back() 就是用户想要的"回上一页"。直达进来时底栏还在，不会成死屏 ——
+  // 播放页那条"必须自带 fallback"的规则是因为它把底栏藏了。
+  const onBack = useCallback(() => { router.back(); }, [router]);
 
   const btSources = useMemo<MobileSourceStatusItem[]>(
     () => Object.entries(search.sourceStatuses).map(([name, status]) => ({
@@ -77,7 +85,7 @@ export default function MobileSearchClient({ query }: MobileSearchClientProps) {
   const searchToast = search.toast;
 
   return (
-    <div className="flex flex-col">
+    <MobileShell title="搜索资源" subtitle={query.q || undefined} onBack={onBack}>
       <MobileSearchHeader
         draft={draft}
         onDraftChange={setDraft}
@@ -129,6 +137,6 @@ export default function MobileSearchClient({ query }: MobileSearchClientProps) {
         ok={toast?.ok ?? searchToast?.ok ?? true}
         onDismiss={() => { setToast(null); search.setToast(null); }}
       />
-    </div>
+    </MobileShell>
   );
 }

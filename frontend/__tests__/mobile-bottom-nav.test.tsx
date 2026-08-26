@@ -15,10 +15,18 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockPath.value,
 }));
 
+const { mockPlugins } = vi.hoisted(() => ({
+  mockPlugins: { value: { hasDiscover: true, ready: true } as Record<string, unknown> },
+}));
+vi.mock("@/components/mobile/MobileProviders", () => ({
+  useMobilePlugins: () => mockPlugins.value,
+}));
+
 beforeEach(() => {
   mockRouter.push.mockReset();
   mockRouter.replace.mockReset();
   mockPath.value = "/m/library";
+  mockPlugins.value = { hasDiscover: true, ready: true };
 });
 
 describe("底部导航", () => {
@@ -73,5 +81,25 @@ describe("底部导航", () => {
     mockPath.value = "/m/resource";
     render(<MobileBottomNav />);
     expect(screen.getByRole("button", { name: "搜索" }).getAttribute("aria-current")).toBe("page");
+  });
+});
+
+describe("按插件可用性裁剪 Tab", () => {
+  it("没装 feature-discover 时「发现」和「搜索」都不出现", () => {
+    // 两个都依赖它：发现是榜单，搜索是豆瓣片名搜索。
+    // 留着只能进去看一句"不可用"，白占两格
+    mockPlugins.value = { hasDiscover: false, ready: true };
+    render(<MobileBottomNav />);
+
+    expect(screen.queryByRole("button", { name: "发现" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "搜索" })).toBeNull();
+    expect(screen.getByRole("button", { name: "媒体库" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "下载" })).toBeTruthy();
+  });
+
+  it("插件状态还没查完时先按「有」渲染，避免闪现", () => {
+    mockPlugins.value = { hasDiscover: false, ready: false };
+    render(<MobileBottomNav />);
+    expect(screen.getByRole("button", { name: "发现" })).toBeTruthy();
   });
 });
