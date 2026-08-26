@@ -28,14 +28,12 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
     if (!newName.trim() || newName.trim() === fileName) { setEditing(false); return; }
     setSaving(true);
     try {
-      if (isFolder) {
-        // 文件夹重命名：path 的最后一段替换为新名字
-        const parentDir = path.substring(0, path.lastIndexOf("\\")) || path.substring(0, path.lastIndexOf("/"));
-        const newPath = parentDir + "\\" + newName.trim();
-        await api.rename(path, newPath);
-      } else {
-        await api.rename(path, newName.trim());
-      }
+      // 文件和文件夹都只传新名字。这里以前给文件夹拼的是整条新路径
+      // （parentDir + "\\" + newName），而后端把 new_name 当文件名用了好几处 ——
+      // 最坑的是算新视频路径时 os.path.join(目录, 绝对路径) 直接返回后者，
+      // 视频被搬出封装夹落到合集目录里。硬拼的反斜杠在 Linux 部署下还会造出
+      // 名字里含 `\` 的目录。后端现在也会对 new_name 取 basename 兜底。
+      await api.rename(path, newName.trim());
       setEditing(false);
       onRefresh?.();
     } catch (e: any) { alert("重命名失败: " + (e?.message || "")); }

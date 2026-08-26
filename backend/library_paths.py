@@ -64,11 +64,11 @@ def scan_bases(config=None) -> List[Tuple[str, str]]:
         seen.add(key)
         bases.append((path, name))
 
-    for path in (config.scan_paths or []):
+    for path in (getattr(config, "scan_paths", None) or []):
         _add(path, "")
-    for lib in (config.media_libraries or []):
-        for path in (lib.paths or []):
-            _add(path, lib.name)
+    for lib in (getattr(config, "media_libraries", None) or []):
+        for path in (getattr(lib, "paths", None) or []):
+            _add(path, getattr(lib, "name", "") or "")
     return bases
 
 
