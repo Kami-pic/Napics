@@ -1,9 +1,11 @@
 // 卡片上显示什么：标题、副信息、徽标、标签、封面取址。
 //
 // **口径对齐桌面 `components/media/CardGrid.tsx`**（同一批数据两端读出来的数字必须一样）：
-// - 叶子目录左上角是 `N 集`，series / collection 是 `N 部`，虚拟库是分类标签；
-// - 右上角是「低画质」与 HDR 类型；
-// - movie 目录与视频的副信息是 `分辨率 · 大小`，容器目录是 `N 个项目`。
+// - 左上角：叶子目录 `N 集`、series / collection `N 部`、tv `N 季 · N 集`、
+//   虚拟库与顶级分类目录是分类标签；
+// - 右上角：低画质、HDR 类型；
+// - 底部副信息：movie 目录与视频是 `分辨率 · 大小`，容器目录是 `N 个项目`；
+// - 视频还有两个状态标记：未整理（灰点）、识别失败（⚠）。
 //
 // 这里只做纯计算，不碰 DOM，也不决定点击去向（那在 libraryNav）。
 import type { FolderNode, VideoInfo } from "@/types";
@@ -16,7 +18,8 @@ export type MobileCardBadgeTone = "episodes" | "series" | "collection" | "librar
 
 export interface MobileCardTag {
   text: string;
-  tone: "warning" | "hdr";
+  /** warning=低画质、hdr=HDR 类型、muted=未整理、danger=识别失败 */
+  tone: "warning" | "hdr" | "muted" | "danger";
 }
 
 export interface MobileCardMeta {
@@ -25,18 +28,27 @@ export interface MobileCardMeta {
   subtitle: string;
   /** 取本地封面用的路径 */
   posterPath: string;
-  /** 聚合容器要用子项封面（后端 `?cover=true`），刮削单元用自己的 poster.jpg */
+  /**
+   * 聚合容器要传 `?cover=true`。后端在这个模式下找的是容器自己的 `cover.jpg`，
+   * **不会**回退到子项封面 —— 所以聚合容器没有 cover.jpg 时就是占位图。
+   */
   cover: boolean;
   badge?: { text: string; tone: MobileCardBadgeTone };
   tags: MobileCardTag[];
 }
 
-/** 视频的质量标签，目录卡与视频卡共用 */
-function videoTags(video: VideoInfo | undefined): MobileCardTag[] {
+/** 视频的质量与状态标签，目录卡与视频卡共用。顺序与桌面一致（质量在前） */
+function videoTags(video: VideoInfo | undefined, withStatus = false): MobileCardTag[] {
   if (!video) return [];
   const tags: MobileCardTag[] = [];
   if (video.is_low_res) tags.push({ text: "低画质", tone: "warning" });
   if (video.hdr_type && video.hdr_type !== "SDR") tags.push({ text: video.hdr_type, tone: "hdr" });
+  if (withStatus) {
+    // 桌面在视频卡标题前放一个灰点表示"未整理"、⚠ 表示"识别失败"。
+    // 这两条是整库最有用的筛查信息，移动端不能丢。
+    if (!video.shadow_name && !video.organize_status) tags.push({ text: "未整理", tone: "muted" });
+    if (video.organize_status === "scrape_failed") tags.push({ text: "识别失败", tone: "danger" });
+  }
   return tags;
 }
 
@@ -52,7 +64,7 @@ export function videoCardMeta(video: VideoInfo): MobileCardMeta {
     subtitle: specLine(video),
     posterPath: video.file_path,
     cover: false,
-    tags: videoTags(video),
+    tags: videoTags(video, true),
   };
 }
 
@@ -107,27 +119,35 @@ export function folderCardMeta(node: FolderNode): MobileCardMeta {
     const count = children.length || node.video_count;
     return {
       ...base,
-      subtitle: `${node.video_count} 个视频`,
+      subtitle: `${node.video_count} 个项目`,
       cover: true,
       badge: { text: `${count} 部`, tone: type === "series" ? "series" : "collection" },
     };
   }
 
   if (type === "tv") {
-    const seasons = children.filter(c => (c.video_count || 0) > 0).length;
+    // 集数只累加季目录，和桌面 `item.seasons.reduce(...)` 一致。
+    // 不能用 node.video_count —— 它是**递归总数**，把剧场版/SP 也算进去，
+    // 于是两端同一部剧显示的集数会差几集。
+    const seasons = children.filter(c => (c.video_count || 0) > 0);
+    const episodes = seasons.reduce((sum, c) => sum + (c.video_count || 0), 0);
     return {
       ...base,
       subtitle: "",
       cover: false,
       badge: {
-        text: seasons > 1 ? `${seasons} 季 · ${node.video_count} 集` : `${node.video_count} 集`,
+        // 扁平剧（没有季目录）按桌面的口径算作一季
+        text: seasons.length > 1
+          ? `${seasons.length} 季 · ${episodes} 集`
+          : `${episodes || node.video_count} 集`,
         tone: "episodes",
       },
     };
   }
 
-  // 叶子目录（没有子目录但有视频）：徽标给集数，和桌面的 `N 集` 一致
-  if (children.length === 0 && videos.length > 0) {
+  // 叶子目录（没有子目录但有视频）：徽标给集数。
+  // `is_category` 例外与桌面一致 —— 一堆互不相关电影的分类目录标「N 集」是错的
+  if (children.length === 0 && videos.length > 0 && !node.is_category) {
     return {
       ...base,
       subtitle: "",
@@ -136,10 +156,15 @@ export function folderCardMeta(node: FolderNode): MobileCardMeta {
     };
   }
 
-  // 其余容器目录（mixed / 无类型的分类目录）
+  // 其余容器目录（mixed / 分类目录）。
+  //
+  // 桌面对 `category_tag` 非空的目录会额外渲染一个可点的分类徽标（点了能改分类）。
+  // 移动端**刻意不加**：这类目录的名字往往就是分类名本身（顶级「电影」目录的
+  // category_tag 就是 movie → 徽标写「电影」），标题旁边再挂一个同样的词，
+  // 在 ~104px 宽的卡片上纯属浪费；而移动端也不提供改分类的操作，徽标点不动。
   return {
     ...base,
-    subtitle: `${node.video_count} 个视频`,
+    subtitle: `${node.video_count} 个项目`,
     cover: true,
   };
 }

@@ -16,6 +16,7 @@ import {
   videoDisplayName,
   episodeSeasonNumber,
   episodeNumber,
+  pathFileName,
 } from "@/lib/mobile/libraryNav";
 import { playUrl, resourceSearchUrl, libraryUrl } from "@/lib/mobile/mobileRouteUtils";
 import { useScrape } from "@/components/detail/useScrape";
@@ -60,9 +61,15 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
     try {
       const res = await api.executeScrape(video.file_path);
       const data = res.self?.data || res.data;
+      const confidence = res.self?.confidence || res.confidence;
       if (data?.tmdb_id || data?.title) {
         await reloadScrape();
-        setToast({ msg: "刮削完成", ok: true });
+        // 桌面对 low / medium 会要求用户确认后才算数，移动端没有重新匹配入口，
+        // 至少要说清楚"这个结果可能不对"，否则用户以为刮削成功了
+        const shaky = confidence?.level === "low" || confidence?.level === "medium";
+        setToast(shaky
+          ? { msg: `刮削完成，但匹配置信度${confidence?.level === "low" ? "很低" : "一般"}，建议在桌面端核对`, ok: false }
+          : { msg: "刮削完成", ok: true });
       } else {
         setToast({ msg: "没有匹配到结果，需要在桌面端手动重新匹配", ok: false });
       }
@@ -78,7 +85,11 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
   }, [router, path]);
 
   const openSearch = useCallback(() => {
-    if (!video) return;
+    // 树还没到位时用文件名兜底：清洗名要等树，但"能搜"比"搜得准"更要紧
+    if (!video) {
+      router.push(resourceSearchUrl({ q: pathFileName(path), tab: "bt" }));
+      return;
+    }
     router.push(resourceSearchUrl({
       q: video.clean_name_cn || video.clean_name || video.file_name,
       tab: "bt",
@@ -89,7 +100,7 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
       season: episodeSeasonNumber(video.file_name) ?? undefined,
       resolution: video.resolution,
     }));
-  }, [router, video, scrape]);
+  }, [router, video, scrape, path]);
 
   // 返回上一级：视频所在目录。直达进来时历史栈里没有列表页
   const parentDir = path.replace(/[\\/][^\\/]+$/, "");
@@ -97,25 +108,28 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
     router.push(libraryUrl(parentDir));
   }, [router, parentDir]);
 
+  // **不整页等整树**：`/library/tree` 实测 2.43 MiB 未压缩，等它到了再渲染就是
+  // "点进去先白屏几秒"。文件名从 path 就能取，播放按钮也只需要 path ——
+  // 这两样第一帧就能给。树到位之后再补规格、刮削和搜索上下文。
+  const fallbackName = pathFileName(path);
   let state: "loading" | "error" | "ready" = "ready";
   let errorText = "";
   if (!path) {
     state = "error";
     errorText = "缺少视频路径，无法打开详情";
-  } else if (!ready) {
-    state = "loading";
-  } else if (loadFailed) {
+  } else if (ready && loadFailed) {
     state = "error";
     errorText = "媒体库加载失败，检查后端是否在运行";
-  } else if (!video) {
+  } else if (ready && !video) {
     state = "error";
     errorText = "这个视频不在媒体库里，可能已被移动或删除。同步一次再试";
   }
 
-  const title = video ? videoDisplayName(video) : "详情";
-  // 从"季 → 集"点进来后，标题往往只剩剧名，用户看不出这是第几集
-  const seasonNo = video ? episodeSeasonNumber(video.file_name) : null;
-  const episodeNo = video ? episodeNumber(video.file_name) : null;
+  const title = video ? videoDisplayName(video) : fallbackName || "详情";
+  // 从"季 → 集"点进来后，标题往往只剩剧名，用户看不出这是第几集。
+  // 树没到位时用文件名解析，结果一样
+  const seasonNo = episodeSeasonNumber(video?.file_name || fallbackName);
+  const episodeNo = episodeNumber(video?.file_name || fallbackName);
   const episodeLabel = seasonNo !== null && episodeNo !== null
     ? `S${String(seasonNo).padStart(2, "0")}E${String(episodeNo).padStart(2, "0")}`
     : "";
@@ -146,11 +160,11 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
         errorText={errorText}
         errorAction={errorAction}
       >
-        {video && (
+        {path && state === "ready" && (
           <div className="flex flex-col gap-4 pt-3">
             <div className="flex gap-3">
               <MobilePoster
-                localPath={video.file_path}
+                localPath={path}
                 remoteUrl={scrape?.poster_url}
                 fallbackText={title}
               />
@@ -168,13 +182,37 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
                 {scrapeReading && (
                   <p className="mt-2 text-[12px] text-[var(--m-text-dim)]">正在读取刮削信息…</p>
                 )}
-                {/* 没有刮削信息时给占位说明 + 一键刮削；有刮削则什么操作都不提供 */}
-                {!scrapeReading && !scrape && (
+                {/* 读取失败 ≠ 没有刮削。
+                    `/scrape/execute` 是 force=True，而且传文件路径时若同目录只有一个视频
+                    还会升级成整个目录刮削（覆盖目录级 NFO 与 poster.jpg）。
+                    所以后端不可达/超时的时候**绝不能**给刮削按钮 —— 那台机器上可能本来
+                    有一份好好的刮削结果，只是这次读不到。只给"重试读取"。 */}
+                {!scrapeReading && !scrape && scrapeFailed && (
                   <div className="mt-2 flex flex-col items-start gap-2">
                     <p className="text-[12px] text-[var(--m-text-dim)]">
-                      {scrapeFailed
-                        ? "刮削信息读取失败，可下拉重进或在桌面端检查"
-                        : "还没有刮削信息（简介、海报、评分都来自刮削）"}
+                      刮削信息读取失败，可能是后端不可达或路径暂时读不到。
+                      这时不提供刮削，避免覆盖掉本来就有的结果。
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { void reloadScrape(); }}
+                      className="rounded-[var(--m-radius-sm)] px-3 text-[13px] text-[var(--m-text)]"
+                      style={{
+                        minHeight: "var(--m-touch-min)",
+                        background: "var(--m-surface-raised)",
+                        border: "1px solid var(--m-border)",
+                      }}
+                    >
+                      重试读取
+                    </button>
+                  </div>
+                )}
+
+                {/* 确认过"这个条目没有刮削"才给一键刮削。有刮削则什么操作都不提供 */}
+                {!scrapeReading && !scrape && !scrapeFailed && (
+                  <div className="mt-2 flex flex-col items-start gap-2">
+                    <p className="text-[12px] text-[var(--m-text-dim)]">
+                      还没有刮削信息（简介、海报、评分都来自刮削）
                     </p>
                     <button
                       type="button"
@@ -228,7 +266,14 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
               <p className="text-[13px] leading-relaxed text-[var(--m-text-muted)]">{scrape.overview}</p>
             )}
 
-            <MobileMediaInfoList video={video} />
+            {/* 规格信息要等整树（分辨率、大小、时长都在树上的 video 对象里） */}
+            {video ? (
+              <MobileMediaInfoList video={video} />
+            ) : (
+              <p className="text-[12px] text-[var(--m-text-dim)]" role="status">
+                正在读取媒体库，规格信息稍后显示…
+              </p>
+            )}
           </div>
         )}
       </MobileStateView>

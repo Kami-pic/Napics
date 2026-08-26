@@ -22,6 +22,8 @@ const BADGE_TONE: Record<MobileCardBadgeTone, string> = {
 const TAG_TONE: Record<MobileCardTag["tone"], string> = {
   warning: "var(--m-warning)",
   hdr: "var(--m-violet)",
+  muted: "var(--m-text-dim)",
+  danger: "var(--m-danger)",
 };
 
 export interface MobileMediaCardProps {
@@ -37,10 +39,11 @@ const MobileMediaCard = memo(function MobileMediaCard({ meta, onOpen, onPlay }: 
 
   return (
     <div className="relative">
+      {/* 不设 aria-label：它会覆盖子元素文本，把徽标（S01 · 12 集）、
+          分辨率 · 大小、低画质/HDR 全部从可访问名里吞掉。让内部文本自然拼成名字。 */}
       <button
         type="button"
         onClick={onOpen}
-        aria-label={meta.title}
         className="block w-full overflow-hidden rounded-[var(--m-radius)] text-left active:opacity-80"
         style={{ background: "var(--m-surface)", border: "1px solid var(--m-border)" }}
       >
@@ -103,26 +106,33 @@ const MobileMediaCard = memo(function MobileMediaCard({ meta, onOpen, onPlay }: 
         </span>
       </button>
 
-      {/* 播放键浮在海报右下角。卡片本体进详情，这里直接开播 —— 和原来列表行尾一个语义 */}
+      {/* 播放键浮在海报右下角。卡片本体进详情，这里直接开播 —— 和原来列表行尾一个语义。
+          它不能放进卡片那个 <button> 里（嵌套按钮非法），所以用一个与海报同比例的
+          定位层来对齐：inset-x-0 + top-0 + aspect-ratio 2/3 得到的高度就是海报高度，
+          于是按钮位置与标题占几行完全无关（早先用 `bottom: calc(100% - 66%)` 是相对
+          整张卡算的，标题从两行变一行按钮就会漂移）。 */}
       {onPlay && (
-        <button
-          type="button"
-          onClick={onPlay}
-          aria-label={`播放 ${meta.title}`}
-          className="absolute right-1 flex items-center justify-center rounded-[var(--m-radius-pill)] text-[var(--m-text)] active:bg-[var(--m-accent)]"
-          style={{
-            // 贴在海报下沿之上，不压住标题
-            bottom: "calc(100% - 66%)",
-            minWidth: "36px",
-            minHeight: "36px",
-            background: "var(--m-overlay)",
-            border: "1px solid var(--m-border-strong)",
-          }}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0"
+          style={{ aspectRatio: "2 / 3" }}
         >
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </button>
+          <button
+            type="button"
+            onClick={onPlay}
+            aria-label={`播放 ${meta.title}`}
+            className="pointer-events-auto absolute bottom-1 right-1 flex items-center justify-center rounded-[var(--m-radius-pill)] text-[var(--m-text)] active:bg-[var(--m-accent)]"
+            style={{
+              minWidth: "var(--m-touch-min)",
+              minHeight: "var(--m-touch-min)",
+              background: "var(--m-overlay)",
+              border: "1px solid var(--m-border-strong)",
+            }}
+          >
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   );

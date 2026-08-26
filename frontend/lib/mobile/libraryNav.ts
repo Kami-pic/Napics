@@ -121,6 +121,18 @@ export function findEpisodeNeighbors(root: FolderNode | null, filePath: string):
   return empty;
 }
 
+/**
+ * 从路径里取文件名（最后一段）。
+ *
+ * 详情页在整树到位之前就要显示标题 —— 整树是 2.43 MiB（实测），
+ * 等它到了再渲染就是"点进去先白屏几秒"。路径本身已经够拼出一个可读标题。
+ */
+export function pathFileName(path: string): string {
+  if (!path) return "";
+  const cut = Math.max(path.lastIndexOf("\\"), path.lastIndexOf("/"));
+  return cut >= 0 ? path.slice(cut + 1) : path;
+}
+
 /** 按 file_path 找视频条目。详情页与播放页只拿到路径，元信息要从树里取 */
 export function findVideoByPath(root: FolderNode | null, filePath: string): VideoInfo | null {
   if (!root || !filePath) return null;

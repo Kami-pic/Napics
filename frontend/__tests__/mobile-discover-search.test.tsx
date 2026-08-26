@@ -78,14 +78,42 @@ describe("底栏搜索 = 豆瓣搜索", () => {
     expect(mockApi.doubanSearch).not.toHaveBeenCalled();
   });
 
-  it("提交只改 URL（replace），由 URL 驱动搜索", async () => {
+  it("换词提交只改 URL（replace），由 URL 驱动搜索", async () => {
     await mount("");
     fireEvent.change(screen.getByLabelText("片名"), { target: { value: " 沙丘 " } });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "搜索" })); });
 
     expect(mockRouter.replace).toHaveBeenCalledWith(discoverSearchUrl("沙丘"));
-    // 提交本身不发请求（URL 变了之后由 effect 发），避免双搜
+    // 换词时提交本身不发请求（URL 变了之后由 effect 发），避免双搜
     expect(mockApi.doubanSearch).not.toHaveBeenCalled();
+  });
+
+  it("同词再点搜索会真的重搜（URL 不变，effect 不会触发）", async () => {
+    await mount("沙丘");
+    await waitFor(() => expect(mockApi.doubanSearch).toHaveBeenCalledTimes(1));
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "搜索" })); });
+    expect(mockApi.doubanSearch).toHaveBeenCalledTimes(2);
+    // 结果还在，不是被清空后停在空态
+    expect(screen.getByText("沙丘：预言")).toBeTruthy();
+  });
+
+  it("重试按钮真的重发请求，不是只改 URL", async () => {
+    mockApi.doubanSearch.mockRejectedValueOnce(new Error("boom"));
+    await mount("沙丘");
+    await waitFor(() => expect(screen.getByText(/搜索失败/)).toBeTruthy());
+
+    mockApi.doubanSearch.mockResolvedValue(CANDIDATES);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "重试" })); });
+    await waitFor(() => expect(screen.getByText("沙丘：预言")).toBeTruthy());
+    expect(mockApi.doubanSearch).toHaveBeenCalledTimes(2);
+  });
+
+  it("没装发现插件时也给资源搜索出口（不必先输词）", async () => {
+    mockPlugins.value = { hasDiscover: false, ready: true };
+    await mount("");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "直接搜资源" })); });
+    expect(mockRouter.push).toHaveBeenCalledWith(MOBILE_ROUTES.resource);
   });
 
   it("URL 带词就搜，结果渲染成发现卡片并带本地状态", async () => {

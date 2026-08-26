@@ -115,6 +115,36 @@ describe("异常态", () => {
   });
 });
 
+describe("不等整树", () => {
+  it("树还在路上时标题、播放、搜索资源就已经可用", async () => {
+    // /library/tree 实测 2.43 MiB，整页等它就是"点进去先白屏几秒"
+    let resolveTree: (v: unknown) => void = () => {};
+    mockApi.getLibraryTree.mockReturnValue(new Promise(r => { resolveTree = r; }));
+    render(
+      <MobileLibraryTreeProvider>
+        <MobileLibraryDetailClient path={MOVIE_VIDEO.file_path} />
+      </MobileLibraryTreeProvider>,
+    );
+    await act(async () => { await Promise.resolve(); });
+
+    // 标题来自路径最后一段
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toContain(MOVIE_VIDEO.file_name);
+    fireEvent.click(screen.getByRole("button", { name: /播放/ }));
+    expect(mockRouter.push).toHaveBeenCalledWith(playUrl(MOVIE_VIDEO.file_path));
+    // 规格信息说明它还在等，而不是假装没有
+    expect(screen.getByText(/规格信息稍后显示/)).toBeTruthy();
+
+    await act(async () => { resolveTree(LIBRARY_TREE); });
+    await waitFor(() => expect(screen.getByText("2160p")).toBeTruthy());
+  });
+
+  it("树加载失败仍走错误态（和「还在加载」区分开）", async () => {
+    mockApi.getLibraryTree.mockRejectedValue(new Error("boom"));
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText(/媒体库加载失败/)).toBeTruthy());
+  });
+});
+
 describe("季集定位", () => {
   it("剧集详情显示 SxxExx，页头和正文标题不重复", async () => {
     mockApi.readScrape.mockResolvedValue({
@@ -259,6 +289,35 @@ describe("刮削区", () => {
 
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "一键刮削" })); });
     await waitFor(() => expect(screen.getByText(/没有匹配到结果/)).toBeTruthy());
+  });
+
+  it("刮削读取失败时不给刮削按钮，只给重试读取", async () => {
+    // /scrape/execute 是 force=True，单视频目录还会连整个目录一起刮。
+    // 后端不可达时那台机器上可能本来有好好的刮削结果，只是这次读不到 ——
+    // 这时候给刮削按钮就是给了一条覆盖路径。
+    mockApi.readScrape.mockRejectedValue(new Error("boom"));
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText(/刮削信息读取失败/)).toBeTruthy());
+
+    expect(screen.queryByRole("button", { name: "一键刮削" })).toBeNull();
+    const retry = screen.getByRole("button", { name: "重试读取" });
+    mockApi.readScrape.mockResolvedValue(SCRAPE_OK);
+    await act(async () => { fireEvent.click(retry); });
+    await waitFor(() => expect(screen.getByText("2008")).toBeTruthy());
+    expect(mockApi.executeScrape).not.toHaveBeenCalled();
+  });
+
+  it("低置信匹配要说清楚，不能只说「刮削完成」", async () => {
+    mockApi.readScrape.mockResolvedValue({ status: "ok", data: {} });
+    mockApi.executeScrape.mockResolvedValue({
+      data: { tmdb_id: 999, title: "可能不对的片" },
+      confidence: { level: "low" },
+    });
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText(/还没有刮削信息/)).toBeTruthy());
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "一键刮削" })); });
+    await waitFor(() => expect(screen.getByText(/置信度很低/)).toBeTruthy());
   });
 
   it("已有刮削信息时不提供任何覆盖操作", async () => {

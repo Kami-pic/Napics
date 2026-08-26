@@ -11,7 +11,12 @@ import { useRouter } from "next/navigation";
 import type { DoubanHotItem } from "@/types";
 import { api } from "@/lib/api";
 import { normalizeItem } from "@/components/media/discoverUtils";
-import { discoverDetailUrl, discoverSearchUrl, MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
+import {
+  discoverDetailUrl,
+  discoverSearchUrl,
+  resourceSearchUrl,
+  MOBILE_ROUTES,
+} from "@/lib/mobile/mobileRouteUtils";
 import { useMobilePlugins } from "./MobileProviders";
 import MobileStateView, { type MobileViewState } from "./MobileStateView";
 import MobileDiscoverGrid from "./MobileDiscoverGrid";
@@ -30,40 +35,52 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
   const [failed, setFailed] = useState(false);
   // 同一个词不重复搜（Strict Mode 会跑两次 effect），也用于识别"换词了"
   const searchedRef = useRef("");
+  // 代际：换词后迟到的响应一律丢弃
+  const generationRef = useRef(0);
 
   // 输入框跟着 URL 走：从详情返回时框里要还留着上次搜的词
   useEffect(() => { setDraft(q); }, [q]);
 
+  /** 真正发请求。**同词重搜和重试必须直接调它** ——
+   *  只 router.replace 到同一个 URL 时 q prop 不变，effect 依赖不变，
+   *  结果是清空了结果却不再请求，用户看到空态。 */
+  const runSearch = useCallback(async (keyword: string) => {
+    if (!keyword) return;
+    searchedRef.current = keyword;
+    const generation = ++generationRef.current;
+    setSearching(true);
+    setFailed(false);
+    try {
+      const data = await api.doubanSearch(keyword);
+      if (generationRef.current !== generation) return;
+      const raw = (data.candidates || data.items || []) as unknown[];
+      setItems(raw.map(normalizeItem));
+    } catch {
+      if (generationRef.current !== generation) return;
+      setFailed(true);
+      setItems([]);
+    } finally {
+      if (generationRef.current === generation) setSearching(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!q || !pluginsReady || !hasDiscover) return;
     if (searchedRef.current === q) return;
-    searchedRef.current = q;
-
-    let alive = true;
-    setSearching(true);
-    setFailed(false);
-    api.doubanSearch(q)
-      .then(data => {
-        if (!alive) return;
-        const raw = (data.candidates || data.items || []) as unknown[];
-        setItems(raw.map(normalizeItem));
-      })
-      .catch(() => { if (alive) { setFailed(true); setItems([]); } })
-      .finally(() => { if (alive) setSearching(false); });
-    return () => { alive = false; };
-  }, [q, pluginsReady, hasDiscover]);
+    void runSearch(q);
+  }, [q, pluginsReady, hasDiscover, runSearch]);
 
   const onSubmit = useCallback((event: React.FormEvent) => {
     event.preventDefault();
     const next = draft.trim();
     if (!next) return;
-    // 同词重搜：URL 不变则 effect 不会触发，这里直接重置闸门再走一次
     if (next === q) {
-      searchedRef.current = "";
-      setItems([]);
+      // 同词重搜：URL 不会变，effect 不会重跑，只能直接搜
+      void runSearch(next);
+      return;
     }
     router.replace(discoverSearchUrl(next));
-  }, [draft, q, router]);
+  }, [draft, q, router, runSearch]);
 
   const onOpen = useCallback((item: DoubanHotItem) => {
     router.push(discoverDetailUrl({
@@ -116,9 +133,20 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
       </form>
 
       {!hasDiscover && pluginsReady ? (
+        // 没插件时这一页什么都做不了，出口必须无条件给（不能挂在"先输个词"后面）
         <MobileStateView
           state="empty"
           emptyText="没有安装发现插件（feature-discover），片名搜索不可用"
+          emptyAction={
+            <button
+              type="button"
+              onClick={() => router.push(MOBILE_ROUTES.resource)}
+              className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-text)]"
+              style={{ minHeight: "var(--m-touch-min)", background: "var(--m-surface-raised)" }}
+            >
+              直接搜资源
+            </button>
+          }
         />
       ) : !q ? (
         // 还没搜过：不显示空态错误，说清楚这里搜的是什么
@@ -133,7 +161,7 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
           loadingText="正在搜索…"
           emptyText={`没有找到「${q}」，换个写法试试（中文名 / 原名都行）`}
           errorText="搜索失败，检查后端与网络是否正常"
-          onRetry={() => { searchedRef.current = ""; setFailed(false); router.replace(discoverSearchUrl(q)); }}
+          onRetry={() => { void runSearch(q); }}
         >
           <MobileDiscoverGrid
             items={items}
@@ -153,7 +181,7 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
           要直接搜种子或网盘？
           <button
             type="button"
-            onClick={() => router.push(`${MOBILE_ROUTES.resource}?q=${encodeURIComponent(q)}`)}
+            onClick={() => router.push(resourceSearchUrl({ q, tab: "bt" }))}
             className="ml-1 underline"
             style={{ color: "var(--m-accent)" }}
           >

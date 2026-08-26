@@ -68,7 +68,7 @@ const MobileDiscoverCard = memo(function MobileDiscoverCard({
         )}
         {showRank && (
           <span
-            className="absolute left-1.5 top-1 text-[20px] font-bold leading-none"
+            className="absolute left-1 top-0.5 text-[16px] font-bold leading-none"
             style={{
               color: index < 3 ? "var(--m-warning)" : "var(--m-text-on-media)",
               textShadow: "0 1px 3px var(--m-overlay)",
@@ -78,7 +78,7 @@ const MobileDiscoverCard = memo(function MobileDiscoverCard({
           </span>
         )}
         <span
-          className="absolute right-1.5 top-1.5 rounded-[var(--m-radius-sm)] px-1.5 py-0.5 text-[12px] font-semibold leading-none"
+          className="absolute right-1 top-1 rounded-[var(--m-radius-sm)] px-1 py-0.5 text-[11px] font-semibold leading-none"
           style={{
             background: "var(--m-overlay)",
             // 压在海报上，没有评分时不能用 --m-text-dim（底图亮暗不可控）
@@ -87,22 +87,25 @@ const MobileDiscoverCard = memo(function MobileDiscoverCard({
         >
           {hasRating ? item.rating.toFixed(1) : "—"}
         </span>
+        {/* 本地状态角标压在海报左下角。三列下每格只有 ~104px，
+            放进底部信息行会把片名挤成两三个字 */}
+        {tag && (
+          <span
+            className="absolute bottom-1 left-1 whitespace-nowrap rounded-[var(--m-radius-sm)] px-1 py-0.5 text-[10px] leading-none"
+            style={TONE_STYLE[tag.tone]}
+          >
+            {tag.text}
+          </span>
+        )}
       </span>
 
-      <span className="flex min-w-0 flex-col gap-1 px-2 py-2">
-        <span className="truncate text-[13px] font-medium text-[var(--m-text)]">{item.title}</span>
-        <span className="flex items-center gap-1">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-[var(--m-text-dim)]">
-            {showMediaType && typeLabel ? `${typeLabel} · ${meta || "—"}` : meta || "—"}
-          </span>
-          {tag && (
-            <span
-              className="shrink-0 whitespace-nowrap rounded-[var(--m-radius-sm)] px-1 py-0.5 text-[10px] leading-none"
-              style={TONE_STYLE[tag.tone]}
-            >
-              {tag.text}
-            </span>
-          )}
+      <span className="flex min-w-0 flex-col gap-0.5 px-1.5 pb-1.5 pt-1">
+        {/* 两行：片名常有「第一季」「剧场版」这类后缀，单行截断后几乎认不出 */}
+        <span className="line-clamp-2 text-[12px] font-medium leading-snug text-[var(--m-text)]">
+          {item.title}
+        </span>
+        <span className="truncate text-[10px] text-[var(--m-text-dim)]">
+          {showMediaType && typeLabel ? `${typeLabel} · ${meta || "—"}` : meta || "—"}
         </span>
       </span>
     </button>

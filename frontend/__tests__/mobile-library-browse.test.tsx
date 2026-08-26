@@ -133,7 +133,7 @@ describe("分级浏览与跳转", () => {
     // 季卡片徽标是「季号 · 集数」
     expect(screen.getByText(/^S01 · \d+ 集$/)).toBeTruthy();
     expect(screen.getByText(/^S02 · \d+ 集$/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Season 1" }));
+    fireEvent.click(screen.getByText("Season 1"));
     expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl(TV_MULTI_SEASON_NODE.children[1].path));
   });
 
@@ -147,12 +147,15 @@ describe("分级浏览与跳转", () => {
 
   it("扁平 TV 直接列直属集，顺序是 E1/E2/E10", async () => {
     await mount(TV_FLAT_NODE.path);
-    // 卡片按钮的 aria-label 就是原始文件名（详情入口，不含"播放"前缀）
+    // 详情入口是卡片本体（无 aria-label，可访问名来自内部文本），
+    // 播放键才带「播放 xxx」的 aria-label
     const cards = within(screen.getByLabelText("视频列表"))
       .getAllByRole("button")
       .filter(b => !(b.getAttribute("aria-label") || "").startsWith("播放"));
-    expect(cards.map(c => c.getAttribute("aria-label"))).toEqual([
-      "Friends E1.mkv", "Friends E2.mkv", "Friends E10.mkv",
+    expect(cards.map(c => c.textContent)).toEqual([
+      expect.stringContaining("Friends E1.mkv"),
+      expect.stringContaining("Friends E2.mkv"),
+      expect.stringContaining("Friends E10.mkv"),
     ]);
   });
 
@@ -164,7 +167,7 @@ describe("分级浏览与跳转", () => {
     const cards = within(extras).getAllByRole("button")
       .filter(b => !(b.getAttribute("aria-label") || "").startsWith("播放"));
     expect(cards.length).toBe(1);
-    expect(cards[0].getAttribute("aria-label")).toBe("剧场版 咆哮.mkv");
+    expect(cards[0].textContent).toContain("剧场版 咆哮.mkv");
   });
 
   it("单季剧的 SP 也走独立分段", async () => {
