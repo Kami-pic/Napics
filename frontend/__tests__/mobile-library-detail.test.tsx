@@ -174,7 +174,7 @@ describe("三个允许的操作", () => {
     fireEvent.click(screen.getByRole("button", { name: /搜索资源/ }));
 
     const url = new URL(mockRouter.push.mock.calls.at(-1)![0], "http://x");
-    expect(url.pathname).toBe("/m/search");
+    expect(url.pathname).toBe("/m/resource");
     const q = url.searchParams;
     expect(q.get(MOBILE_QUERY_KEYS.query)).toBe("钢铁侠");
     expect(q.get(MOBILE_QUERY_KEYS.cnName)).toBe("钢铁侠");

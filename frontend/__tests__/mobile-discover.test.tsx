@@ -341,7 +341,7 @@ describe("插件不可用", () => {
     await act(async () => { await Promise.resolve(); });
 
     expect(screen.getByText(/没有安装发现插件/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "直接去搜索" }).getAttribute("href")).toBe(MOBILE_ROUTES.search);
+    expect(screen.getByRole("link", { name: "直接搜资源" }).getAttribute("href")).toBe(MOBILE_ROUTES.resource);
     expect(mockApi.discoverRecommend).not.toHaveBeenCalled();
   });
 });
@@ -414,7 +414,7 @@ describe("发现详情", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /搜索资源/ })); });
 
     const url = new URL(mockRouter.push.mock.calls.at(-1)![0], "http://x");
-    expect(url.pathname).toBe(MOBILE_ROUTES.search);
+    expect(url.pathname).toBe(MOBILE_ROUTES.resource);
     const q = url.searchParams;
     expect(q.get(MOBILE_QUERY_KEYS.query)).toBe("跳搜索");
     expect(q.get(MOBILE_QUERY_KEYS.cnName)).toBe("跳搜索");
@@ -466,7 +466,7 @@ describe("发现详情", () => {
 
     // 两个出口立刻可用
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /搜索资源/ })); });
-    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain(MOBILE_ROUTES.search);
+    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain(MOBILE_ROUTES.resource);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "查看本地" })); });
     expect(mockRouter.push).toHaveBeenLastCalledWith(libraryUrl("D:\\影视\\还在加载的片"));
   });

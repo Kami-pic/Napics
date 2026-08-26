@@ -8,7 +8,16 @@ export const MOBILE_ROUTES = {
   discoverDetail: "/m/discover/detail",
   library: "/m/library",
   libraryDetail: "/m/library/detail",
+  /**
+   * 底栏「搜索」= 找片子（豆瓣搜索），和发现页是一件事的两种入口。
+   * 用户日常想的「搜索」是"这部片子有没有、评分多少"，不是"哪个种子画质好"。
+   */
   search: "/m/search",
+  /**
+   * 资源搜索（BT / 磁力 / 网盘）**只从「搜索资源」「搜索升级」进入**，不进底栏 ——
+   * 它需要先有一个明确的目标片子，凭空打开一个资源搜索框没有意义。
+   */
+  resource: "/m/resource",
   downloads: "/m/downloads",
   play: "/m/play",
 } as const;
@@ -184,7 +193,17 @@ export function parsePathParam(source: QuerySource): string {
 
 // ── 搜索 ──
 
-/** 搜索页可重建的全部状态 */
+/** 底栏「搜索」：按片名找片子（豆瓣搜索），结果是发现卡片 */
+export function discoverSearchUrl(q?: string): string {
+  return buildUrl(MOBILE_ROUTES.search, { [MOBILE_QUERY_KEYS.query]: q });
+}
+
+/** 豆瓣搜索页的关键词 */
+export function parseDiscoverSearchQuery(source: QuerySource): string {
+  return readParam(source, MOBILE_QUERY_KEYS.query);
+}
+
+/** 资源搜索页可重建的全部状态 */
 export interface MobileSearchQuery {
   q: string;
   tab: MobileSearchTab;
@@ -201,9 +220,10 @@ export interface MobileSearchQuery {
   savePath?: string;
 }
 
-export function searchUrl(query: MobileSearchQuery): string {
+/** 资源搜索页（BT / 网盘）的 URL。名字带 resource 前缀，别和底栏的豆瓣搜索混起来 */
+export function resourceSearchUrl(query: MobileSearchQuery): string {
   const K = MOBILE_QUERY_KEYS;
-  return buildUrl(MOBILE_ROUTES.search, {
+  return buildUrl(MOBILE_ROUTES.resource, {
     [K.query]: query.q,
     // bt 是默认值，不写进 URL，省得每个链接都拖一截
     [K.tab]: query.tab === "pan" ? "pan" : undefined,
@@ -218,7 +238,7 @@ export function searchUrl(query: MobileSearchQuery): string {
   });
 }
 
-export function parseSearchQuery(source: QuerySource): MobileSearchQuery {
+export function parseResourceSearchQuery(source: QuerySource): MobileSearchQuery {
   const K = MOBILE_QUERY_KEYS;
   const seasonRaw = readParam(source, K.season);
   const season = Number.parseInt(seasonRaw, 10);
@@ -244,6 +264,9 @@ export function activeNavKey(pathname: string): MobileNavKey | null {
   if (pathname === MOBILE_ROUTES.discover) return "discover";
   if (pathname.startsWith("/m/discover")) return "discover";
   if (pathname.startsWith(MOBILE_ROUTES.library)) return "library";
+  // 资源搜索没有自己的 Tab，归到「搜索」下面：它是从别处下钻进来的，
+  // 底栏总得有一个高亮项，否则用户会觉得自己不在任何页面里
+  if (pathname.startsWith(MOBILE_ROUTES.resource)) return "search";
   if (pathname.startsWith(MOBILE_ROUTES.search)) return "search";
   if (pathname.startsWith(MOBILE_ROUTES.downloads)) return "downloads";
   return null;

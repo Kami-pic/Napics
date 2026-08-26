@@ -97,7 +97,7 @@ describe("加载态与异常态", () => {
     expect(screen.getByText("这个目录里还没有已入库的视频")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "搜索资源" }));
-    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain("/m/search");
+    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain("/m/resource");
 
     fireEvent.click(screen.getByRole("button", { name: "去同步" }));
     expect(mockRouter.push).toHaveBeenLastCalledWith("/m/downloads");

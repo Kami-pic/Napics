@@ -1,18 +1,19 @@
 import MobileShell from "@/components/mobile/MobileShell";
-import MobileSearchClient from "@/components/mobile/MobileSearchClient";
-import { parseSearchQuery } from "@/lib/mobile/mobileRouteUtils";
+import MobileDiscoverSearchClient from "@/components/mobile/MobileDiscoverSearchClient";
+import { parseDiscoverSearchQuery } from "@/lib/mobile/mobileRouteUtils";
 
+// 底栏「搜索」= 按片名找片子（豆瓣搜索）。
+// 资源搜索（BT / 网盘）在 /m/resource，只从详情页的「搜索资源」进。
 export default async function MobileSearchPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  // URL 是搜索页的唯一状态来源，规范化后交给客户端组件
-  const query = parseSearchQuery(await searchParams);
+  const q = parseDiscoverSearchQuery(await searchParams);
 
   return (
-    <MobileShell title="搜索" subtitle={query.q || undefined}>
-      <MobileSearchClient query={query} />
+    <MobileShell title="搜索" subtitle={q || undefined}>
+      <MobileDiscoverSearchClient q={q} />
     </MobileShell>
   );
 }

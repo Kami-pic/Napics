@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 import { useSearchState } from "@/components/search/useSearchState";
 import { useMobileConfig } from "@/components/mobile/MobileProviders";
-import { searchUrl, type MobileSearchQuery, type MobileSearchTab } from "@/lib/mobile/mobileRouteUtils";
+import { resourceSearchUrl, type MobileSearchQuery, type MobileSearchTab } from "@/lib/mobile/mobileRouteUtils";
 
 export interface MobileSearchController {
   /** 共享搜索状态机的全部返回值 */
@@ -67,7 +67,7 @@ export function useMobileSearch(query: MobileSearchQuery): MobileSearchControlle
     const next = draft.trim();
     if (!next) return;
     // 只改 URL。query effect 会发搜索，这里不能再调一次 doSearch，否则双搜
-    router.replace(searchUrl({ ...query, q: next }));
+    router.replace(resourceSearchUrl({ ...query, q: next }));
   }, [draft, query, router]);
 
   const retry = useCallback(() => {
@@ -79,7 +79,7 @@ export function useMobileSearch(query: MobileSearchQuery): MobileSearchControlle
 
   const switchTab = useCallback((tab: MobileSearchTab) => {
     search.setActiveTab(tab);
-    router.replace(searchUrl({ ...query, tab }));
+    router.replace(resourceSearchUrl({ ...query, tab }));
   }, [query, router, search]);
 
   return { search, draft, setDraft, submit, retry, switchTab, tab: query.tab };

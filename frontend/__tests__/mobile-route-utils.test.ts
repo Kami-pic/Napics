@@ -12,8 +12,8 @@ import {
   libraryDetailUrl,
   playUrl,
   parsePathParam,
-  searchUrl,
-  parseSearchQuery,
+  resourceSearchUrl,
+  parseResourceSearchQuery,
   activeNavKey,
   shouldShowBottomNav,
   discoverUrl,
@@ -77,28 +77,28 @@ describe("搜索 URL", () => {
       resolution: "1080p",
       savePath: String.raw`\\NAS\share\视频\电视剧`,
     };
-    expect(parseSearchQuery(queryOf(searchUrl(query)))).toEqual(query);
+    expect(parseResourceSearchQuery(queryOf(resourceSearchUrl(query)))).toEqual(query);
   });
 
   it("默认 tab=bt 不写进 URL，但解析回来仍是 bt", () => {
-    const url = searchUrl({ q: "教父", tab: "bt" });
+    const url = resourceSearchUrl({ q: "教父", tab: "bt" });
     expect(url).not.toContain("tab=");
-    expect(parseSearchQuery(queryOf(url)).tab).toBe("bt");
+    expect(parseResourceSearchQuery(queryOf(url)).tab).toBe("bt");
   });
 
   it("非法 tab 值退化为 bt，不是 undefined", () => {
-    expect(parseSearchQuery({ tab: "垃圾值", q: "x" }).tab).toBe("bt");
+    expect(parseResourceSearchQuery({ tab: "垃圾值", q: "x" }).tab).toBe("bt");
   });
 
   it("季号为 0 或非数字时视为不带季", () => {
-    expect(parseSearchQuery({ season: "0" }).season).toBeUndefined();
-    expect(parseSearchQuery({ season: "abc" }).season).toBeUndefined();
-    expect(parseSearchQuery({ season: "" }).season).toBeUndefined();
-    expect(parseSearchQuery({ season: "2" }).season).toBe(2);
+    expect(parseResourceSearchQuery({ season: "0" }).season).toBeUndefined();
+    expect(parseResourceSearchQuery({ season: "abc" }).season).toBeUndefined();
+    expect(parseResourceSearchQuery({ season: "" }).season).toBeUndefined();
+    expect(parseResourceSearchQuery({ season: "2" }).season).toBe(2);
   });
 
   it("空搜索词构造出的 URL 不含空 q", () => {
-    expect(searchUrl({ q: "", tab: "bt" })).toBe(MOBILE_ROUTES.search);
+    expect(resourceSearchUrl({ q: "", tab: "bt" })).toBe(MOBILE_ROUTES.resource);
   });
 });
 

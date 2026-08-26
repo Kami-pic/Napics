@@ -17,7 +17,7 @@ import {
   episodeSeasonNumber,
   episodeNumber,
 } from "@/lib/mobile/libraryNav";
-import { playUrl, searchUrl, libraryUrl } from "@/lib/mobile/mobileRouteUtils";
+import { playUrl, resourceSearchUrl, libraryUrl } from "@/lib/mobile/mobileRouteUtils";
 import { useScrape } from "@/components/detail/useScrape";
 import MobileShell from "./MobileShell";
 import MobileStateView from "./MobileStateView";
@@ -79,7 +79,7 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
 
   const openSearch = useCallback(() => {
     if (!video) return;
-    router.push(searchUrl({
+    router.push(resourceSearchUrl({
       q: video.clean_name_cn || video.clean_name || video.file_name,
       tab: "bt",
       cnName: video.clean_name_cn,

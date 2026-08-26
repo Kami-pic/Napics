@@ -19,7 +19,7 @@ import {
 import {
   discoverUrl,
   libraryUrl,
-  searchUrl,
+  resourceSearchUrl,
   type MobileDiscoverDetailQuery,
 } from "@/lib/mobile/mobileRouteUtils";
 import MobileShell from "./MobileShell";
@@ -119,7 +119,7 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
   }, [router, tab]);
 
   const openSearch = useCallback(() => {
-    router.push(searchUrl({
+    router.push(resourceSearchUrl({
       q: query.cnName || title,
       tab: "bt",
       cnName: query.cnName || title,

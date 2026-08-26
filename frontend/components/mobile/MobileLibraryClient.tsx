@@ -8,7 +8,7 @@ import type { FolderNode, VideoInfo } from "@/types";
 import { useMobileLibrary } from "@/hooks/mobile/useMobileLibrary";
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
 import { folderTarget, videoTarget, findParentPath } from "@/lib/mobile/libraryNav";
-import { libraryUrl, playUrl, searchUrl, MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
+import { libraryUrl, playUrl, resourceSearchUrl, MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
 import { folderCardMeta, seasonCardMeta, videoCardMeta } from "@/lib/mobile/mobileCardMeta";
 import MobileShell from "./MobileShell";
 import MobileStateView from "./MobileStateView";
@@ -58,7 +58,7 @@ export default function MobileLibraryClient({ path }: MobileLibraryClientProps) 
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => router.push(searchUrl({ q: view?.title || "", tab: "bt" }))}
+              onClick={() => router.push(resourceSearchUrl({ q: view?.title || "", tab: "bt" }))}
               className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-on-accent)]"
               style={{ minHeight: "var(--m-touch-min)", background: "var(--m-accent)" }}
             >

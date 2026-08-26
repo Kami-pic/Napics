@@ -77,7 +77,7 @@ export default function MobileDownloadList() {
           ) : (
             <button
               type="button"
-              onClick={() => router.push(MOBILE_ROUTES.search)}
+              onClick={() => router.push(MOBILE_ROUTES.resource)}
               className="rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-on-accent)]"
               style={{ minHeight: "var(--m-touch-min)", background: "var(--m-accent)" }}
             >

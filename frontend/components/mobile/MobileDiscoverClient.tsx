@@ -75,11 +75,11 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
         emptyText="没有安装发现插件（feature-discover），榜单推荐不可用"
         emptyAction={
           <Link
-            href={MOBILE_ROUTES.search}
+            href={MOBILE_ROUTES.resource}
             className="flex items-center rounded-[var(--m-radius-sm)] px-4 text-sm text-[var(--m-text)]"
             style={{ minHeight: "var(--m-touch-min)", background: "var(--m-surface-raised)" }}
           >
-            直接去搜索
+            直接搜资源
           </Link>
         }
       />
