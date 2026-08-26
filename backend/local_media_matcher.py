@@ -35,6 +35,11 @@ class LocalMediaMatcher:
         self._tmdb_index: Dict[int, dict] = {}          # tmdb_id → {title, max_height, folder}
         self._title_year_index: Dict[str, dict] = {}     # normalized_title|year → {title, max_height, folder}
         self._title_index: Dict[str, dict] = {}           # normalized_title → {title, max_height, folder}
+        # normalized_title → 本地为这个片名记到的所有年份。
+        # 用来区分两种情况：本地这条**压根没有年份**（目录名不带年份，很常见 ——
+        # 这时只能靠片名匹配，放行），还是本地有年份但**和目标不是同一年**
+        # （这时必须拒绝，否则「沙丘2」会匹配到本地的「沙丘 Dune (2021)」）。
+        self._title_years: Dict[str, set] = {}
         self._indexed = False
 
         # ID 映射缓存（douban_id → tmdb_id）
@@ -53,6 +58,7 @@ class LocalMediaMatcher:
         tmdb_idx: Dict[int, dict] = {}
         title_year_idx: Dict[str, dict] = {}
         title_idx: Dict[str, dict] = {}
+        title_years: Dict[str, set] = {}
 
         # 按 folder_name 聚合
         folders: Dict[str, dict] = {}
@@ -145,6 +151,7 @@ class LocalMediaMatcher:
                     key = f"{norm}|{year}"
                     if key not in title_year_idx or info["max_height"] > title_year_idx[key]["max_height"]:
                         title_year_idx[key] = entry
+                    title_years.setdefault(norm, set()).add(str(year))
 
                 # 纯 title 索引（兜底）
                 if norm not in title_idx or info["max_height"] > title_idx[norm]["max_height"]:
@@ -153,6 +160,7 @@ class LocalMediaMatcher:
         self._tmdb_index = tmdb_idx
         self._title_year_index = title_year_idx
         self._title_index = title_idx
+        self._title_years = title_years
         self._indexed = True
         logger.info(f"[LocalMediaMatcher] 索引构建完成: tmdb={len(tmdb_idx)} title_year={len(title_year_idx)} title={len(title_idx)} folders={len(folders)}")
 
@@ -199,6 +207,31 @@ class LocalMediaMatcher:
 
         return ("none", "")
 
+    def _year_conflicts(self, idx_title: str, year: str) -> bool:
+        """本地这条片名是否明确记着**另一个**年份。
+
+        只有"目标有年份 + 本地也有年份 + 都不在 ±_YEAR_TOLERANCE 内"才算冲突。
+        本地没记年份时一律不算冲突 —— 大量目录名本来就不带年份，那种情况下
+        只能靠片名匹配，一律拒绝会让「已有」标记大面积消失。
+        """
+        if not year:
+            return False
+        local_years = self._title_years.get(idx_title)
+        if not local_years:
+            return False
+        try:
+            target = int(year)
+        except (ValueError, TypeError):
+            return False
+        for ly in local_years:
+            try:
+                if abs(int(ly) - target) <= _YEAR_TOLERANCE:
+                    return False
+            except (ValueError, TypeError):
+                # 年份解析不出来时不参与判断，别把它当成"冲突"
+                return False
+        return True
+
     def _match_by_title(self, title: str, year: str) -> Optional[tuple]:
         """片名匹配内部逻辑，返回 (status, folder) 或 None"""
         norm = normalize(title)
@@ -221,9 +254,11 @@ class LocalMediaMatcher:
                 except (ValueError, TypeError):
                     pass
 
-        # 精确匹配纯 title
+        # 精确匹配纯 title。
+        # 片名一模一样但年份对不上，通常是翻拍（1961/2021 的《西区故事》），
+        # 不是同一部片 —— 上面的 title+year 索引已经放过了同年和 ±1 年的。
         entry = self._title_index.get(norm)
-        if entry:
+        if entry and not self._year_conflicts(norm, year):
             return (f"owned_{entry['quality']}", entry.get("folder", ""))
 
         # 提取中文部分做子串/模糊匹配
@@ -246,16 +281,24 @@ class LocalMediaMatcher:
                                     return (f"owned_{entry['quality']}", entry.get("folder", ""))
                             except (ValueError, TypeError):
                                 pass
-                    # 没有年份索引但中文完全匹配，也算命中
-                    if cn_chars == idx_cn:
+                    # 本地这条**确实没记年份**时，中文完全相同就算命中。
+                    # 这里原来只判 `cn_chars == idx_cn`，不管本地有没有年份 ——
+                    # 于是「沙丘2」(2024) 走到这一步会命中本地的「沙丘」(2021)：
+                    # 上面那圈年份检查全部失败，然后被这个后门无条件放行。
+                    # 用户报的「查看本地跳到错的片」就是这条。
+                    if cn_chars == idx_cn and not self._year_conflicts(idx_title, year):
                         return (f"owned_{entry['quality']}", entry.get("folder", ""))
                 else:
                     return (f"owned_{entry['quality']}", entry.get("folder", ""))
 
-        # 模糊匹配（遍历 title_index，找最高相似度）
+        # 模糊匹配（遍历 title_index，找最高相似度）。
+        # _title_index 是无年份索引，所以这里同样要挡掉年份明确冲突的候选，
+        # 否则「沙丘2」「沙丘3」都会以 0.8+ 的相似度落到本地的「沙丘 (2021)」上。
         best_score = 0.0
         best_entry = None
         for idx_title, entry in self._title_index.items():
+            if self._year_conflicts(idx_title, year):
+                continue
             score = fuzzy_score(norm, idx_title)
             if score > best_score:
                 best_score = score

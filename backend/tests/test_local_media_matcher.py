@@ -51,6 +51,26 @@ def _build_matcher():
             "shadow_tmdb_id": None,
             "height": 480,
         },
+        # 带年份、有续集的片子：用来验证「沙丘2」不会被算成已有「沙丘」
+        {
+            "file_path": "\\\\NAS\\电影\\沙丘\\movie.mkv",
+            "file_name": "movie.mkv",
+            "folder_name": "电影\\沙丘 Dune (2021)",
+            "clean_name": "沙丘 Dune",
+            "shadow_name": "",
+            "shadow_tmdb_id": None,
+            "height": 2160,
+        },
+        # 目录名不带年份：大量真实条目就是这样，年份收严后它必须还能匹配上
+        {
+            "file_path": "\\\\NAS\\电影\\无年份老片\\movie.mkv",
+            "file_name": "movie.mkv",
+            "folder_name": "电影\\无年份老片",
+            "clean_name": "无年份老片",
+            "shadow_name": "",
+            "shadow_tmdb_id": None,
+            "height": 1080,
+        },
     ]
     matcher.build_index(fake_lib)
     assert matcher._indexed
@@ -141,6 +161,41 @@ def test_match_batch_injects_absolute_folder(matcher):
     matcher.match_batch(items)
     assert items[0]["local_folder"] == "\\\\NAS\\电影\\流浪地球"
     assert items[1]["local_folder"] == ""
+
+
+def test_sequel_does_not_match_first_film(matcher):
+    """「沙丘2」(2024) 不该被算成已有本地的「沙丘」(2021)。
+
+    用户报的「查看本地跳到错的片」就是这条。原来有两个不校验年份的兜底：
+    中文子串分支末尾的「中文完全相同就算命中」后门，和最后遍历 _title_index
+    的 fuzzy 兜底 —— 沙丘2 / 沙丘3 都会以 0.8+ 相似度落到「沙丘 (2021)」上，
+    于是发现页三条都显示「✓ 已有」，点「查看本地」跳到 2021 那个目录。
+    """
+    status, folder = matcher.match({"title": "沙丘2", "year": "2024"})
+    assert status == "none", f"期望 none，实际 {status} → {folder}"
+    status, _ = matcher.match({"title": "沙丘3", "year": "2026"})
+    assert status == "none"
+
+
+def test_same_title_matches_within_year_tolerance(matcher):
+    """同名同年、以及差 1 年（发行年 vs 首播年）必须照旧命中。"""
+    assert matcher.match({"title": "沙丘", "year": "2021"})[0] == "owned_high"
+    assert matcher.match({"title": "沙丘", "year": "2022"})[0] == "owned_high"
+
+
+def test_remake_with_different_year_is_not_owned(matcher):
+    """片名一模一样但年份差很远，通常是翻拍，不是同一部片。"""
+    assert matcher.match({"title": "沙丘", "year": "1984"})[0] == "none"
+
+
+def test_local_entry_without_year_still_matches(matcher):
+    """本地条目没记年份时，年份收严不能把它挡掉。
+
+    大量真实目录名本来就不带年份，这种情况下只能靠片名匹配。一律要求年份
+    对得上会让「已有」标记大面积消失 —— 那比偶尔认错一部续集更糟。
+    """
+    assert matcher.match({"title": "无年份老片", "year": "1997"})[0] == "owned_high"
+    assert matcher.match({"title": "无年份老片", "year": ""})[0] == "owned_high"
 
 
 def test_id_cache():
