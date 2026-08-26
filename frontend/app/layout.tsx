@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import MobileVersionHint from "@/components/layout/MobileVersionHint";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
+        {/* 窄屏提示条。它自己判断路由（/m 与 /login 不显示），
+            所以放在这里不会影响移动版和登录页 */}
+        <MobileVersionHint />
       </body>
     </html>
   );
