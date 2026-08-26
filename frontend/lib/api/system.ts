@@ -23,8 +23,16 @@ export const systemApi = {
       },
     ),
 
+  // failed[].reason: "missing" | "probe_failed" | "not_in_library"
+  // probed 是真的探测成功的条数 —— 后端以前不管成功失败都只回 status: "ok"
   refreshQuality: (paths?: string[]) =>
-    request<{ status: string; updated: number; total: number }>(`${BASE_URL}/library/refresh-quality`, {
+    request<{
+      status: string;
+      updated: number;
+      total: number;
+      probed?: number;
+      failed?: { path: string; reason: string }[];
+    }>(`${BASE_URL}/library/refresh-quality`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(paths || null),

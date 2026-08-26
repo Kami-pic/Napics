@@ -12,6 +12,7 @@ import { CandidatePicker } from "./CandidatePicker";
 import { ShadowNameSection } from "./ShadowNameSection";
 import { PosterUpload } from "./PosterUpload";
 import { PlayButton } from "./PlayButton";
+import QualityProbeButton from "./QualityProbeButton";
 import { useInstalledPlugins } from "@/hooks/useInstalledPlugins";
 
 // 字幕弹窗动态加载 — 仅在插件安装后实际加载代码
@@ -223,16 +224,7 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
                 title="搜索字幕"
               >搜索字幕</button>
             )}
-            <button
-              onClick={async () => {
-                try {
-                  await api.refreshQuality([v.file_path]);
-                  onRefresh();
-                } catch {}
-              }}
-              className="text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
-              title="重新检测质量分"
-            >检测质量</button>
+            <QualityProbeButton filePath={v.file_path} onDone={onRefresh} />
           </div>
         </div>
         {(() => {

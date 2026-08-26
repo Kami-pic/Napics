@@ -33,34 +33,56 @@ def refresh_quality_score(paths: List[str] = None):
     from quality_parser import compute_quality_score_from_video
     path_set = set(paths) if paths else None
 
+    # 每条失败都要带原因回前端。这三种失败原来在界面上长得一模一样（接口永远返回
+    # {"status":"ok"}，前端 catch {} 什么都不提示），用户点了「检测质量」看不出
+    # 是文件已经不在了、还是文件本身读不了：
+    #   missing     — 库里记的路径已经不存在（文件被移走/删了，重新同步就好）
+    #   probe_failed— ffprobe 打不开或解析失败（文件损坏、假后缀、SMB 抖动）
+    #   not_in_library — 传来的路径不在媒体库里
+    failures: List[dict] = []
+
     # ffprobe 是子进程 + 读文件头，必须在锁外跑完再进临界区应用结果，
     # 否则一次质量检测就会把整个媒体库的写入卡住。
     probed = {}
     if path_set:
         for fp in path_set:
             if not os.path.exists(fp):
+                failures.append({"path": fp, "reason": "missing"})
                 continue
             try:
                 info = scanner.get_video_metadata(fp)
+                # height == 0 是 _fallback_info 的标记值：ffprobe 没跑通。
+                # 这种结果不能写进库（会把已有的分辨率覆盖成 0），但必须让用户知道。
                 if info and info.height > 0:
                     probed[fp] = info
+                else:
+                    failures.append({"path": fp, "reason": "probe_failed"})
             except Exception as e:
                 logger.error(f"[refresh-quality] ffprobe 失败: {fp} — {e}")
+                failures.append({"path": fp, "reason": "probe_failed"})
 
     total = 0
     updated = 0
+    # 元数据有没有真的变过。落盘条件原来只看 quality_score 变没变 ——
+    # ffprobe 成功但分数恰好不变时（分数本来就能从文件名标签解析出来），
+    # 刚探到的 codec / height / container 会被整批丢弃，用户点了没反应。
+    metadata_changed = False
 
     def _apply(library):
-        nonlocal total, updated
+        nonlocal total, updated, metadata_changed
         total = len(library)
         if path_set:
             lib_map = {v.get("file_path", ""): v for v in library}
             for fp in path_set:
                 v = lib_map.get(fp)
                 if not v:
+                    if not any(f["path"] == fp for f in failures):
+                        failures.append({"path": fp, "reason": "not_in_library"})
                     continue
                 info = probed.get(fp)
                 if info is not None:
+                    before = (v.get("codec"), v.get("height"), v.get("container"),
+                              v.get("audio_codec"), v.get("duration_min"), v.get("resolution"))
                     v["resolution"] = info.resolution
                     v["height"] = info.height
                     v["width"] = info.width
@@ -78,6 +100,10 @@ def refresh_quality_score(paths: List[str] = None):
                     v["bitrate_kbps"] = info.bitrate_kbps
                     v["size_gb"] = info.size_gb
                     v["is_low_res"] = info.is_low_res
+                    after = (v.get("codec"), v.get("height"), v.get("container"),
+                             v.get("audio_codec"), v.get("duration_min"), v.get("resolution"))
+                    if before != after:
+                        metadata_changed = True
                 new_score = compute_quality_score_from_video(v)
                 if new_score != v.get("quality_score", 0):
                     v["quality_score"] = new_score
@@ -89,10 +115,17 @@ def refresh_quality_score(paths: List[str] = None):
                 if new_score != old_score:
                     v["quality_score"] = new_score
                     updated += 1
-        return None if updated else False
+        return None if (updated or metadata_changed) else False
 
     config_m.mutate_library(_apply)
-    return {"status": "ok", "updated": updated, "total": total}
+    return {
+        "status": "ok",
+        "updated": updated,
+        "total": total,
+        # 探测成功的条数，和失败明细。前端据此决定提示什么。
+        "probed": len(probed),
+        "failed": failures,
+    }
 
 
 @router.post("/library/folder-type")
