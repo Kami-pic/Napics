@@ -1,6 +1,7 @@
 // 搜索弹窗顶栏 — 从 SearchModal.tsx 拆分
 "use client";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
+import { buildKeywordChain } from "@/lib/domain/searchKeywords";
 import FilterBar from "./FilterBar";
 import { DEFAULT_FILTERS, type SourceStatus } from "./filterUtils";
 import PanFilterBar from "./PanFilterBar";
@@ -121,28 +122,15 @@ export default function SearchHeader(props: SearchHeaderProps) {
             {activeTab === "bt" && Object.keys(sourceKeywordInfo).length > 0 && !searching && (
               <div className="flex items-center gap-0.5 pl-2 flex-shrink-0">
                 <span className="text-[9px] text-slate-600 whitespace-nowrap mr-0.5">回退匹配:</span>
-                {(() => {
-                  const allKws: string[] = [];
-                  const hitKws = new Set<string>();
-                  const seen = new Set<string>();
-                  for (const info of Object.values(sourceKeywordInfo)) {
-                    for (const kw of info.searched) {
-                      if (!seen.has(kw)) { seen.add(kw); allKws.push(kw); }
-                    }
-                    if (info.hit) hitKws.add(info.hit);
-                  }
-                  const notHit = allKws.filter(kw => !hitKws.has(kw));
-                  const hit = allKws.filter(kw => hitKws.has(kw));
-                  const ordered = [...notHit, ...hit];
-                  return ordered.map((kw, i) => (
-                    <span key={i} className="flex items-center gap-0.5 flex-shrink-0">
-                      {i > 0 && <span className="text-[9px] text-slate-700">→</span>}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${
-                        hitKws.has(kw) ? "bg-blue-500/15 text-blue-400" : "bg-white/[0.06] text-slate-600"
-                      }`}>{kw}</span>
-                    </span>
-                  ));
-                })()}
+                {/* 汇总逻辑在 lib/domain/searchKeywords.ts，与移动端资源搜索页共用 */}
+                {buildKeywordChain(sourceKeywordInfo).map((item, i) => (
+                  <span key={item.keyword} className="flex items-center gap-0.5 flex-shrink-0">
+                    {i > 0 && <span className="text-[9px] text-slate-700">→</span>}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${
+                      item.hit ? "bg-blue-500/15 text-blue-400" : "bg-white/[0.06] text-slate-600"
+                    }`}>{item.keyword}</span>
+                  </span>
+                ))}
               </div>
             )}
             <input value={keyword} onChange={(e) => { setKeyword(e.target.value); userEditedRef.current = true; }}

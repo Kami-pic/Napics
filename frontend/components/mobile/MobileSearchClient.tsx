@@ -9,6 +9,7 @@ import { useMobileConfig } from "./MobileProviders";
 import { copyText } from "@/lib/mobile/clipboard";
 import type { MobileSearchQuery } from "@/lib/mobile/mobileRouteUtils";
 import MobileSearchHeader from "./MobileSearchHeader";
+import MobileKeywordChain from "./MobileKeywordChain";
 import MobileBtResults from "./MobileBtResults";
 import MobilePanResults from "./MobilePanResults";
 import MobileToast from "./MobileToast";
@@ -82,6 +83,14 @@ export default function MobileSearchClient({ query }: MobileSearchClientProps) {
         btCount={search.filtered.length}
         panCount={search.panResults.length}
       />
+
+      {/* 搜索词回退链：搜完之后让用户看到到底拿哪些词搜的（网盘源不做回退链） */}
+      {tab === "bt" && (
+        <MobileKeywordChain
+          sourceKeywordInfo={search.sourceKeywordInfo}
+          searching={search.searching}
+        />
+      )}
 
       {tab === "bt" ? (
         <MobileBtResults
