@@ -1,6 +1,6 @@
 // 锁定：组件卸载和页面隐藏后，搜索不留残余。
 //
-// 背景：清理原先绑在"弹窗关闭"上。移动端 /m/search 是常驻路由页，
+// 背景：清理原先绑在"弹窗关闭"上。移动端资源搜索页（/m/resource）是常驻路由页，
 // 没有 open=false 这个时机 —— 卸载时 SSE 连接、90s 超时定时器和在途请求
 // 都会活到浏览器回收为止，超时回调还会对已卸载组件 setState。
 import { act, renderHook } from "@testing-library/react";

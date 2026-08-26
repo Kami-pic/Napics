@@ -1,4 +1,8 @@
-// /m/search 的客户端外壳：组装搜索头、两套结果视图和瞬时反馈。
+// /m/resource（资源搜索：BT / 磁力 / 网盘）的客户端外壳：
+// 组装搜索头、两套结果视图和瞬时反馈。
+//
+// 它**不在底栏**，只从详情页的「搜索资源」「搜索升级」进来。底栏的「搜索」是
+// /m/search（按片名找片子，见 MobileDiscoverSearchClient）。
 // 页面只负责把 URL 参数规范化后交给这里，业务逻辑在 useMobileSearch。
 "use client";
 import { useCallback, useMemo, useState } from "react";
