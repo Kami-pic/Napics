@@ -4,7 +4,7 @@
 // 1. 分页量固定，不跟视口列数联动 —— 转屏不能清缓存重拉。
 // 2. 卡片点击进发现详情，不直接跳搜索。
 // 3. 本地状态角标与桌面同一份判定（lib/discoverStatus）。
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import MobileDiscoverClient from "@/components/mobile/MobileDiscoverClient";
@@ -90,6 +90,21 @@ describe("榜单加载与分页", () => {
     expect(mockApi.discoverRecommend).toHaveBeenLastCalledWith(FIRST_TAB, FULL_PAGE, FULL_PAGE);
     expect(screen.getByText(`片子 ${FULL_PAGE}`)).toBeTruthy();
     expect(screen.getAllByText("片子 0").length).toBe(1);
+  });
+
+  it("没有 id 的源按「片名+年份」去重，同名不同年不会被吞掉", async () => {
+    // 有海报才不会渲染文字占位，标题就只出现在卡片标题一处
+    mockApi.discoverRecommend.mockResolvedValue({
+      items: [
+        rawItem(1, { title: "无间道", year: "2002", douban_id: "" }),
+        rawItem(2, { title: "无间道", year: "2023", douban_id: "" }),
+      ],
+    });
+    await mountList();
+    expect(screen.getAllByText("无间道").length).toBe(2);
+    // 对照：年份不同的两条都在
+    expect(screen.getByText(/2002/)).toBeTruthy();
+    expect(screen.getByText(/2023/)).toBeTruthy();
   });
 
   it("下一页全是重复条目时不再给「加载更多」", async () => {
@@ -195,6 +210,23 @@ describe("tab 切换", () => {
     expect(sources).not.toContain("weekly_combined");
     expect(screen.queryByRole("button", { name: "加载更多" })).toBeNull();
   });
+
+  it("周榜分两段显示，排名在段内各自从 1 开始", async () => {
+    const weekly = RECOMMEND_TABS.find(t => t.key === "weekly_combined")!;
+    // 两个源各 3 条。首尾相接的话全球榜第 1 名会被标成第 4 名
+    mockApi.discoverRecommend.mockImplementation((source: string) => Promise.resolve({
+      items: source === "douban_weekly_chinese"
+        ? [rawItem(1, { title: "华语第一" }), rawItem(2, { title: "华语第二" }), rawItem(3, { title: "华语第三" })]
+        : [rawItem(4, { title: "全球第一" }), rawItem(5, { title: "全球第二" }), rawItem(6, { title: "全球第三" })],
+    }));
+    await mountList(weekly.key);
+
+    expect(screen.getByRole("heading", { name: "华语剧集周榜" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "全球剧集周榜" })).toBeTruthy();
+    // 两段各有一个"1"，说明位次是段内计算的
+    expect(screen.getAllByText("1").length).toBe(2);
+    expect(screen.queryByText("4")).toBeNull();
+  });
 });
 
 describe("横竖屏切换", () => {
@@ -265,6 +297,31 @@ describe("卡片点击", () => {
     expect(q.get(MOBILE_QUERY_KEYS.localFolder)).toBe("D:\\影视\\三体 (2024)");
     // 从哪个榜单进来的要记住
     expect(q.get(MOBILE_QUERY_KEYS.tab)).toBe("douban_tv_hot");
+  });
+
+  it("综合推荐不传条目 id：它是混合来源，id 未必属于该榜单的评分源", async () => {
+    // combined 的条目可能来自 TMDB（normalizeItem 会把 tmdb_id 填进 douban_id），
+    // 拿这种 id 去按豆瓣 id 直查会命中另一部片子
+    mockApi.discoverRecommend.mockResolvedValue({
+      items: [rawItem(1, { title: "综合榜里的片", douban_id: "1061474" })],
+    });
+    await mountList("combined");
+    await act(async () => { fireEvent.click(screen.getByText("综合榜里的片")); });
+
+    const q = new URL(mockRouter.push.mock.calls.at(-1)![0], "http://x").searchParams;
+    expect(q.get(MOBILE_QUERY_KEYS.detailSource)).toBe("douban");
+    expect(q.get(MOBILE_QUERY_KEYS.itemId)).toBeNull();
+  });
+
+  it("单一来源的榜单照常传 id", async () => {
+    mockApi.discoverRecommend.mockResolvedValue({
+      items: [rawItem(1, { title: "豆瓣榜里的片", douban_id: "35651341" })],
+    });
+    await mountList("douban_tv_hot");
+    await act(async () => { fireEvent.click(screen.getByText("豆瓣榜里的片")); });
+
+    const q = new URL(mockRouter.push.mock.calls.at(-1)![0], "http://x").searchParams;
+    expect(q.get(MOBILE_QUERY_KEYS.itemId)).toBe("35651341");
   });
 
   it("详情数据源跟随榜单的评分源", async () => {
@@ -392,10 +449,69 @@ describe("发现详情", () => {
     expect(mockRouter.push).toHaveBeenCalledWith(discoverUrl("douban_animation"));
   });
 
+  it("详情请求一直不返回时超时收场，搜索资源仍可用", async () => {
+    // fake timer 必须在 render 之前装：先 render 再装推不动已建立的 timer
+    vi.useFakeTimers();
+    mockApi.mediaInfo.mockReturnValue(new Promise(() => {}));   // 永不 resolve
+    render(<MobileDiscoverDetailClient query={{ title: "卡住的片", year: "2026", source: "tmdb" } as never} />);
+    await act(async () => { await Promise.resolve(); });
+
+    expect(screen.getByText("正在读取影片信息…")).toBeTruthy();
+    await act(async () => { vi.advanceTimersByTime(15_000); });
+
+    expect(screen.getByText(/仍可直接搜索资源/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /搜索资源/ })).toBeTruthy();
+    vi.useRealTimers();
+  });
+
+  it("缓存命中时直接显示，不再打 /media/info", async () => {
+    mockApi.mediaInfo.mockResolvedValue({ ...DETAIL_FOUND, title: "会被缓存的片", overview: "缓存过的简介" });
+    await mountDetail({ title: "会被缓存的片" });
+    await waitFor(() => expect(screen.getByText("缓存过的简介")).toBeTruthy());
+
+    // 卸载重挂：同一个 title_year_source 应该命中 localStorage 缓存
+    cleanup();
+    mockApi.mediaInfo.mockClear();
+    await mountDetail({ title: "会被缓存的片" });
+    expect(screen.getByText("缓存过的简介")).toBeTruthy();
+    expect(mockApi.mediaInfo).not.toHaveBeenCalled();
+  });
+
   it("缺标题时明确提示并给出口，不发请求", async () => {
     await mountDetail({ title: "" });
     expect(screen.getByText(/缺少影片信息/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "回发现" })).toBeTruthy();
     expect(mockApi.mediaInfo).not.toHaveBeenCalled();
+  });
+});
+
+describe("胶囊条无障碍", () => {
+  it("tablist 与内容区配对（aria-controls ↔ tabpanel）", async () => {
+    await mountList();
+    const selected = screen.getByRole("tab", { selected: true });
+    const panelId = selected.getAttribute("aria-controls");
+    expect(panelId).toBeTruthy();
+    expect(document.getElementById(panelId!)?.getAttribute("role")).toBe("tabpanel");
+  });
+
+  it("roving tabindex：只有选中项可 Tab 落点", async () => {
+    await mountList();
+    expect(screen.getByRole("tab", { selected: true }).getAttribute("tabindex")).toBe("0");
+    const others = screen.getAllByRole("tab").filter(t => t.getAttribute("aria-selected") !== "true");
+    for (const tab of others) expect(tab.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("左右方向键换榜单，到头环绕", async () => {
+    await mountList();
+    const list = screen.getByRole("tablist");
+
+    await act(async () => { fireEvent.keyDown(list, { key: "ArrowRight" }); });
+    expect(screen.getByRole("tab", { selected: true }).textContent).toBe(RECOMMEND_TABS[1].label);
+
+    // 从第一个往左 → 环绕到最后一个
+    await act(async () => { fireEvent.keyDown(list, { key: "ArrowLeft" }); });
+    await act(async () => { fireEvent.keyDown(list, { key: "ArrowLeft" }); });
+    expect(screen.getByRole("tab", { selected: true }).textContent)
+      .toBe(RECOMMEND_TABS[RECOMMEND_TABS.length - 1].label);
   });
 });

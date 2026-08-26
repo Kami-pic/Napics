@@ -4,8 +4,9 @@
 // 两端各自决定怎么上色（桌面是 Tailwind 语义色，移动端是 --m-* 变量）。
 // 判定逻辑写两份必然会漂：桌面已有五态，移动端漏一态就是"同一批数据显示不一致"。
 
-/** 后端 discover_enrich.inject_local_status 注入的取值 */
-export type LocalStatus = "none" | "owned_low" | "owned_high";
+// 后端 discover_enrich.inject_local_status 注入的取值是 "none" / "owned_low" / "owned_high"，
+// 类型定义在 types/index.ts 的 DoubanHotItem.local_status 上，这里按 string 收，
+// 未识别的取值一律当"没有"（不误报已有）。
 
 export type LocalStatusTagKey = "owned_sub" | "upgrade_sub" | "owned" | "upgrade" | "subscribed";
 

@@ -4,13 +4,16 @@
 // 判定顺序上"需处理"优先 —— 一个 failed 任务同时是终态，但它不该出现在「已完成」里。
 import type { MobileDownloadEntry } from "@/hooks/mobile/useMobileDownloads";
 
+/** `done` 是"已结束"（完成 / 取消 / 归档），不是"成功完成" */
 export type MobileDownloadFilterKey = "all" | "active" | "attention" | "done";
 
 export const MOBILE_DOWNLOAD_FILTERS: { key: MobileDownloadFilterKey; label: string }[] = [
   { key: "all", label: "全部" },
   { key: "active", label: "进行中" },
   { key: "attention", label: "需处理" },
-  { key: "done", label: "已完成" },
+  // 叫「已结束」而不是「已完成」：这一类按终态划分，除了 completed 还包含
+  // cancelled 与 archived。把已取消的任务放进「已完成」是在骗人。
+  { key: "done", label: "已结束" },
 ];
 
 /**

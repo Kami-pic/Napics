@@ -39,8 +39,11 @@ export default function MobileVersionHint() {
   const pathname = usePathname();
   const dismissed = useSyncExternalStore(subscribe, isDismissed, () => true);
 
-  // 移动版自己不需要这条提示；登录页要保持干净
-  if (dismissed || pathname.startsWith("/m") || pathname.startsWith("/login")) return null;
+  // 移动版自己不需要这条提示；登录页要保持干净。
+  // 精确匹配 /m 与 /m/* —— 写 startsWith("/m") 会把 /manage 一起排掉，
+  // 而管理页恰恰是窄屏下最该提示的页面之一。
+  const onMobileVersion = pathname === "/m" || pathname.startsWith("/m/");
+  if (dismissed || onMobileVersion || pathname.startsWith("/login")) return null;
 
   return (
     // md:hidden 而不是 JS 测宽度：转屏和改窗口宽度立刻生效，也不会有 SSR/CSR 宽度不一致

@@ -15,6 +15,9 @@ import MobileStateView from "./MobileStateView";
 import MobileChipRow from "./MobileChipRow";
 import MobileDiscoverGrid from "./MobileDiscoverGrid";
 
+/** tablist ↔ tabpanel 的关联 id。页面上只有一组榜单，写成常量即可 */
+const PANEL_ID = "m-discover-panel";
+
 export interface MobileDiscoverClientProps {
   /** 来自 URL 的榜单 tab，为空时用第一个 */
   initialTab?: string;
@@ -25,7 +28,7 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
   const { hasDiscover, ready: pluginsReady } = useMobilePlugins();
   const {
     tabs, activeTab, activeTabConfig, setActiveTab,
-    items, state, errorText, hasMore, loadingMore, moreFailed, loadMore, retry,
+    items, groups, state, errorText, hasMore, loadingMore, moreFailed, loadMore, retry,
   } = useMobileDiscover(initialTab, pluginsReady && hasDiscover);
 
   // tab 写进 URL 才能"从哪进回哪里"；用 replace，否则每切一次 tab 都往历史栈压一层
@@ -46,7 +49,12 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
       // 条目自己带类型就用它；混合榜单里 tab 的 mediaType 是 mixed，不能当类型用
       mediaType: item.media_type || (activeTabConfig.mediaType === "tv" ? "tv" : "movie"),
       source: activeTabConfig.ratingSource,
-      id: item.douban_id,
+      // 综合推荐是混合来源：条目可能来自 TMDB 或 Bangumi，而这个 tab 的 ratingSource
+      // 固定是 douban，且 normalizeItem 会把缺失的 douban_id 回退成 tmdb_id 字符串。
+      // 把这种 id 当豆瓣 id 直查会命中**另一部片子**并写进详情缓存，
+      // 所以综合榜不传 id，让后端按片名 + 年份匹配。
+      // （桌面 useDiscoverState 有同样的错配，本轮不动桌面。）
+      id: activeTab === "combined" ? undefined : item.douban_id,
       subtitle: item.subtitle,
       cnName: item.clean_name_cn,
       enName: item.clean_name_en,
@@ -84,25 +92,30 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
         onChange={onChangeTab}
         ariaLabel="榜单"
         semantics="tab"
+        controlsId={PANEL_ID}
       />
-      <MobileStateView
-        state={pluginsReady ? state : "loading"}
-        loadingText="正在加载榜单…"
-        errorText={errorText}
-        emptyText="这个榜单暂时没有内容，换一个试试"
-        onRetry={retry}
-      >
-        <MobileDiscoverGrid
-          items={items}
-          showRank={activeTabConfig.showRank}
-          showMediaType={activeTabConfig.mediaType === "mixed"}
-          hasMore={hasMore}
-          loadingMore={loadingMore}
-          moreFailed={moreFailed}
-          onOpen={onOpen}
-          onLoadMore={loadMore}
-        />
-      </MobileStateView>
+      {/* tabpanel 与上面的 tablist 配对，读屏才能说出"这块内容属于哪个榜单" */}
+      <div id={PANEL_ID} role="tabpanel" aria-label={activeTabConfig.label}>
+        <MobileStateView
+          state={pluginsReady ? state : "loading"}
+          loadingText="正在加载榜单…"
+          errorText={errorText}
+          emptyText="这个榜单暂时没有内容，换一个试试"
+          onRetry={retry}
+        >
+          <MobileDiscoverGrid
+            items={items}
+            groups={groups}
+            showRank={activeTabConfig.showRank}
+            showMediaType={activeTabConfig.mediaType === "mixed"}
+            hasMore={hasMore}
+            loadingMore={loadingMore}
+            moreFailed={moreFailed}
+            onOpen={onOpen}
+            onLoadMore={loadMore}
+          />
+        </MobileStateView>
+      </div>
     </div>
   );
 }

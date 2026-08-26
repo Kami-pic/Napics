@@ -8,7 +8,9 @@ import type { DoubanHotItem } from "@/types";
 import { proxyUrl } from "@/components/media/discoverUtils";
 import { resolveLocalStatusTag, type LocalStatusTone } from "@/lib/discoverStatus";
 
-/** 语义色映射。桌面用 Tailwind 语义色，移动端统一走 --m-* 变量 */
+/** 语义色映射。桌面用 Tailwind 语义色，移动端统一走 --m-* 变量。
+ *  `subscribe` 在移动端暂时不可达（这里不传 isSubscribed，订阅态是 Phase 4 之后的事），
+ *  但 Record 要覆盖全部 tone，否则加订阅态时会漏一个分支。 */
 const TONE_STYLE: Record<LocalStatusTone, { color: string; background: string }> = {
   owned: { color: "var(--m-success)", background: "var(--m-success-weak)" },
   upgrade: { color: "var(--m-warning)", background: "var(--m-warning-weak)" },

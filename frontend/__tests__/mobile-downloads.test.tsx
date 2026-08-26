@@ -496,7 +496,7 @@ describe("任务筛选", () => {
     await act(async () => { await Promise.resolve(); });
   }
 
-  /** 三类各来一个：进行中、需处理（归位没搬动）、已完成 */
+  /** 三类各来一个：进行中、需处理（归位没搬动）、已结束 */
   function mixedTasks() {
     return [
       makeTask({ id: "t1", media_name: "正在下的", status: "downloading" }),
@@ -521,7 +521,8 @@ describe("任务筛选", () => {
     expect(within(group).getByRole("radio", { name: "全部 3" })).toBeInTheDocument();
     expect(within(group).getByRole("radio", { name: "进行中 1" })).toBeInTheDocument();
     expect(within(group).getByRole("radio", { name: "需处理 1" })).toBeInTheDocument();
-    expect(within(group).getByRole("radio", { name: "已完成 1" })).toBeInTheDocument();
+    // 叫「已结束」不叫「已完成」：这一类还包含 cancelled / archived
+    expect(within(group).getByRole("radio", { name: "已结束 1" })).toBeInTheDocument();
   });
 
   it("切到「需处理」只留需要介入的任务", async () => {
@@ -544,7 +545,22 @@ describe("任务筛选", () => {
     await flush();
 
     expect(screen.getByRole("radio", { name: "需处理 1" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "已完成 0" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "已结束 0" })).toBeInTheDocument();
+  });
+
+  it("已取消的任务落「已结束」而不是需处理（它不需要用户做什么）", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [
+        makeTask({ id: "c1", media_name: "取消掉的", status: "cancelled" }),
+        makeTask({ id: "c2", media_name: "归档了的", status: "archived" }),
+      ],
+    });
+    renderPage();
+    await flush();
+
+    expect(screen.getByRole("radio", { name: "已结束 2" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "需处理 0" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "进行中 0" })).toBeInTheDocument();
   });
 
   it("对账中的 lost / unknown 算进行中，不算需处理", async () => {
@@ -566,7 +582,7 @@ describe("任务筛选", () => {
     renderPage();
     await flush();
 
-    await act(async () => { fireEvent.click(screen.getByRole("radio", { name: "已完成 0" })); });
+    await act(async () => { fireEvent.click(screen.getByRole("radio", { name: "已结束 0" })); });
     expect(screen.getByText("这个筛选下没有任务")).toBeInTheDocument();
     expect(screen.queryByText("还没有下载任务")).toBeNull();
 

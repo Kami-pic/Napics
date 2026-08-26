@@ -30,6 +30,9 @@ export interface MobileDiscoverDetailClientProps {
   query: MobileDiscoverDetailQuery;
 }
 
+/** 详情读取超时。超时后按"读取失败"处理，标题和清洗名都在 URL 里，搜索资源仍可用 */
+const DETAIL_TIMEOUT_MS = 15_000;
+
 /** 远程海报 + 文字占位。发现侧没有本地文件，所以不走 MobilePoster 的本地优先链 */
 function RemotePoster({ url, fallbackText }: { url?: string; fallbackText: string }) {
   const [failed, setFailed] = useState(false);
@@ -91,6 +94,12 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
     if (getCachedDetail(cacheKey)) return;
 
     let alive = true;
+    // /media/info 会串行问 TMDB / 豆瓣 / Bangumi 三家，弱网下可能很久不返回。
+    // 没有超时的话页面就一直停在 loading，连"搜索资源"都点不到（子树还没渲染）。
+    const timer = setTimeout(() => {
+      if (alive) setTracked({ key: cacheKey, detail: null, loading: false, failed: true });
+    }, DETAIL_TIMEOUT_MS);
+
     api.mediaInfo(title, year || "", mediaType === "tv" ? "tv" : "movie", subtitle || "", detailSource, id || "")
       .then((d: MediaDetail) => {
         if (!alive) return;
@@ -99,8 +108,9 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
       })
       .catch(() => {
         if (alive) setTracked({ key: cacheKey, detail: null, loading: false, failed: true });
-      });
-    return () => { alive = false; };
+      })
+      .finally(() => clearTimeout(timer));
+    return () => { alive = false; clearTimeout(timer); };
   }, [title, year, mediaType, subtitle, detailSource, id, cacheKey]);
 
   const onBack = useCallback(() => {

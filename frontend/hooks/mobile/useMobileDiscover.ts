@@ -14,14 +14,27 @@ import { RECOMMEND_TABS, normalizeItem, type RecommendSource } from "@/component
 import { MOBILE_DISCOVER_PAGE_SIZE } from "@/lib/mobile/mobileConstants";
 import type { MobileViewState } from "@/components/mobile/MobileStateView";
 
-/** 前端合成的伪 tab：后端没有"周榜"这个源，要并发拉华语榜 + 全球榜再拼 */
+/** 前端合成的伪 tab：后端没有"周榜"这个源，要并发拉华语榜 + 全球榜。
+ *
+ *  **两个榜必须分段显示**：首尾相接后用数组下标当排名，全球榜第 1 名会显示成第 21 名。
+ *  分段之后每段的位次各自从 1 开始，段标题也顺带说清这是两个榜。 */
 const WEEKLY_TAB = "weekly_combined";
-const WEEKLY_SOURCES = ["douban_weekly_chinese", "douban_weekly_global"] as const;
+const WEEKLY_SOURCES = [
+  { source: "douban_weekly_chinese", label: "华语剧集周榜" },
+  { source: "douban_weekly_global", label: "全球剧集周榜" },
+] as const;
 
 const LOAD_FAILED_TEXT = "榜单加载失败，检查后端与网络是否正常";
 
+/** 带标题的分段。只有周榜用得上；普通榜单为 null，直接铺 items */
+export interface MobileDiscoverGroup {
+  label: string;
+  items: DoubanHotItem[];
+}
+
 interface TabState {
   items: DoubanHotItem[];
+  groups: MobileDiscoverGroup[] | null;
   /** 已加载到第几页（0 起） */
   page: number;
   hasMore: boolean;
@@ -33,26 +46,37 @@ interface TabState {
 }
 
 const EMPTY_TAB: TabState = {
-  items: [], page: 0, hasMore: false, loading: false, loadingMore: false, failed: false, moreFailed: false,
+  items: [], groups: null, page: 0, hasMore: false,
+  loading: false, loadingMore: false, failed: false, moreFailed: false,
 };
 
-/** 去重键：豆瓣/TMDB id 优先，没有 id 的源退回片名 */
+/** 去重键：豆瓣/TMDB id 优先。没有 id 的源退回「片名 + 年份」——
+ *  只用片名会把同名不同年的两部片子误合成一条（重制版、同名新剧都很常见）。 */
 function itemKey(item: DoubanHotItem): string {
-  return item.douban_id || item.title;
+  return item.douban_id || `${item.title}|${item.year || ""}`;
 }
 
-async function fetchPage(tabKey: string, page: number): Promise<{ items: DoubanHotItem[]; hasMore: boolean }> {
+interface FetchResult {
+  items: DoubanHotItem[];
+  hasMore: boolean;
+  groups: MobileDiscoverGroup[] | null;
+}
+
+async function fetchPage(tabKey: string, page: number): Promise<FetchResult> {
   if (tabKey === WEEKLY_TAB) {
     const parts = await Promise.all(
-      WEEKLY_SOURCES.map(src => api.discoverRecommend(src, 0, MOBILE_DISCOVER_PAGE_SIZE)),
+      WEEKLY_SOURCES.map(src => api.discoverRecommend(src.source, 0, MOBILE_DISCOVER_PAGE_SIZE)),
     );
-    const items = parts.flatMap(p => (p.items || []) as unknown[]).map(normalizeItem);
+    const groups = parts.map((part, i) => ({
+      label: WEEKLY_SOURCES[i].label,
+      items: ((part.items || []) as unknown[]).map(normalizeItem),
+    })).filter(group => group.items.length > 0);
     // 周榜是固定榜单，两个源各自就那么多条，没有下一页
-    return { items, hasMore: false };
+    return { items: groups.flatMap(g => g.items), hasMore: false, groups };
   }
   const data = await api.discoverRecommend(tabKey, page * MOBILE_DISCOVER_PAGE_SIZE, MOBILE_DISCOVER_PAGE_SIZE);
   const items = ((data.items || []) as unknown[]).map(normalizeItem);
-  return { items, hasMore: items.length >= MOBILE_DISCOVER_PAGE_SIZE };
+  return { items, hasMore: items.length >= MOBILE_DISCOVER_PAGE_SIZE, groups: null };
 }
 
 export interface UseMobileDiscoverResult {
@@ -61,6 +85,8 @@ export interface UseMobileDiscoverResult {
   activeTabConfig: RecommendSource;
   setActiveTab: (tab: string) => void;
   items: DoubanHotItem[];
+  /** 周榜这类由多个源拼出来的榜单要分段渲染；普通榜单为 null */
+  groups: MobileDiscoverGroup[] | null;
   state: MobileViewState;
   errorText: string;
   hasMore: boolean;
@@ -108,7 +134,7 @@ export function useMobileDiscover(initialTab?: string, enabled = true): UseMobil
     }));
 
     try {
-      const { items, hasMore } = await fetchPage(tabKey, page);
+      const { items, hasMore, groups } = await fetchPage(tabKey, page);
       if (genRef.current[tabKey] !== gen) return;
       setTabMap(prev => {
         const old = prev[tabKey] || EMPTY_TAB;
@@ -127,6 +153,7 @@ export function useMobileDiscover(initialTab?: string, enabled = true): UseMobil
           ...prev,
           [tabKey]: {
             items: merged,
+            groups,
             page,
             hasMore: hasMore && (!append || grew),
             loading: false,
@@ -194,6 +221,7 @@ export function useMobileDiscover(initialTab?: string, enabled = true): UseMobil
     activeTabConfig,
     setActiveTab,
     items: cur.items,
+    groups: cur.groups,
     state,
     errorText: LOAD_FAILED_TEXT,
     hasMore: cur.hasMore,
