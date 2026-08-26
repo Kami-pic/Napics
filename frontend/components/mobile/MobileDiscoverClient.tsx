@@ -3,7 +3,7 @@
 //
 // 卡片点击进"发现详情"，不直接跳搜索：和媒体库详情一个口径，先看信息再决定搜不搜。
 "use client";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -12,7 +12,7 @@ import { useMobileDiscover } from "@/hooks/mobile/useMobileDiscover";
 import { discoverDetailUrl, discoverUrl, MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
 import { useMobilePlugins } from "./MobileProviders";
 import MobileStateView from "./MobileStateView";
-import MobileDiscoverTabs from "./MobileDiscoverTabs";
+import MobileChipRow from "./MobileChipRow";
 import MobileDiscoverGrid from "./MobileDiscoverGrid";
 
 export interface MobileDiscoverClientProps {
@@ -33,6 +33,11 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
     setActiveTab(tab);
     router.replace(discoverUrl(tab));
   }, [setActiveTab, router]);
+
+  const chips = useMemo(
+    () => tabs.map(tab => ({ key: tab.key, label: tab.label })),
+    [tabs],
+  );
 
   const onOpen = useCallback((item: DoubanHotItem) => {
     router.push(discoverDetailUrl({
@@ -72,8 +77,14 @@ export default function MobileDiscoverClient({ initialTab }: MobileDiscoverClien
   }
 
   return (
-    <div className="flex flex-col">
-      <MobileDiscoverTabs tabs={tabs} activeTab={activeTab} onChange={onChangeTab} />
+    <div className="flex flex-col gap-2 py-2">
+      <MobileChipRow
+        items={chips}
+        activeKey={activeTab}
+        onChange={onChangeTab}
+        ariaLabel="榜单"
+        semantics="tab"
+      />
       <MobileStateView
         state={pluginsReady ? state : "loading"}
         loadingText="正在加载榜单…"

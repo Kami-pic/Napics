@@ -10,9 +10,9 @@ import { resolveLocalStatusTag, type LocalStatusTone } from "@/lib/discoverStatu
 
 /** 语义色映射。桌面用 Tailwind 语义色，移动端统一走 --m-* 变量 */
 const TONE_STYLE: Record<LocalStatusTone, { color: string; background: string }> = {
-  owned: { color: "var(--m-success)", background: "rgba(34, 197, 94, 0.18)" },
-  upgrade: { color: "var(--m-warning)", background: "rgba(245, 158, 11, 0.18)" },
-  subscribe: { color: "#a78bfa", background: "rgba(167, 139, 250, 0.18)" },
+  owned: { color: "var(--m-success)", background: "var(--m-success-weak)" },
+  upgrade: { color: "var(--m-warning)", background: "var(--m-warning-weak)" },
+  subscribe: { color: "var(--m-violet)", background: "var(--m-violet-weak)" },
 };
 
 export interface MobileDiscoverCardProps {
@@ -67,7 +67,10 @@ const MobileDiscoverCard = memo(function MobileDiscoverCard({
         {showRank && (
           <span
             className="absolute left-1.5 top-1 text-[20px] font-bold leading-none"
-            style={{ color: index < 3 ? "var(--m-warning)" : "rgba(255,255,255,0.75)", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
+            style={{
+              color: index < 3 ? "var(--m-warning)" : "var(--m-text-on-media)",
+              textShadow: "0 1px 3px var(--m-overlay)",
+            }}
           >
             {index + 1}
           </span>
@@ -75,8 +78,9 @@ const MobileDiscoverCard = memo(function MobileDiscoverCard({
         <span
           className="absolute right-1.5 top-1.5 rounded-[var(--m-radius-sm)] px-1.5 py-0.5 text-[12px] font-semibold leading-none"
           style={{
-            background: "rgba(0,0,0,0.7)",
-            color: hasRating ? "var(--m-warning)" : "var(--m-text-dim)",
+            background: "var(--m-overlay)",
+            // 压在海报上，没有评分时不能用 --m-text-dim（底图亮暗不可控）
+            color: hasRating ? "var(--m-warning)" : "var(--m-text-on-media)",
           }}
         >
           {hasRating ? item.rating.toFixed(1) : "—"}

@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 
 import MobileStateView from "./MobileStateView";
 import MobileDownloadTaskCard from "./MobileDownloadTaskCard";
-import MobileDownloadFilterBar from "./MobileDownloadFilterBar";
+import MobileChipRow from "./MobileChipRow";
 import { useMobileDownloads } from "@/hooks/mobile/useMobileDownloads";
 import { useMobileQuickSync } from "@/hooks/mobile/useMobileQuickSync";
 import { MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
 import {
   countByDownloadFilter,
   matchesDownloadFilter,
+  MOBILE_DOWNLOAD_FILTERS,
   type MobileDownloadFilterKey,
 } from "@/lib/mobile/mobileDownloadFilters";
 
@@ -22,6 +23,15 @@ export default function MobileDownloadList() {
   const [filter, setFilter] = useState<MobileDownloadFilterKey>("all");
 
   const counts = useMemo(() => countByDownloadFilter(entries), [entries]);
+  const chips = useMemo(
+    () => MOBILE_DOWNLOAD_FILTERS.map(f => ({
+      key: f.key,
+      label: `${f.label} ${counts[f.key]}`,
+      // 需处理为 0 时不强调，避免把一个空分类做成红点
+      emphasize: f.key === "attention" && counts.attention > 0,
+    })),
+    [counts],
+  );
   const visible = useMemo(
     () => entries.filter(entry => matchesDownloadFilter(entry, filter)),
     [entries, filter],
@@ -40,7 +50,13 @@ export default function MobileDownloadList() {
   return (
     <div className="flex flex-col gap-4 pt-3">
       {entries.length > 0 && (
-        <MobileDownloadFilterBar active={filter} counts={counts} onChange={setFilter} />
+        <MobileChipRow
+          items={chips}
+          activeKey={filter}
+          onChange={key => setFilter(key as MobileDownloadFilterKey)}
+          ariaLabel="任务筛选"
+          semantics="radio"
+        />
       )}
 
       <MobileStateView

@@ -5,32 +5,42 @@
 //
 // 挂在根 layout 上（而不是 / 和 /manage 各挂一次），所以要自己跳过 /m 与 /login。
 "use client";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const DISMISS_KEY = "napics_mobile_hint_dismissed";
 
+// localStorage 是外部状态，用 useSyncExternalStore 读而不是 effect 里 setState：
+// 后者在 SSR 下要靠"先渲染再隐藏"，会让已关闭的用户看到一闪。
+// getServerSnapshot 返回 true（服务端当作已关闭），所以 SSR 的 HTML 里没有这条提示。
+const listeners = new Set<() => void>();
+
+function subscribe(onChange: () => void): () => void {
+  listeners.add(onChange);
+  return () => { listeners.delete(onChange); };
+}
+
+function isDismissed(): boolean {
+  try {
+    return localStorage.getItem(DISMISS_KEY) !== null;
+  } catch {
+    // 隐私模式下读不到 localStorage：当作没关过，提示照常显示
+    return false;
+  }
+}
+
+function dismissForever() {
+  try { localStorage.setItem(DISMISS_KEY, "1"); } catch {}
+  for (const listener of listeners) listener();
+}
+
 export default function MobileVersionHint() {
   const pathname = usePathname();
-  // 初值 false：localStorage 只能在 effect 里读，首帧就渲染会让"已关闭"的用户看到一闪
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(DISMISS_KEY)) setVisible(true);
-    } catch {
-      setVisible(true);
-    }
-  }, []);
-
-  const dismiss = () => {
-    setVisible(false);
-    try { localStorage.setItem(DISMISS_KEY, "1"); } catch {}
-  };
+  const dismissed = useSyncExternalStore(subscribe, isDismissed, () => true);
 
   // 移动版自己不需要这条提示；登录页要保持干净
-  if (!visible || pathname.startsWith("/m") || pathname.startsWith("/login")) return null;
+  if (dismissed || pathname.startsWith("/m") || pathname.startsWith("/login")) return null;
 
   return (
     // md:hidden 而不是 JS 测宽度：转屏和改窗口宽度立刻生效，也不会有 SSR/CSR 宽度不一致
@@ -46,7 +56,7 @@ export default function MobileVersionHint() {
       </Link>
       <button
         type="button"
-        onClick={dismiss}
+        onClick={dismissForever}
         aria-label="不再提示"
         className="shrink-0 rounded-lg px-2 py-2 text-[13px] text-slate-500"
       >
