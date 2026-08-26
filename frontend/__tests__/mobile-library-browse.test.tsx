@@ -84,7 +84,8 @@ describe("加载态与异常态", () => {
     mockApi.getLibraryTree.mockResolvedValue(LIBRARY_TREE);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "重试" })); });
     await waitFor(() => expect(mockApi.getLibraryTree).toHaveBeenCalledTimes(2));
-    expect(screen.getByText("电影")).toBeTruthy();
+    // 一级目录的卡片上有两处「电影」：标题和分类徽标，所以要指明取标题那一个
+    expect(screen.getByText("电影", { selector: ".line-clamp-2" })).toBeTruthy();
   });
 
   it("path 不在树里 → 提示可能已被移动，而不是空目录", async () => {
@@ -107,7 +108,7 @@ describe("加载态与异常态", () => {
 describe("分级浏览与跳转", () => {
   it("库根显示一级分类，点进去是下钻 push", async () => {
     await mount("");
-    fireEvent.click(screen.getByText("电影"));
+    fireEvent.click(screen.getByText("电影", { selector: ".line-clamp-2" }));
     expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl("D:\\影视\\电影"));
     expect(mockRouter.replace).not.toHaveBeenCalled();
   });

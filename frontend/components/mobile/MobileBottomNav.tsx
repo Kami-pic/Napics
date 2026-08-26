@@ -37,8 +37,15 @@ export default function MobileBottomNav() {
           <button
             key={item.key}
             type="button"
-            // 主 Tab 用 replace：push 会让返回键在四个 Tab 之间来回循环，退不出去
-            onClick={() => router.replace(item.route)}
+            // 主 Tab 用 replace：push 会让返回键在四个 Tab 之间来回循环，退不出去。
+            // 目标是不带任何 query 的根路由，所以从下钻页点它就回到该 Tab 的首屏。
+            //
+            // 已经在这个 Tab 的首屏时 replace 到同一个 URL 不会有任何变化，
+            // 这时按 iOS tab bar 的惯例回到顶部 —— 否则用户点了完全没有反馈。
+            onClick={() => {
+              if (isActive) window.scrollTo({ top: 0, behavior: "smooth" });
+              router.replace(item.route);
+            }}
             aria-current={isActive ? "page" : undefined}
             className="flex flex-1 flex-col items-center justify-center gap-0.5 active:bg-[var(--m-surface-raised)]"
             style={{

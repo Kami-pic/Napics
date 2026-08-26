@@ -14,7 +14,16 @@ import { formatSize } from "@/lib/utils";
 import { nodeDisplayName, seasonNumber, videoDisplayName } from "./libraryNav";
 
 /** 徽标语义。视图层各自映射到 --m-* 变量，这里不写颜色 */
-export type MobileCardBadgeTone = "episodes" | "series" | "collection" | "library";
+export type MobileCardBadgeTone =
+  | "episodes"
+  | "series"
+  | "collection"
+  | "library"
+  | "categoryMovie"
+  | "categoryTv";
+
+/** 桌面 CategoryTagBadge 判蓝色的那两个取值 */
+const MOVIE_CATEGORY_TAGS = new Set(["movie", "anime_movie"]);
 
 export interface MobileCardTag {
   text: string;
@@ -156,15 +165,22 @@ export function folderCardMeta(node: FolderNode): MobileCardMeta {
     };
   }
 
-  // 其余容器目录（mixed / 分类目录）。
+  // 其余容器目录（mixed / 一级分类目录）。
   //
-  // 桌面对 `category_tag` 非空的目录会额外渲染一个可点的分类徽标（点了能改分类）。
-  // 移动端**刻意不加**：这类目录的名字往往就是分类名本身（顶级「电影」目录的
-  // category_tag 就是 movie → 徽标写「电影」），标题旁边再挂一个同样的词，
-  // 在 ~104px 宽的卡片上纯属浪费；而移动端也不提供改分类的操作，徽标点不动。
+  // 一级分类目录要显示分类标签，和桌面 CategoryTagBadge 同一个位置（左上角）、
+  // 同一套配色（电影类蓝、其他绿）。`category_tag` 只在 top_category_paths 上非空，
+  // 所以这个徽标出现的地方就是库根那一屏 —— 它是"这一列是电影还是剧集"的唯一标识。
+  // （移动端不提供改分类的操作，所以只是展示，不像桌面那样可点。）
   return {
     ...base,
     subtitle: `${node.video_count} 个项目`,
     cover: true,
+    badge: node.category_tag
+      ? {
+        text: getCategoryTagLabel(node.category_tag),
+        // 桌面 CategoryTagBadge 的配色：电影类蓝、其他绿
+        tone: MOVIE_CATEGORY_TAGS.has(node.category_tag) ? "categoryMovie" : "categoryTv",
+      }
+      : undefined,
   };
 }

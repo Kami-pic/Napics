@@ -94,6 +94,25 @@ describe("目录卡与桌面对齐", () => {
     expect(meta.badge).toBeUndefined();
   });
 
+  it("一级分类目录显示分类标签，电影类蓝、其他绿（同桌面 CategoryTagBadge）", () => {
+    // 库根那一屏靠这个徽标区分"这一列是电影还是剧集"
+    const movieLib = folderCardMeta({
+      ...COLLECTION_NODE, folder_type: "mixed", category_tag: "movie", is_virtual_library: false,
+    });
+    expect(movieLib.badge).toEqual({ text: "电影", tone: "categoryMovie" });
+
+    const tvLib = folderCardMeta({
+      ...COLLECTION_NODE, folder_type: "mixed", category_tag: "tv", is_virtual_library: false,
+    });
+    expect(tvLib.badge?.tone).toBe("categoryTv");
+
+    // 没有 category_tag 的普通容器目录不硬造徽标
+    const plain = folderCardMeta({
+      ...COLLECTION_NODE, folder_type: "mixed", category_tag: "", is_virtual_library: false,
+    });
+    expect(plain.badge).toBeUndefined();
+  });
+
   it("季卡片徽标是「季号 · 集数」", () => {
     const season = TV_MULTI_SEASON_NODE.children[1];
     expect(seasonCardMeta(season).badge?.text).toBe(`S01 · ${season.video_count} 集`);

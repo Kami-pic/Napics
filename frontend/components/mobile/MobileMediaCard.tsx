@@ -17,6 +17,9 @@ const BADGE_TONE: Record<MobileCardBadgeTone, string> = {
   series: "var(--m-accent)",
   collection: "var(--m-text-muted)",
   library: "var(--m-accent)",
+  // 一级分类标签：与桌面 CategoryTagBadge 同配色（电影类蓝、其他绿）
+  categoryMovie: "var(--m-accent)",
+  categoryTv: "var(--m-success)",
 };
 
 const TAG_TONE: Record<MobileCardTag["tone"], string> = {
