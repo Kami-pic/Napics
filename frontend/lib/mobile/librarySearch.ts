@@ -15,7 +15,8 @@ export type MobileLibraryHit =
 /** 结果上限。三列卡片下 90 条已经是 30 行，再多没人翻，还会拖慢渲染 */
 export const LIBRARY_SEARCH_LIMIT = 90;
 
-function normalize(text: string): string {
+/** 字段可能缺失（旧条目没有 clean_name / shadow_name），一律按空串处理 */
+function normalize(text: string | undefined): string {
   return (text || "").toLowerCase();
 }
 

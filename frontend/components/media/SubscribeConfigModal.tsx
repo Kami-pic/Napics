@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import SubscribeSourceSelect from "./SubscribeSourceSelect";
+import FolderPicker from "@/components/settings/FolderPicker";
 
 export interface SubscribeConfig {
   quality: string;
@@ -60,6 +61,7 @@ export default function SubscribeConfigModal({
     purpose: "follow",
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // 加载分类保存路径
   const [savePaths, setSavePaths] = useState<Record<string, string[]>>({});
@@ -228,11 +230,27 @@ export default function SubscribeConfigModal({
             {/* 保存路径 */}
             <div>
               <label className="text-[11px] text-slate-500 mb-1 block">保存路径</label>
-              <input value={config.save_path} onChange={e => set("save_path", e.target.value)}
-                placeholder={defaultSavePath || savePaths[mediaType === "tv" ? "tv" : "movie"]?.[0] || "留空使用默认"}
-                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white font-mono outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
+              <div className="flex items-center gap-1">
+                <input value={config.save_path} onChange={e => set("save_path", e.target.value)}
+                  placeholder={defaultSavePath || savePaths[mediaType === "tv" ? "tv" : "movie"]?.[0] || "留空使用默认"}
+                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white font-mono outline-none focus:border-blue-500/50 placeholder:text-slate-600" />
+                {/* 手输 NAS 路径必然打错，而打错要等订阅命中、归位失败才发现 */}
+                <button type="button" onClick={() => setPickerOpen(true)} title="选择文件夹"
+                  className="flex-shrink-0 px-2 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors">
+                  📁
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        {pickerOpen && (
+          <FolderPicker
+            open
+            onClose={() => setPickerOpen(false)}
+            onSelect={(path) => { set("save_path", path); setPickerOpen(false); }}
+            initialPath={config.save_path || defaultSavePath}
+          />
         )}
 
         {/* 操作按钮 */}

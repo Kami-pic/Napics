@@ -151,10 +151,22 @@ describe("底栏搜索 = 豆瓣搜索", () => {
     expect(screen.getByRole("button", { name: "重试" })).toBeTruthy();
   });
 
-  it("有关键词时给一个「用这个词搜资源」的出口", async () => {
+  it("豆瓣搜不到时「直接搜片源」是主要出路（不是只在有结果时才给）", async () => {
+    mockApi.doubanSearch.mockResolvedValue({ candidates: [] });
+    await mount("很冷门的纪录片");
+    await waitFor(() => expect(screen.getByText(/没有找到/)).toBeTruthy());
+
+    expect(screen.getByText(/豆瓣没有也可以直接搜片源/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /用「很冷门的纪录片」搜片源/ }));
+    });
+    expect(mockRouter.push.mock.calls.at(-1)![0]).toContain(MOBILE_ROUTES.resource);
+  });
+
+  it("有关键词时给一个「用这个词搜片源」的出口", async () => {
     await mount("沙丘");
     await waitFor(() => expect(screen.getByText("沙丘：预言")).toBeTruthy());
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /用「沙丘」搜资源/ })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /用「沙丘」搜片源/ })); });
     expect(mockRouter.push.mock.calls.at(-1)![0]).toContain(MOBILE_ROUTES.resource);
   });
 

@@ -175,17 +175,19 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
         </MobileStateView>
       )}
 
-      {/* 资源搜索的入口在详情页，但用户可能就是想直接开一个空的资源搜索 */}
-      {q && (
+      {/* 豆瓣搜不到不等于片源搜不到（冷门片、纪录片、剧集别名在豆瓣常匹配不上），
+          所以**有没有结果都给这条路**，搜不到的时候它就是主要出路。
+          输入框里有词就够，不必等豆瓣返回。 */}
+      {(q || draft.trim()) && (
         <p className="px-1 pt-2 text-center text-[12px] text-[var(--m-text-dim)]">
-          要直接搜种子或网盘？
+          {searching || items.length > 0 ? "都不是想找的？" : "豆瓣没有也可以直接搜片源："}
           <button
             type="button"
-            onClick={() => router.push(resourceSearchUrl({ q, tab: "bt" }))}
+            onClick={() => router.push(resourceSearchUrl({ q: (q || draft).trim(), tab: "bt" }))}
             className="ml-1 underline"
             style={{ color: "var(--m-accent)" }}
           >
-            用「{q}」搜资源
+            用「{(q || draft).trim()}」搜片源
           </button>
         </p>
       )}

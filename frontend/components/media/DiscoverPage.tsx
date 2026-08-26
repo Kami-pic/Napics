@@ -49,6 +49,24 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
     subConfigOpen, setSubConfigOpen, subConfigItem, setSubConfigItem, subConfigDetail, setSubConfigDetail,
   } = sub;
 
+  /**
+   * 用一个纯关键词打开搜索升级弹窗。
+   *
+   * 豆瓣搜不到不等于片源搜不到 —— 冷门片、纪录片、剧集别名在豆瓣常常匹配不上，
+   * 但同一个词去搜种子往往有结果。所以豆瓣搜索这一屏必须留一条通往资源搜索的路，
+   * 而不是让用户自己换个地方重新输一遍。
+   */
+  const openResourceSearch = (keyword: string) => {
+    const q = keyword.trim();
+    if (!q) return;
+    openSearchModal({
+      title: q, year: "", rating: 0, cover_url: "", subtitle: "",
+      episode: "", douban_id: "",
+      // 没有豆瓣条目，清洗名就用原词，避免搜索侧拿到空的中文名
+      clean_name_cn: q,
+    } as DoubanHotItem, null);
+  };
+
   return (
     <div className="mt-8" style={{ minHeight: "100vh" }}>
       <DiscoverHeader
@@ -78,7 +96,16 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
             {searching ? (
               <SkeletonGrid colCount={colCount} rows={4} />
             ) : searchItems.length === 0 ? (
-              <p className="text-center py-12 text-xs text-slate-600">未找到匹配影片</p>
+              /* 豆瓣搜不到不代表片源搜不到：冷门片、纪录片、剧集别名在豆瓣常常匹配不上，
+                 但用同一个词去搜种子往往有结果。所以空态要给一条通往搜索升级的路，
+                 而不是让用户自己去别处重新输一遍。 */
+              <div className="py-12 flex flex-col items-center gap-2">
+                <p className="text-xs text-slate-600">未找到匹配影片</p>
+                <button onClick={() => openResourceSearch(searchQuery)}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline">
+                  直接用「{searchQuery}」搜片源
+                </button>
+              </div>
             ) : (
               <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
                 {searchItems.map((item, index) => (
@@ -104,6 +131,16 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
                   </div>
                 )}
               </div>
+            )}
+            {/* 有结果时也给这条路：列表里可能都不是用户要的那一部 */}
+            {!searching && searchItems.length > 0 && (
+              <p className="pt-5 text-center text-xs text-slate-600">
+                都不是想找的？
+                <button onClick={() => openResourceSearch(searchQuery)}
+                  className="ml-1 text-blue-400 hover:text-blue-300 underline">
+                  直接用「{searchQuery}」搜片源
+                </button>
+              </p>
             )}
           </div>
         )}

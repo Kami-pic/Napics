@@ -1,7 +1,9 @@
 // 搜索弹窗顶栏 — 从 SearchModal.tsx 拆分
 "use client";
+import { useState } from "react";
 import type { EnhancedSearchResult, FilterState, PanResult, PanSourceStatus } from "@/types";
 import { buildKeywordChain } from "@/lib/domain/searchKeywords";
+import FolderPicker from "@/components/settings/FolderPicker";
 import FilterBar from "./FilterBar";
 import { DEFAULT_FILTERS, type SourceStatus } from "./filterUtils";
 import PanFilterBar from "./PanFilterBar";
@@ -91,6 +93,8 @@ export default function SearchHeader(props: SearchHeaderProps) {
     handleBtSourceSelect, handlePanSourceSelect,
     results, onClose,
   } = props;
+
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <div className="p-5 border-b border-white/[0.06] space-y-3 flex-shrink-0 overflow-visible relative z-10">
@@ -182,13 +186,30 @@ export default function SearchHeader(props: SearchHeaderProps) {
         
         <div className="w-px h-6 bg-white/[0.06] mx-1" />
         
-        <div className="flex-1 relative group">
+        <div className="flex-1 relative group flex items-center gap-1">
           <input value={savePath} onChange={(e) => setSavePath(e.target.value)}
             placeholder={defaultSavePath ? `保存到：${defaultSavePath}` : "保存到：下载保存路径..."}
-            className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500/50 font-mono transition-all group-hover:bg-white/[0.06]"
+            className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500/50 font-mono transition-all group-hover:bg-white/[0.06]"
             title={savePath || defaultSavePath} />
+          {/* 手输 NAS 路径（`\\NAS\share\视频\...`）几乎必然打错一个字，
+              而打错要等下载完成、归位失败才发现。复用设置页那个目录选择器。 */}
+          <button type="button" onClick={() => setPickerOpen(true)}
+            title="选择文件夹"
+            className="flex-shrink-0 px-2 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors">
+            📁
+          </button>
         </div>
       </div>
+
+      {pickerOpen && (
+        // FolderPicker 的 z-[200] 高于 SearchModal 的 z-50，所以能盖在弹窗之上
+        <FolderPicker
+          open
+          onClose={() => setPickerOpen(false)}
+          onSelect={(path) => { setSavePath(path); setPickerOpen(false); }}
+          initialPath={savePath || defaultSavePath}
+        />
+      )}
       {/* 分割线：将 SourceTabs + 筛选器 和上面的搜索区域分开 */}
       <div className="border-t border-white/[0.04] pt-3 -mx-5 px-5 flex flex-col items-start gap-2">
       {activeTab === "bt" && (
