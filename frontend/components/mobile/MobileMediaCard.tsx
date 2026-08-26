@@ -59,8 +59,14 @@ const MobileMediaCard = memo(function MobileMediaCard({ meta, onOpen, onPlay }: 
               onError={() => setFailed(true)}
             />
           ) : (
-            <span className="flex h-full w-full items-center justify-center px-1.5 text-center text-[10px] leading-tight text-[var(--m-text-dim)]">
-              {meta.title}
+            // 实测全库约三分之一的条目没有本地封面（未刮削的散片、聚合容器）。
+            // 占位不重复标题 —— 标题在卡片下方本来就有两行，重复一遍等于白占一屏。
+            // 和桌面 CardGrid 的 🎬 占位保持一致。
+            <span
+              className="flex h-full w-full items-center justify-center text-[28px] opacity-25"
+              aria-hidden="true"
+            >
+              🎬
             </span>
           )}
 
