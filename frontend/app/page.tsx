@@ -20,6 +20,7 @@ import OperationHistory from "@/components/media/OperationHistory";
 import OrganizeProgress from "@/components/media/OrganizeProgress";
 import DownloadManagerPanel from "@/components/download/DownloadManagerPanel";
 import PluginCenter from "@/components/plugins/PluginCenter";
+import LocateHint from "@/components/layout/LocateHint";
 import { VideoPlayer } from "@/components/media/VideoPlayer";
 import EmptyLibraryGuide from "@/components/media/EmptyLibraryGuide";
 import AddLibraryModal from "@/components/media/AddLibraryModal";
@@ -117,6 +118,7 @@ export default function Home() {
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [showScanSummary, setShowScanSummary] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
+  const [locateHint, setLocateHint] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
   const [discoverGuideDismissed, setDiscoverGuideDismissed] = useState(() => {
@@ -180,15 +182,27 @@ export default function Home() {
 
   // 从发现页跳转到本地媒体库目录
   const handleNavigateToLocal = useCallback((folderPath: string) => {
-    if (!folderPath || !fileTree) return;
-    const basePaths = config.scan_paths?.length ? config.scan_paths : [];
+    if (!folderPath) return;
+    if (!fileTree) {
+      setLocateHint("目录树还在加载，稍等一下再点。");
+      return;
+    }
+    // 兜底基准要包含虚拟媒体库的路径，不能只有 scan_paths —— 库路径下的目标
+    // 一旦精确匹配失败就没有第二次机会了。
+    const basePaths = [
+      ...(config.scan_paths || []),
+      ...(config.media_libraries || []).flatMap(lib => lib.paths || []),
+    ].filter(Boolean);
     const targetNode = findLibraryNodeByPath(fileTree, folderPath, basePaths);
     if (targetNode) {
       navigateTo(targetNode);
       // 滚动到顶部
       if (scrollContainerRef.current) scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
-  }, [config.scan_paths, fileTree, navigateTo, scrollContainerRef]);
+    // 匹配不上时必须说一声。最常见的原因是刚下载归位、还没同步进媒体库。
+    setLocateHint(`媒体库里找不到这个目录：${folderPath}。如果是刚下载完成的，点「快速同步」后再试。`);
+  }, [config.scan_paths, config.media_libraries, fileTree, navigateTo, scrollContainerRef]);
 
   // 监听下载面板的"查看"按钮事件
   useEffect(() => {
@@ -449,6 +463,8 @@ export default function Home() {
       />
 
       <DownloadManagerPanel open={showDownloadManager} onClose={() => setShowDownloadManager(false)} />
+
+      <LocateHint message={locateHint} onDismiss={() => setLocateHint("")} />
 
       <PluginCenter open={showPlugins} onClose={() => setShowPlugins(false)} />
 
