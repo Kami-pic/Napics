@@ -2,7 +2,7 @@
 // 以及需要用户介入时给出恢复入口。
 //
 // 断言全部走 DOM，不把 hook 返回值抓到模块变量（渲染期写外部状态是禁止的）。
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import MobileDownloadList from "@/components/mobile/MobileDownloadList";
@@ -487,5 +487,99 @@ describe("快速同步恢复入口", () => {
 
     expect(mockApi.quickSync).toHaveBeenCalledTimes(1);
     await act(async () => { release(sseResponse([{ type: "done", added: 0, removed: 0 }])); });
+  });
+});
+
+describe("任务筛选", () => {
+  async function flush() {
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { await Promise.resolve(); });
+  }
+
+  /** 三类各来一个：进行中、需处理（归位没搬动）、已完成 */
+  function mixedTasks() {
+    return [
+      makeTask({ id: "t1", media_name: "正在下的", status: "downloading" }),
+      makeTask({
+        id: "t2", media_name: "要处理的", status: "completed",
+        relocate_status: "skipped_existing", relocated_count: 0,
+      }),
+      makeTask({
+        id: "t3", media_name: "已完成的", status: "completed",
+        relocate_status: "moved", relocated_count: 1,
+      }),
+    ];
+  }
+
+  it("三类互斥且并集等于全部，计数标在 chip 上", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({ tasks: mixedTasks() });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([`${SAVE_PATH}\\某剧.mkv`]));
+    renderPage();
+    await flush();
+
+    const group = screen.getByRole("radiogroup", { name: "任务筛选" });
+    expect(within(group).getByRole("radio", { name: "全部 3" })).toBeInTheDocument();
+    expect(within(group).getByRole("radio", { name: "进行中 1" })).toBeInTheDocument();
+    expect(within(group).getByRole("radio", { name: "需处理 1" })).toBeInTheDocument();
+    expect(within(group).getByRole("radio", { name: "已完成 1" })).toBeInTheDocument();
+  });
+
+  it("切到「需处理」只留需要介入的任务", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({ tasks: mixedTasks() });
+    mockApi.getLibraryTree.mockResolvedValue(makeTree([`${SAVE_PATH}\\某剧.mkv`]));
+    renderPage();
+    await flush();
+
+    await act(async () => { fireEvent.click(screen.getByRole("radio", { name: "需处理 1" })); });
+    expect(screen.getByText("要处理的")).toBeInTheDocument();
+    expect(screen.queryByText("正在下的")).toBeNull();
+    expect(screen.queryByText("已完成的")).toBeNull();
+  });
+
+  it("失败任务算需处理，不算已完成（它同时是终态）", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [makeTask({ id: "t9", media_name: "失败的", status: "failed", error: "磁力无效" })],
+    });
+    renderPage();
+    await flush();
+
+    expect(screen.getByRole("radio", { name: "需处理 1" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "已完成 0" })).toBeInTheDocument();
+  });
+
+  it("对账中的 lost / unknown 算进行中，不算需处理", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({
+      tasks: [
+        makeTask({ id: "a", media_name: "核对中的", status: "lost" }),
+        makeTask({ id: "b", media_name: "待确认的", status: "unknown" }),
+      ],
+    });
+    renderPage();
+    await flush();
+
+    expect(screen.getByRole("radio", { name: "进行中 2" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "需处理 0" })).toBeInTheDocument();
+  });
+
+  it("筛选后为空与一个任务都没有是两种文案，前者给「看全部任务」", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({ tasks: [makeTask({ status: "downloading" })] });
+    renderPage();
+    await flush();
+
+    await act(async () => { fireEvent.click(screen.getByRole("radio", { name: "已完成 0" })); });
+    expect(screen.getByText("这个筛选下没有任务")).toBeInTheDocument();
+    expect(screen.queryByText("还没有下载任务")).toBeNull();
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "看全部任务" })); });
+    expect(screen.getByText("某剧 S01E01")).toBeInTheDocument();
+  });
+
+  it("一个任务都没有时不显示筛选条", async () => {
+    mockApi.getDownloadTasks.mockResolvedValue({ tasks: [] });
+    renderPage();
+    await flush();
+
+    expect(screen.queryByRole("radiogroup", { name: "任务筛选" })).toBeNull();
+    expect(screen.getByText("还没有下载任务")).toBeInTheDocument();
   });
 });
