@@ -98,14 +98,15 @@ describe("行为矩阵：一屏显示什么", () => {
     expect(view.folders.map(f => f.name)).toEqual(["Season 1", "Season 2"]);
     // 这个夹具的剧目录下没有散片，所以视频段为空（有散片的情况见下一条）
     expect(view.videos).toEqual([]);
-    expect(view.title).toBe("三体");
+    // 标题用原始目录名，不用清洗名
+    expect(view.title).toBe("三体 (2023)");
   });
 
   it("TV 单季 → 直接是集列表，页头保留剧名与季名", () => {
     const view = resolveLibraryView(TV_SINGLE_SEASON_NODE);
     expect(view.kind).toBe("episodes");
     expect(view.title).toBe("沙丘：预言 (2024)");
-    expect(view.subtitle).toBe("沙丘：预言 第一季");
+    expect(view.subtitle).toBe("Season 1");
     expect(view.videos.map(v => v.file_name)).toEqual(["S01E01.mkv", "S01E02.mkv"]);
   });
 
@@ -262,10 +263,24 @@ describe("季号解析（决定季列表顺序）", () => {
 });
 
 describe("显示名", () => {
-  it("优先清洗名，清洗名为空串时回退原名（不能用 ??）", () => {
-    expect(nodeDisplayName(TV_MULTI_SEASON_NODE)).toBe("三体");
-    expect(nodeDisplayName({ ...TV_MULTI_SEASON_NODE, clean_name: "" })).toBe("三体 (2023)");
-    expect(videoDisplayName(MOVIE_NODE.videos[0])).toBe("钢铁侠");
-    expect(videoDisplayName({ ...MOVIE_NODE.videos[0], clean_name: "" })).toBe("钢铁侠 Iron Man (2008).mkv");
+  it("用原始目录名与原始文件名，不用清洗名", () => {
+    // 容器目录的 clean_name 是从子项冒泡上来的（真实库里 `动画番` 的 clean_name
+    // 是 `不存在的战区`），优先它会让整个媒体库首页变成一排片名
+    expect(nodeDisplayName(TV_MULTI_SEASON_NODE)).toBe("三体 (2023)");
+    expect(videoDisplayName(MOVIE_NODE.videos[0])).toBe("钢铁侠 Iron Man (2008).mkv");
+  });
+
+  it("原名缺失时才回退清洗名，不留空标题", () => {
+    expect(nodeDisplayName({ ...TV_MULTI_SEASON_NODE, name: "" })).toBe("三体");
+    expect(videoDisplayName({ ...MOVIE_NODE.videos[0], file_name: "" })).toBe("钢铁侠");
+  });
+
+  it("容器目录被子项污染的 clean_name 不会显示出来（真实形状回归）", () => {
+    const polluted = {
+      ...TV_MULTI_SEASON_NODE,
+      name: "动画番",
+      clean_name: "不存在的战区",
+    };
+    expect(nodeDisplayName(polluted)).toBe("动画番");
   });
 });

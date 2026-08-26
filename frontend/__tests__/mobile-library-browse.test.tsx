@@ -107,15 +107,16 @@ describe("分级浏览与跳转", () => {
     expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 
-  it("虚拟库进入后按剧目呈现", async () => {
+  it("虚拟库进入后按剧目呈现（显示原始目录名）", async () => {
     await mount(TV_LIBRARY_NODE.path);
-    expect(screen.getByText("三体")).toBeTruthy();
+    expect(screen.getByText("三体 (2023)")).toBeTruthy();
     expect(screen.getByText("沙丘：预言 (2024)")).toBeTruthy();
   });
 
   it("单电影卡片直接进详情，不再下钻一层", async () => {
     await mount("D:\\影视\\电影");
-    fireEvent.click(screen.getByText("钢铁侠"));
+    // 这是目录卡片，显示的是原始目录名（不带扩展名）
+    fireEvent.click(screen.getByText(MOVIE_NODE.name));
     expect(mockRouter.push).toHaveBeenCalledWith(
       libraryDetailUrl(MOVIE_NODE.videos[0].file_path),
     );
@@ -126,14 +127,14 @@ describe("分级浏览与跳转", () => {
     expect(screen.getByLabelText("季列表")).toBeTruthy();
     expect(screen.getByText("S01")).toBeTruthy();
     expect(screen.getByText("S02")).toBeTruthy();
-    fireEvent.click(screen.getByText("三体 第一季"));
+    fireEvent.click(screen.getByText("Season 1"));
     expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl(TV_MULTI_SEASON_NODE.children[1].path));
   });
 
   it("TV 单季直接是集列表，页头同时有剧名和季名", async () => {
     await mount(TV_SINGLE_SEASON_NODE.path);
     expect(screen.getByRole("heading", { name: "沙丘：预言 (2024)" })).toBeTruthy();
-    expect(screen.getByText("沙丘：预言 第一季")).toBeTruthy();
+    expect(screen.getByText("Season 1")).toBeTruthy();
     expect(screen.getByLabelText("视频列表")).toBeTruthy();
     expect(screen.queryByLabelText("季列表")).toBeNull();
   });

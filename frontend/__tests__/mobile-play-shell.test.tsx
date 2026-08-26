@@ -53,7 +53,7 @@ describe("播放页外壳", () => {
 
   it("电影不硬造季集号", async () => {
     await mount(MOVIE.file_path);
-    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("钢铁侠"));
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("钢铁侠 Iron Man (2008).mkv"));
     expect(screen.queryByText(/S\d\dE\d\d/)).toBeNull();
   });
 
@@ -118,7 +118,7 @@ describe("上一集 / 下一集", () => {
 
   it("电影（目录里只有一个视频）不渲染切集控件", async () => {
     await mount(MOVIE.file_path);
-    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("钢铁侠"));
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("钢铁侠 Iron Man (2008).mkv"));
     expect(screen.queryByLabelText("切换集数")).toBeNull();
   });
 

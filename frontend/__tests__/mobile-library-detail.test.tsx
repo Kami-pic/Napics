@@ -84,7 +84,8 @@ describe("异常态", () => {
     mockApi.readScrape.mockResolvedValue({ status: "ok", data: {} });
     await mount(MOVIE_VIDEO.file_path);
     await waitFor(() => expect(screen.getByText(/没有刮削信息/)).toBeTruthy());
-    expect(screen.getByText(MOVIE_VIDEO.file_name)).toBeTruthy();
+    // 标题与信息表都显示原始文件名，所以会出现多处；只要确认它在页面上
+    expect(screen.getAllByText(MOVIE_VIDEO.file_name).length).toBeGreaterThan(0);
   });
 
   it("刮削读取中显示加载态，不先闪一下「没有刮削信息」", async () => {

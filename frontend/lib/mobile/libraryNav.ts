@@ -42,14 +42,21 @@ export type MobileNavTarget =
   | { type: "library"; url: string }
   | { type: "detail"; url: string };
 
-/** 节点显示名：优先清洗名。清洗名可能为空串，不能用 ?? */
+/**
+ * 节点显示名：**用原始目录名**。
+ *
+ * 不能优先 clean_name —— 后端给容器目录的 clean_name 是从子项冒泡上来的：
+ * `动画番` 的 clean_name 是 `不存在的战区`（它第一个子目录的清洗名），
+ * `电影` 是 `21克`。整个媒体库首页会变成一排片名，用户根本认不出这是哪个库。
+ * 原始目录名是用户自己的组织方式，永远是对的。
+ */
 export function nodeDisplayName(node: FolderNode): string {
-  return node.clean_name || node.name || "";
+  return node.name || node.clean_name || "";
 }
 
-/** 视频显示名：优先清洗名，回退文件名 */
+/** 视频显示名：**用原始文件名**。理由同上，清洗名不可靠 */
 export function videoDisplayName(video: VideoInfo): string {
-  return video.clean_name || video.file_name || "";
+  return video.file_name || video.clean_name || "";
 }
 
 /** 路径比较用的归一化：统一分隔符、去末尾分隔符、忽略大小写。
