@@ -85,6 +85,8 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
 
   // Strict Mode 下 effect 跑两次，没有这个闸门会打两次 /media/info
   const requestedKeyRef = useRef("");
+  // 代际：换片子之后迟到的响应一律丢弃（不能靠 cleanup 里的标志，见下面 effect 的注释）
+  const generationRef = useRef(0);
 
   useEffect(() => {
     if (!title) return;
@@ -93,24 +95,30 @@ export default function MobileDiscoverDetailClient({ query }: MobileDiscoverDeta
     // 缓存命中的那份已经在初始状态里了
     if (getCachedDetail(cacheKey)) return;
 
-    let alive = true;
-    // /media/info 会串行问 TMDB / 豆瓣 / Bangumi 三家，弱网下可能很久不返回。
+    // 用代际号判"这个响应还算不算"，**不能用 cleanup 里翻转的 alive 标志**：
+    // Strict Mode（dev 默认）会 mount → cleanup → mount，cleanup 一旦把请求和超时都作废，
+    // 第二次 effect 又被上面 requestedKeyRef 的守卫挡住，页面就永远停在
+    // "正在读取影片信息…"。用户实测到的无穷等待就是这条，
+    // `mobile-discover.test.tsx` 里那个 StrictMode 用例把它锁住了。
+    const generation = ++generationRef.current;
+    const settled = (next: DetailState) => {
+      if (generationRef.current === generation) setTracked(next);
+    };
+
+    // /media/info 会串行问 TMDB / 豆瓣 / Bangumi 三家，实测冷缓存 6 秒起，弱网更久。
     // 没有超时的话页面就一直停在 loading，连"搜索资源"都点不到（子树还没渲染）。
-    const timer = setTimeout(() => {
-      if (alive) setTracked({ key: cacheKey, detail: null, loading: false, failed: true });
-    }, DETAIL_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => settled({ key: cacheKey, detail: null, loading: false, failed: true }),
+      DETAIL_TIMEOUT_MS,
+    );
 
     api.mediaInfo(title, year || "", mediaType === "tv" ? "tv" : "movie", subtitle || "", detailSource, id || "")
       .then((d: MediaDetail) => {
-        if (!alive) return;
         if (d?.found) setCachedDetail(cacheKey, d);
-        setTracked({ key: cacheKey, detail: d || { found: false }, loading: false, failed: false });
+        settled({ key: cacheKey, detail: d || { found: false }, loading: false, failed: false });
       })
-      .catch(() => {
-        if (alive) setTracked({ key: cacheKey, detail: null, loading: false, failed: true });
-      })
+      .catch(() => settled({ key: cacheKey, detail: null, loading: false, failed: true }))
       .finally(() => clearTimeout(timer));
-    return () => { alive = false; clearTimeout(timer); };
   }, [title, year, mediaType, subtitle, detailSource, id, cacheKey]);
 
   const onBack = useCallback(() => {

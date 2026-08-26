@@ -4,6 +4,7 @@
 // 1. 分页量固定，不跟视口列数联动 —— 转屏不能清缓存重拉。
 // 2. 卡片点击进发现详情，不直接跳搜索。
 // 3. 本地状态角标与桌面同一份判定（lib/discoverStatus）。
+import { StrictMode } from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -469,6 +470,27 @@ describe("发现详情", () => {
     expect(mockRouter.push.mock.calls.at(-1)![0]).toContain(MOBILE_ROUTES.resource);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "查看本地" })); });
     expect(mockRouter.push).toHaveBeenLastCalledWith(libraryUrl("D:\\影视\\还在加载的片"));
+  });
+
+  it("Strict Mode 下也只请求一次，且超时仍然生效", async () => {
+    // 用户实测「正在读取影片信息…无穷等待」就是这条：dev 是 Strict Mode，
+    // effect 会 mount → cleanup → mount。如果 cleanup 里作废了响应，
+    // 而第二次 effect 又被「同 key 不重复请求」的守卫挡住，就既没有响应也没有超时。
+    vi.useFakeTimers();
+    mockApi.mediaInfo.mockReturnValue(new Promise(() => {}));
+    render(
+      <StrictMode>
+        <MobileDiscoverDetailClient query={{ title: "严格模式下的片", year: "2026", source: "tmdb" } as never} />
+      </StrictMode>,
+    );
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mockApi.mediaInfo).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("正在读取影片信息…")).toBeTruthy();
+
+    await act(async () => { vi.advanceTimersByTime(15_000); });
+    expect(screen.getByText(/仍可直接搜索资源/)).toBeTruthy();
+    vi.useRealTimers();
   });
 
   it("详情请求一直不返回时超时收场，搜索资源仍可用", async () => {
