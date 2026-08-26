@@ -48,6 +48,7 @@ beforeEach(() => {
   mockRouter.push.mockReset();
   mockApi.getLibraryTree.mockReset();
   mockApi.readScrape.mockReset();
+  mockApi.executeScrape.mockReset();
   mockApi.getLibraryTree.mockResolvedValue(LIBRARY_TREE);
   mockApi.readScrape.mockResolvedValue(SCRAPE_OK);
 });
@@ -232,5 +233,43 @@ describe("海报回退顺序", () => {
     fireEvent.error(document.querySelector("img")!);
     fireEvent.error(document.querySelector("img")!);
     expect(document.querySelector("img")).toBeNull();
+  });
+});
+
+describe("刮削区", () => {
+  it("没有刮削信息时给「一键刮削」，成功后重新读取并提示", async () => {
+    mockApi.readScrape.mockResolvedValue({ status: "ok", data: {} });
+    mockApi.executeScrape.mockResolvedValue({ data: { tmdb_id: 1726, title: "钢铁侠" } });
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText(/还没有刮削信息/)).toBeTruthy());
+
+    // 刮削成功后这次读取要能拿到数据
+    mockApi.readScrape.mockResolvedValue(SCRAPE_OK);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "一键刮削" })); });
+
+    expect(mockApi.executeScrape).toHaveBeenCalledWith(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText("刮削完成")).toBeTruthy());
+  });
+
+  it("刮削没匹配到结果时说清楚下一步，不假装成功", async () => {
+    mockApi.readScrape.mockResolvedValue({ status: "ok", data: {} });
+    mockApi.executeScrape.mockResolvedValue({ data: {} });
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText(/还没有刮削信息/)).toBeTruthy());
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "一键刮削" })); });
+    await waitFor(() => expect(screen.getByText(/没有匹配到结果/)).toBeTruthy());
+  });
+
+  it("已有刮削信息时不提供任何覆盖操作", async () => {
+    await mount(MOVIE_VIDEO.file_path);
+    await waitFor(() => expect(screen.getByText("2008")).toBeTruthy());
+
+    // 一键刮削只在「没有刮削」时出现 —— 误触一下就冲掉整理好的 NFO 和海报
+    expect(screen.queryByRole("button", { name: "一键刮削" })).toBeNull();
+    for (const name of [/刮削/, /重新匹配/, /覆盖/]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(mockApi.executeScrape).not.toHaveBeenCalled();
   });
 });

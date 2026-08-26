@@ -6,9 +6,10 @@
 //
 // 刮削数据走桌面同一个 useScrape（只用它的读取路径；rescrape 才会弹 alert，这里不调）。
 "use client";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { api } from "@/lib/api";
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
 import {
   findVideoByPath,
@@ -22,6 +23,7 @@ import MobileShell from "./MobileShell";
 import MobileStateView from "./MobileStateView";
 import MobilePoster from "./MobilePoster";
 import MobileMediaInfoList from "./MobileMediaInfoList";
+import MobileToast from "./MobileToast";
 
 export interface MobileLibraryDetailClientProps {
   path: string;
@@ -36,12 +38,40 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
   const video = ready && !loadFailed ? findVideoByPath(tree, path) : null;
 
   // useScrape 在 path 为空时不发请求，可以无条件调用（hook 不能有条件调用）
-  const { data: scrape, reading: scrapeReading, status: scrapeStatus } = useScrape(
+  const { data: scrape, reading: scrapeReading, status: scrapeStatus, reload: reloadScrape } = useScrape(
     video ? videoDisplayName(video) : "",
     video ? video.file_path : "",
     false,
   );
   const scrapeFailed = scrapeStatus === "failed";
+
+  // 一键刮削：**只在没有刮削信息时提供**。已有刮削的条目不给任何覆盖入口 ——
+  // 手机上误触一下就把整理好的 NFO 和海报冲掉，没有撤销路径。
+  //
+  // 不复用 useScrape 的 rescrape()：它失败时弹 alert（桌面写法），
+  // 移动端要走 toast。这里直接调同一个端点。
+  const [scraping, setScraping] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const runScrape = useCallback(async () => {
+    if (!video || scraping) return;
+    setScraping(true);
+    setToast(null);
+    try {
+      const res = await api.executeScrape(video.file_path);
+      const data = res.self?.data || res.data;
+      if (data?.tmdb_id || data?.title) {
+        await reloadScrape();
+        setToast({ msg: "刮削完成", ok: true });
+      } else {
+        setToast({ msg: "没有匹配到结果，需要在桌面端手动重新匹配", ok: false });
+      }
+    } catch {
+      setToast({ msg: "刮削请求失败，检查后端与 TMDB 配置", ok: false });
+    } finally {
+      setScraping(false);
+    }
+  }, [video, scraping, reloadScrape]);
 
   const openPlay = useCallback(() => {
     router.push(playUrl(path));
@@ -138,12 +168,28 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
                 {scrapeReading && (
                   <p className="mt-2 text-[12px] text-[var(--m-text-dim)]">正在读取刮削信息…</p>
                 )}
+                {/* 没有刮削信息时给占位说明 + 一键刮削；有刮削则什么操作都不提供 */}
                 {!scrapeReading && !scrape && (
-                  <p className="mt-2 text-[12px] text-[var(--m-text-dim)]">
-                    {scrapeFailed
-                      ? "刮削信息读取失败，可下拉重进或在桌面端检查"
-                      : "没有刮削信息（在桌面端整理后这里会显示简介与海报）"}
-                  </p>
+                  <div className="mt-2 flex flex-col items-start gap-2">
+                    <p className="text-[12px] text-[var(--m-text-dim)]">
+                      {scrapeFailed
+                        ? "刮削信息读取失败，可下拉重进或在桌面端检查"
+                        : "还没有刮削信息（简介、海报、评分都来自刮削）"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { void runScrape(); }}
+                      disabled={scraping}
+                      className="rounded-[var(--m-radius-sm)] px-3 text-[13px] text-[var(--m-text)] disabled:opacity-60"
+                      style={{
+                        minHeight: "var(--m-touch-min)",
+                        background: "var(--m-surface-raised)",
+                        border: "1px solid var(--m-border)",
+                      }}
+                    >
+                      {scraping ? "刮削中…" : "一键刮削"}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -186,6 +232,9 @@ export default function MobileLibraryDetailClient({ path }: MobileLibraryDetailC
           </div>
         )}
       </MobileStateView>
+      {toast && (
+        <MobileToast message={toast.msg} ok={toast.ok} onDismiss={() => setToast(null)} />
+      )}
     </MobileShell>
   );
 }
