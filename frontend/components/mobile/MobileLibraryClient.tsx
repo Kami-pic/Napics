@@ -9,11 +9,11 @@ import { useMobileLibrary } from "@/hooks/mobile/useMobileLibrary";
 import { useMobileLibraryTree } from "./MobileLibraryTreeProvider";
 import { folderTarget, videoTarget, findParentPath } from "@/lib/mobile/libraryNav";
 import { libraryUrl, playUrl, searchUrl, MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
+import { folderCardMeta, seasonCardMeta, videoCardMeta } from "@/lib/mobile/mobileCardMeta";
 import MobileShell from "./MobileShell";
 import MobileStateView from "./MobileStateView";
-import MobileFolderList from "./MobileFolderList";
-import MobileSeasonList from "./MobileSeasonList";
-import MobileEpisodeList from "./MobileEpisodeList";
+import MobileCardGrid from "./MobileCardGrid";
+import MobileMediaCard from "./MobileMediaCard";
 
 export interface MobileLibraryClientProps {
   /** 空串表示库根 */
@@ -78,25 +78,41 @@ export default function MobileLibraryClient({ path }: MobileLibraryClientProps) 
         onRetry={state === "error" ? () => void reload() : undefined}
       >
         <div className="flex flex-col gap-4 pt-3">
-          {view?.kind === "seasons" ? (
-            <MobileSeasonList seasons={view.folders} onOpen={openFolder} />
-          ) : (
-            view && view.folders.length > 0 && (
-              <MobileFolderList folders={view.folders} onOpen={openFolder} />
-            )
+          {view && view.folders.length > 0 && (
+            <MobileCardGrid ariaLabel={view.kind === "seasons" ? "季列表" : "目录列表"}>
+              {view.folders.map(node => (
+                <MobileMediaCard
+                  key={node.path}
+                  meta={view.kind === "seasons" ? seasonCardMeta(node) : folderCardMeta(node)}
+                  onOpen={() => openFolder(node)}
+                />
+              ))}
+            </MobileCardGrid>
           )}
           {view && view.videos.length > 0 && (
-            <MobileEpisodeList videos={view.videos} onOpenDetail={openDetail} onPlay={openPlay} />
+            <MobileCardGrid ariaLabel="视频列表">
+              {view.videos.map(video => (
+                <MobileMediaCard
+                  key={video.file_path}
+                  meta={videoCardMeta(video)}
+                  onOpen={() => openDetail(video)}
+                  onPlay={() => openPlay(video)}
+                />
+              ))}
+            </MobileCardGrid>
           )}
-          {/* 剧目录下的剧场版/SP：单独一段且不编号，不然会被当成正片的下一集 */}
+          {/* 剧目录下的剧场版/SP：单独一段，不然会被当成正片的下一集 */}
           {view && view.extraVideos.length > 0 && (
-            <MobileEpisodeList
-              videos={view.extraVideos}
-              onOpenDetail={openDetail}
-              onPlay={openPlay}
-              title="其他视频（剧场版 / 特别篇）"
-              numbered={false}
-            />
+            <MobileCardGrid title="其他视频（剧场版 / 特别篇）">
+              {view.extraVideos.map(video => (
+                <MobileMediaCard
+                  key={video.file_path}
+                  meta={videoCardMeta(video)}
+                  onOpen={() => openDetail(video)}
+                  onPlay={() => openPlay(video)}
+                />
+              ))}
+            </MobileCardGrid>
           )}
         </div>
       </MobileStateView>

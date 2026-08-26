@@ -30,7 +30,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 const { mockApi } = vi.hoisted(() => ({
-  mockApi: { getLibraryTree: vi.fn() },
+  mockApi: {
+    getLibraryTree: vi.fn(),
+    // 卡片封面用它取本地 poster
+    getLocalPoster: vi.fn((p: string, cover?: boolean) =>
+      `/backend/scrape/poster?path=${encodeURIComponent(p)}${cover ? "&cover=true" : ""}`),
+  },
 }));
 vi.mock("@/lib/api", () => ({ api: mockApi }));
 
@@ -125,9 +130,10 @@ describe("分级浏览与跳转", () => {
   it("TV 多季显示季列表，季徽标带季号", async () => {
     await mount(TV_MULTI_SEASON_NODE.path);
     expect(screen.getByLabelText("季列表")).toBeTruthy();
-    expect(screen.getByText("S01")).toBeTruthy();
-    expect(screen.getByText("S02")).toBeTruthy();
-    fireEvent.click(screen.getByText("Season 1"));
+    // 季卡片徽标是「季号 · 集数」
+    expect(screen.getByText(/^S01 · \d+ 集$/)).toBeTruthy();
+    expect(screen.getByText(/^S02 · \d+ 集$/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Season 1" }));
     expect(mockRouter.push).toHaveBeenCalledWith(libraryUrl(TV_MULTI_SEASON_NODE.children[1].path));
   });
 
@@ -141,32 +147,33 @@ describe("分级浏览与跳转", () => {
 
   it("扁平 TV 直接列直属集，顺序是 E1/E2/E10", async () => {
     await mount(TV_FLAT_NODE.path);
-    const rows = screen.getAllByRole("listitem");
-    expect(rows.map(r => r.textContent)).toEqual([
-      expect.stringContaining("Friends E1.mkv"),
-      expect.stringContaining("Friends E2.mkv"),
-      expect.stringContaining("Friends E10.mkv"),
+    // 卡片按钮的 aria-label 就是原始文件名（详情入口，不含"播放"前缀）
+    const cards = within(screen.getByLabelText("视频列表"))
+      .getAllByRole("button")
+      .filter(b => !(b.getAttribute("aria-label") || "").startsWith("播放"));
+    expect(cards.map(c => c.getAttribute("aria-label"))).toEqual([
+      "Friends E1.mkv", "Friends E2.mkv", "Friends E10.mkv",
     ]);
   });
 
-  it("多季剧的剧场版单独一段且不编号，不会被当成正片下一集", async () => {
+  it("多季剧的剧场版单独一段，不和正片混在一起", async () => {
     await mount(TV_WITH_EXTRAS_NODE.path);
     expect(screen.getByLabelText("季列表")).toBeTruthy();
 
     const extras = screen.getByLabelText("其他视频（剧场版 / 特别篇）");
-    const rows = within(extras).getAllByRole("listitem");
-    expect(rows.length).toBe(1);
-    expect(rows[0].textContent).toContain("剧场版 咆哮.mkv");
-    // 不编号：这一段里不该出现 01 这种序号
-    expect(rows[0].textContent).not.toMatch(/^0\d/);
+    const cards = within(extras).getAllByRole("button")
+      .filter(b => !(b.getAttribute("aria-label") || "").startsWith("播放"));
+    expect(cards.length).toBe(1);
+    expect(cards[0].getAttribute("aria-label")).toBe("剧场版 咆哮.mkv");
   });
 
-  it("单季剧的 SP 也走独立分段，正片集号仍从 01 开始", async () => {
+  it("单季剧的 SP 也走独立分段", async () => {
     await mount(TV_SINGLE_SEASON_WITH_SP_NODE.path);
-    const main = screen.getByLabelText("视频列表");
-    expect(within(main).getAllByRole("listitem").length).toBe(2);
-    const extras = screen.getByLabelText("其他视频（剧场版 / 特别篇）");
-    expect(within(extras).getAllByRole("listitem").length).toBe(1);
+    const countCards = (label: string) =>
+      within(screen.getByLabelText(label)).getAllByRole("button")
+        .filter(b => !(b.getAttribute("aria-label") || "").startsWith("播放")).length;
+    expect(countCards("视频列表")).toBe(2);
+    expect(countCards("其他视频（剧场版 / 特别篇）")).toBe(1);
   });
 
   it("collection 的子目录和直属视频同屏，两者都能点", async () => {
@@ -239,12 +246,15 @@ describe("同步后缓存失效", () => {
         <SyncProbe />
       </MobileLibraryTreeProvider>,
     );
-    await waitFor(() => expect(screen.getAllByRole("listitem").length).toBe(1));
+    const cardCount = () =>
+      within(screen.getByLabelText("视频列表")).getAllByRole("button")
+        .filter(b => !(b.getAttribute("aria-label") || "").startsWith("播放")).length;
+    await waitFor(() => expect(cardCount()).toBe(1));
 
     // 快速同步成功后走的就是 Provider.reload（见 useMobileQuickSync 的 done 分支）
     mockApi.getLibraryTree.mockResolvedValue(LIBRARY_TREE);
     await act(async () => { fireEvent.click(screen.getByTestId("sync-reload")); });
-    await waitFor(() => expect(screen.getAllByRole("listitem").length).toBe(3));
+    await waitFor(() => expect(cardCount()).toBe(3));
   });
 });
 
