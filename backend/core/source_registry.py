@@ -142,7 +142,8 @@ SOURCE_TRAITS: Dict[str, SourceTraits] = {
         focus=("tv",),
     ),
     "dmhy": SourceTraits(
-        label="动漫花园", needs_proxy=True,
+        # 国内可直连；标 True 会把它推去走海外代理，用户实测配上代理后这个源反而挂了
+        label="动漫花园", needs_proxy=False,
         lang_priority=("cn", "original", "en"), season_format="cn",
         reports_seeders=False, focus=("anime",),
     ),
