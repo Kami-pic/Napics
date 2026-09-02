@@ -95,6 +95,11 @@ export default function Home() {
   const discoverRef = useRef<HTMLDivElement>(null);
   const libraryContentRef = useRef<HTMLDivElement>(null);
   const [discoverVisible, setDiscoverVisible] = useState(false);
+  // 焦点落在媒体库还是发现区：蓝色高亮同时只给一个，
+  // 进了发现区就把目录树的选中色让出去
+  const [activeSection, setActiveSection] = useState<"library" | "discover">("library");
+  // 发现区只在媒体库根目录渲染，从子目录点「发现」要先回根、等它挂上再滚
+  const [pendingDiscoverScroll, setPendingDiscoverScroll] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -244,10 +249,11 @@ export default function Home() {
 
   // ── 发现区域懒加载：IntersectionObserver 检测进入视口 ──
   useEffect(() => {
-    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); return; }
+    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); setActiveSection("library"); return; }
     const observer = new IntersectionObserver(
       ([entry]) => {
         setDiscoverVisible(entry.isIntersecting);
+        setActiveSection(entry.isIntersecting ? "discover" : "library");
       },
       { threshold: 0.05 }
     );
@@ -288,14 +294,36 @@ export default function Home() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showDiscover]);
 
+  const scrollToDiscover = useCallback(() => {
+    if (!discoverRef.current || !scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollTo({ top: discoverRef.current.offsetTop - 8, behavior: "smooth" });
+  }, []);
+
+  // 侧边栏的「发现」在任意目录下都能点：子目录里先跳回根目录，
+  // 发现区挂载后再滚过去（此前这个按钮在子目录里根本不显示）
+  const goToDiscover = useCallback(() => {
+    if (showDiscover) { scrollToDiscover(); return; }
+    if (fileTree) { navigateTo(fileTree); setPendingDiscoverScroll(true); }
+  }, [showDiscover, fileTree, navigateTo, scrollToDiscover]);
+
+  useEffect(() => {
+    if (!pendingDiscoverScroll || !showDiscover) return;
+    const id = requestAnimationFrame(() => {
+      scrollToDiscover();
+      setPendingDiscoverScroll(false);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pendingDiscoverScroll, showDiscover, scrollToDiscover]);
+
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white font-sans flex overflow-hidden">
       <Sidebar tree={fileTree} currentFolder={currentFolder} onNavigate={(node) => { navigateTo(node); if (scrollContainerRef.current) scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" }); }}
         collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenPlugins={() => setShowPlugins(true)}
         onOpenSettings={() => setShowSettings(true)}
-        showDiscover={showDiscover}
-        onScrollToDiscover={() => discoverRef.current && scrollContainerRef.current?.scrollTo({ top: discoverRef.current.offsetTop - 8, behavior: "smooth" })}
+        showDiscover={plugins.hasDiscover}
+        activeSection={activeSection}
+        onScrollToDiscover={goToDiscover}
       />
 
       <div ref={scrollContainerRef} className="flex-1 h-screen overflow-y-auto no-scrollbar" onClick={(e) => {

@@ -13,9 +13,11 @@ interface SidebarProps {
   onOpenSettings?: () => void;
   showDiscover?: boolean;
   onScrollToDiscover?: () => void;
+  /** 当前焦点落在哪个区。蓝色高亮同时只给一个 */
+  activeSection?: "library" | "discover";
 }
 
-export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins, onOpenSettings, showDiscover, onScrollToDiscover }: SidebarProps) {
+export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins, onOpenSettings, showDiscover, onScrollToDiscover, activeSection }: SidebarProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -56,7 +58,8 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
     if (matchPaths && !matchPaths.has(node.path)) return null;
 
     const isRoot = level === 0;
-    const isActive = currentFolder?.path === node.path;
+    // 焦点在发现区时目录不高亮：两处同时蓝，看不出当前在哪
+    const isActive = currentFolder?.path === node.path && activeSection !== "discover";
     const hasChildren = node.children && node.children.length > 0;
     // 根目录永远展开，子目录看 expandedNodes
     const isExpanded = isRoot ? true : (matchPaths ? true : expandedNodes.has(node.path));
@@ -146,10 +149,12 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
       {showDiscover && (
         <div className="border-t border-white/[0.06] px-2 py-2">
           <button onClick={onScrollToDiscover}
-            // 不做选中态：这是个「滚到发现区」的动作按钮，不是页签。
-            // 之前按「发现区是否落在视口」染蓝，用户只是滚过去、并没有选它，
-            // 蓝色只留给当前选中的媒体库目录。
-            className={`w-full flex items-center gap-2 py-2 rounded-lg text-[13px] transition-all text-slate-400 hover:bg-white/5 hover:text-slate-200 ${collapsed ? "justify-center px-2" : "px-3"}`}>
+            // 与目录树选中态同一套：只变文字颜色，不铺底色
+            className={`w-full flex items-center gap-2 py-2 rounded-lg text-[13px] transition-all ${collapsed ? "justify-center px-2" : "px-3"} ${
+              activeSection === "discover"
+                ? "text-blue-400 font-medium hover:bg-white/5"
+                : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            }`}>
             <span className="text-sm w-[1.25em] flex items-center justify-center shrink-0">🎬</span>
             {!collapsed && <span>发现</span>}
           </button>
