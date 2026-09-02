@@ -15,7 +15,10 @@ import concurrent.futures
 import time
 from typing import List, Dict, Optional, Iterator, Tuple, Any
 
-from search_keyword_mapper import MultiLangKeywords, get_search_keywords_for_source
+from search_keyword_mapper import (
+    MultiLangKeywords, get_search_keywords_for_source,
+    is_bare_year as _is_bare_year,
+)
 from search_helpers import enrich_result
 from text_processing import split_by_language, normalize as text_normalize
 from provider_models import SearchCandidate, SearchRequest
@@ -98,12 +101,32 @@ def build_keywords(
     kw_cn = cn_name.strip() or parts.get("cn", "") or ""
     kw_en = en_name.strip() or shadow_name.strip() or parts.get("en", "") or ""
     kw_original = original_name.strip() or ""
+
+    # 「沙丘 2011」这种带空格的输入会被 split_by_language 拆成 cn="沙丘" en="2011"
+    # ——它判断数字归中文还是英文只看紧邻的前后一个 token，而空格本身就是一个
+    # token，把邻接关系切断了。而 prowlarr / bitsearch / yts / 1337x 的语言优先级
+    # 第一位是 en，于是**第一个搜索词就是「2011」**，搜出一堆 2011 年的片子、
+    # 命中即短路，真正的「沙丘」永远轮不到。
+    #
+    # 这里不动 split_by_language（compute_junk_flags、extract_variants 等一堆地方
+    # 都在用它），只在搜索词这一层把纯年份的候选词摘掉、转成 year 信号。
+    kw_year = (year or "").strip()
+    if _is_bare_year(kw_en) and (kw_cn or kw_original):
+        if not kw_year:
+            kw_year = kw_en.strip()
+        kw_en = ""
+    if _is_bare_year(kw_cn) and (kw_en or kw_original):
+        # 罕见但可能：全中文输入里年份被归进了 cn
+        if not kw_year:
+            kw_year = kw_cn.strip()
+        kw_cn = ""
+
     if kw_cn:
         kw_cn = text_normalize(kw_cn)
     return MultiLangKeywords(
         cn=kw_cn, en=kw_en, original=kw_original,
         query=query, season_number=season_number,
-        year=(year or "").strip(),
+        year=kw_year,
     )
 
 
@@ -118,9 +141,11 @@ def _build_relevance_terms(keywords: MultiLangKeywords) -> set:
     for t in [keywords.cn, keywords.en, keywords.original, keywords.query]:
         t = t.strip().lower()
         if t and len(t) >= 2:
-            terms.add(t)
+            if not _is_bare_year(t):
+                terms.add(t)
             for w in t.split():
-                if len(w) >= 3:
+                # 纯年份不能当相关性词：标题里含 2011 的什么片都算"相关"
+                if len(w) >= 3 and not _is_bare_year(w):
                     terms.add(w)
     return terms
 
@@ -165,10 +190,9 @@ def search_prowlarr(
             elapsed = time.time() - t0
             logger.info(f"[SearchService/Prowlarr] '{kw}' 返回 {len(raw)} 条，耗时 {elapsed:.1f}s")
             if raw:
-                if not hit_kw:
-                    hit_kw = kw
                 seen = set()
                 filtered_out = 0
+                kept = []
                 for r in raw:
                     if r.download_url and r.download_url not in seen:
                         seen.add(r.download_url)
@@ -177,10 +201,16 @@ def search_prowlarr(
                             if not any(term in title_lower for term in relevance_terms):
                                 filtered_out += 1
                                 continue
-                        all_results.append(r)
+                        kept.append(r)
                 if filtered_out:
                     logger.info(f"[SearchService/Prowlarr] 过滤掉 {filtered_out} 条不相关结果")
-                break
+                # 短路判断放在相关性过滤**之后**。原来是 `if raw: ... break`，
+                # 一个坏关键词只要捞回任何东西就把回退链掐断了，哪怕全部不相关。
+                if kept:
+                    if not hit_kw:
+                        hit_kw = kw
+                    all_results.extend(kept)
+                    break
         return "prowlarr", all_results, None, searched, hit_kw
     except Exception as e:
         logger.info(f"[SearchService/Prowlarr] 异常: {e}")

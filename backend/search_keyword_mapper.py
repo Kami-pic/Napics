@@ -6,6 +6,7 @@
 - 根据可用名称为指定源生成搜索词列表（首选 + 回退）
 - 季号拼接（中文源"第N季"，英文源"S0N"）
 """
+import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -61,6 +62,24 @@ CN_SEASON_SOURCES = {"cilixiong", "xl720", "mikan", "acgrip", "bangumi_moe", "dm
 EN_SEASON_SOURCES = {"prowlarr", "bitsearch", "yts", "limetorrents", "nyaa", "eztv", "1337x"}
 
 
+_BARE_YEAR_RE = re.compile(r'^\s*[\(\[（]?((?:19|20)\d{2})[\)\]）]?\s*$')
+# 尾部年份（`\s*` 可为零宽，所以「沙丘2011」这种紧贴的也能去掉）
+_TRAILING_YEAR_RE = re.compile(r'\s*[\(\[（]?((?:19|20)\d{2})[\)\]）]?\s*$')
+
+
+def is_bare_year(text: str) -> bool:
+    """整个词就是一个年份（可带括号）。这种词绝不能当搜索词用。"""
+    return bool(text) and bool(_BARE_YEAR_RE.match(text))
+
+
+def strip_trailing_year(text: str) -> str:
+    """去掉尾部年份。整个词就是年份时原样返回（`1917`、`2012` 是真片名）。"""
+    if not text or is_bare_year(text):
+        return text
+    stripped = _TRAILING_YEAR_RE.sub("", text).strip()
+    return stripped or text
+
+
 def _get_keyword_by_lang(keywords: MultiLangKeywords, lang: str) -> str:
     """根据语言标识获取对应的搜索词"""
     if lang == "cn":
@@ -100,20 +119,40 @@ def get_search_keywords_for_source(
     seen = set()
     result = []
 
-    for lang in lang_priority:
-        kw = _get_keyword_by_lang(keywords, lang).strip()
-        if not kw:
-            continue
-        # 拼接季号
+    raw_words: List[str] = []  # 未拼季号的原始候选词，用来派生变体
+
+    def _push(kw: str) -> bool:
+        """加一个候选词（内部负责拼季号），返回是否已经攒够。"""
+        kw = (kw or "").strip()
+        # 纯年份绝不能当搜索词：搜「2011」会捞回一整年的片子，而且必然有结果，
+        # 于是回退链被这个坏词短路，真正的片名永远轮不到。
+        if not kw or is_bare_year(kw):
+            return False
         kw_with_season = _append_season(kw, keywords.season_number, source_name)
-        # 去重（忽略大小写）
         kw_lower = kw_with_season.lower()
         if kw_lower in seen:
-            continue
+            return False
         seen.add(kw_lower)
+        raw_words.append(kw)
         result.append(kw_with_season)
-        if len(result) >= 3:
+        return len(result) >= 3
+
+    for lang in lang_priority:
+        if _push(_get_keyword_by_lang(keywords, lang)):
             break
+
+    # 回退链里追加「去掉尾部年份」的变体。
+    # 用户输入「沙丘2011」时年份是紧贴在片名后面的，split_by_language 会把整串
+    # 归到 cn，搜索词就是「沙丘2011」—— BT 站基本搜不到。而回退链原来只在
+    # cn/en/original/query 四个既有字段间选词，不派生任何变体。
+    #
+    # 变体基于**未拼季号的原始词**：对「某剧2020 第2季」去尾部年份是无效的，
+    # 年份不在尾部。
+    if len(result) < 3:
+        for kw in list(raw_words):
+            stripped = strip_trailing_year(kw)
+            if stripped != kw and _push(stripped):
+                break
 
     # 兜底：如果所有名称都为空，用 query
     if not result and keywords.query:
