@@ -29,7 +29,8 @@ _SOURCE_PRIORITY = {
 
 def apply_auto_fill(item: dict, shadow_name: str, source: str,
                     tmdb_id: Optional[int] = None,
-                    organize_status: str = "ok") -> bool:
+                    organize_status: str = "ok",
+                    force: bool = False) -> bool:
     """在内存中的媒体条目 dict 上应用影子名自动填充，不落盘。
 
     优先级规则与 ShadowNameManager.auto_fill 完全一致。供批量场景使用：
@@ -39,7 +40,13 @@ def apply_auto_fill(item: dict, shadow_name: str, source: str,
     返回 True 表示已填充，False 表示被更高优先级的已有值跳过。
     """
     existing_source = item.get("shadow_name_source", "")
-    if _SOURCE_PRIORITY.get(existing_source, 0) > _SOURCE_PRIORITY.get(source, 0):
+    # force：用户显式点了「生成标准名」，就是要重算，只有手填的名字挡得住。
+    # 不给这个口子的话，已有 source=nfo 的条目按钮点了永远没反应 ——
+    # 而恰恰是 nfo 那批最容易错（分集标题被当成作品名）。
+    if force:
+        if existing_source == "manual":
+            return False
+    elif _SOURCE_PRIORITY.get(existing_source, 0) > _SOURCE_PRIORITY.get(source, 0):
         return False
     item["shadow_name"] = shadow_name
     item["shadow_name_source"] = source

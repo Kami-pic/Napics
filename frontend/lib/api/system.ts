@@ -12,6 +12,17 @@ export const systemApi = {
       `${BASE_URL}/media/subtitles?path=${encodeURIComponent(path)}`,
     ),
 
+  /** 按 NFO 重算标准名（影子名）。手填过的条目不动 */
+  generateShadowName: (path: string, isFolder = false) =>
+    request<{ status: string; message?: string; updated: number; matched?: number; skipped?: number; shadow_name?: string }>(
+      `${BASE_URL}/media/shadow-name/generate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path, is_folder: isFolder }),
+      },
+    ),
+
   /** 按 NFO / 文件夹名 / 文件名重算检索名（中文+英文） */
   generateCleanName: (path: string, isFolder = false) =>
     request<{ status: string; message?: string; updated: number; matched?: number; reason?: string; cn: string; en: string; display: string }>(

@@ -34,6 +34,7 @@ from routes.library_sync import router as library_sync_router
 from routes.library_tree import router as library_tree_router
 from routes.library_crud import router as library_crud_router
 from routes.library_clean_name import router as library_clean_name_router
+from routes.library_standard_name import router as library_standard_name_router
 from routes.library_completeness import router as library_completeness_router
 from routes.organize import router as organize_router
 from routes.rename import router as rename_router
@@ -163,6 +164,7 @@ app.include_router(library_sync_router)
 app.include_router(library_tree_router)
 app.include_router(library_crud_router)
 app.include_router(library_clean_name_router)
+app.include_router(library_standard_name_router)
 app.include_router(library_completeness_router)
 app.include_router(organize_router)
 app.include_router(rename_router)

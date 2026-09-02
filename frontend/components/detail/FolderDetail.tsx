@@ -117,14 +117,18 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
     setGeneratingIndex(false);
   };
 
-  // 生成标准名：只写影子名，不动磁盘文件名（与「自动重命名」不是一回事）
+  // 生成标准名：只写影子名，不动磁盘文件名（与「自动重命名」不是一回事）。
+  // 走 /media/shadow-name/generate 而不是整理流水线的 /organize/rename：
+  // 后者算的是"磁盘该叫什么"，依据目录级 tvshow.nfo，番剧会被安上别的季名，
+  // 而且它以 parsed 优先级填充，遇到已有的 nfo 值直接跳过 —— 按钮点了没反应。
   const handleGenerateShadowName = async () => {
     if (!node.path) return;
     setShadowNameLoading(true);
     setActionResult("");
     try {
-      const res = await api.renameVideos(node.path, false, true);
-      setActionResult(`标准名已生成：${res.filled ?? 0}/${res.total ?? node.videos.length} 个视频`);
+      const res = await api.generateShadowName(node.path, true);
+      if (res.status !== "ok") { setActionResult(res.message || "未能算出标准名"); return; }
+      setActionResult(`标准名已生成：${res.updated}/${res.matched ?? 0} 个视频${res.shadow_name ? `，如「${res.shadow_name}」` : ""}`);
       refreshFolderTree();
     } catch (e: any) { setActionResult("生成标准名失败: " + (e?.message || String(e))); }
     setShadowNameLoading(false);
