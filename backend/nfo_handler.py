@@ -139,6 +139,71 @@ def read_video_nfo(video_path: str) -> Optional[Dict]:
         return None
 
 
+# 季目录名。视频落在这类目录里时，作品名在上一级目录
+_SEASON_FOLDER_RE = re.compile(
+    r"^(season\s*\d{1,2}|s\d{1,2}|第[\d一二三四五六七八九十]+季|specials?|sp)$", re.I)
+
+
+def work_folder_of(video_path: str) -> str:
+    r"""视频所属的**作品级**目录。视频在 `Season 01` 这类季目录下时返回上一级。
+
+    存在的理由：番剧的作品名几乎只出现在作品级目录名里
+    （`动画番\军火女王 Jormungand\Season 01\[VCB-Studio] Jormungand [01].mkv`），
+    直接取 dirname 只会拿到 `Season 01`。
+    """
+    folder = os.path.dirname(video_path)
+    if _SEASON_FOLDER_RE.match(os.path.basename(folder).strip()):
+        parent = os.path.dirname(folder)
+        if parent:
+            return parent
+    return folder
+
+
+def read_show_names(video_path: str, nfo: Optional[Dict] = None) -> Optional[Dict]:
+    """剧集的**作品级**中英原名，返回 {"title", "original_title", "english_title"}。
+
+    episode.nfo 里的 `<title>` 是**分集标题**（实测「炎兔」「第 1 集」），
+    拿它当作品名会让整季每集算出各不相同的名字。作品名的来源按顺序：
+
+    1. 分集 NFO 的 `<showtitle>`
+    2. 作品级目录的 tvshow.nfo（有的刮削器不写 showtitle，实测
+       `只有我不在的街道…` 就是空，但同目录 tvshow.nfo 是全的）
+
+    showtitle 命中时，只在 tvshow.nfo 的标题与它一致时才补外文名：
+    实测军火女王根目录的 tvshow.nfo 被第二季刮削覆盖成「军火女王 第二季 /
+    ヨルムンガンド PERFECT ORDER」，无条件采用会把第二季的原名安给第一季。
+
+    拿不到作品名时返回 None —— 由调用方决定退回目录名还是文件名，
+    但不能退回分集标题。
+    """
+    if nfo is None:
+        nfo = read_video_nfo(video_path)
+    if not nfo:
+        return None
+
+    show = (nfo.get("showtitle") or "").strip()
+    tv_nfo = read_nfo(os.path.dirname(video_path), no_fallback=True) \
+        or read_nfo(work_folder_of(video_path), no_fallback=True)
+    tv_title = ((tv_nfo or {}).get("title") or "").strip()
+
+    if show:
+        same = tv_title == show
+        return {
+            "title": show,
+            "original_title": ((tv_nfo or {}).get("original_title") or "") if same else "",
+            "english_title": ((tv_nfo or {}).get("english_title") or "") if same else "",
+        }
+
+    if tv_title:
+        return {
+            "title": tv_title,
+            "original_title": (tv_nfo or {}).get("original_title") or "",
+            "english_title": (tv_nfo or {}).get("english_title") or "",
+        }
+
+    return None
+
+
 def _text(root, tag) -> str:
     """XML 文本提取辅助"""
     el = root.find(tag)

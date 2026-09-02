@@ -118,3 +118,115 @@ class TestMovieUnaffected:
         with open(video, "wb") as f:
             f.write(b"\x00")
         assert generate_shadow_name_from_nfo(video, str(folder), "movie") is None
+
+
+# ── 检索名同样不许用分集标题 ──
+
+def _write_tvshow_nfo(folder, title, original="", english=""):
+    lines = ["<tvshow>", f"  <title>{title}</title>"]
+    if original:
+        lines.append(f"  <originaltitle>{original}</originaltitle>")
+    if english:
+        lines.append(f"  <englishtitle>{english}</englishtitle>")
+    lines.append("</tvshow>")
+    _write(os.path.join(folder, "tvshow.nfo"), "\n".join(lines))
+
+
+class TestSearchIndexNameForEpisodes:
+    """build_search_index_name 走的是同一批 NFO，坑也一样"""
+
+    def test_index_name_uses_showtitle(self, tmp_path):
+        from clean_name_system import build_search_index_name
+
+        work = tmp_path / "军火女王 Jormungand"
+        season = work / "Season 01"
+        season.mkdir(parents=True)
+        name = "[VCB-Studio] Jormungand [01][Ma10p_1080p][x265_flac].mkv"
+        _make_episode(str(season), name, title="炎兔", showtitle="军火女王")
+        r = build_search_index_name(str(season / name), name)
+        assert r is not None
+        assert r.cn == "军火女王"
+        # NFO 没有英文名，但作品级目录名里有 —— 视频在 Season 01 下，
+        # 只看 dirname 只能拿到「Season 01」
+        assert r.en == "Jormungand"
+        assert "炎兔" not in r.display
+
+    def test_falls_back_to_tvshow_nfo_when_showtitle_empty(self, tmp_path):
+        """实测「只有我不在的街道…」的分集 NFO 里 showtitle 是空的"""
+        from clean_name_system import build_search_index_name
+
+        work = tmp_path / "只有我不在的街道只有我不在的城市 Boku_Dake_ga_Inai_Machi"
+        work.mkdir()
+        _write_tvshow_nfo(str(work), "只有我不存在的城市",
+                          original="僕だけがいない街", english="ERASED")
+        name = "[TSDM][Boku_Dake_ga_Inai_Machi][BDrip][01][GB][1080P].mp4"
+        _make_episode(str(work), name, title="第 1 集", showtitle="")
+        r = build_search_index_name(str(work / name), name)
+        assert r is not None
+        assert r.cn == "只有我不存在的城市"
+        assert r.en == "ERASED"
+        assert "第" not in r.cn
+
+    def test_season_level_tvshow_nfo_not_forced_onto_other_season(self, tmp_path):
+        """军火女王根目录的 tvshow.nfo 被第二季刮削覆盖成「军火女王 第二季」，
+        showtitle 说的是「军火女王」，就不该把第二季的原名安过来"""
+        from clean_name_system import build_search_index_name
+
+        work = tmp_path / "军火女王 Jormungand"
+        season = work / "Season 01"
+        season.mkdir(parents=True)
+        _write_tvshow_nfo(str(work), "军火女王 第二季", original="ヨルムンガンド PERFECT ORDER")
+        name = "[VCB-Studio] Jormungand [01].mkv"
+        _make_episode(str(season), name, title="炎兔", showtitle="军火女王")
+        r = build_search_index_name(str(season / name), name)
+        assert r.cn == "军火女王"
+        assert "第二季" not in r.display
+        assert "PERFECT ORDER" not in (r.original or "")
+
+
+class TestRegenerateStandardNames:
+    """用户点「生成标准名」：已有 nfo 值必须被重算掉，手填的必须留住"""
+
+    def _one_season(self, tmp_path):
+        work = tmp_path / "军火女王 Jormungand"
+        season = work / "Season 01"
+        season.mkdir(parents=True)
+        items = []
+        for idx, ep_title in enumerate(["炎兔", "脉冲星", "奏出音乐的武器 第一篇"], start=1):
+            name = f"[VCB-Studio] Jormungand [{idx:02d}].mkv"
+            video = _make_episode(str(season), name, title=ep_title,
+                                  showtitle="军火女王", episode=idx)
+            items.append({
+                "file_path": video, "file_name": name,
+                # 库里现存的错值：分集标题被当成作品名，来源标着 nfo
+                "shadow_name": ep_title, "shadow_name_source": "nfo",
+            })
+        return str(work), items
+
+    def test_overwrites_existing_nfo_values(self, tmp_path):
+        from scan_name_filler import regenerate_standard_names
+
+        work, library = self._one_season(tmp_path)
+        r = regenerate_standard_names(library, work, is_folder=True)
+        assert r["matched"] == 3
+        assert r["updated"] == 3
+        for idx, item in enumerate(library, start=1):
+            assert item["shadow_name"] == f"军火女王 S01E{idx:02d}"
+
+    def test_manual_is_kept(self, tmp_path):
+        from scan_name_filler import regenerate_standard_names
+
+        work, library = self._one_season(tmp_path)
+        library[0]["shadow_name"] = "我自己起的名字"
+        library[0]["shadow_name_source"] = "manual"
+        r = regenerate_standard_names(library, work, is_folder=True)
+        assert r["skipped"] == 1
+        assert r["updated"] == 2
+        assert library[0]["shadow_name"] == "我自己起的名字"
+
+    def test_unknown_path_reports_zero_matched(self, tmp_path):
+        from scan_name_filler import regenerate_standard_names
+
+        _, library = self._one_season(tmp_path)
+        r = regenerate_standard_names(library, str(tmp_path / "不存在的目录"), is_folder=True)
+        assert r == {"updated": 0, "matched": 0, "skipped": 0, "shadow_name": ""}

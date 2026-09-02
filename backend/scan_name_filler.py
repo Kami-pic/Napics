@@ -44,7 +44,7 @@ SCAN_MANAGED_NAME_FIELDS = frozenset({
 # 若不比对版本号，算法改好后老条目永远不会被重算——用户重扫看不到任何变化。
 # 版本不一致的条目在下次扫描时补算一次，算完打上版本号，之后不再重复读 NFO。
 # 取名逻辑有实质改动时 +1，触发全库一次性升级。
-FILLER_VERSION = 2
+FILLER_VERSION = 3
 _VERSION_FIELD = "names_filled_v"
 
 
@@ -114,8 +114,11 @@ def merge_scanned_names(base: dict, scanned: dict) -> dict:
     return merged
 
 
-def fill_standard_name(item: dict, fallback_display: str = "") -> bool:
-    """填充标准名：优先 NFO，其次用检索名兜底。"""
+def fill_standard_name(item: dict, fallback_display: str = "", force: bool = False) -> bool:
+    """填充标准名：优先 NFO，其次用检索名兜底。
+
+    force=True 用于用户显式点「生成标准名」，此时只有 manual 挡得住。
+    """
     from renamer import generate_shadow_name_from_nfo
     from shadow_name_manager import apply_auto_fill
 
@@ -139,7 +142,44 @@ def fill_standard_name(item: dict, fallback_display: str = "") -> bool:
     if not shadow:
         return False
 
-    return apply_auto_fill(item, shadow, source=source)
+    return apply_auto_fill(item, shadow, source=source, force=force)
+
+
+def regenerate_standard_names(library: list, path: str, is_folder: bool = False) -> dict:
+    """用户点「生成标准名」时按路径重算，返回 {updated, matched, skipped, shadow_name}。
+
+    与 clean_name_system.regenerate_clean_names 对称：同一套取名逻辑 + 强制覆写。
+    此前这个按钮走的是整理流水线（renamer.rename_videos_in_folder），那套算的是
+    "磁盘该叫什么"，依据是目录级 tvshow.nfo；番剧根目录的 tvshow.nfo 常被某一季的
+    刮削覆盖（实测军火女王根目录写的是「军火女王 第二季」），于是整部剧被安上别的
+    季名。加上填充用 source=parsed，被已有的 nfo 优先级挡住，按钮点了毫无反应。
+    """
+    if not path:
+        return {"updated": 0, "matched": 0, "skipped": 0, "shadow_name": ""}
+
+    if is_folder:
+        prefix = path.replace("\\", "/").rstrip("/") + "/"
+        targets = [i for i in library
+                   if i.get("file_path", "").replace("\\", "/").startswith(prefix)]
+    else:
+        targets = [i for i in library if i.get("file_path") == path]
+
+    updated = 0
+    skipped = 0
+    first = ""
+    for item in targets:
+        if item.get("shadow_name_source") == "manual":
+            skipped += 1
+            continue
+        _, display = fill_search_index_name(item)
+        if fill_standard_name(item, fallback_display=display, force=True):
+            updated += 1
+            if not first:
+                first = item.get("shadow_name", "")
+        item[_VERSION_FIELD] = FILLER_VERSION
+
+    return {"updated": updated, "matched": len(targets),
+            "skipped": skipped, "shadow_name": first}
 
 
 def fill_names_for_item(item: dict) -> Tuple[bool, bool]:

@@ -722,25 +722,51 @@ def build_search_index_name(file_path: str, file_name: str = "") -> Optional[Cle
     folder_name = os.path.basename(folder)
 
     # 1. NFO
+    work_folder_name = folder_name
     try:
-        from nfo_handler import read_nfo, read_video_nfo
+        from nfo_handler import read_nfo, read_show_names, read_video_nfo, work_folder_of
 
         nfo = read_video_nfo(file_path) or read_nfo(folder)
+        work_folder_name = os.path.basename(work_folder_of(file_path))
     except Exception:
         nfo = None
 
     if nfo and nfo.get("title"):
-        result = clean_from_scrape(
-            title=nfo.get("title", ""),
-            original_title=nfo.get("original_title", "") or "",
-            english_title=nfo.get("english_title", "") or "",
-            year=str(nfo.get("year", "") or ""),
-            filename=file_name,
-            folder_name=folder_name,
-            source="nfo",
-        )
-        if result.cn or result.en:
-            return result
+        title = nfo.get("title", "")
+        original_title = nfo.get("original_title", "") or ""
+        english_title = nfo.get("english_title", "") or ""
+        # 分集 NFO 的 <title> 是分集标题（「炎兔」「第 1 集」），不是作品名。
+        # 整季每集都会算出不同的检索名，搜索时一条都对不上。
+        if nfo.get("media_type") == "episodedetails" or nfo.get("showtitle"):
+            show = read_show_names(file_path, nfo)
+            if show:
+                title = show["title"]
+                original_title = show["original_title"]
+                english_title = show["english_title"]
+            else:
+                title = ""   # 拿不到作品名就走下面的目录名/文件名，不用分集标题
+
+        if title:
+            result = clean_from_scrape(
+                title=title,
+                original_title=original_title,
+                english_title=english_title,
+                year=str(nfo.get("year", "") or ""),
+                filename=file_name,
+                folder_name=folder_name,
+                source="nfo",
+            )
+            # NFO 常年只有中文名（实测军火女王的 tvshow.nfo 英文名是空的），
+            # 而作品级目录名里就写着 `军火女王 Jormungand`。只在缺失的一侧补，
+            # 且要求两边指向同一部作品，避免拿 `动画番` 这种分类目录名当片名。
+            if result.cn and not result.en and work_folder_name:
+                folder_guess = clean_for_folder(work_folder_name)
+                if folder_guess.en and _points_to_same_work(result, folder_guess):
+                    result.en = folder_guess.en
+                    result.display = compose_display(
+                        result.cn, result.en, result.suffix, result.year)
+            if result.cn or result.en:
+                return result
 
     # 2. 文件名，缺失的一侧用文件夹名补
     file_result = clean_from_filename(file_name, folder_name=folder_name)

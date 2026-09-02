@@ -527,19 +527,16 @@ def generate_shadow_name_from_nfo(video_path: str, folder_path: str, folder_type
         nfo = _scraper.read_video_nfo(video_path)
         if not nfo:
             return None
-        # 剧名优先从 showtitle 获取，其次从 tvshow.nfo
-        show_title = nfo.get("showtitle") or ""
-        show_en = ""
-        if not show_title:
-            tv_nfo = _scraper.read_nfo(folder_path, no_fallback=True)
-            if tv_nfo:
-                show_title = tv_nfo.get("title", "")
-                show_en = tv_nfo.get("english_title") or ""
-                show_orig = tv_nfo.get("original_title") or ""
-                if not show_en and show_orig and _is_mostly_latin(show_orig):
-                    show_en = show_orig
-        if not show_title:
-            show_title = nfo.get("title", "")
+        # 作品名的来源统一走 nfo_handler.read_show_names：
+        # showtitle → 作品级目录的 tvshow.nfo。绝不退回 <title>（那是分集标题）。
+        from nfo_handler import read_show_names
+
+        show = read_show_names(video_path, nfo) or {}
+        show_title = show.get("title") or ""
+        show_en = show.get("english_title") or ""
+        show_orig = show.get("original_title") or ""
+        if not show_en and show_orig and _is_mostly_latin(show_orig):
+            show_en = show_orig
 
         season = nfo.get("season_number", 0)
         episode = nfo.get("episode_number", 0)
