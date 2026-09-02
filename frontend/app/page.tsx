@@ -96,7 +96,6 @@ export default function Home() {
   const libraryContentRef = useRef<HTMLDivElement>(null);
   const [discoverVisible, setDiscoverVisible] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [activeSection, setActiveSection] = useState<"library" | "discover">("library");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [searchContext, setSearchContext] = useState<{
@@ -245,11 +244,10 @@ export default function Home() {
 
   // ── 发现区域懒加载：IntersectionObserver 检测进入视口 ──
   useEffect(() => {
-    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); setActiveSection("library"); return; }
+    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); return; }
     const observer = new IntersectionObserver(
       ([entry]) => {
         setDiscoverVisible(entry.isIntersecting);
-        setActiveSection(entry.isIntersecting ? "discover" : "library");
       },
       { threshold: 0.05 }
     );
@@ -297,7 +295,6 @@ export default function Home() {
         onOpenPlugins={() => setShowPlugins(true)}
         onOpenSettings={() => setShowSettings(true)}
         showDiscover={showDiscover}
-        activeSection={activeSection}
         onScrollToDiscover={() => discoverRef.current && scrollContainerRef.current?.scrollTo({ top: discoverRef.current.offsetTop - 8, behavior: "smooth" })}
       />
 

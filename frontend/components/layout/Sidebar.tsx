@@ -13,10 +13,9 @@ interface SidebarProps {
   onOpenSettings?: () => void;
   showDiscover?: boolean;
   onScrollToDiscover?: () => void;
-  activeSection?: "library" | "discover";
 }
 
-export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins, onOpenSettings, showDiscover, onScrollToDiscover, activeSection }: SidebarProps) {
+export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, onToggle, onOpenPlugins, onOpenSettings, showDiscover, onScrollToDiscover }: SidebarProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -90,7 +89,7 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
             </button>
           )}
           {!collapsed && !isRoot && !hasChildren && <span className="w-7 flex-shrink-0" />}
-          <span className="text-sm">{hasChildren ? "📂" : "📁"}</span>
+          <span className="text-sm w-[1.25em] flex items-center justify-center shrink-0">{hasChildren ? "📂" : "📁"}</span>
           {!collapsed && (
             <span className={`truncate flex-1 ${isActive ? "font-semibold" : ""}`}>{node.name || "媒体库"}</span>
           )}
@@ -147,28 +146,26 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
       {showDiscover && (
         <div className="border-t border-white/[0.06] px-2 py-2">
           <button onClick={onScrollToDiscover}
-            className={`w-full flex items-center gap-2 py-2 rounded-lg text-[13px] transition-all ${collapsed ? "justify-center px-2" : "px-3"} ${
-              // 与目录树选中态同一套：只变文字颜色，不铺底色
-              activeSection === "discover"
-                ? "text-blue-400 font-medium hover:bg-white/5"
-                : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-            }`}>
-            <span className="text-sm">🎬</span>
+            // 不做选中态：这是个「滚到发现区」的动作按钮，不是页签。
+            // 之前按「发现区是否落在视口」染蓝，用户只是滚过去、并没有选它，
+            // 蓝色只留给当前选中的媒体库目录。
+            className={`w-full flex items-center gap-2 py-2 rounded-lg text-[13px] transition-all text-slate-400 hover:bg-white/5 hover:text-slate-200 ${collapsed ? "justify-center px-2" : "px-3"}`}>
+            <span className="text-sm w-[1.25em] flex items-center justify-center shrink-0">🎬</span>
             {!collapsed && <span>发现</span>}
           </button>
         </div>
       )}
 
       {/* 插件中心 + 设置入口 */}
-      <div className="border-t border-white/[0.06] px-2 py-3 space-y-1.5">
+      <div className="border-t border-white/[0.06] px-2 py-2 space-y-1">
         <button onClick={onOpenPlugins}
           className={`w-full flex items-center gap-2 py-2 rounded-lg text-[13px] text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all ${collapsed ? "justify-center px-2" : "px-3"}`}>
-          <span className="text-sm">🧩</span>
+          <span className="text-sm w-[1.25em] flex items-center justify-center shrink-0">🧩</span>
           {!collapsed && <span>插件</span>}
         </button>
         <button onClick={onOpenSettings}
           className={`w-full flex items-center gap-2 py-2 rounded-lg text-[13px] text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all ${collapsed ? "justify-center px-2" : "px-3"}`}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><circle cx="12" cy="12" r="3" /></svg>
+          <span className="text-sm w-[1.25em] flex items-center justify-center shrink-0"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><circle cx="12" cy="12" r="3" /></svg></span>
           {!collapsed && <span>设置</span>}
         </button>
       </div>
