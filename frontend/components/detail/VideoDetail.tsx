@@ -120,7 +120,9 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
 
   return (
     <div className="p-5 space-y-4">
-      <div className="relative"><Poster key={posterKey} fallbackName={v.file_name} localPath={v.file_path.replace(/[\\/][^\\/]+$/, '')} aspect="poster" posterDeleted={posterDeleted} /><div className="absolute top-2 right-2 z-10"><PosterUpload path={v.file_path} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); setScrapeData(null); } else { setPosterDeleted(false); } reload(); onRefresh(); }} /></div></div>
+      {/* 封面传视频自身路径，不传所在目录：目录模式下后端会取 listdir 到的第一个
+          `*-poster.jpg`，散装电影（一个目录塞几十部片）会全部显示成同一张 */}
+      <div className="relative"><Poster key={posterKey} fallbackName={v.file_name} localPath={v.file_path} aspect="poster" posterDeleted={posterDeleted} /><div className="absolute top-2 right-2 z-10"><PosterUpload path={v.file_path} onUploaded={(deleted) => { setPosterKey(k => k + 1); if (deleted) { setPosterDeleted(true); setScrapeData(null); } else { setPosterDeleted(false); } reload(); onRefresh(); }} /></div></div>
       {scrapeLoading && <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-500/10 border border-blue-500/20"><div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" /><span className="text-xs text-blue-400">正在刮削...</span></div>}
       {scrapeStatus === "success" && !scrapeLoading && scrape && <><div className="text-xs text-green-400/70">✓ {scrape.title || "已匹配"}</div><ScrapeInfo data={scrape} /></>}
       {confidence && <ConfidenceBadge confidence={confidence} pendingConfirm={pendingConfirm} onConfirm={() => setPendingConfirm(false)} onReject={() => { setPendingConfirm(false); }} />}
