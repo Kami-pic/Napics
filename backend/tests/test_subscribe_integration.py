@@ -11,6 +11,12 @@ import os
 import sys
 import json
 
+# 这一组直接对运行中的后端发 HTTP 请求。后端没起时应当 skip 而不是 fail —— 
+# 否则真实问题会被一堆 ConnectionError 淹掉。
+from test_support.live_backend import requires_live_backend
+
+pytestmark = requires_live_backend
+
 _dir = os.path.dirname(os.path.abspath(__file__))
 if _dir not in sys.path:
     sys.path.insert(0, _dir)

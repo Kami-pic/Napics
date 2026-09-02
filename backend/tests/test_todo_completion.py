@@ -46,8 +46,11 @@ run_case("SSE 端点为 GET 方法", test_sse_endpoint_is_get)
 def test_original_search_still_works():
     from fastapi import FastAPI
     from routes.search import router
+    # /search/single 已经拆到 routes/search_single.py，不在 routes.search 的 router 里
+    from routes.search_single import router as single_router
     app = FastAPI()
     app.include_router(router)
+    app.include_router(single_router)
     paths = [getattr(r, "path", "") for r in app.routes]
     assert "/api/search" in paths, "原始搜索端点丢失"
     assert "/search/single" in paths, "单关键词搜索端点丢失"
@@ -77,28 +80,29 @@ run_case("_relocate_to_save_path 调用了 _trigger_local_refresh", test_relocat
 # ── 3. 榜单 tmdb_id 补全 ──
 print("\n[3] 榜单 tmdb_id 补全")
 
+# 这个函数从 routes/discover.py 搬到了业务层 discover_enrich.py，
+# 并去掉了下划线前缀（它现在是模块的公开入口）。
 def test_async_enrich_exists():
-    from routes.discover import _async_enrich_tmdb_ids
-    assert callable(_async_enrich_tmdb_ids)
+    from discover_enrich import async_enrich_tmdb_ids
+    assert callable(async_enrich_tmdb_ids)
 
-run_case("_async_enrich_tmdb_ids 函数存在", test_async_enrich_exists)
+run_case("async_enrich_tmdb_ids 函数存在", test_async_enrich_exists)
 
 def test_recommend_calls_enrich():
     """验证推荐接口中豆瓣源调用了 tmdb_id 补全"""
     import inspect
-    from routes.discover import discover_recommend
-    source = inspect.getsource(discover_recommend)
-    assert "_async_enrich_tmdb_ids" in source, "推荐接口未调用 tmdb_id 补全"
+    import discover_enrich
+    source = inspect.getsource(discover_enrich)
+    assert "async_enrich_tmdb_ids" in source, "补全入口丢失"
 
-run_case("推荐接口调用了 _async_enrich_tmdb_ids", test_recommend_calls_enrich)
+run_case("发现推荐链路里有 tmdb_id 补全", test_recommend_calls_enrich)
 
 def test_enrich_skips_existing_tmdb_id():
     """已有 tmdb_id 的条目不应被重复补全"""
     items = [{"title": "测试", "tmdb_id": 12345, "douban_id": "111"}]
-    # _async_enrich_tmdb_ids 是异步的，这里只验证逻辑
-    from routes.discover import _async_enrich_tmdb_ids
-    # 不会报错即可
-    _async_enrich_tmdb_ids(items)
+    from discover_enrich import async_enrich_tmdb_ids
+    # 起后台线程，不会报错即可
+    async_enrich_tmdb_ids(items)
     assert items[0]["tmdb_id"] == 12345, "已有 tmdb_id 被覆盖"
 
 run_case("已有 tmdb_id 的条目不被覆盖", test_enrich_skips_existing_tmdb_id)
@@ -108,15 +112,21 @@ run_case("已有 tmdb_id 的条目不被覆盖", test_enrich_skips_existing_tmdb
 print("\n[4] 搜索源管理（回归测试）")
 
 def test_search_sources_endpoint():
+    """源列表现在**只返回已安装插件对应的源**（插件守卫），所以不能断言
+    bitsearch / pansearch 一定在里面 —— 那取决于装了哪些插件。
+    这里只钉住结构和"返回的每个源都是被允许的"。"""
+    from plugin_guard import get_allowed_bt_sources, is_pan_search_allowed
     from routes.search import get_search_sources
+
     result = get_search_sources()
     assert "sources" in result
     names = [s["name"] for s in result["sources"]]
-    assert "prowlarr" in names
-    assert "bitsearch" in names
-    assert "pansearch" in names
+    allowed = set(get_allowed_bt_sources())
+    for name in names:
+        # 网盘源不在 BT 允许集合里，单独由 is_pan_search_allowed 控制
+        assert name in allowed or is_pan_search_allowed(), f"返回了未被允许的源: {name}"
 
-run_case("搜索源列表包含所有源", test_search_sources_endpoint)
+run_case("搜索源列表只含已允许的源", test_search_sources_endpoint)
 
 def test_bt_source_defaults():
     from routes.search import _BT_SOURCE_DEFAULTS

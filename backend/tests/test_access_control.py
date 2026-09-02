@@ -98,16 +98,31 @@ def test_verify_token_without_secret_is_rejected():
 
 # ── 中间件与接口 ──
 
-@pytest.fixture
-def client(tmp_path, monkeypatch):
-    """每个用例一套独立的数据目录与 app"""
-    monkeypatch.setenv("NAPICS_DATA_DIR", str(tmp_path))
-    # main 与 shared 都是模块级单例，必须重新导入才能拿到指向 tmp 的配置
+def _drop_app_modules():
+    """把 main / shared / routes.* 从模块缓存里踢掉，强制下次 import 重新初始化。"""
     for name in list(sys.modules):
         if name in ("main", "shared") or name.startswith("routes."):
             sys.modules.pop(name, None)
+
+
+@pytest.fixture
+def client(tmp_path, monkeypatch):
+    """每个用例一套独立的数据目录与 app。
+
+    **收尾必须再踢一次模块缓存**：这些用例会给 app 设访问密码，而 main / shared
+    是模块级单例。不清理的话 sys.modules 里留下的就是「指向 tmp_path 且已设密码」
+    的那个 app，后续任何 `from main import app` 的测试都会拿到它 —— 所有请求
+    401。全量跑时 test_filesystem_routes / test_path_guard 一共 18 个用例就是这么
+    挂的（单独跑全绿，跟在这个文件后面跑全红）。
+    """
+    monkeypatch.setenv("NAPICS_DATA_DIR", str(tmp_path))
+    # main 与 shared 都是模块级单例，必须重新导入才能拿到指向 tmp 的配置
+    _drop_app_modules()
     import main
-    return TestClient(main.app)
+    try:
+        yield TestClient(main.app)
+    finally:
+        _drop_app_modules()
 
 
 def test_disabled_by_default_nothing_changes(client):

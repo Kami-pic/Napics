@@ -8,11 +8,21 @@ import os
 import shutil
 import zipfile
 
+import pytest
+
 from plugin_manager import PluginManager, RemotePluginInfo
 
 # 测试用的插件目录（避免污染真实 plugins/）
 PLUGINS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugins")
 COMMUNITY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "community-plugins")
+
+# community-plugins 是**独立仓库**（conftest 里也是这个口径：本地存在时才跑它的
+# 源实现测试）。这些用例校验的是那个仓库打出来的 zip 包，主仓库单独 clone 时
+# 目录压根不存在 —— 应当 skip 而不是报 5 个失败。
+pytestmark = pytest.mark.skipif(
+    not os.path.isfile(os.path.join(COMMUNITY_DIR, "index.json")),
+    reason="需要本地 community-plugins 仓库及其打包产物（独立仓库）",
+)
 
 
 class TestRemoteInstallE2E:

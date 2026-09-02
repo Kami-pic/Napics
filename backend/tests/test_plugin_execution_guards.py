@@ -5,6 +5,10 @@ import plugin_guard
 from metadata_provider_factory import get_metadata_provider_map
 from storage_provider_factory import get_storage_provider_map
 from routes import library_crud as library_routes
+# 完整度接口在 library_completeness 里（从 library_crud 拆出去了）。
+# 原来这里 patch 的是 library_crud._tmdb_client —— 那个属性早就不在那儿了，
+# monkeypatch 直接抛 AttributeError。
+from routes import library_completeness as completeness_routes
 from routes import media_detail as media_detail_routes
 from routes import media_info as media_info_routes
 from routes import scrape_execute as scrape_execute_routes
@@ -124,10 +128,10 @@ def test_local_matcher_returns_neutral_state_when_plugin_uninstalled(monkeypatch
 
 def test_completeness_batch_does_not_start_when_plugin_uninstalled(monkeypatch):
     monkeypatch.setattr(plugin_guard, "is_feature_allowed", _disabled)
-    monkeypatch.setattr(library_routes, "_tmdb_client", _unexpected_call)
-    monkeypatch.setattr(library_routes.threading, "Thread", _unexpected_call)
+    monkeypatch.setattr(completeness_routes, "_tmdb_client", _unexpected_call)
+    monkeypatch.setattr(completeness_routes.threading, "Thread", _unexpected_call)
 
-    response = library_routes.refresh_all_completeness()
+    response = completeness_routes.refresh_all_completeness()
 
     assert response == {
         "status": "plugin_not_installed",

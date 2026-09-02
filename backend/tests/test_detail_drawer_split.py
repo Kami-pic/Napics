@@ -1,6 +1,12 @@
 """测试 DetailDrawer 拆分后的功能回归：验证刮削、重命名、整理等 API 链路"""
 import requests
 
+# 这一组直接对运行中的后端发 HTTP 请求。后端没起时应当 skip 而不是 fail —— 
+# 否则真实问题会被一堆 ConnectionError 淹掉。
+from test_support.live_backend import requires_live_backend
+
+pytestmark = requires_live_backend
+
 
 BASE = "http://localhost:8000"
 

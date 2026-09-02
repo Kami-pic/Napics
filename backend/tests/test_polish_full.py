@@ -77,6 +77,12 @@ run_case("Subscription.sources 默认空列表", test_sub_sources)
 print("\n[4/7] 搜索源管理")
 import requests as req
 
+# 这一组直接对运行中的后端发 HTTP 请求。后端没起时应当 skip 而不是 fail —— 
+# 否则真实问题会被一堆 ConnectionError 淹掉。
+from test_support.live_backend import requires_live_backend
+
+pytestmark = requires_live_backend
+
 def test_search_sources_api():
     r = req.get("http://localhost:8000/search/sources", timeout=5)
     assert r.status_code == 200

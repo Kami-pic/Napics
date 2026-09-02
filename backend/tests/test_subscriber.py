@@ -8,7 +8,30 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
 
+import shutil
+import tempfile
+
+import pytest
+
 from subscriber import SubscriptionManager, Subscription
+
+
+@pytest.fixture(autouse=True)
+def _isolated_store(monkeypatch):
+    """把每个用例钉到独立的临时目录。
+
+    原来的写法是 `SubscriptionManager(base_path=".")` 之后再改 `_file_path` ——
+    但 `__init__` 里就已经 `_load()` 过了，读的是 **cwd 下真实的
+    subscriptions.json**（用户有 20 条），于是 `len(all_subs) == 1` 这种断言必挂。
+    改 `_file_path` 只影响后续的保存，救不了已经装进内存的数据。
+    """
+    tmp = tempfile.mkdtemp(prefix="napics_subs_test_")
+    monkeypatch.chdir(tmp)
+    try:
+        yield tmp
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
 
 TEST_FILE = "test_subscriptions.json"
 

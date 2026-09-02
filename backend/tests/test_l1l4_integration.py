@@ -25,6 +25,14 @@ from local_media_matcher import LocalMediaMatcher
 SANDBOX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sandbox_real")
 VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".ts", ".rmvb", ".rm", ".flv", ".wmv", ".mov", ".m4v"}
 
+# sandbox_real 是一份本地真实数据快照，不在版本控制里。没有它时依赖沙盒的用例
+# 应当 skip 而不是在 setup 阶段抛 FileNotFoundError —— 后者会让整个文件报 error，
+# 把同文件里那些**不依赖沙盒**的用例也一起拖没。
+requires_sandbox = pytest.mark.skipif(
+    not os.path.isdir(SANDBOX),
+    reason=f"需要本地真实数据快照 {SANDBOX}（不在版本控制内）",
+)
+
 
 def collect_sandbox_folders():
     """收集沙盒中所有一级媒体文件夹"""
@@ -61,6 +69,7 @@ class TestSplitByLanguageReal:
     def folders(self):
         return collect_sandbox_folders()
 
+    @requires_sandbox
     def test_no_crash(self, folders):
         """所有文件夹名都能正常处理"""
         for f in folders:
@@ -130,6 +139,7 @@ class TestNormalizeConsistency:
             # 但核心行为（去标点、小写、全角→半角）应该一致
             assert new == new.lower(), f"normalize should lowercase: '{new}'"
 
+    @requires_sandbox
     def test_sandbox_folders_no_crash(self):
         folders = collect_sandbox_folders()
         for f in folders:
@@ -332,6 +342,7 @@ class TestFilterSortEndToEnd:
 # 7. 沙盒全量 smoke test
 # ════════════════════════════════════════
 
+@requires_sandbox
 class TestSandboxSmoke:
     """沙盒全量 smoke test：所有视频文件名都能被 L1 处理"""
 

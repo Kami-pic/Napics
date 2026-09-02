@@ -3,6 +3,12 @@ import requests
 import json
 import sys
 
+# 这一组直接对运行中的后端发 HTTP 请求。后端没起时应当 skip 而不是 fail —— 
+# 否则真实问题会被一堆 ConnectionError 淹掉。
+from test_support.live_backend import requires_live_backend
+
+pytestmark = requires_live_backend
+
 BASE = "http://localhost:8000"
 PASS = 0
 FAIL = 0

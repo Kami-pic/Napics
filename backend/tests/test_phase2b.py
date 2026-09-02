@@ -19,8 +19,12 @@ from subscriber import Subscription, EpisodeInfo
 
 def test_quality_cutoff():
     """已达到目标质量的集不再匹配新资源"""
+    # 订阅标题必须和条目标题对得上：match_items 的第一道是 _filter_title_match
+    # （后加的跨语言标题匹配，match_score < 20 直接丢）。原来这里订阅叫「测试剧」
+    # 而条目叫 "Test S01E01"，得分 0、三条全被过滤，于是这个用例测不到它真正
+    # 想测的 Quality Cutoff。
     sub = Subscription(
-        title="测试剧",
+        title="Test Show",
         type="tv",
         season=1,
         quality="720p",
@@ -33,11 +37,11 @@ def test_quality_cutoff():
     )
 
     items = [
-        RSSItem(title="Test S01E01 2160p Remux", episode=1, season=1, info_hash="new1",
+        RSSItem(title="Test.Show.S01E01.2160p.Remux", episode=1, season=1, info_hash="new1",
                 download_url="magnet:?xt=urn:btih:NEW1", quality_tag="Remux-2160p"),
-        RSSItem(title="Test S01E02 1080p WEB-DL", episode=2, season=1, info_hash="new2",
+        RSSItem(title="Test.Show.S01E02.1080p.WEB-DL", episode=2, season=1, info_hash="new2",
                 download_url="magnet:?xt=urn:btih:NEW2", quality_tag="WEB-DL-1080p"),
-        RSSItem(title="Test S01E03 1080p", episode=3, season=1, info_hash="new3",
+        RSSItem(title="Test.Show.S01E03.1080p", episode=3, season=1, info_hash="new3",
                 download_url="magnet:?xt=urn:btih:NEW3", quality_tag="1080p"),
     ]
 
