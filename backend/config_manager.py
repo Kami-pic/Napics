@@ -240,6 +240,31 @@ class ConfigManager:
             done.append("add_bangumi_metadata")
             changed = True
 
+        # 清掉「从没配置过」的出厂默认地址。
+        #
+        # 这三个地址以前的默认值是 http://127.0.0.1:<端口>。Napics 多数跑在 NAS 或
+        # 容器里、外部服务在别的机器上，所以这个默认值几乎必然是错的：用户打开插件
+        # 配置看到一个填好的地址，点「测试连接」是真的在连本机、必然失败，
+        # 而 `if not conf.qb_url` 这类「是否已配置」的判断也恒为 True。
+        #
+        # 判据是「地址正好等于旧默认值」且「对应的密钥/凭据为空」—— 这个组合只可能
+        # 是从没配置过（真配过的人不会留着凭据不填）。有凭据的一律不动。
+        if "clear_stale_default_urls" not in done:
+            stale = {
+                "prowlarr_url": ("http://127.0.0.1:9696", ("prowlarr_api_key",)),
+                "qb_url": ("http://127.0.0.1:8080", ("qb_password",)),
+                "alist_url": ("http://127.0.0.1:5244", ("alist_token",)),
+            }
+            for key, (old_default, credential_keys) in stale.items():
+                if (data.get(key) or "").rstrip("/") != old_default:
+                    continue
+                if any((data.get(c) or "").strip() for c in credential_keys):
+                    continue  # 配过凭据，说明用户真的在用这个地址
+                data[key] = ""
+                changed = True
+            done.append("clear_stale_default_urls")
+            changed = True
+
         if changed:
             data["config_migrations"] = done
         return changed

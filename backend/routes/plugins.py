@@ -224,6 +224,33 @@ def update_plugin_config(plugin_id: str, req: PluginConfigUpdate):
     return {"success": True, "updated_keys": updated_keys}
 
 
+_PLUGIN_URL_FIELD = {
+    "search-prowlarr": "prowlarr_url",
+    "download-qbittorrent": "qb_url",
+    "storage-openlist": "alist_url",
+    "download-openlist": "alist_url",
+}
+
+
+def _loopback_note(conf, plugin_id: str) -> str:
+    """地址指向本机回环时，在连接失败的提示里点出这一点。
+
+    Napics 多数跑在 NAS 或容器里，而这三个服务往往在别的机器上。以前这三个地址的
+    默认值就是 http://127.0.0.1:<端口>，用户没改过就去点「测试连接」，后端是真的
+    在连自己 —— 报出来只有一句「连接失败」，看不出问题在地址上。
+    地址是用户环境的信息，服务端猜不出来（扫描局域网端口不是可接受的做法），
+    但至少要把这条最可能的原因说清楚。
+    """
+    field = _PLUGIN_URL_FIELD.get(plugin_id)
+    if not field:
+        return ""
+    url = (getattr(conf, field, "") or "").lower()
+    if "127.0.0.1" in url or "localhost" in url or "[::1]" in url:
+        return "（地址指向本机回环。如果这个服务在 NAS 或别的机器上，要填它的局域网 IP；"\
+               "Napics 在 Docker 里而服务在宿主机上，填 host.docker.internal）"
+    return ""
+
+
 @router.post("/{plugin_id}/test")
 def test_plugin_connection(plugin_id: str):
     """测试插件连通性（检查配置的服务是否可达）"""
@@ -302,9 +329,9 @@ def test_plugin_connection(plugin_id: str):
             return {"success": True, "message": "该插件无需连通性测试"}
 
     except _requests.exceptions.Timeout:
-        return {"success": False, "error": "连接超时"}
+        return {"success": False, "error": "连接超时" + _loopback_note(conf, plugin_id)}
     except _requests.exceptions.ConnectionError as e:
-        return {"success": False, "error": f"连接失败: {e}"}
+        return {"success": False, "error": f"连接失败: {e}" + _loopback_note(conf, plugin_id)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
