@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLibrary } from "@/hooks/useLibrary";
+import { useActiveSection } from "@/hooks/useActiveSection";
 import { useScrollDamping } from "@/hooks/useScrollDamping";
 import Header from "@/components/layout/Header";
 import Toolbar from "@/components/layout/Toolbar";
@@ -95,9 +96,6 @@ export default function Home() {
   const discoverRef = useRef<HTMLDivElement>(null);
   const libraryContentRef = useRef<HTMLDivElement>(null);
   const [discoverVisible, setDiscoverVisible] = useState(false);
-  // 焦点落在媒体库还是发现区：蓝色高亮同时只给一个，
-  // 进了发现区就把目录树的选中色让出去
-  const [activeSection, setActiveSection] = useState<"library" | "discover">("library");
   // 发现区只在媒体库根目录渲染，从子目录点「发现」要先回根、等它挂上再滚
   const [pendingDiscoverScroll, setPendingDiscoverScroll] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -249,17 +247,23 @@ export default function Home() {
 
   // ── 发现区域懒加载：IntersectionObserver 检测进入视口 ──
   useEffect(() => {
-    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); setActiveSection("library"); return; }
+    if (!showDiscover || !discoverRef.current) { setDiscoverVisible(false); return; }
     const observer = new IntersectionObserver(
       ([entry]) => {
         setDiscoverVisible(entry.isIntersecting);
-        setActiveSection(entry.isIntersecting ? "discover" : "library");
       },
       { threshold: 0.05 }
     );
     observer.observe(discoverRef.current);
     return () => observer.disconnect();
   }, [showDiscover]);
+
+  // 焦点归属：发现区吸附到顶部才算焦点在发现，只是露头不算
+  const activeSection = useActiveSection({
+    containerRef: scrollContainerRef,
+    wallRef: discoverRef,
+    enabled: showDiscover,
+  });
 
   // ── 阻尼 + 磁力吸附 ──
   useScrollDamping({
