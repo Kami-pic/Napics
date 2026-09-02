@@ -35,6 +35,10 @@ export interface VideoInfo {
   clean_name_en?: string; // 英文清洗名
   clean_name_original?: string; // 原始语言清洗名（日文/韩文等）
   clean_name_source?: string; // 清洗名来源
+  /** 取名证据之间的矛盾，取值见 backend/name_conflicts.py */
+  name_conflicts?: string[];
+  /** 名字没通过自检，显示的是候选值 */
+  name_needs_review?: boolean;
   quality_score?: number; // 100 分制综合质量评分
 }
 

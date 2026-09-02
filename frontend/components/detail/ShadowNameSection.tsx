@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { VideoInfo } from "@/types";
 import { api } from "@/lib/api";
 import { BASE_URL } from "@/lib/api/base";
+import NameConflictHint from "./NameConflictHint";
 
 export function ShadowNameSection({ path, video, folderName, folderShadowName, folderCleanName, cleanNameEn, onRefresh, onTreeRefresh }: { path: string; video?: VideoInfo; folderName?: string; folderShadowName?: string; folderCleanName?: string; cleanNameEn?: string; onRefresh?: () => void; onTreeRefresh?: () => void }) {
   // 文件夹模式：用 folderName/folderShadowName/folderCleanName；视频模式：用 video 字段
@@ -125,6 +126,8 @@ export function ShadowNameSection({ path, video, folderName, folderShadowName, f
 
   return (
     <div className="space-y-1">
+      {/* 名字没通过自检时先说清楚，别让候选值被当成可信数据 */}
+      <NameConflictHint conflicts={video?.name_conflicts} />
       {/* 标准化名称 */}
       <div className="flex items-center gap-2 px-1">
         <span className="text-[10px] text-slate-600">✨</span>
