@@ -24,6 +24,23 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_SCHEMES = ("http", "https")
 
+# 代码里写死的官方分发域名，跳过 IP 归属判定。
+#
+# 起因：fake-ip 模式的代理（Clash / Surge）会把这些域名解析到 198.18.0.0/15
+# 这类保留段地址（实测 raw.githubusercontent.com -> 198.18.0.73），按 IP 判定
+# 会被当成「非公网」拦下 —— 用户装插件时看到的是「插件源地址不被允许」，
+# 而真实情况是这份流量本该交给代理转发出去。
+#
+# 放行它们不会开出内网探测的入口：这批域名不由用户输入决定，攻击者无法让
+# 后端借此访问局域网内的任意地址。用户输入的其他域名照旧走完整校验。
+_TRUSTED_SOURCE_HOSTS = frozenset({
+    "github.com",
+    "raw.githubusercontent.com",
+    "codeload.github.com",
+    "objects.githubusercontent.com",
+    "ghcr.io",
+})
+
 # 域名解析结果缓存：host -> (是否公网, 判定时间)
 # 图片代理会被首页大量并发调用，避免每次都做 DNS 查询
 _resolve_cache: dict = {}
@@ -105,6 +122,10 @@ def check_external_url(url: str) -> Tuple[bool, str]:
     host = parsed.hostname
     if not host:
         return False, "URL 缺少主机名"
+
+    # 官方分发域名不做 IP 判定，理由见 _TRUSTED_SOURCE_HOSTS
+    if host.strip().lower().rstrip(".") in _TRUSTED_SOURCE_HOSTS:
+        return True, ""
 
     return _resolve_host_is_public(host)
 

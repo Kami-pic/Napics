@@ -128,3 +128,36 @@ def test_plugin_source_rejects_internal_address():
     result = pm.fetch_remote_index("http://127.0.0.1:9696/index.json")
     assert result["success"] is False
     assert result.get("error") == "unsafe_url"
+
+
+# ── 官方分发域名白名单 ──
+#
+# 真机现象：用户开着 fake-ip 模式的代理（Clash/Surge），raw.githubusercontent.com
+# 被解析到 198.18.0.73（保留段）→ IP 判定说「非公网」→ 装插件报「插件源地址不被允许」。
+# 白名单只覆盖代码写死的域名，用户输入的其他域名不受影响。
+
+@pytest.mark.parametrize("url", [
+    "https://github.com/icatmiumiu/plugins-of-napics",
+    "https://raw.githubusercontent.com/u/r/main/index.json",
+    "https://codeload.github.com/u/r/zip/refs/heads/main",
+    "https://objects.githubusercontent.com/github-production-release-asset/x",
+    "https://ghcr.io/v2/u/r/manifests/latest",
+])
+def test_allows_trusted_official_hosts(url):
+    ok, reason = check_external_url(url)
+    assert ok is True, f"官方分发域名被误拦: {url} ({reason})"
+
+
+def test_trusted_host_match_is_exact():
+    """attacker.test 下挂个 github.com 前缀的子域不能蹭进白名单"""
+    from core.url_guard import _TRUSTED_SOURCE_HOSTS
+    for host in ("evil-github.com", "github.com.attacker.test", "raw.githubusercontent.com.evil.test"):
+        assert host not in _TRUSTED_SOURCE_HOSTS
+
+
+def test_whitelist_does_not_open_internal_targets():
+    """加白名单之后，内网地址仍必须被拒"""
+    for url in ("http://127.0.0.1:8080/", "http://192.168.1.10/x",
+                "http://10.0.0.5/", "http://[::1]:80/", "http://172.16.3.4/"):
+        ok, _ = check_external_url(url)
+        assert ok is False, f"白名单放宽了内网判定: {url}"

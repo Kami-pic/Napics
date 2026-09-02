@@ -498,6 +498,14 @@ def generate_shadow_name_from_nfo(video_path: str, folder_path: str, folder_type
     """V3：严格从 NFO 生成影子名。没有 NFO 则返回 None，不回退到文件名清洗。"""
     import scraper as _scraper
 
+    # 文件名不带 SxxExx 的剧集（`[VCB-Studio] Jormungand [01].mkv` 这类）会被调用方
+    # 判成 movie，而 movie 分支取 NFO 的 <title> —— episode.nfo 里那是**分集标题**
+    # （「炎兔」「脉冲星」），作品名在 <showtitle>。NFO 自己声明了是分集就以它为准。
+    if folder_type in ("movie", "collection", "series", "mixed"):
+        probe = _scraper.read_video_nfo(video_path)
+        if probe and (probe.get("media_type") == "episodedetails" or probe.get("showtitle")):
+            folder_type = "tv"
+
     if folder_type == "movie":
         nfo = _scraper.read_video_nfo(video_path) or _scraper.read_nfo(folder_path)
         if not nfo or not nfo.get("title"):
