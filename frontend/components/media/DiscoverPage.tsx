@@ -214,6 +214,7 @@ export default function DiscoverPage({ onSelectMedia, onNavigateToLocal, visible
           enName={searchModalDetail?.english_title || searchModalItem.clean_name_en || (searchModalItem as any)._tmdb_original_title || searchModalDetail?.original_title || searchModalItem.subtitle || ""}
           originalName={searchModalItem.clean_name_original || searchModalDetail?.original_title || ""}
           mediaType={searchModalItem.media_type || activeTabConfig.mediaType || "movie"}
+          year={searchModalItem.year || ""}
           seasonNumber={searchModalItem.episode ? parseInt(searchModalItem.episode) || 0 : 0}
         />
       )}

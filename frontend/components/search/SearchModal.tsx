@@ -24,17 +24,18 @@ interface SearchModalProps {
   originalName?: string; // 原始语言名（日文/韩文/法语等）
   folderType?: string;   // "tv" | "season" | "movie" 等
   seasonNumber?: number;  // 季号
+  year?: string;          // 目标年份，只用于匹配加分（不拼进搜索词）
   episodeTag?: string;    // 如 "S01E01"
 }
 
 export default function SearchModal({
   open, query, onClose, defaultSavePath,
   currentResolution, qbConfigured = true, mediaType,
-  cnName, enName, originalName, folderType, seasonNumber, episodeTag,
+  cnName, enName, originalName, folderType, seasonNumber, episodeTag, year,
 }: SearchModalProps) {
   const s = useSearchState({
     open, query, defaultSavePath, currentResolution, mediaType,
-    cnName, enName, originalName, folderType, seasonNumber, episodeTag,
+    cnName, enName, originalName, folderType, seasonNumber, episodeTag, year,
   });
   const plugins = useInstalledPlugins();
 

@@ -151,11 +151,14 @@ def search_single_keyword(
     keyword: str,
     media_type: str = "",
     skip_filter: bool = False,
+    year: str = "",
 ):
     """单关键词搜索。
 
-    skip_filter=False（默认）：含二次匹配+全局过滤（不含年份匹配）
+    skip_filter=False（默认）：含二次匹配+全局过滤
     skip_filter=True：Prowlarr 裸搜，不做任何过滤
+
+    year 传了才参与：二次匹配的年份关卡 + 匹配加分。不传就是原来的行为。
     """
     from plugin_guard import get_allowed_bt_sources
 
@@ -242,7 +245,7 @@ def search_single_keyword(
         return {
             "keyword": keyword,
             "bt_count": len(all_results),
-            "bt_results": [_enrich_result(r, keyword) for r in all_results],
+            "bt_results": [_enrich_result(r, keyword, target_year=year) for r in all_results],
             "total_raw": total_raw,
             "total_filtered": len(all_results),
         }
@@ -275,12 +278,25 @@ def search_single_keyword(
             target_titles = list(dict.fromkeys(t for t in target_titles if t))
 
             matcher = SecondaryMatcher()
+            bt_titles = [r.title for r in deduped]
             passed = matcher.batch_filter(
-                bt_titles=[r.title for r in deduped],
+                bt_titles=bt_titles,
                 target_titles=target_titles,
-                target_year="",
+                target_year=year,
                 media_type=media_type,
             )
+            # 年份过滤后一条不剩时退回不带年份：BT 标题的年份不完全可靠，
+            # 宁可放宽也不要把本来能用的结果全过滤掉。
+            if not passed and year:
+                loose = matcher.batch_filter(
+                    bt_titles=bt_titles,
+                    target_titles=target_titles,
+                    target_year="",
+                    media_type=media_type,
+                )
+                if loose:
+                    logger.info(f"[Search/Single] '{keyword}' 年份过滤后为空，退回不带年份")
+                    passed = loose
             deduped = [deduped[i] for i in passed]
 
         if deduped:

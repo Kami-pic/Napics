@@ -18,6 +18,9 @@ class MultiLangKeywords:
     original: str = ""     # 原始语言名（日/韩/法等非中非英）
     query: str = ""        # 用户输入的原始 query（兜底用）
     season_number: int = 0 # 季号（0 = 不拼接）
+    # 目标年份。**不参与搜索词拼接**（把年份拼进搜索词会让 BT 站命中率骤降），
+    # 只往下传给 enrich_result 做匹配加分 —— 重名不同年的片子非常多。
+    year: str = ""
 
 
 # 源→语言优先级映射（回退顺序）

@@ -193,13 +193,33 @@ def enhanced_search(
                 seen_urls.add(r.download_url)
                 deduped.append(r)
 
-        # 第二层：SecondaryMatcher 二次匹配（不传年份）
+        # 第二层：SecondaryMatcher 二次匹配。
+        #
+        # 年份原来硬编码成空串，于是 matcher 里那整套年份关卡（电影 ±1 年、
+        # 剧集按各季年份）一直空跑 —— 通道从路由到这里全程存在，被显式丢弃。
+        # 现在传下去，但**带降级**：年份过滤后一条不剩时退回不带年份的结果。
+        # BT 标题里的年份不完全可靠（有的标发行年、有的标制作年、合集标第一部
+        # 的年份），宁可放宽也不要把本来能用的结果全过滤掉。
+        bt_titles = [r.title for r in deduped]
         passed_indices = matcher.batch_filter(
-            bt_titles=[r.title for r in deduped],
+            bt_titles=bt_titles,
             target_titles=target_titles,
-            target_year="",
+            target_year=year,
             media_type=media_type,
+            season_years=season_years,
         )
+        if not passed_indices and year:
+            loose_indices = matcher.batch_filter(
+                bt_titles=bt_titles,
+                target_titles=target_titles,
+                target_year="",
+                media_type=media_type,
+            )
+            if loose_indices:
+                logger.info(
+                    f"[EnhancedSearch] '{keyword}' 年份过滤后为空，退回不带年份（{len(loose_indices)} 条）"
+                )
+                passed_indices = loose_indices
         matched = [deduped[i] for i in passed_indices]
 
         if not matched:

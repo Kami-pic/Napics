@@ -29,6 +29,10 @@ _RELEASE_GROUP_RE = re.compile(r'-[A-Za-z0-9]{2,15}$')
 # 枪版/低质量关键词
 _JUNK_QUALITY_PATTERNS = ["TS", "CAM", "HDTC", "TC", "TELECINE", "HDTS", "TELESYNC", "HDCAM"]
 _MATCH_SCORE_THRESHOLD = 30
+# 年份对得上时的加分。match_chain 是纯名称匹配（签名里连 year 都没有），
+# 重名不同年的两部片得分完全一样 —— 加分让同年的排到前面。
+_YEAR_BONUS = 10
+_YEAR_TOLERANCE = 1  # 发行年 vs 首播年常差 1 年
 
 
 def extract_bt_title_for_match(title: str) -> str:
@@ -132,11 +136,58 @@ def compute_junk_flags(d: dict) -> dict:
     return {"is_junk": len(reasons) > 0, "junk_reasons": reasons}
 
 
-def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
+def _extract_bt_year(title: str) -> str:
+    """从 BT 标题里解析年份。复用 parse_filename（SecondaryMatcher 也用它）。"""
+    if not title:
+        return ""
+    try:
+        from tmdb_client import parse_filename
+
+        return str(parse_filename(title).get("year") or "")
+    except Exception:
+        return ""
+
+
+def apply_year_signal(d: dict, target_year: str) -> dict:
+    """把年份信号加到一条已评分的结果上。
+
+    只做**加分**，不减分、不改 junk 判定。理由：BT 标题里的年份不完全可靠
+    （有的标发行年、有的标制作年、合集标第一部的年份），拿它去否决结果会把
+    本来能用的搜索结果藏起来。而用户要的是「重名的靠年份区分」——
+    同年的排到前面就够了。
+
+    写入三个字段：
+      bt_year     从标题解析出的年份（解析不出是空串）
+      year_match  True 同年或差 1 年 / False 明确对不上 / None 无法比较
+      match_score 同年时 +_YEAR_BONUS，上限仍是 100
+    """
+    bt_year = _extract_bt_year(d.get("title", ""))
+    d["bt_year"] = bt_year
+    if not target_year or not bt_year:
+        d["year_match"] = None
+        return d
+    try:
+        diff = abs(int(target_year) - int(bt_year))
+    except (ValueError, TypeError):
+        d["year_match"] = None
+        return d
+    if diff <= _YEAR_TOLERANCE:
+        d["year_match"] = True
+        d["match_score"] = min(100, (d.get("match_score") or 0) + _YEAR_BONUS)
+    else:
+        # 刻意不扣分、不加 junk_reason
+        d["year_match"] = False
+    return d
+
+
+def enrich_result(r, search_query: str = "", match_names: list = None,
+                  target_year: str = "") -> dict:
     """给搜索结果附加 quality_score、match_score、is_junk 标记
 
     match_names: 额外的匹配候选名称列表（cn_name/en_name/original_name），
                  和 search_query 一起构造 candidates，解决跨语言匹配问题。
+    target_year: 目标年份。传了才会算年份信号（见 apply_year_signal）——
+                 match_chain 本身完全不看年份，而重名不同年的片子非常多。
     """
     try:
         if hasattr(r, "dict"):
@@ -188,6 +239,10 @@ def enrich_result(r, search_query: str = "", match_names: list = None) -> dict:
                 d["_has_multilang_candidates"] = False
         else:
             d["match_score"] = 0
+        # 年份信号必须在 junk_flags 之前算：同年加分可能把结果推过
+        # low_match 阈值，这是我们想要的（重名不同年的才该被判低分）。
+        if target_year:
+            apply_year_signal(d, target_year)
         d.update(compute_junk_flags(d))
         return d
     except Exception:

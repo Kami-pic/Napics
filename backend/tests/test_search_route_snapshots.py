@@ -58,7 +58,7 @@ def test_search_single_source_snapshot_keeps_keyword_chain_shape(monkeypatch):
     monkeypatch.setattr(
         search_single_routes,
         "_enrich_result",
-        lambda result, query, match_names=None: {
+        lambda result, query, match_names=None, target_year="": {
             "title": result.title,
             "download_url": result.download_url,
             "_source": result.indexer.lower(),
@@ -119,7 +119,7 @@ def test_search_single_direct_source_uses_provider_adapter(monkeypatch):
     monkeypatch.setattr(
         search_single_routes,
         "_enrich_result",
-        lambda result, query, match_names=None: {
+        lambda result, query, match_names=None, target_year="": {
             "title": result.title,
             "_source": result.indexer,
             "match_names": list(match_names or []),
@@ -203,7 +203,7 @@ def test_search_single_keyword_skip_filter_uses_provider_adapter(monkeypatch):
     monkeypatch.setattr(
         search_single_routes,
         "_enrich_result",
-        lambda result, query, match_names=None: {
+        lambda result, query, match_names=None, target_year="": {
             "title": result.title,
             "_source": result.indexer,
         },
@@ -282,7 +282,7 @@ def test_search_resources_without_prowlarr_never_creates_prowlarr_client(monkeyp
     monkeypatch.setattr(
         search_routes,
         "_enrich_result",
-        lambda result, query: {"title": result.title, "_source": result.indexer},
+        lambda result, query, target_year="": {"title": result.title, "_source": result.indexer},
     )
 
     body = search_routes.search_resources(query="Dune")
@@ -331,7 +331,7 @@ def test_search_single_keyword_without_prowlarr_uses_allowed_direct_source(monke
     monkeypatch.setattr(
         search_single_routes,
         "_enrich_result",
-        lambda result, query, match_names=None: {"title": result.title, "_source": result.indexer},
+        lambda result, query, match_names=None, target_year="": {"title": result.title, "_source": result.indexer},
     )
 
     body = search_single_routes.search_single_keyword(keyword="Dune", skip_filter=True)
@@ -381,7 +381,7 @@ def test_search_resources_direct_only_applies_global_filter(monkeypatch):
     monkeypatch.setattr(
         search_routes,
         "_enrich_result",
-        lambda result, query: {"title": result.title},
+        lambda result, query, target_year="": {"title": result.title},
     )
 
     body = search_routes.search_resources(query="Dune")
@@ -421,3 +421,4 @@ def test_search_sources_does_not_duplicate_registered_builtin_provider(monkeypat
     names = [source["name"] for source in search_routes.get_search_sources()["sources"]]
 
     assert names.count("bitsearch") == 1
+

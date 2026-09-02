@@ -91,6 +91,7 @@ def build_keywords(
     original_name: str = "",
     shadow_name: str = "",
     season_number: int = 0,
+    year: str = "",
 ) -> MultiLangKeywords:
     """从搜索参数构造多语言搜索词集合。"""
     parts = split_by_language(query)
@@ -102,6 +103,7 @@ def build_keywords(
     return MultiLangKeywords(
         cn=kw_cn, en=kw_en, original=kw_original,
         query=query, season_number=season_number,
+        year=(year or "").strip(),
     )
 
 
@@ -446,7 +448,7 @@ def search_all_sources_iter(
                 completed_sources.add(name)
                 source_deduped = _dedup_by_infohash(results)
                 status = "done" if not err else "failed"
-                enriched = [enrich_result(r, query, match_names=match_names) for r in source_deduped]
+                enriched = [enrich_result(r, query, match_names=match_names, target_year=keywords.year) for r in source_deduped]
                 logger.info("[SSE] %s: raw=%d deduped=%d enriched=%d err=%s", name, len(results), len(source_deduped), len(enriched), err or "none")
                 yield f"data: {json.dumps({'type': 'source_done', 'source': name, 'status': status, 'count': len(results), 'added': len(source_deduped), 'error': err or '', 'search_keywords': searched, 'hit_keyword': hit_kw, 'results': enriched}, default=str)}\n\n"
         except concurrent.futures.TimeoutError:
@@ -504,7 +506,7 @@ def search_all_sources(
                 name, results, err, searched, hit_kw = future.result(timeout=timeout)
                 if not err:
                     deduped = _dedup_by_infohash(results)
-                    enriched = [enrich_result(r, query, match_names=match_names) for r in deduped]
+                    enriched = [enrich_result(r, query, match_names=match_names, target_year=keywords.year) for r in deduped]
                     all_results.extend(enriched)
             except Exception as e:
                 name = future_map.get(future, "unknown")

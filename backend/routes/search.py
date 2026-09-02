@@ -74,7 +74,7 @@ def search_resources(
         return {
             "query": query,
             "bt_count": len(bt_results),
-            "bt_results": [_enrich_result(r, query) for r in bt_results],
+            "bt_results": [_enrich_result(r, query, target_year=year) for r in bt_results],
             "hit_keyword": query,
             "total_raw": len(bt_results),
             "total_filtered": len(bt_results),
@@ -100,7 +100,7 @@ def search_resources(
             client=clients["search"],
             title=query,
             aliases=aliases,
-            year="",
+            year=year,
             media_type=media_type,
             indexer_manager=indexer_m,
             shadow_name=shadow_name,
@@ -118,7 +118,7 @@ def search_resources(
         return {
             "query": query,
             "bt_count": len(bt_results_list),
-            "bt_results": [_enrich_result(r, query) for r in bt_results_list],
+            "bt_results": [_enrich_result(r, query, target_year=year) for r in bt_results_list],
             "hit_keyword": resp.hit_keyword,
             "total_raw": resp.total_raw,
             "total_filtered": len(bt_results_list),
@@ -133,7 +133,7 @@ def search_resources(
     return {
         "query": query,
         "bt_count": len(bt_results),
-        "bt_results": [_enrich_result(r, query) for r in bt_results],
+        "bt_results": [_enrich_result(r, query, target_year=year) for r in bt_results],
         "hit_keyword": query,
         "total_raw": len(bt_results),
         "total_filtered": len(bt_results),
@@ -151,8 +151,12 @@ def search_resources_stream(
     en_name: str = "",
     original_name: str = "",
     season_number: int = 0,
+    year: str = "",
 ):
-    """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词 + 回退链。"""
+    """SSE 流式搜索：所有源全部并行，每个源用最适合的语言搜索词 + 回退链。
+
+    year 只用于匹配加分（不拼进搜索词），不传就是原来的行为。
+    """
     from plugin_guard import get_allowed_bt_sources
 
     def _generate():
@@ -166,7 +170,7 @@ def search_resources_stream(
         keywords = build_keywords(
             query=query, cn_name=cn_name, en_name=en_name,
             original_name=original_name, shadow_name=shadow_name,
-            season_number=season_number,
+            season_number=season_number, year=year,
         )
         clients = get_clients()
         conf = config_m.config

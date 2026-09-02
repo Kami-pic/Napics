@@ -40,11 +40,13 @@ export interface UseSearchStateParams {
   seasonNumber?: number;
   episodeTag?: string;
   qbConfigured?: boolean;
+  /** 目标年份。只用于后端匹配加分，不拼进搜索词（拼进去会让 BT 站命中率骤降）。 */
+  year?: string;
 }
 
 export function useSearchState({
   open, query, defaultSavePath, currentResolution, mediaType,
-  cnName, enName, originalName, folderType, seasonNumber, episodeTag,
+  cnName, enName, originalName, folderType, seasonNumber, episodeTag, year,
 }: UseSearchStateParams) {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<EnhancedSearchResult[]>([]);
@@ -306,7 +308,11 @@ export function useSearchState({
       // 用户手动输入的搜索词不传 cn_name/en_name，让后端用 query 自行分词
       // 点击标签或自动搜索时才传 cn_name/en_name 辅助后端选词
       const isUserEdited = userEditedRef.current;
-      const sseUrl = api.searchStream(q, isUserEdited ? {} : { cn_name: cnName, en_name: enName, original_name: originalName, season_number: seasonNumber });
+      // year 两种情况都传：它不参与选词，只让后端给同年的结果加分。
+      // 用户手改搜索词后年份依然是同一部片的年份，没有理由丢掉。
+      const sseUrl = api.searchStream(q, isUserEdited
+        ? { year }
+        : { cn_name: cnName, en_name: enName, original_name: originalName, season_number: seasonNumber, year });
       const es = new EventSource(sseUrl);
       activeEsRef.current = es;
       let sseResults: EnhancedSearchResult[] = [];
@@ -417,7 +423,7 @@ export function useSearchState({
       if (generationRef.current !== thisSearchId) return;
       try {
         const fallbackController = nextController("bt");
-        const d = await api.searchSingle(q, { skip_filter: true }, fallbackController.signal);
+        const d = await api.searchSingle(q, { skip_filter: true, year }, fallbackController.signal);
         const raw: EnhancedSearchResult[] = (d.bt_results || []).map((r: any) => ({
           ...r,
           quality: r.quality || { resolution: "", source: "", video_codec: "", audio_codec: "", has_chinese_sub: false, release_group: "", is_surround: false, display: r.quality_tag || "" },

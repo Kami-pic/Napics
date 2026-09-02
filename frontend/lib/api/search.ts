@@ -21,10 +21,11 @@ export const searchApi = {
 
   // 单关键词搜索（不回退，供前端逐轮调用）
   // 如果 /search/single 不存在（后端未重启），自动 fallback 到 /search
-  searchSingle: async (keyword: string, options?: { media_type?: string; skip_filter?: boolean }, signal?: AbortSignal) => {
+  searchSingle: async (keyword: string, options?: { media_type?: string; skip_filter?: boolean; year?: string }, signal?: AbortSignal) => {
     const p = new URLSearchParams({ keyword });
     if (options?.media_type) p.set("media_type", options.media_type);
     if (options?.skip_filter) p.set("skip_filter", "true");
+    if (options?.year) p.set("year", options.year);
     try {
       return await request<any>(`${BASE_URL}/search/single?${p.toString()}`, { signal });
     } catch (e) {
@@ -39,13 +40,16 @@ export const searchApi = {
   },
 
   // SSE 流式搜索（逐源返回进度）
-  searchStream: (keyword: string, options?: { media_type?: string; cn_name?: string; en_name?: string; original_name?: string; season_number?: number }) => {
+  // year 只用于后端匹配加分（同年 +分），不拼进搜索词 —— 把年份拼进 BT 搜索词
+  // 会让命中率骤降。不传就是原来的行为。
+  searchStream: (keyword: string, options?: { media_type?: string; cn_name?: string; en_name?: string; original_name?: string; season_number?: number; year?: string }) => {
     const p = new URLSearchParams({ query: keyword });
     if (options?.media_type) p.set("media_type", options.media_type);
     if (options?.cn_name) p.set("cn_name", options.cn_name);
     if (options?.en_name) p.set("en_name", options.en_name);
     if (options?.original_name) p.set("original_name", options.original_name);
     if (options?.season_number) p.set("season_number", String(options.season_number));
+    if (options?.year) p.set("year", options.year);
     return `${BASE_URL}/api/search/stream?${p.toString()}`;
   },
 
