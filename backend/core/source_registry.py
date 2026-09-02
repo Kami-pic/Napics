@@ -96,7 +96,8 @@ SOURCE_TRAITS: Dict[str, SourceTraits] = {
         lang_priority=("en", "cn"), season_format="en",
     ),
     "cilixiong": SourceTraits(
-        label="磁力熊", needs_proxy=False, legacy_skip_filter=True,
+        # 用户实测：全局代理开着时它反而更稳，明确标成走代理
+        label="磁力熊", needs_proxy=True, legacy_skip_filter=True,
         lang_priority=("cn", "en"), season_format="cn",
         reports_seeders=False,
     ),
