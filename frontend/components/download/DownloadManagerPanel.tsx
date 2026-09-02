@@ -228,12 +228,13 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                   </button>
                 )}
                 {syncMsg && <span className="text-[10px] text-green-400">{syncMsg}</span>}
-                {failedIds.length > 0 && (
-                  <button onClick={handleClearFailed}
-                    className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                    清理失败 ({failedIds.length})
-                  </button>
-                )}
+                {/* 常显。原来写成「有失败任务才渲染」，0 个失败时按钮整个消失 ——
+                    用户找不到这个功能、也无从知道它存在。该用 disabled 而不是隐藏。 */}
+                <button onClick={handleClearFailed} disabled={failedIds.length === 0}
+                  title={failedIds.length === 0 ? "当前没有失败的任务" : `清理 ${failedIds.length} 条失败任务`}
+                  className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:hover:text-slate-500 disabled:hover:bg-white/[0.04]">
+                  清理失败{failedIds.length > 0 ? ` (${failedIds.length})` : ""}
+                </button>
                 <button onClick={handleClearCompleted} disabled={clearableIds.length === 0}
                   className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-slate-300 disabled:opacity-40">
                   清除已完成
