@@ -382,6 +382,36 @@ _SPECIAL_RE = re.compile(
 )
 
 
+_CN_NUM = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+           '六': 6, '七': 7, '八': 8, '九': 9, '十': 10}
+_FOLDER_SEASON_RE = re.compile(r'(?:S(\d{1,2})\b|第\s*(\d{1,2})\s*季|Season\s*(\d{1,2})|第([一二三四五六七八九十]+)季)', re.I)
+
+
+def season_from_folder_name(folder_name: str) -> Optional[int]:
+    """从目录名取季号，取不到返回 None（不猜成 1）。
+
+    取名相关的季号**只从这里取**，三条路径（检索名 / 标准名 / 磁盘改名）共用同一个
+    判据，否则会出现详情里写 S01E16、整理预览写 S02E16 这种自相矛盾。
+    （`organizer._get_season_number` 是给目录结构判定用的另一份，口径一致但职责不同。）
+    """
+    if not folder_name:
+        return None
+    m = _FOLDER_SEASON_RE.search(folder_name)
+    if not m:
+        return None
+    for g in (m.group(1), m.group(2), m.group(3)):
+        if g:
+            return int(g)
+    cn = m.group(4)
+    if cn:
+        if cn == '十':
+            return 10
+        if len(cn) == 2 and cn.startswith('十'):
+            return 10 + _CN_NUM.get(cn[1], 0)
+        return _CN_NUM.get(cn)
+    return None
+
+
 def extract_suffix(filename: str, folder_name: str = "",
                    season_override: Optional[int] = None,
                    episode_override: Optional[int] = None) -> Dict[str, str]:
@@ -395,7 +425,14 @@ def extract_suffix(filename: str, folder_name: str = "",
     from tmdb_client import parse_filename
 
     parsed = parse_filename(filename)
-    season = season_override if season_override is not None else parsed.get("season")
+    # 季号：调用方指定 > 目录名 > 文件名解析。
+    # 番剧的分集文件名常按整部剧连续编号（`PERFECT ORDER [16]` 是第二季第 4 集），
+    # 文件名和 NFO 都会说"第 1 季"，只有目录结构说得对。
+    season = season_override
+    if season is None:
+        season = season_from_folder_name(folder_name)
+    if season is None:
+        season = parsed.get("season")
     episode = episode_override if episode_override is not None else parsed.get("episode")
     abs_ep = parsed.get("absolute_episode")
 

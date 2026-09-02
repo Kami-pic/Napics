@@ -246,8 +246,8 @@ def _sample_videos(folder_path: str, entries: List[str], limit: int = 3) -> List
 
 def _season_from_dir(folder_path: str) -> Optional[int]:
     """从目录名取季号。取不到返回 None（不猜成 1）"""
-    from organizer import _get_season_number
-    return _get_season_number(os.path.basename(folder_path))
+    from clean_name_system import season_from_folder_name
+    return season_from_folder_name(os.path.basename(folder_path))
 
 
 def _resolve_show_title(folder_path: str, videos: List[str], folder_scrape: Optional[Dict]) -> str:
@@ -726,7 +726,12 @@ def generate_shadow_name_from_nfo(video_path: str, folder_path: str, folder_type
         if not show_en and show_orig and _is_mostly_latin(show_orig):
             show_en = show_orig
 
-        season = nfo.get("season_number", 0)
+        # 季号以目录结构为准：实测军火女王 Season 02 目录里每集 NFO 都写着 season=1，
+        # 只信 NFO 会让第二季的标准名变成 S01Exx，和整理预览算出的 S02Exx 对不上
+        from clean_name_system import season_from_folder_name
+
+        season = season_from_folder_name(os.path.basename(folder_path)) \
+            or nfo.get("season_number", 0)
         episode = nfo.get("episode_number", 0)
         if not show_title:
             return None

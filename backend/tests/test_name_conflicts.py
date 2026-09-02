@@ -172,3 +172,45 @@ class TestScanFieldsCoverMarkers:
         from scan_name_filler import SCAN_MANAGED_NAME_FIELDS
         assert "name_conflicts" in SCAN_MANAGED_NAME_FIELDS
         assert "name_needs_review" in SCAN_MANAGED_NAME_FIELDS
+
+
+class TestSeasonSourceIsConsistent:
+    """季号只能有一个判据：详情里写 S01E16、整理预览写 S02E16 这种自相矛盾必须不出现"""
+
+    def test_folder_name_beats_filename_and_nfo(self, tmp_path):
+        from clean_name_system import build_search_index_name, season_from_folder_name
+        from renamer import generate_shadow_name_from_nfo
+
+        work = tmp_path / "军火女王 Jormungand"
+        season = work / "Season 02"
+        season.mkdir(parents=True)
+        # 实测数据：第二季的分集 NFO 写的是 season=1、episode=16（整部剧连续编号），
+        # 文件名里的 [16] 也是绝对集号，只有目录名说得对
+        name = "[VCB-Studio] Jormungand PERFECT ORDER [16][Ma10p_1080p][x265_flac].mkv"
+        video = _episode_nfo(str(season), name, title="第16话",
+                             showtitle="军火女王", season=1, episode=16)
+
+        assert season_from_folder_name("Season 02") == 2
+        shadow = generate_shadow_name_from_nfo(video, str(season), "movie")
+        index = build_search_index_name(video, name)
+        assert shadow == "军火女王 S02E16"
+        assert index is not None and index.suffix == "S02E16"
+        # 两条路径必须给出同一个季集号
+        assert index.suffix in shadow
+
+    def test_no_season_in_folder_name_falls_back_to_nfo(self, tmp_path):
+        from renamer import generate_shadow_name_from_nfo
+
+        work = tmp_path / "某剧 Some Show"
+        work.mkdir()
+        video = _episode_nfo(str(work), "Some.Show.E05.mkv", title="第5话",
+                             showtitle="某剧", season=3, episode=5)
+        assert generate_shadow_name_from_nfo(video, str(work), "movie") == "某剧 S03E05"
+
+    def test_chinese_season_names(self):
+        from clean_name_system import season_from_folder_name
+        assert season_from_folder_name("第二季") == 2
+        assert season_from_folder_name("第十二季") == 12
+        assert season_from_folder_name("S3") == 3
+        assert season_from_folder_name("军火女王 Jormungand") is None
+        assert season_from_folder_name("Specials") is None
