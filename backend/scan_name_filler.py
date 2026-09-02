@@ -38,6 +38,9 @@ SCAN_MANAGED_NAME_FIELDS = frozenset({
     "clean_name", "clean_name_cn", "clean_name_en", "clean_name_original", "clean_name_source",
     "shadow_name", "shadow_name_source", "shadow_tmdb_id", "organize_status",
     "names_filled_v",
+    # 取名证据之间的矛盾（详见 name_conflicts.py）。跟着名字一起重算，
+    # 否则名字修好了标记还挂着、或者名字变坏了却没人标
+    "name_conflicts", "name_needs_review",
 })
 
 # 填名算法版本。扫描时同尺寸文件走"复用"分支、直接沿用旧条目，
@@ -184,8 +187,15 @@ def regenerate_standard_names(library: list, path: str, is_folder: bool = False)
 
 def fill_names_for_item(item: dict) -> Tuple[bool, bool]:
     """给单个扫描条目填充检索名与标准名，返回 (检索名已写, 标准名已写)。"""
+    from name_conflicts import add_conflicts, clear_conflicts, detect_item_conflicts
+
     clean_filled, display = fill_search_index_name(item)
     shadow_filled = fill_standard_name(item, fallback_display=display)
+
+    # 名字重算了，冲突标记也要重算
+    clear_conflicts(item)
+    add_conflicts(item, detect_item_conflicts(
+        item.get("file_path", ""), item.get("file_name", "")))
     # 打上版本号：无论这次是否真的写入（可能被 manual 保护挡住），都算已按当前算法处理过，
     # 避免每次扫描都为同一批条目重复读 NFO
     item[_VERSION_FIELD] = FILLER_VERSION

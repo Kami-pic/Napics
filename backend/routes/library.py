@@ -172,6 +172,16 @@ async def scan_path(path: str, library_name: str = ""):
             for lib in (config_m.config.media_libraries or []):
                 _all_configured_paths.extend(lib.paths)
 
+            # 同目录一致性自检：一个目录下各集算出的作品名必须一致。
+            # 不一致说明取到的是分集级信息，整组标存疑（照常写入，只是打标）
+            try:
+                from name_conflicts import annotate_group_conflicts
+                marked = annotate_group_conflicts(results)
+                if marked:
+                    logger.info(f"[scan] 同目录作品名不一致，{marked} 条标记为存疑")
+            except Exception as e:
+                logger.warning(f"[scan] 同目录一致性自检失败: {e}")
+
             from scan_name_filler import merge_scanned_names
 
             def _merge(latest):
