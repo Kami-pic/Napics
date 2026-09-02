@@ -40,6 +40,9 @@ def refresh_quality_score(paths: List[str] = None):
     #   probe_failed— ffprobe 打不开或解析失败（文件损坏、假后缀、SMB 抖动）
     #   not_in_library — 传来的路径不在媒体库里
     failures: List[dict] = []
+    # 文件大小：os.stat 一次调用的事实，和 ffprobe 成不成功无关。
+    # 单独收集，这样探测失败的条目至少能把大小刷新对。
+    sizes: dict = {}
 
     # ffprobe 是子进程 + 读文件头，必须在锁外跑完再进临界区应用结果，
     # 否则一次质量检测就会把整个媒体库的写入卡住。
@@ -49,6 +52,10 @@ def refresh_quality_score(paths: List[str] = None):
             if not os.path.exists(fp):
                 failures.append({"path": fp, "reason": "missing"})
                 continue
+            try:
+                sizes[fp] = round(os.path.getsize(fp) / (1024 ** 3), 2)
+            except OSError:
+                pass
             try:
                 info = scanner.get_video_metadata(fp)
                 # height == 0 是 _fallback_info 的标记值：ffprobe 没跑通。
@@ -79,6 +86,12 @@ def refresh_quality_score(paths: List[str] = None):
                     if not any(f["path"] == fp for f in failures):
                         failures.append({"path": fp, "reason": "not_in_library"})
                     continue
+                # 大小先落：它不依赖 ffprobe，探测失败的条目也该刷新对
+                real_size = sizes.get(fp)
+                if real_size is not None and v.get("size_gb") != real_size:
+                    v["size_gb"] = real_size
+                    metadata_changed = True
+
                 info = probed.get(fp)
                 if info is not None:
                     before = (v.get("codec"), v.get("height"), v.get("container"),

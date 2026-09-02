@@ -111,7 +111,14 @@ def get_video_metadata(file_path: str) -> Optional[VideoInfo]:
         
         # 4. 其他信息
         duration = float(format_info.get("duration", 0))
-        size = int(format_info.get("size", 0))
+        # 文件大小一律问操作系统，不用 ffprobe 的 format.size。
+        # 大小是 os.stat 一次调用就能拿到的事实，没有任何理由让它依赖一个外部
+        # 进程成功执行 —— ffprobe 一失败（文件损坏、假后缀、SMB 抖动）连大小都没了。
+        # 拿不到就退回 ffprobe 的值，总比 0 好。
+        try:
+            size = os.path.getsize(file_path)
+        except OSError:
+            size = int(format_info.get("size", 0))
         bitrate = float(format_info.get("bit_rate", 0)) / 1000  # kbps
         
         # 5. 扫描同级目录下的封面图

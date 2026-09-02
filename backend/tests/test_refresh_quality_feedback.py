@@ -153,3 +153,48 @@ def test_successful_probe_reports_no_failure(monkeypatch, existing_video):
     assert result["failed"] == []
     assert result["probed"] == 1
     assert fake.saved_library is not None
+
+
+def test_size_is_refreshed_even_when_probe_fails(monkeypatch, tmp_path):
+    """文件大小不依赖 ffprobe —— 探测失败也要刷新对。
+
+    大小是 os.stat 一次调用就能拿到的事实。原来它跟着 ffprobe 的 format.size 走，
+    探测一失败整条元数据被丢弃，连大小都不更新。
+    """
+    video = tmp_path / "某片.mkv"
+    video.write_bytes(b"x" * 2048)
+    path = str(video)
+
+    entry = {"file_path": path, "size_gb": 99.0, "height": 1080, "codec": "h264",
+             "quality_score": 10}
+    fake = FakeConfigManager([entry])
+    monkeypatch.setattr(library_crud, "config_m", fake)
+    # ffprobe 读不出来
+    monkeypatch.setattr(
+        library_crud.scanner, "get_video_metadata",
+        lambda fp: _probed_info(fp, height=0, width=0, codec="unknown", resolution="未知"),
+    )
+
+    result = library_crud.refresh_quality_score([path])
+
+    assert result["failed"] == [{"path": path, "reason": "probe_failed"}]
+    # 大小按实际文件刷新了（2048 字节，四舍五入到 0.0 GB）
+    assert entry["size_gb"] == round(2048 / (1024 ** 3), 2)
+    # 而分辨率/编码没有被 fallback 的 0 / unknown 覆盖
+    assert entry["height"] == 1080
+    assert entry["codec"] == "h264"
+    assert fake.saved_library is not None, "大小变了就该落盘"
+
+
+def test_scanner_takes_size_from_filesystem_not_ffprobe():
+    """扫描器的 size_gb 必须来自 os.path.getsize，不能是 ffprobe 的 format.size。"""
+    import inspect
+
+    import scanner
+
+    src = inspect.getsource(scanner.get_video_metadata)
+    assert "os.path.getsize" in src, "大小应该问操作系统"
+    # ffprobe 的 format.size 只能作为拿不到时的退路
+    idx_probe = src.find('format_info.get("size"')
+    idx_os = src.find("os.path.getsize")
+    assert idx_os < idx_probe, "os.path.getsize 应该是首选，ffprobe 的值只是退路"
