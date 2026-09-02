@@ -293,6 +293,12 @@ def _classify_by_structure(folder_path: str, folder_name: str, library_data: Lis
     if not subdirs:
         if not videos:
             return {"type": "empty", "folder_name": folder_name}
+
+        # 目录名自己就写着是季目录（`Season 01` / `第二季` / `SP`），
+        # 不用再从文件结构去猜 —— 猜错的代价是整季按电影合集命名、集号全丢。
+        if videos and _is_season_dir(folder_name):
+            return {"type": "season", "folder_name": folder_name, "videos": videos,
+                    "episode_count": len(videos)}
         if len(videos) == 1:
             if nfo_media_type in ("tvshow", "tv"):
                 return {"type": "tv", "folder_name": folder_name, "videos": videos, "episode_count": 1}
@@ -306,6 +312,12 @@ def _classify_by_structure(folder_path: str, folder_name: str, library_data: Lis
             if os.path.exists(os.path.join(folder_path, os.path.splitext(v)[0] + ".nfo"))
         )
         if individual_nfo_count >= len(videos) * 0.5 and len(videos) >= 2:
+            # 先问 NFO 自己是什么：episodedetails 占多数就是剧集，
+            # 不能因为"每个视频都有 NFO"就断定是电影合集
+            ep_nfo, movie_nfo = _count_nfo_media_types(folder_path, videos)
+            if ep_nfo > movie_nfo and ep_nfo >= 2:
+                return {"type": "tv", "folder_name": folder_name, "videos": videos,
+                        "episode_count": len(videos)}
             if _is_series_collection(display_names, folder_name):
                 return {"type": "series", "folder_name": folder_name, "videos": videos}
             return {"type": "collection", "folder_name": folder_name, "videos": videos}
@@ -387,6 +399,33 @@ def _classify_by_structure(folder_path: str, folder_name: str, library_data: Lis
         return {"type": "tv", "folder_name": folder_name, "seasons": subdirs}
     
     return {"type": "mixed", "folder_name": folder_name, "subdirs": subdirs, "loose_videos": videos}
+
+
+def _count_nfo_media_types(folder_path: str, videos: List[str]) -> Tuple[int, int]:
+    """数同名 NFO 里 episodedetails / movie 各有几个，返回 (剧集数, 电影数)。
+
+    「每个视频都有自己的 NFO」曾被当成"多部独立电影"的信号 —— 但 Kodi/Emby 风格的
+    番剧刮削本来就是每集一个 episode NFO，于是整季被判成 collection（合集），
+    命名时不带集号，一季 12 集算出同一个文件名，执行下去会互相覆盖。
+    NFO 的根标签直接写着它是什么，不需要靠文件数量去猜。
+    """
+    from nfo_handler import read_video_nfo
+
+    episodes = 0
+    movies = 0
+    for v in videos:
+        full = os.path.join(folder_path, v)
+        if not os.path.exists(os.path.splitext(full)[0] + ".nfo"):
+            continue
+        nfo = read_video_nfo(full)
+        if not nfo:
+            continue
+        mt = (nfo.get("media_type") or "").lower()
+        if mt == "episodedetails" or nfo.get("showtitle"):
+            episodes += 1
+        elif mt == "movie":
+            movies += 1
+    return episodes, movies
 
 
 def _count_episode_files(filenames: List[str]) -> int:

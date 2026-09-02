@@ -20,10 +20,18 @@ NAMING_RULES = {
     "episode_with_name": "{title} S{season:02d}E{episode:02d} {ep_title}",
 }
 
-def generate_standard_name(filename: str, scrape_data: Optional[Dict] = None, video_info: Optional[Dict] = None, folder_title: str = "", is_collection: bool = False) -> str:
+def generate_standard_name(filename: str, scrape_data: Optional[Dict] = None, video_info: Optional[Dict] = None, folder_title: str = "", is_collection: bool = False,
+                           season_override: Optional[int] = None,
+                           require_episode: bool = False) -> str:
     """根据刮削数据生成标准文件名
     命名优先级：中文名 + 英文原名（确保英文名存在）
     is_collection=True 时不按剧集格式命名（电影聚合/剧场版聚合）
+
+    season_override: 目录名给出的季号。NFO 的 season 常按"整部剧连续编号"写
+        （实测军火女王 Season 02 目录里每集写的都是 season=1），目录结构比它可信。
+    require_episode: 调用方确认这是剧集。此时算不出集号就返回 ""，
+        由调用方跳过 —— 不带集号的名字会让一季 12 集算出同一个文件名，
+        执行下去互相覆盖，宁可不改。
     """
     ext = os.path.splitext(filename)[1]
     parsed = parse_filename(filename)
@@ -86,8 +94,11 @@ def generate_standard_name(filename: str, scrape_data: Optional[Dict] = None, vi
         else:
             name = base
     elif episode is not None:
-        s = season or 1
+        s = season_override or season or 1
         name = f"{base} S{s:02d}E{episode:02d}"
+    elif require_episode:
+        # 剧集但集号缺失：拒绝命名，交调用方跳过
+        return ""
     elif year:
         name = f"{base} ({year})"
     else:
@@ -139,6 +150,135 @@ def _extract_english_from_filename(raw_name: str) -> str:
 
 # ── 统一命名 ──
 
+# 标题里的季标记。作品级目录名不该带这个
+_SEASON_TAG_RE = re.compile(r'(第\s*\d+\s*季|第[一二三四五六七八九十]+季|Season\s*\d+|\bS\d{1,2}\b)', re.I)
+
+
+def _correct_season_tainted_title(folder_path: str, folder_scrape: Dict) -> Dict:
+    """目录级 NFO 的标题被某一季污染时，改用分集 NFO 的 showtitle。
+
+    实测军火女王根目录的 tvshow.nfo 是「军火女王 第二季 / ヨルムンガンド PERFECT ORDER」——
+    它是第二季刮削时写进去的，而这个目录装着两季。拿它命名会把整部剧标成第二季。
+    判据可判定：目录标题带季标记、showtitle 不带、且两者指向同一作品。
+    这时中文名取 showtitle，外文名取**当前目录名里已有的**那个（`军火女王 Jormungand`
+    里的 Jormungand），而不是那一季的 originaltitle。
+    """
+    from clean_name_system import clean_for_folder
+    from nfo_handler import read_show_names
+
+    folder_title = (folder_scrape.get("title") or "").strip()
+    if not folder_title or not _SEASON_TAG_RE.search(folder_title):
+        return folder_scrape
+
+    try:
+        entries = sorted(os.listdir(folder_path))
+    except OSError:
+        return folder_scrape
+
+    for full in _sample_videos(folder_path, entries):
+        show_title = ((read_show_names(full) or {}).get("title") or "").strip()
+        if not show_title or _SEASON_TAG_RE.search(show_title):
+            continue
+        if show_title not in folder_title:
+            continue
+        corrected = dict(folder_scrape)
+        corrected["title"] = show_title
+        guess = clean_for_folder(os.path.basename(folder_path))
+        corrected["english_title"] = guess.en or ""
+        corrected["original_title"] = ""
+        return corrected
+    return folder_scrape
+
+
+def _folder_title_conflicts(folder_path: str, folder_scrape: Dict) -> bool:
+    """目录级 NFO 的标题与分集 NFO 的 showtitle 是否矛盾。
+
+    只做**可判定**的比对：两边都拿到了名字、且互不包含 → 矛盾。
+    这种情况下不猜谁对，直接不改目录名。
+    """
+    from nfo_handler import read_show_names
+
+    folder_title = (folder_scrape.get("title") or "").strip()
+    if not folder_title:
+        return False
+    try:
+        entries = sorted(os.listdir(folder_path))
+    except OSError:
+        return False
+
+    for full in _sample_videos(folder_path, entries):
+        show = read_show_names(full)
+        show_title = ((show or {}).get("title") or "").strip()
+        if not show_title:
+            continue
+        if show_title in folder_title or folder_title in show_title:
+            return False
+        return True
+    return False
+
+
+def _sample_videos(folder_path: str, entries: List[str], limit: int = 3) -> List[str]:
+    """本层的视频，本层没有就下钻一层（作品目录的视频都在 `Season 0X` 里）"""
+    found = []
+    for item in entries:
+        full = os.path.join(folder_path, item)
+        if os.path.isfile(full) and os.path.splitext(item)[1].lower() in VIDEO_EXTS:
+            found.append(full)
+            if len(found) >= limit:
+                return found
+    if found:
+        return found
+    for item in entries:
+        sub = os.path.join(folder_path, item)
+        if not os.path.isdir(sub):
+            continue
+        try:
+            for name in sorted(os.listdir(sub)):
+                p = os.path.join(sub, name)
+                if os.path.isfile(p) and os.path.splitext(name)[1].lower() in VIDEO_EXTS:
+                    found.append(p)
+                    if len(found) >= limit:
+                        return found
+        except OSError:
+            continue
+    return found
+
+
+def _season_from_dir(folder_path: str) -> Optional[int]:
+    """从目录名取季号。取不到返回 None（不猜成 1）"""
+    from organizer import _get_season_number
+    return _get_season_number(os.path.basename(folder_path))
+
+
+def _resolve_show_title(folder_path: str, videos: List[str], folder_scrape: Optional[Dict]) -> str:
+    """剧集所属**作品**的名字。
+
+    原来直接拿当前目录名兜底，递归进 `Season 01` 之后剧名就成了「Season 01」。
+    顺序：分集 NFO 的 showtitle / 作品级 tvshow.nfo（read_show_names 统一处理）
+    → 目录级刮削 → 作品级目录名（是季目录就往上取一级）。
+    """
+    from nfo_handler import read_show_names, work_folder_of
+
+    for v in videos[:3]:
+        show = read_show_names(os.path.join(folder_path, v))
+        if show and show.get("title"):
+            return show["title"]
+
+    if folder_scrape and folder_scrape.get("title"):
+        return folder_scrape["title"]
+
+    name = os.path.basename(folder_path)
+    if _is_season_dir_name(name):
+        name = os.path.basename(os.path.dirname(folder_path)) or name
+    return re.sub(r'[\[\(【（].*?[\]\)】）]', '', name).strip()
+
+
+def _is_season_dir_name(dirname: str) -> bool:
+    """目录名本身是不是季目录（与 organizer._is_season_dir 同口径）"""
+    from organizer import _is_season_dir
+    return _is_season_dir(dirname)
+
+
 def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = True,
                             library_data: List[Dict] = None, folder_type: str = None,
                             category_hint: str = "", whitelist: List[str] = None) -> List[Dict]:
@@ -166,6 +306,8 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
         folder_type = ft_result.get("type", "unknown")
     
     is_collection = folder_type in ("collection", "series", "mixed")
+    # 剧集目录：命名必须带 SxxExx，缺集号就不许改名
+    is_episode_folder = folder_type in ("tv", "season", "anime")
     is_wrapped_movie = folder_type == "movie"  # 封装电影：文件夹名和视频文件名同步
     
     # 1. 先尝试重命名文件夹本身（基于刮削数据）
@@ -174,8 +316,16 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
     if is_collection:
         # 聚合文件夹：不刮削文件夹，不改文件夹名，每个视频单独处理
         pass
+    elif _is_season_dir_name(folder_name):
+        # 季目录的规范名是 `Season 0X`，不该套上作品名（原来会改成
+        # 「军火女王 第二季 ヨルムンガンド PERFECT ORDER Season 01」）。
+        # 季目录名的规范化由父目录那一轮的季目录分支负责。
+        pass
     else:
-        nfo = scraper.read_nfo(folder_path)
+        # no_fallback：目录级刮削只认 movie.nfo / tvshow.nfo / season.nfo。
+        # 带 fallback 会去读第一个视频的同名 NFO —— 番剧目录下那是**分集** NFO，
+        # 于是整个目录的"刮削信息"变成了第一集的分集标题（实测读到「炎兔」）。
+        nfo = scraper.read_nfo(folder_path, no_fallback=True)
         if nfo and nfo.get("tmdb_id"):
             folder_scrape = nfo
             if not nfo.get("english_title") and tmdb_client:
@@ -194,7 +344,24 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
             if r.tmdb_id:
                 folder_scrape = r.dict()
     
+    # 一致性检查：目录级 NFO 的标题与分集 NFO 的 showtitle 说的不是同一个作品时，
+    # 谁对不好判（实测军火女王根目录的 tvshow.nfo 被第二季刮削覆盖成
+    # 「军火女王 第二季」，而分集 NFO 的 showtitle 是「军火女王」），所以不动目录名。
     if folder_scrape:
+        folder_scrape = _correct_season_tainted_title(folder_path, folder_scrape)
+    if folder_scrape and _folder_title_conflicts(folder_path, folder_scrape):
+        results.append({
+            "old_name": folder_name, "new_name": folder_name,
+            "old_path": folder_path, "new_path": folder_path,
+            "is_folder": True, "unchanged": True, "skipped": True,
+            "skip_reason": "title_conflict",
+            "shadow_name": "",
+        })
+        folder_scrape_for_rename = None
+    else:
+        folder_scrape_for_rename = folder_scrape
+
+    if folder_scrape_for_rename:
         title = folder_scrape.get("title", "")
         orig = folder_scrape.get("original_title", "")
         year = folder_scrape.get("year", "")
@@ -335,17 +502,28 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
                     file_scrape = r.dict()
         
         video_info = lib_map.get(full)
-        ft = ""
-        if folder_scrape:
-            ft = folder_scrape.get("title", "") or folder_scrape.get("original_title", "")
+        if folder_scrape and file_scrape and not file_scrape.get("english_title") and folder_scrape.get("english_title"):
             # 补充英文名：分集 NFO 可能没有英文剧名，从文件夹级 NFO 获取
-            if file_scrape and not file_scrape.get("english_title") and folder_scrape.get("english_title"):
-                file_scrape = dict(file_scrape)
-                file_scrape["english_title"] = folder_scrape["english_title"]
-        if not ft:
-            ft = re.sub(r'[\[\(【（].*?[\]\)】）]', '', folder_name).strip()
-        new_name = generate_standard_name(item, file_scrape, video_info, ft, is_collection=is_collection)
-        
+            file_scrape = dict(file_scrape)
+            file_scrape["english_title"] = folder_scrape["english_title"]
+        ft = _resolve_show_title(folder_path, [item], folder_scrape)
+        new_name = generate_standard_name(
+            item, file_scrape, video_info, ft, is_collection=is_collection,
+            season_override=_season_from_dir(folder_path),
+            require_episode=is_episode_folder,
+        )
+
+        # 算不出集号的剧集：跳过并说明原因。硬命名会让整季撞成同一个文件名
+        if not new_name:
+            results.append({
+                "old_name": item, "new_name": item,
+                "old_path": full, "new_path": full,
+                "unchanged": True, "skipped": True,
+                "skip_reason": "no_episode_number",
+                "shadow_name": "",
+            })
+            continue
+
         # 生成影子名（不含扩展名和质量标签）
         shadow = os.path.splitext(new_name)[0]
         shadow = re.sub(r'\s+(2160p|1080p|720p)$', '', shadow)
@@ -396,9 +574,19 @@ def rename_videos_in_folder(folder_path: str, tmdb_client=None, dry_run: bool = 
             is_special = bool(re.search(r'(特别篇|SP|OVA|OAD|剧场版)', item, re.I))
             
             if season_num is not None or is_special:
-                # 构造标准季目录名
+                # 构造标准季目录名。作品名走 _resolve_show_title（分集 NFO 的
+                # showtitle 优先），不能直接用目录级 tvshow.nfo —— 它常被某一季的
+                # 刮削覆盖，实测会把「军火女王 第二季 ヨルムンガンド PERFECT ORDER」
+                # 安到 Season 01 上。
                 show_name = ""
-                if folder_scrape:
+                try:
+                    sub_entries = sorted(os.listdir(sub_path))
+                except OSError:
+                    sub_entries = []
+                sub_videos = [os.path.basename(p) for p in _sample_videos(sub_path, sub_entries)]
+                if sub_videos:
+                    show_name = _resolve_show_title(sub_path, sub_videos, None)
+                if not show_name and folder_scrape:
                     cn = folder_scrape.get("title", "")
                     en = folder_scrape.get("original_title", "")
                     if cn:
