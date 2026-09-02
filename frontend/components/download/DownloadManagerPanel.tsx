@@ -5,6 +5,8 @@ import type { DownloadTask } from "@/types";
 import { api } from "@/lib/api";
 import {
   DOWNLOAD_POLL_INTERVAL_MS,
+  collectClearableTaskIds,
+  collectFailedTaskIds,
   describeDownloadStatus,
   mergeProgressIntoTasks,
   type DownloadTone,
@@ -184,11 +186,21 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
     setDeletingId(null);
   };
 
+  // 判据下沉到 lib/domain/download.ts：原来这里硬编码的列表里含 lost / unknown，
+  // 那两个是对账态，清掉等于把正在核对的任务记录抹了。
+  const clearableIds = collectClearableTaskIds(tasks);
+  const failedIds = collectFailedTaskIds(tasks);
+
   const handleClearCompleted = async () => {
-    const completedIds = tasks.filter(t => ["completed", "archived", "cancelled", "failed", "lost", "unknown"].includes(t.status)).map(t => t.id);
-    if (completedIds.length === 0) return;
-    if (!confirm(`确定清除 ${completedIds.length} 条已处理的记录？`)) return;
-    try { await api.deleteDownloadTasks(completedIds); loadTasks(); } catch { alert("清除失败"); }
+    if (clearableIds.length === 0) return;
+    if (!confirm(`确定清除 ${clearableIds.length} 条已处理的记录？`)) return;
+    try { await api.deleteDownloadTasks(clearableIds); loadTasks(); } catch { alert("清除失败"); }
+  };
+
+  const handleClearFailed = async () => {
+    if (failedIds.length === 0) return;
+    if (!confirm(`确定清理 ${failedIds.length} 条失败的任务记录？\n\n只删记录，不影响下载器里的种子。`)) return;
+    try { await api.deleteDownloadTasks(failedIds); loadTasks(); } catch { alert("清理失败"); }
   };
 
   if (!open) return null;
@@ -216,8 +228,14 @@ export default function DownloadManagerPanel({ open, onClose }: Props) {
                   </button>
                 )}
                 {syncMsg && <span className="text-[10px] text-green-400">{syncMsg}</span>}
-                <button onClick={handleClearCompleted}
-                  className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-slate-300">
+                {failedIds.length > 0 && (
+                  <button onClick={handleClearFailed}
+                    className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                    清理失败 ({failedIds.length})
+                  </button>
+                )}
+                <button onClick={handleClearCompleted} disabled={clearableIds.length === 0}
+                  className="px-3 py-1.5 rounded-lg text-[11px] bg-white/[0.04] text-slate-500 hover:text-slate-300 disabled:opacity-40">
                   清除已完成
                 </button>
                 <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white">✕</button>

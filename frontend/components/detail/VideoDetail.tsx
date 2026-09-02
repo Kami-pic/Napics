@@ -249,13 +249,14 @@ export function VideoDetail({ video: v, onPlay, onSearch, onRefresh }: { video: 
             ["音频编码", v.audio_codec || "—", false, false],
             ["HDR", v.hdr_type, false, false],
             ["质量分", String(v.quality_score || 0), false, false],
-            ["大小", formatSize(v.size_gb), false, false],
             ["时长", formatDuration(v.duration_min ?? v.duration), false, false],
             // 无字幕、或只有图形字幕（播放器渲染不了）都标橙；有可用字幕标绿
             ["字幕", subtitleValue,
               parts.length === 0 || (text === 0 && external === 0 && graphic > 0),
               external > 0 || text > 0],
             ["画质", v.is_low_res ? "低画质" : "正常", v.is_low_res, false],
+            // 大小紧贴路径上面 —— 和文件夹详情那边保持同一个顺序
+            ["大小", formatSize(v.size_gb), false, false],
             ["路径", v.file_path, false, false],
           ];
           return rows.map(([label, value, warn, ok]) => (

@@ -4,6 +4,8 @@ import { describe, it, expect } from "vitest";
 import {
   DOWNLOAD_POLL_INTERVAL_MS,
   DOWNLOAD_STATUS_META,
+  collectClearableTaskIds,
+  collectFailedTaskIds,
   describeDownloadStatus,
   describeRelocateResult,
   mergeProgressIntoTasks,
@@ -131,5 +133,39 @@ describe("归位结果描述", () => {
 describe("轮询间隔", () => {
   it("与桌面面板保持同一个值（4s）", () => {
     expect(DOWNLOAD_POLL_INTERVAL_MS).toBe(4000);
+  });
+});
+
+
+describe("批量清理的任务筛选", () => {
+  const tasks = BACKEND_STATUSES.map(status => ({ id: `id-${status}`, status }));
+
+  it("只把真正失败的算进「清理失败」", () => {
+    expect(collectFailedTaskIds(tasks)).toEqual(["id-failed"]);
+  });
+
+  it("lost / unknown 不算失败 —— 它们是对账态，下一轮可能就恢复了", () => {
+    const ids = collectFailedTaskIds(tasks);
+    expect(ids).not.toContain("id-lost");
+    expect(ids).not.toContain("id-unknown");
+  });
+
+  it("「清除已完成」只清终态，不碰对账中的任务", () => {
+    const ids = collectClearableTaskIds(tasks);
+    expect(ids.sort()).toEqual(
+      ["id-completed", "id-archived", "id-failed", "id-cancelled"].sort(),
+    );
+    // 这两个原来会被一起删掉 —— 等于把正在核对的任务记录抹了
+    expect(ids).not.toContain("id-lost");
+    expect(ids).not.toContain("id-unknown");
+    // 还没结束的也不能清
+    expect(ids).not.toContain("id-downloading");
+    expect(ids).not.toContain("id-pending");
+    expect(ids).not.toContain("id-awaiting_confirm");
+  });
+
+  it("空列表返回空数组，调用方据此禁用按钮", () => {
+    expect(collectFailedTaskIds([])).toEqual([]);
+    expect(collectClearableTaskIds([])).toEqual([]);
   });
 });

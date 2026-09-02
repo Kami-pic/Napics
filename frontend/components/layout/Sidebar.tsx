@@ -68,11 +68,15 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
           className={`group flex items-center gap-2 py-2 rounded-lg cursor-pointer text-[13px] transition-all ${
             // 折叠态只剩一个图标，用 justify-center + px-2 与底部「发现/插件/设置」
             // 三个按钮取同一套写法，否则图标会靠左、和下面的对不齐。
-            collapsed ? "justify-center px-2" : "px-4"
+            // px-3 与底部三个按钮一致（左侧再由 style.paddingLeft 按层级缩进覆盖）
+            collapsed ? "justify-center px-2" : "px-3"
           } ${
-            isActive ? "bg-blue-500/10 text-blue-400" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            // 选中态只变文字颜色，不铺底色 —— 底色块的左右边距受容器 padding 影响，
+            // 和底部「发现/插件/设置」那几个按钮对不齐，视觉上像是错位。
+            isActive ? "text-blue-400" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
           }`}
-          style={collapsed ? undefined : { paddingLeft: isRoot ? '1rem' : `${1 + (level - 1) * 0.9}rem` }}>
+          // 根节点起点 0.75rem = px-3，和底部按钮左边距对齐；子层级从这里往右缩进
+          style={collapsed ? undefined : { paddingLeft: isRoot ? '0.75rem' : `${0.75 + (level - 1) * 0.9}rem` }}>
           {/* 根目录不显示展开箭头，也不占位 */}
           {!collapsed && !isRoot && hasChildren && (
             <button onClick={(e) => toggleExpand(node.path, e)}
@@ -124,7 +128,9 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto py-2 px-1">
+      {/* px-2 与下面「发现 / 插件 / 设置」三个区块的容器一致，否则同样宽度的
+          行在这里和那里的左右边距差 4px */}
+      <div className="flex-1 overflow-y-auto py-2 px-2">
         {tree ? renderTree(tree) : (
           <div className="p-6 text-center opacity-30">
             <span className="text-2xl block mb-2">📂</span>
@@ -135,10 +141,11 @@ export default function Sidebar({ tree, currentFolder, onNavigate, collapsed, on
 
       {/* 区域导航（发现插件安装时显示） */}
       {showDiscover && (
-        <div className="border-t border-white/[0.06] p-2">
+        <div className="border-t border-white/[0.06] px-2 py-2">
           <button onClick={onScrollToDiscover}
             className={`w-full flex items-center gap-2 py-2 rounded-lg transition-all ${collapsed ? "justify-center px-2" : "px-3"} ${
-              activeSection === "discover" ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+              // 与目录树选中态同一套：只变文字颜色，不铺底色
+              activeSection === "discover" ? "text-blue-400" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
             }`}>
             <span className="text-sm">🎬</span>
             {!collapsed && <span className="text-xs">发现</span>}

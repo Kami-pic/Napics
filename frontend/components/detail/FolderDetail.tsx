@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { FolderNode } from "@/types";
 import { api } from "@/lib/api";
 import { BASE_URL } from "@/lib/api/base";
-import { formatSize } from "@/lib/utils";
+import { formatSize, sumFolderSize } from "@/lib/utils";
 import { FOLDER_TYPE_LABELS, isAggregate as isAggregateType } from "@/lib/folderTypes";
 import { getCached, setCached } from "./detailCache";
 import { useScrape } from "./useScrape";
@@ -43,7 +43,9 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
       setActionLoading(false);
     }
   }, [node.path]);
-  const totalSize = node.videos.reduce((sum, v) => sum + v.size_gb, 0);
+  // 递归含子目录。原来只加当前层的 videos，而 video_count 是递归的 ——
+  // 于是「视频 12 个 / 总大小 1.2G」这种自相矛盾的组合很常见。
+  const totalSize = sumFolderSize(node);
   const isRoot = !node.path || node.path === "";
   const folderType = node.folder_type || "";
   const isAggregate = isAggregateType(folderType) || !!node.is_top_category;
@@ -534,6 +536,7 @@ export function FolderDetail({ node, onRefresh, onTreeRefresh, onSearch, current
           )}
         </div>
       )}
+      <InfoRow label="大小" value={formatSize(totalSize)} />
       <InfoRow label="路径" value={node.path} />
       {!isRoot && !isAggregate && (
         <button onClick={toggleNoScrape} className={`w-full py-2 rounded-lg text-xs transition-all ${noScrape ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/[0.04] text-slate-500 hover:bg-white/[0.06]"}`}>

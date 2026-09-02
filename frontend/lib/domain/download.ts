@@ -70,6 +70,37 @@ export function needsPolling(tasks: readonly Pick<DownloadTask, "status">[]): bo
 }
 
 /**
+ * 真正失败的任务 id。
+ *
+ * 判据是 `tone === "danger"` 而不是硬编码 `status === "failed"`：后端将来把某个
+ * 状态标成失败时自动纳入，不用再改这里。
+ *
+ * **lost / unknown 不算失败** —— 它们是对账态，下一轮对账可能就恢复了。
+ * 清理时把它们一起删掉，等于把正在核对的任务记录抹了。
+ */
+export function collectFailedTaskIds(
+  tasks: readonly Pick<DownloadTask, "id" | "status">[],
+): string[] {
+  return tasks
+    .filter(task => describeDownloadStatus(task.status).tone === "danger")
+    .map(task => task.id);
+}
+
+/**
+ * 可以清理的「已处理」任务 id：终态任务。
+ *
+ * 原来这里硬编码的列表里含 lost / unknown，而那两个是对账态、terminal 为 false ——
+ * 「清除已完成」会顺手删掉正在核对的任务。
+ */
+export function collectClearableTaskIds(
+  tasks: readonly Pick<DownloadTask, "id" | "status">[],
+): string[] {
+  return tasks
+    .filter(task => describeDownloadStatus(task.status).terminal)
+    .map(task => task.id);
+}
+
+/**
  * 把 `/download-manager/progress` 的返回合并进已有任务列表。
  *
  * **形状陷阱**：两个接口都返回 key 为 `tasks` 的数组，形状相同但语义不同 ——

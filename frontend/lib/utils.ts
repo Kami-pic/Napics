@@ -17,6 +17,19 @@ export function formatDuration(min?: number): string {
   return m > 0 ? `${h}h${m}min` : `${h}h`;
 }
 
+/** 文件夹的总大小（GB）—— **递归**含所有子目录。
+ *
+ *  只加当前层的 videos 是不够的：`video_count` 在后端是递归累加的，
+ *  大小不递归的话「视频 12 个 / 总大小 1.2G」这种组合会自相矛盾。 */
+export function sumFolderSize(node: {
+  videos?: { size_gb?: number }[];
+  children?: any[];
+}): number {
+  const own = (node.videos || []).reduce((sum, v) => sum + (v?.size_gb || 0), 0);
+  const kids = (node.children || []).reduce((sum, child) => sum + sumFolderSize(child), 0);
+  return own + kids;
+}
+
 /** 判断文件夹是否是末端（没有子文件夹，只有视频） */
 export function isLeafFolder(node: { children: any[]; videos: any[] }): boolean {
   return (!node.children || node.children.length === 0) && node.videos && node.videos.length > 0;
