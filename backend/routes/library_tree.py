@@ -5,7 +5,7 @@
 import os
 import re
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter
 
@@ -14,6 +14,50 @@ import organizer, scraper
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _build_real_node_paths(videos: List[dict]) -> Dict[str, str]:
+    """folder_name 的每一级前缀 → 该级目录的**真实绝对路径**。
+
+    为什么需要它：节点 path 原来是 `os.path.join(scan_paths[0], 相对路径)` 拼出来的
+    ——只有当这个文件恰好来自第一个扫描路径时才对。文件来自 scan_paths[1..] 或某个
+    虚拟库时，拼出来的是文件系统上**不存在**的路径。而前端的「查看 / 定位到目录」
+    是拿真实路径（下载任务的 save_path、发现条目的 local_folder）去树里比对的，
+    假路径必然匹配不上，用户看到的就是点了没反应。
+
+    做法：每个视频的 `file_path` 是真实的，`dirname(file_path)` 就对应 folder_name
+    的最后一级；逐级 dirname 上去就得到每一级的真实路径，全程不碰 scan_paths。
+
+    只在「file_path 的末尾若干段和 folder_name 完全一致」时采信 —— 两者不同步
+    （改名后漏更新之类）时宁可退回旧拼法，也不要往树上写一个更离谱的路径。
+    """
+    result: Dict[str, str] = {}
+    for v in videos:
+        file_path = v.get("file_path") or ""
+        rel_dir = (v.get("folder_name") or "").replace("\\", "/")
+        parts = [p for p in rel_dir.split("/") if p]
+        if not file_path or not parts:
+            continue
+
+        # 从最深一级往上退，同时校验每一段的目录名对得上
+        node_dir = os.path.dirname(file_path)
+        chain = []
+        matched = True
+        for part in reversed(parts):
+            if os.path.basename(node_dir.rstrip("\\/")) != part:
+                matched = False
+                break
+            chain.append(node_dir)
+            node_dir = os.path.dirname(node_dir.rstrip("\\/"))
+        if not matched:
+            continue
+
+        chain.reverse()  # 现在 chain[i] 对应 parts[:i+1]
+        for i in range(len(parts)):
+            key = "/".join(parts[: i + 1])
+            # 已有值就不覆盖：同一目录下的视频算出来的是同一个路径
+            result.setdefault(key, chain[i])
+    return result
 
 
 @router.get("/library/tree")
@@ -39,6 +83,9 @@ def get_library_tree():
         if lib.paths:
             _lib_path_map[lib.name] = lib.paths[0]
 
+    # 每个 folder_name 前缀 → 真实绝对目录。见 _build_real_node_paths 的说明。
+    real_node_paths = _build_real_node_paths(videos)
+
     for v in videos:
         rel_dir = v.get("folder_name", "")  # "Movies/Action" 或 "电影/复仇者联盟"
         rel_dir = rel_dir.replace("\\", "/")
@@ -54,17 +101,20 @@ def get_library_tree():
             current_rel = os.path.join(current_rel, part) if current_rel else part
             child = current_node["_child_index"].get(part)
             if not child:
-                # 计算节点的绝对路径
-                if is_lib_video:
-                    if i == 0:
-                        # 库名节点：path 用库的第一个路径
-                        node_path = lib_base
+                # 节点的绝对路径：优先用从视频 file_path 反推出来的**真实**目录。
+                # 拼接是最后的退路 —— 它只在 scan_paths[0] 恰好是该文件的扫描根时才对。
+                node_path = real_node_paths.get(current_rel.replace("\\", "/"))
+                if not node_path:
+                    if is_lib_video:
+                        if i == 0:
+                            # 库名节点：path 用库的第一个路径
+                            node_path = lib_base
+                        else:
+                            # 库内子节点：相对于库路径
+                            sub_rel = os.path.join(*parts[1:i+1])
+                            node_path = os.path.join(lib_base, sub_rel)
                     else:
-                        # 库内子节点：相对于库路径
-                        sub_rel = os.path.join(*parts[1:i+1])
-                        node_path = os.path.join(lib_base, sub_rel)
-                else:
-                    node_path = os.path.join(base_path, current_rel) if base_path else current_rel
+                        node_path = os.path.join(base_path, current_rel) if base_path else current_rel
                 child = {
                     "name": part,
                     "path": node_path,
