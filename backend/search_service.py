@@ -15,6 +15,7 @@ import concurrent.futures
 import time
 from typing import List, Dict, Optional, Iterator, Tuple, Any
 
+from core.source_registry import source_defaults
 from search_keyword_mapper import (
     MultiLangKeywords, get_search_keywords_for_source,
     is_bare_year as _is_bare_year,
@@ -26,35 +27,12 @@ from searcher import SearchResult
 
 logger = logging.getLogger(__name__)
 
-# BT 源默认配置（从 routes/search.py 移入）
-BT_SOURCE_DEFAULTS = {
-    "prowlarr": {"label": "Prowlarr", "enabled": True, "type": "bt", "needs_proxy": False},
-    "bitsearch": {"label": "Bitsearch", "enabled": True, "type": "bt", "needs_proxy": True},
-    "cilixiong": {"label": "磁力熊", "enabled": True, "type": "bt", "needs_proxy": False},
-    "xl720": {"label": "XL720", "enabled": True, "type": "bt", "needs_proxy": False},
-    "nyaa": {"label": "Nyaa", "enabled": True, "type": "bt", "needs_proxy": True},
-    "mikan": {"label": "蜜柑计划", "enabled": True, "type": "bt", "needs_proxy": True},
-    "yts": {"label": "YTS", "enabled": True, "type": "bt", "needs_proxy": True},
-    "limetorrents": {"label": "LimeTorrents", "enabled": False, "type": "bt", "needs_proxy": True},
-    "acgrip": {"label": "ACG.RIP", "enabled": False, "type": "bt", "needs_proxy": True},
-    "bangumi_moe": {"label": "Bangumi Moe", "enabled": True, "type": "bt", "needs_proxy": False},
-    "eztv": {"label": "EZTV", "enabled": False, "type": "bt", "needs_proxy": True},
-    "dmhy": {"label": "动漫花园", "enabled": True, "type": "bt", "needs_proxy": True},
-    "1337x": {"label": "1337x", "enabled": True, "type": "bt", "needs_proxy": True},
-}
-
-# 网盘源默认配置
-PAN_SOURCE_DEFAULTS = {
-    "pansearch": {"label": "PanSearch", "enabled": True, "type": "pan"},
-    "gogopanso": {"label": "狗狗盘搜", "enabled": True, "type": "pan"},
-    "github": {"label": "GitHub", "enabled": True, "type": "pan"},
-    "rrdynb": {"label": "人人电影", "enabled": True, "type": "pan"},
-    "ddys": {"label": "低端影视", "enabled": True, "type": "pan"},
-    "sites": {"label": "Sites", "enabled": True, "type": "pan"},
-    "slowread": {"label": "慢读", "enabled": True, "type": "pan"},
-    "wnsearch": {"label": "万能搜索", "enabled": True, "type": "pan"},
-    "pansou": {"label": "PanSou", "enabled": False, "type": "pan"},
-}
+# BT / 网盘源的默认配置从 core/source_registry.py 派生。
+# 这两份表以前是手写的，和 DIRECT_BT_SOURCE_ORDER、SOURCE_LANG_PRIORITY、
+# CN_SEASON_SOURCES、_no_seeder_info 等另外四处各自维护同一批源名 ——
+# 加删一个源要六处同步，漏一处就是静默的错误行为。
+BT_SOURCE_DEFAULTS = source_defaults("bt")
+PAN_SOURCE_DEFAULTS = source_defaults("pan")
 
 
 # infohash 提取正则

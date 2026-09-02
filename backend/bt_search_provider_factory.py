@@ -12,38 +12,18 @@ from bt_search_provider_adapter import (
     ScraperFactory,
     build_direct_bt_search_providers,
 )
+from core.source_registry import direct_bt_source_ids, legacy_skip_filter_source_ids
 from provider_builtin_metadata import build_builtin_provider_metadata
 from provider_models import ProviderKind, ProviderMetadata
 
 logger = logging.getLogger(__name__)
 
 
-DIRECT_BT_SOURCE_ORDER = (
-    "bitsearch",
-    "cilixiong",
-    "xl720",
-    "nyaa",
-    "mikan",
-    "yts",
-    "limetorrents",
-    "acgrip",
-    "bangumi_moe",
-    "eztv",
-    "dmhy",
-    "1337x",
-)
-
-LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES = (
-    "bitsearch",
-    "cilixiong",
-    "xl720",
-    "nyaa",
-    "mikan",
-    "yts",
-    "limetorrents",
-    "acgrip",
-    "bangumi_moe",
-)
+# 源清单从 core/source_registry.py 派生 —— 那里是登记源的唯一地方。
+# 这里以前是两份手写的元组，和 SOURCE_LANG_PRIORITY / BT_SOURCE_DEFAULTS 等
+# 另外四处各自维护同一批源名，加删源必须七处同步。
+DIRECT_BT_SOURCE_ORDER = direct_bt_source_ids()
+LEGACY_SKIP_FILTER_DIRECT_BT_SOURCES = legacy_skip_filter_source_ids()
 
 
 def _build_factory_from_registry(provider_id: str, scraper_class) -> ScraperFactory:

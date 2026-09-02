@@ -24,42 +24,25 @@ class MultiLangKeywords:
     year: str = ""
 
 
-# 源→语言优先级映射（回退顺序）
-# 每个源的列表表示：第一个是默认搜索词语言，后续是回退顺序
+# 源的语言优先级与季号格式都登记在 core/source_registry.py。
+# 这里以前是三份按源名写死的清单（SOURCE_LANG_PRIORITY / CN_SEASON_SOURCES /
+# EN_SEASON_SOURCES），加一个源要同时改三处，漏一处就会拿默认的英文优先去搜
+# 一个中文站、永远 0 条，而且看不出是配置漏了。
+from core.source_registry import (
+    SOURCE_TRAITS, lang_priority_for, season_format_for,
+)
+
+# 下面三个是**派生视图**，不是数据源。保留这几个名字是因为它们是对外契约
+# （测试和别处按它们断言「每个源都配了语言优先级 / 季号格式」）。
 SOURCE_LANG_PRIORITY: Dict[str, List[str]] = {
-    # BT/磁力源
-    "prowlarr":     ["en", "cn", "query"],
-    "bitsearch":    ["en", "cn"],
-    "yts":          ["en", "cn"],
-    "limetorrents": ["en", "cn"],
-    "cilixiong":    ["cn", "en"],
-    "xl720":        ["cn", "en"],
-    "nyaa":         ["original", "en", "cn"],
-    "mikan":        ["cn", "original", "en"],
-    "acgrip":       ["cn", "original", "en"],
-    "bangumi_moe":  ["cn", "original", "en"],
-    "eztv":         ["en", "cn"],             # EZTV 欧美剧集，英文优先
-    "dmhy":         ["cn", "original", "en"], # 动漫花园，中文优先
-    "1337x":        ["en", "cn"],             # 1337x 综合站，英文优先
-    # 网盘源（中文优先）
-    "pansearch":    ["cn", "en"],
-    "rrdynb":       ["cn", "en"],
-    "ddys":         ["cn", "en"],
-    "pansou":       ["cn", "en"],
-    "sites":        ["cn", "en"],
-    "slowread":     ["cn", "en"],
-    "wnsearch":     ["cn", "en"],
-    "gogopanso":    ["cn", "en"],
-    "github":       ["cn", "en"],
+    name: list(t.lang_priority) for name, t in SOURCE_TRAITS.items()
 }
-
-# 中文源集合（季号拼"第N季"）
-CN_SEASON_SOURCES = {"cilixiong", "xl720", "mikan", "acgrip", "bangumi_moe", "dmhy",
-                     "pansearch", "rrdynb", "ddys", "pansou", "sites",
-                     "slowread", "wnsearch", "gogopanso", "github"}
-
-# 英文源集合（季号拼"S0N"）
-EN_SEASON_SOURCES = {"prowlarr", "bitsearch", "yts", "limetorrents", "nyaa", "eztv", "1337x"}
+CN_SEASON_SOURCES = frozenset(
+    name for name, t in SOURCE_TRAITS.items() if t.season_format == "cn"
+)
+EN_SEASON_SOURCES = frozenset(
+    name for name, t in SOURCE_TRAITS.items() if t.season_format == "en"
+)
 
 
 _BARE_YEAR_RE = re.compile(r'^\s*[\(\[（]?((?:19|20)\d{2})[\)\]）]?\s*$')
@@ -97,9 +80,10 @@ def _append_season(keyword: str, season_number: int, source_name: str) -> str:
     """为搜索词拼接季号"""
     if not keyword or season_number <= 0:
         return keyword
-    if source_name in CN_SEASON_SOURCES:
+    fmt = season_format_for(source_name)
+    if fmt == "cn":
         return f"{keyword} 第{season_number}季"
-    elif source_name in EN_SEASON_SOURCES:
+    if fmt == "en":
         return f"{keyword} S{str(season_number).zfill(2)}"
     return keyword
 
@@ -115,7 +99,7 @@ def get_search_keywords_for_source(
     - 最多 3 个词（默认 + 2 次回退）
     - 相同的词会被去重跳过
     """
-    lang_priority = SOURCE_LANG_PRIORITY.get(source_name, ["en", "cn", "query"])
+    lang_priority = lang_priority_for(source_name)
     seen = set()
     result = []
 

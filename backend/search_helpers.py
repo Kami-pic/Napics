@@ -90,7 +90,11 @@ def compute_junk_flags(d: dict) -> dict:
 
     # 规则 4: 死种（排除磁力链接源和无做种数信息源）
     is_magnet_only = seeders == 0 and size_gb == 0
-    _no_seeder_info = {"acgrip", "bangumi_moe", "dmhy", "mikan"}
+    # 哪些源不上报做种数登记在 core/source_registry.py。原来这里是一个写死的
+    # 四元素集合，漏登记一个只给磁力链接的源，它的全部结果都会被判成死种。
+    from core.source_registry import sources_without_seeders
+
+    _no_seeder_info = sources_without_seeders()
     source = d.get("_source", "") or d.get("indexer", "")
     if seeders == 0 and not is_magnet_only and source not in _no_seeder_info:
         reasons.append("dead_seed")
