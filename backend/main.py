@@ -53,6 +53,7 @@ from routes.system import router as system_router
 from routes.tools import router as tools_router
 from providers import router as providers_router
 from routes.plugins import router as plugins_router
+from routes.agent import router as agent_router
 
 app = FastAPI(title='NAS Video Upgrader API')
 
@@ -81,11 +82,14 @@ class ConditionalGZipMiddleware(GZipMiddleware):
 # 必须在后端做：只在前端路由上加门的话，直接打 /backend/fs/list 就绕过了。
 #
 # 白名单只包含"没有它就设不了密码 / 登不了录"的路径，以及 API 文档。
+# /api/agent/* 走独立的 X-Agent-Token（见 routes/agent.py），不吃 cookie ——
+# 编程接口带不了 cookie，放行后由 agent.py 自己的 token 依赖校验写操作。
 _AUTH_FREE_PREFIXES = (
     '/auth/',
     '/docs',
     '/redoc',
     '/openapi.json',
+    '/api/agent/',
 )
 
 # 健康检查必须免鉴权：Dockerfile 的 HEALTHCHECK 和 entrypoint 的就绪探测都打这里，
@@ -183,6 +187,7 @@ app.include_router(system_router)
 app.include_router(tools_router)
 app.include_router(providers_router)
 app.include_router(plugins_router)
+app.include_router(agent_router)
 
 
 @app.get('/')
