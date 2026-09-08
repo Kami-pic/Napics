@@ -1,0 +1,13 @@
+services:
+  nas-download-mcp:
+    build: .
+    container_name: nas-download-mcp
+    ports:
+      - "8787:8787"
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      # 需要 docker socket 才能 start/stop kami-pic / prowlarr（白名单受限，见 src/adapters/docker_adapter.py）
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
