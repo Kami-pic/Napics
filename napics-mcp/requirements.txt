@@ -1,3 +1,6 @@
-mcp>=1.2,<2
+# FastMCP 在整个 1.x 都是 mcp.server.fastmcp.FastMCP；2.x 改名 MCPServer 破坏兼容，
+# 故锁 <2。下限锁到 1.9：本工程在 1.30 上测过（37 passed），tool() 装饰器透传原函数、
+# list_tools 行为在 1.9+ 稳定，避免补丁版上直调测试悄悄变红。
+mcp>=1.9,<2
 httpx>=0.27
 pydantic>=2.0
