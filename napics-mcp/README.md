@@ -53,6 +53,16 @@ MCP **不读** napics 的 `config.json`（明文凭据），自己一套配置�
 | `QB_PASSWORD` | 空 | qB 密码 |
 | `MCP_HTTP_TIMEOUT` | `15` | HTTP 超时（秒） |
 
+## 安全红线（开源仓库，务必遵守）
+
+- **凭据只走环境变量注入，绝不写进代码 / 仓库 / README**。本仓库里出现的 IP、密码、
+  token 一律是占位符。真实值填在你本机或上层 agent 的配置文件里。
+- MCP **不读** napics 的 `config.json`（那是明文凭据），只从环境变量拿自己需要的。
+- 工具返回和日志**从不回显**密码、token、cookie、Authorization 头；napics 的错误响应体
+  也不原样带进错误消息（防后端偶然回显凭据）。
+- 访问的是回环 / 局域网的 napics 与 qB，HTTP 客户端 `trust_env=False`，不经系统代理。
+- 提 Issue / PR / 贴日志前，先确认没带上真实 IP 或凭据。
+
 ## 安装 / 运行
 
 ```bash
@@ -66,17 +76,20 @@ python server.py                          # stdio，一般由上层 agent 作为
 以 Claude Desktop / codex 风格的 `mcpServers` 配置为例（各家 key 名略有出入，
 但都是「命令 + 参数 + 环境变量」三件套）：
 
+> ⚠️ **本仓库开源。下面全是占位符——真实的 NAS IP、qB 密码、agent token 只填在
+> 你本机 / 上层 agent 的配置文件里，绝不要提交进任何仓库、Issue、PR 或截图。**
+
 ```json
 {
   "mcpServers": {
     "napics": {
       "command": "python",
-      "args": ["C:/Users/shenq/napics/napics-mcp/server.py"],
+      "args": ["<napics-mcp 的绝对路径>/server.py"],
       "env": {
-        "NAPICS_API_BASE": "http://192.168.100.111:8001",
-        "NAPICS_AGENT_TOKEN": "<napics config 里设的 agent_api_token>",
-        "QB_URL": "http://192.168.100.111:8080",
-        "QB_USERNAME": "admin",
+        "NAPICS_API_BASE": "http://<napics 地址>:8001",
+        "NAPICS_AGENT_TOKEN": "<napics config 里设的 agent_api_token，未设则留空>",
+        "QB_URL": "http://<qBittorrent 地址>:<端口>",
+        "QB_USERNAME": "<qB 用户名>",
         "QB_PASSWORD": "<qB 密码>"
       }
     }
@@ -86,6 +99,8 @@ python server.py                          # stdio，一般由上层 agent 作为
 
 - 上层 agent 跑在 **本地 PC**：`NAPICS_API_BASE`/`QB_URL` 填 NAS 的局域网 IP。
 - 上层 agent 跑在 **NAS 本机**：填 `127.0.0.1`。
+- 这些值走**环境变量注入**，MCP 不读 napics 的 `config.json`、不落盘任何凭据，也从不在
+  日志 / 错误消息 / 工具返回里回显密码 token cookie（见「安全红线」）。
 
 ## 典型调用链（上层 agent 视角）
 
