@@ -175,6 +175,12 @@ class AppConfig(BaseModel):
     access_token_secret: str = ""
     # 会话有效期（天）。手机上不该每次打开都重新登录。
     access_session_days: int = 30
+    # ── Agent API 凭据 ──
+    # MCP / 上层 agent 调 /api/agent/* 写操作时带的 X-Agent-Token。
+    # 留空 = 不校验（默认，与升级前行为一致）；非空时写端点必须带对上的 token。
+    # 与 access_password 是两套独立的门：agent token 保护的是编程接口，
+    # cookie 保护的是浏览器界面。/api/agent/* 走前者，不吃 cookie。
+    agent_api_token: str = ""
 
 class ConfigManager:
     def __init__(self, config_path: str = None):
