@@ -13,6 +13,7 @@
 import os
 import logging
 import json
+import re
 import time
 import uuid
 import shutil
@@ -76,6 +77,9 @@ class DownloadTask(BaseModel):
     organized: bool = False        # 已执行整理替换，跳过 qB 状态同步
     subscription_id: Optional[str] = None   # 关联的订阅 ID（订阅触发的下载）
     subscription_episode: Optional[int] = None  # 关联的集号（剧集订阅用）
+    # 幂等键。上层 agent / MCP 用「任务语义唯一键」（如 hash(title+year+url)）传入，
+    # 同 key 已存在且未失败的任务直接复用，不重复 submit（见 MCP todo §2.2）。
+    idempotency_key: str = ""
     created_at: str = ""
     updated_at: str = ""
 
@@ -177,7 +181,21 @@ class DownloadManager:
         2. 推送到下载器（qB/Alist），save_path 指向沙盒
         3. 成功 → downloading + 记录 hash；失败 → failed
         4. 核心状态变更，立刻落盘
+
+        幂等：task.idempotency_key 非空时，若已存在同 key 且状态非 failed 的任务，
+        直接返回那条，不重复 submit（见 MCP todo §2.2）。
         """
+        # 幂等复用：失败的任务不复用（允许重试），进行中/完成的直接返回
+        if task.idempotency_key:
+            with self._lock:
+                for existing in self.tasks:
+                    if (existing.idempotency_key == task.idempotency_key
+                            and existing.status != "failed"):
+                        logger.info(
+                            f"[DM] 幂等命中 key={task.idempotency_key} → 复用任务 {existing.id}"
+                        )
+                        return existing
+
         task.id = str(uuid.uuid4())[:8]
         task.created_at = datetime.now().isoformat()
         task.updated_at = task.created_at
@@ -271,6 +289,13 @@ class DownloadManager:
                 if result.message and result.message != "qBittorrent 推送失败":
                     return False, result.message
                 return False, f"qBittorrent 推送失败（登录状态: {getattr(qb_client, '_logged_in', False)}，URL: {url[:80]}）"
+
+            # 磁力链接自带 btih，比"加种前后集合差集"可靠得多：并发多种子时差集会脏，
+            # qB 5 秒内没建好则差集为空 → 返回空 hash，后续监控/删种全断（MCP todo §2.2 H3）。
+            # 所以 magnet 直接从 btih 取 infohash，非 magnet（种子文件 URL）才回落差集轮询。
+            btih = re.search(r"btih:([a-fA-F0-9]{40})", url or "", re.IGNORECASE)
+            if btih:
+                return True, btih.group(1).upper()
 
             # 等待 qB 处理（最多 5 秒）
             for _ in range(10):

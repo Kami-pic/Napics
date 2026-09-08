@@ -12,7 +12,7 @@ import subprocess
 import sys
 import threading
 from typing import List, Optional, Dict
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Header
 from fastapi.responses import StreamingResponse, FileResponse, Response
 from pydantic import BaseModel
 
@@ -224,10 +224,15 @@ class DownloadSubmitRequest(BaseModel):
     category_hint: str = ""
     is_season_pack: bool = False
     season_number: int = 0
+    idempotency_key: str = ""
 
 @router.post("/download-manager/submit")
-def submit_download(req: DownloadSubmitRequest):
-    """提交下载任务到 DownloadManager 队列。自动检查黑名单。"""
+def submit_download(req: DownloadSubmitRequest, idempotency_key: str = Header(default="")):
+    """提交下载任务到 DownloadManager 队列。自动检查黑名单。
+
+    幂等键来源二选一：body 字段 idempotency_key，或 Idempotency-Key 请求头
+    （body 优先）。同 key 已存在未失败任务直接复用，不重复 submit（MCP todo §2.2）。
+    """
     # 黑名单检查
     if torrent_bl.is_blocked(req.download_url):
         return {"success": False, "error": "该种子在黑名单中（24h 内曾提交失败），请稍后重试或手动移除黑名单"}
@@ -241,6 +246,7 @@ def submit_download(req: DownloadSubmitRequest):
         category_hint=req.category_hint,
         is_season_pack=req.is_season_pack,
         season_number=req.season_number,
+        idempotency_key=(req.idempotency_key or idempotency_key or "").strip(),
     )
     result = dm.submit(task)
 
