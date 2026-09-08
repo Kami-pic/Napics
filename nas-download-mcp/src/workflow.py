@@ -63,7 +63,7 @@ class Workflow:
         qb = QbClient(self.cfg.qb_url, self.cfg.qb_username, self.cfg.qb_password)
         from adapters.docker_adapter import DockerAdapter
 
-        svc = ServiceManager(self.cfg, DockerAdapter())
+        svc = ServiceManager(self.cfg, DockerAdapter.from_config(self.cfg))
         selected_hash = ""
         try:
             # 1) 启动服务

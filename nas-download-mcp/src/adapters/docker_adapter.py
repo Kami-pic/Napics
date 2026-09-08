@@ -11,13 +11,13 @@ import subprocess
 
 logger = logging.getLogger("nas_download_mcp.docker")
 
-# 逻辑名 → 真实容器名（白名单，qB 不在内）
-ALLOWED_CONTAINERS = {
-    "napics": "kami-pic",
+# 逻辑名 → 真实容器名（白名单，qB 不在内）。
+# 默认用中性逻辑名；真实容器名由部署方经 env（NAPICS_CONTAINER/PROWLARR_CONTAINER）注入，
+# 开源代码里不写死任何具体部署的容器名。
+DEFAULT_CONTAINERS = {
+    "napics": "napics",
     "prowlarr": "prowlarr",
 }
-
-_ALLOWED_REAL = set(ALLOWED_CONTAINERS.values())
 
 try:
     import docker as _docker_sdk  # type: ignore
@@ -27,7 +27,10 @@ except Exception:
 
 
 class DockerAdapter:
-    def __init__(self):
+    def __init__(self, containers: dict[str, str] | None = None):
+        # 逻辑名 → 真实容器名。部署方经 env 注入真实名；缺省回落到中性逻辑名。
+        self._allowed = dict(containers) if containers else dict(DEFAULT_CONTAINERS)
+        self._allowed_real = set(self._allowed.values())
         self._client = None
         if _HAS_SDK:
             try:
@@ -38,10 +41,18 @@ class DockerAdapter:
 
     def _check(self, container: str) -> str:
         """校验并返回真实容器名。传逻辑名或真实名都接受，非白名单一律拒绝。"""
-        real = ALLOWED_CONTAINERS.get(container, container)
-        if real not in _ALLOWED_REAL:
-            raise PermissionError(f"容器不在白名单: {container!r}（仅允许 {sorted(_ALLOWED_REAL)}）")
+        real = self._allowed.get(container, container)
+        if real not in self._allowed_real:
+            raise PermissionError(f"容器不在白名单: {container!r}（仅允许 {sorted(self._allowed_real)}）")
         return real
+
+    @classmethod
+    def from_config(cls, cfg) -> "DockerAdapter":
+        """用部署方经 env 注入的真实容器名构造白名单。"""
+        return cls({
+            "napics": cfg.napics_container,
+            "prowlarr": cfg.prowlarr_container,
+        })
 
     # ── SDK 路径 ──
     def _sdk_action(self, real: str, action: str) -> bool:

@@ -67,19 +67,34 @@ def test_is_magnet():
 
 
 # ── docker 白名单 ──
-def test_docker_whitelist_reject():
+def _adapter(allowed):
     d = DockerAdapter.__new__(DockerAdapter)  # 不触发 SDK 连接
     d._client = None
+    d._allowed = dict(allowed)
+    d._allowed_real = set(d._allowed.values())
+    return d
+
+
+def test_docker_whitelist_reject():
+    d = _adapter({"napics": "napics", "prowlarr": "prowlarr"})
     with pytest.raises(PermissionError):
         d._check("evil-container")
 
 
-def test_docker_whitelist_accept_logical_and_real():
-    d = DockerAdapter.__new__(DockerAdapter)
-    d._client = None
-    assert d._check("napics") == "kami-pic"
-    assert d._check("kami-pic") == "kami-pic"
+def test_docker_whitelist_default_logical():
+    # 默认（无 env 注入）用中性逻辑名，代码里不写死任何真实容器名
+    d = _adapter({"napics": "napics", "prowlarr": "prowlarr"})
+    assert d._check("napics") == "napics"
     assert d._check("prowlarr") == "prowlarr"
+
+
+def test_docker_whitelist_injected_real_name():
+    # 部署方经 env 注入真实容器名后，逻辑名与真实名都被接受
+    d = _adapter({"napics": "my-napics-ctr", "prowlarr": "prowlarr"})
+    assert d._check("napics") == "my-napics-ctr"
+    assert d._check("my-napics-ctr") == "my-napics-ctr"
+    with pytest.raises(PermissionError):
+        d._check("napics-not-the-real-one")
 
 
 # ── 错误契约 ──

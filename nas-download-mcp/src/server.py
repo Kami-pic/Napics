@@ -160,7 +160,7 @@ async def cancel_download_task(task_id: str, delete_download: bool = False) -> d
             finally:
                 qb.close()
     # cleanup 关容器
-    svc = ServiceManager(cfg, DockerAdapter())
+    svc = ServiceManager(cfg, DockerAdapter.from_config(cfg))
     try:
         cres = await svc.cleanup()
     except Exception as e:
@@ -176,7 +176,7 @@ async def cancel_download_task(task_id: str, delete_download: bool = False) -> d
 @mcp.tool()
 def get_system_status() -> dict:
     """容器/服务健康 + 当前活跃任务。"""
-    svc = ServiceManager(cfg, DockerAdapter())
+    svc = ServiceManager(cfg, DockerAdapter.from_config(cfg))
     st = svc.status()
     st["active_task"] = db.current_lock_task()
     return st
@@ -209,7 +209,7 @@ async def _do_orphan_cleanup() -> dict:
                     qb.delete(h, delete_files=True)
                 finally:
                     qb.close()
-        svc = ServiceManager(cfg, DockerAdapter())
+        svc = ServiceManager(cfg, DockerAdapter.from_config(cfg))
         try:
             await svc.cleanup()
         except Exception:

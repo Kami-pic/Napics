@@ -1,7 +1,7 @@
 """ServiceManager（todo §5/§8）：容器生命周期。
 
-启动顺序：kami-pic → 等 napics health → prowlarr → 等 prowlarr health → 检查 qB。
-停止顺序反向：prowlarr → kami-pic。cleanup best-effort，单个失败不阻断其它。
+启动顺序：napics → 等 napics health → prowlarr → 等 prowlarr health → 检查 qB。
+停止顺序反向：prowlarr → napics。cleanup best-effort，单个失败不阻断其它。
 qB 是飞牛官方应用，只探活不启停。
 """
 from __future__ import annotations
@@ -96,7 +96,7 @@ class ServiceManager:
         return self.started_by_task.get(which, False)
 
     async def cleanup(self) -> dict:
-        """停 prowlarr → 停 kami-pic，逐个 best-effort。返回每个容器成功与否。"""
+        """停 prowlarr → 停 napics，逐个 best-effort。返回每个容器成功与否。"""
         result: dict[str, dict] = {}
         # prowlarr 先停
         if self._should_stop("prowlarr"):

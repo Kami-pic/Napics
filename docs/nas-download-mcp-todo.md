@@ -11,11 +11,11 @@
 
 **本对话只做上层 `nas-download-mcp`。** 下层 `napics-mcp` 和 napics backend 的改动归**另一个对话**，本文件只钉它们的**对接契约**，不实现。
 
-- **上层职责**：接结构化下载意图 → 管容器生命周期（开关 kami-pic/prowlarr 省内存）→ 跑有状态 Task（SQLite 持久化 / 崩溃恢复）→ 搜片+创建下载（HTTP 调 napics agent 端点）→ **qB 监控/测速探测/删种（上层直连 qB）** → 下完推送 → cleanup 关容器。
+- **上层职责**：接结构化下载意图 → 管容器生命周期（开关 napics/prowlarr 省内存）→ 跑有状态 Task（SQLite 持久化 / 崩溃恢复）→ 搜片+创建下载（HTTP 调 napics agent 端点）→ **qB 监控/测速探测/删种（上层直连 qB）** → 下完推送 → cleanup 关容器。
 - **qB 全归上层**：监控进度、测速探测淘汰、删种，全部上层直连 qB Web API。napics 不碰 qB 的这些动作（napics 只负责"把种子推进 qB 建任务"）。
 - **napics 尽量少改**：上层能自己干的（qB 直连、probe）绝不去改 napics。上层只消费 napics 已有/在建的 `/api/agent/*` 三个端点。
 - **测速探测：做**（batch 试速、下不动换下一批），归上层直连 qB 实现。
-- **部署**：上层是 **Streamable HTTP 常驻服务**，NAS Docker 部署，监听 `0.0.0.0:8787`，Hermes/DSH/Codex 经 `http://192.168.100.111:8787/mcp` 共享调用。
+- **部署**：上层是 **Streamable HTTP 常驻服务**，NAS Docker 部署，监听 `0.0.0.0:8787`，Hermes/DSH/Codex 经 `http://<nas-host>:8787/mcp` 共享调用。
 
 ### 为什么上层用 HTTP 常驻、下层用 stdio（部署形态不同是因为职责不同）
 - 上层要**管容器 + 跑几小时的长任务**，必须常驻：agent 提交任务后可以断开，几小时后回来查进度。stdio MCP 被 agent 当子进程临时拉起、agent 关了就没了，扛不住长任务。
@@ -26,13 +26,13 @@
 ### 最终架构
 ```
 Hermes / DSH / Codex
-      │  Streamable HTTP MCP  (http://192.168.100.111:8787/mcp)
+      │  Streamable HTTP MCP  (http://<nas-host>:8787/mcp)
       ▼
 nas-download-mcp  (NAS Docker 常驻; Task/SQLite/ServiceManager/probe/cleanup/推送)
       │
       ├── HTTP ──▶ napics /api/agent/*   搜片 / 创建下载 / 整理     ← napics 侧最小改动（另一对话）
       ├── HTTP ──▶ qB /api/v2/*          监控 / 测速探测 / 删种      ← 上层自己直连
-      └── docker socket ──▶ start/stop kami-pic, prowlarr          ← 省内存
+      └── docker socket ──▶ start/stop napics, prowlarr          ← 省内存
 ```
 > 核心原则：**Agent 做判断，上层 MCP 做编排 + 容器 + qB 监控，napics 做搜索/创建下载/整理，Prowlarr 做资源搜索，qB 做下载。**
 
@@ -41,10 +41,10 @@ nas-download-mcp  (NAS Docker 常驻; Task/SQLite/ServiceManager/probe/cleanup/�
 ## 1. NAS 环境（已核实）
 
 ```
-NAS IP        192.168.100.111
-napics        http://192.168.100.111:3032 (前端) / :8001 (后端 API)   docker: kami-pic
-prowlarr      http://192.168.100.111:9696                              docker: prowlarr
-qBittorrent   http://192.168.100.111:8085  飞牛 OS 官方应用            MCP 直连，不启停
+NAS IP        <nas-host>
+napics        http://<nas-host>:3032 (前端) / :8001 (后端 API)   docker: napics
+prowlarr      http://<nas-host>:9696                              docker: prowlarr
+qBittorrent   http://<nas-host>:8085  飞牛 OS 官方应用            MCP 直连，不启停
 ```
 > 注意：napics **后端 API 在 :8001**（:3032 是前端代理）。agent 端点路径是 `/api/agent/*`，
 > 上层应直连后端 :8001，不要走前端 :3032 代理（省一跳、避开前端鉴权）。若 NAS 上后端只监听
@@ -147,7 +147,7 @@ cleanup_orphaned_tasks  管理员：启动时自动跑一次，清理孤儿
 ### 3.5 get_system_status
 ```json
 {
-  "napics": {"container":"kami-pic","running":true,"healthy":true},
+  "napics": {"container":"napics","running":true,"healthy":true},
   "prowlarr": {"container":"prowlarr","running":true,"healthy":true},
   "qbittorrent": {"managed":false,"reachable":true},
   "active_task": "task-123"
@@ -177,19 +177,19 @@ starting | searching | selecting | probing | downloading | processing | complete
 
 ```python
 class ServiceManager:
-    async def ensure_started(self): ...   # start kami-pic → wait napics health → start prowlarr → wait prowlarr health → check qB
+    async def ensure_started(self): ...   # start napics → wait napics health → start prowlarr → wait prowlarr health → check qB
     async def wait_healthy(self): ...
-    async def stop(self): ...             # stop prowlarr → stop kami-pic（顺序反向）
+    async def stop(self): ...             # stop prowlarr → stop napics（顺序反向）
     async def cleanup(self): ...          # best-effort，单个失败不阻断其它
 ```
-- 启动顺序：① `docker start kami-pic` → ② 等 napics health（`GET :8001/api/agent/health` 返回 `ok:true`，**不能只判 TCP 端口**）→ ③ `docker start prowlarr` → ④ 等 prowlarr health（`GET :9696` 200，或 `/api/v1/health`）→ ⑤ 检查 qB 可达（`GET :8085` 能登录）。
+- 启动顺序：① `docker start napics` → ② 等 napics health（`GET :8001/api/agent/health` 返回 `ok:true`，**不能只判 TCP 端口**）→ ③ `docker start prowlarr` → ④ 等 prowlarr health（`GET :9696` 200，或 `/api/v1/health`）→ ⑤ 检查 qB 可达（`GET :8085` 能登录）。
 - **qB 不可达 → FAILED → cleanup**（qB 是飞牛官方应用，上层不启停，但必须探活）。
 - **Service Ownership**：Task 记录每个容器 `started_by_task`（本任务是否亲手启动）。策略 `STOP_SERVICES_AFTER_TASK=true`（用户要"下完释放内存"）——即便任务开始时容器本已在跑，结束也停。
 - **并发锁**：第一版同一时间只允许一个下载 workflow（`asyncio.Lock` + SQLite `service_locks` 持久化）。原因：Task B 不能让 Task A 正在用的 prowlarr 被 stop。
 
 ### Docker Adapter（白名单，防注入）
 ```python
-ALLOWED_CONTAINERS = {"napics": "kami-pic", "prowlarr": "prowlarr"}   # qB 不在内
+ALLOWED_CONTAINERS = {"napics": "napics", "prowlarr": "prowlarr"}   # qB 不在内
 ```
 只允许 `start / stop / inspect` 白名单容器。**禁止** `exec / rm / run / pull / prune`，禁止 agent 传任意 container name。走 docker socket（`/var/run/docker.sock`）或 docker SDK。
 
@@ -239,10 +239,10 @@ async def run(task):
     except Exception as exc:
         task.fail(exc); await notify_failure(task)
     finally:
-        await cleanup()   # 停 workflow → 清 probe 种子 → stop prowlarr → stop kami-pic → 更新 Task
+        await cleanup()   # 停 workflow → 清 probe 种子 → stop prowlarr → stop napics → 更新 Task
 ```
 - **禁止 `if success: cleanup()`**——异常时容器会一直占内存。
-- cleanup best-effort：`docker stop prowlarr` 失败不能阻止 `docker stop kami-pic`，逐个记 `cleanup_status`。
+- cleanup best-effort：`docker stop prowlarr` 失败不能阻止 `docker stop napics`，逐个记 `cleanup_status`。
 - 崩溃恢复：MCP 启动时 `cleanup_orphaned_tasks` 读 SQLite，`PROBING` 的清 probe 种子+停服务；`DOWNLOADING` 的按 `RECOVER_ACTIVE_DOWNLOAD=true` 恢复监控。
 
 ---
@@ -268,7 +268,7 @@ async def run(task):
 ## 12. 安全红线
 - 上层 **不读** napics `backend/config.json`（明文凭据），自己 env 一套。
 - 返回/日志 **禁止** 出现 qB 密码、prowlarr/tmdb key、cookie、Authorization、agent token。
-- Docker adapter 只白名单 start/stop/inspect kami-pic+prowlarr。
+- Docker adapter 只白名单 start/stop/inspect napics+prowlarr。
 - 第一版只监听 NAS LAN，不暴露公网；将来公网需 HTTPS+认证+Tailscale。
 
 ## 13. 工程形态
@@ -296,11 +296,11 @@ nas-download-mcp/           # 独立目录，部署在 NAS
 ```
 MCP_HOST=0.0.0.0
 MCP_PORT=8787
-NAPICS_API_BASE=http://192.168.100.111:8001     # 后端，非 3032 前端
+NAPICS_API_BASE=http://<nas-host>:8001     # 后端，非 3032 前端
 NAPICS_AGENT_TOKEN=
-NAPICS_CONTAINER=kami-pic
+NAPICS_CONTAINER=napics
 PROWLARR_CONTAINER=prowlarr
-QB_URL=http://192.168.100.111:8085
+QB_URL=http://<nas-host>:8085
 QB_USERNAME=admin
 QB_PASSWORD=
 PROBE_BATCH_SIZE=3
@@ -352,7 +352,7 @@ TC: start 容器 / health / prowlarr 挂 / qB 挂 / 搜索 / 零结果 / probe 3
 ```
 [ ] Streamable HTTP MCP，Hermes 能连 :8787/mcp
 [ ] download_movie 立刻返回 task_id，不阻塞
-[ ] MCP 能 start/stop kami-pic + prowlarr（白名单）
+[ ] MCP 能 start/stop napics + prowlarr（白名单）
 [ ] MCP 不控制 qB 启停，但探活；qB 挂→FAILED→cleanup
 [ ] 搜片走 napics /api/agent/search，上层按 4k/<50g 筛
 [ ] 创建下载走 napics /download-manager/submit（幂等），拿 downloader_hash

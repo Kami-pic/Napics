@@ -8,12 +8,12 @@
 
 ```
 Hermes / DSH / Codex
-      │  Streamable HTTP MCP  (http://192.168.100.111:8787/mcp)
+      │  Streamable HTTP MCP  (http://<nas-host>:8787/mcp)
       ▼
 nas-download-mcp  (NAS Docker 常驻; Task/SQLite/ServiceManager/probe/cleanup)
       ├── HTTP ──▶ napics /api/agent/*   搜片 / 创建下载 / 整理
       ├── HTTP ──▶ qB /api/v2/*          监控 / 测速探测 / 删种（上层直连）
-      └── docker socket ──▶ start/stop kami-pic, prowlarr
+      └── docker socket ──▶ start/stop napics, prowlarr 容器
 ```
 
 原则：**Agent 做判断，本 MCP 做编排 + 容器 + qB 监控，napics 做搜索/创建下载/整理。**
@@ -37,9 +37,9 @@ cp .env.example .env
 docker compose up -d
 ```
 
-访问 `http://192.168.100.111:8787/mcp`。
+访问 `http://<nas-host>:8787/mcp`。
 
-依赖 docker socket（挂载在 compose 里）才能启停容器；白名单只允许 `kami-pic`/`prowlarr` 的 start/stop/inspect（见 `src/adapters/docker_adapter.py`），不暴露 exec/rm/run。
+依赖 docker socket（挂载在 compose 里）才能启停容器；白名单只允许 napics / prowlarr 两个容器的 start/stop/inspect（真实容器名经 `.env` 的 `NAPICS_CONTAINER`/`PROWLARR_CONTAINER` 注入，见 `src/adapters/docker_adapter.py`），不暴露 exec/rm/run。
 
 > ⚠️ `.env` 里 `QB_URL` 必须和 napics 里配的 qB 指向**同一个 qB 实例**——本 MCP 直连 qB 监控的种子，就是 napics 推进 qB 的那些。
 
@@ -49,7 +49,7 @@ docker compose up -d
 {
   "mcpServers": {
     "nas-download": {
-      "url": "http://192.168.100.111:8787/mcp",
+      "url": "http://<nas-host>:8787/mcp",
       "transport": "streamable-http"
     }
   }
@@ -69,3 +69,11 @@ python src/server.py
 ## 与下层 napics-mcp 的关系
 
 本 MCP 是**上层编排层**（有状态、常驻、管容器）。另有一个**下层 `napics-mcp`**（stdio、无状态，贴 napics 的搜/下/删种工具），是给 agent 直接用的另一个入口，与本 MCP 平行——本 MCP 直接 HTTP 调 napics `/api/agent/*`，不经过它。契约见 `../docs/nas-download-mcp-todo.md`。
+
+## 安全 / 隐私
+
+本仓库开源，代码与文档里**不含任何真实部署信息**：
+
+- **地址、容器名、凭据全部走 `.env`**，源码里只有中性占位（`<nas-host>`、逻辑名 `napics`/`prowlarr`、`127.0.0.1` 默认值）。填自己的真实值到 `.env`，不要提交 `.env`（已被 `.gitignore` 忽略）。
+- **`.env` 只填自己的凭据**：`QB_PASSWORD`、`NAPICS_AGENT_TOKEN` 等。本 MCP 自己一套配置，**不读 napics 的 `backend/config.json`**（明文凭据）。
+- docker 白名单只允许 napics / prowlarr 两个容器的 `start`/`stop`/`inspect`，拒绝任意容器名和 `exec`/`rm`/`run`，防越权与命令注入。

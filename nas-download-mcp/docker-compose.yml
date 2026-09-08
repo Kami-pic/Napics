@@ -8,6 +8,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-      # 需要 docker socket 才能 start/stop kami-pic / prowlarr（白名单受限，见 src/adapters/docker_adapter.py）
+      # 需要 docker socket 才能 start/stop napics / prowlarr 容器（白名单受限，真实容器名走 .env，见 src/adapters/docker_adapter.py）
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
