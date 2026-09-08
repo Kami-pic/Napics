@@ -50,7 +50,9 @@ class NapicsClient:
         if r.status_code == 404:
             raise NapicsError(f"{ctx}：资源不存在", not_found=True)
         if r.status_code >= 400:
-            raise NapicsError(f"{ctx}：napics 返回 {r.status_code} {r.text[:200]}")
+            # 不把 napics 响应体原样带进错误消息：万一 napics 错误体回显了凭据
+            # 会随 message 外泄（§6 安全红线）。只保留状态码。
+            raise NapicsError(f"{ctx}：napics 返回 {r.status_code}")
 
     # ── 探活 ──
 
