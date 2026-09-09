@@ -43,14 +43,18 @@ class ServiceManager:
             while time.time() < deadline:
                 try:
                     r = await client.get(url)
-                    if r.status_code == 200:
-                        if not expect_json_ok:
+                    if expect_json_ok:
+                        # napics health：要求 200 且 {ok:true}
+                        if r.status_code == 200:
+                            try:
+                                if bool(r.json().get("ok")):
+                                    return True
+                            except Exception:
+                                pass
+                    else:
+                        # prowlarr 等：任何 <500 都说明进程在响应（302 跳登录页/401 未授权都算活着）
+                        if r.status_code < 500:
                             return True
-                        try:
-                            if bool(r.json().get("ok")):
-                                return True
-                        except Exception:
-                            pass
                 except Exception:
                     pass
                 await asyncio.sleep(2)
@@ -88,6 +92,29 @@ class ServiceManager:
         # 5) qB 探活（不启停，但必须可达，否则 §72 FAILED）
         if not self._qb_reachable():
             raise ServiceStartError("QB_UNAVAILABLE", "qBittorrent 不可达")
+
+    # ── 分阶段释放（省内存：下载几小时里 prowlarr/napics 都不需要）──
+    async def release_for_download(self) -> dict:
+        """probe 选定、种子已在 qB 下载后调用：关掉 prowlarr 和 napics。
+
+        下载阶段只靠 qB（上层直连），prowlarr（只管搜索）和 napics（只管搜索/整理）
+        在几小时下载里都用不上，先关掉省 ~380M 内存，整理时再重开 napics。
+        best-effort，失败不抛。
+        """
+        result: dict[str, dict] = {}
+        ok_p = self.docker.stop(self.cfg.prowlarr_container)
+        result["prowlarr"] = {"stopped": ok_p}
+        ok_n = self.docker.stop(self.cfg.napics_container)
+        result["napics"] = {"stopped": ok_n}
+        return result
+
+    async def ensure_napics_for_process(self) -> bool:
+        """整理前重开 napics 并等健康。返回是否就绪。"""
+        if not self.docker.is_running(self.cfg.napics_container):
+            if not self.docker.start(self.cfg.napics_container):
+                return False
+        health_url = f"{self.cfg.napics_api_base}/api/agent/health"
+        return await self._wait_http_ok(health_url, timeout_s=90, expect_json_ok=True)
 
     # ── 停止 / cleanup（best-effort）──
     def _should_stop(self, which: str) -> bool:

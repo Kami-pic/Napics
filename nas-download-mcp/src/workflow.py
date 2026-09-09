@@ -123,16 +123,22 @@ class Workflow:
             self._event(task_id, "RESOURCE_SELECTED", {"title": selected.resource.title, "hash": selected_hash})
 
             # 4) 正式下载监控（不再用 10KB/120s 判失败）
+            #    种子已在 qB，prowlarr/napics 下载期间都不需要 → 立刻关掉省内存
             self._set(task_id, TaskStatus.DOWNLOADING, Stage.DOWNLOADING)
+            rel = await svc.release_for_download()
+            self._event(task_id, "SERVICES_RELEASED_FOR_DOWNLOAD", rel)
             self._event(task_id, "DOWNLOAD_STARTED")
             if not await self._wait_download(task_id, qb, selected_hash):
                 self._fail(task_id, ErrorCode.DOWNLOAD_FAILED, "下载失败或超时")
                 return
             self._event(task_id, "DOWNLOAD_COMPLETED")
 
-            # 5) 后处理（刮削整理）
+            # 5) 后处理（刮削整理）—— 整理要 napics，先重开并等健康
             self._set(task_id, TaskStatus.PROCESSING, Stage.PROCESSING)
             self._event(task_id, "PROCESSING_STARTED")
+            if not await svc.ensure_napics_for_process():
+                self._fail(task_id, ErrorCode.NAPICS_UNAVAILABLE, "整理前重启 napics 失败")
+                return
             try:
                 proc = await asyncio.wait_for(
                     asyncio.to_thread(napics.process, selected.napics_task_id, save_path),

@@ -46,6 +46,9 @@ class NapicsClient:
             return False
 
     # ── §2.1 搜索（返回展平 Resource）──
+    # ── §2.1 搜索：消费 napics SSE 流式端点，按时间窗口收先到的源 ──
+    #    /api/agent/search 是同步等所有源，境外慢源(重试3×15s)会拖到超时；
+    #    /api/search/stream 是 as_completed 先搜到先吐，设收集窗口卡掉慢源。不改 napics。
     def search(
         self,
         query: str,
@@ -54,26 +57,82 @@ class NapicsClient:
         year: Optional[int] = None,
         season: Optional[int] = None,
         limit: int = 30,
+        deadline_seconds: float = 30.0,
+        min_results: int = 5,
     ) -> list[Resource]:
-        params = {"query": query, "limit": limit}
-        if media_type:
-            params["media_type"] = media_type
+        import json as _json
+        import time as _time
+
+        params = {"query": query}
         if title:
-            params["title"] = title
+            params["cn_name"] = title
         if year:
             params["year"] = str(year)
         if season:
-            params["season"] = season
+            params["season_number"] = season
+
+        collected: list[dict] = []
+        seen: set[str] = set()
+        start = _time.monotonic()
         try:
-            r = self._client.get(f"{self.api_base}/api/agent/search", params=params)
+            with httpx.Client(timeout=httpx.Timeout(deadline_seconds * 2 + 15)) as sc:
+                with sc.stream(
+                    "GET", f"{self.api_base}/api/search/stream",
+                    params=params, headers=self._headers(),
+                ) as resp:
+                    if resp.status_code != 200:
+                        raise NapicsError(f"搜索返回 {resp.status_code}", retryable=resp.status_code >= 500)
+                    for line in resp.iter_lines():
+                        if not line or not line.startswith("data: "):
+                            continue
+                        try:
+                            evt = _json.loads(line[6:])
+                        except Exception:
+                            continue
+                        etype = evt.get("type")
+                        if etype == "done" and evt.get("error") == "no_source":
+                            raise NapicsError(evt.get("message", "未安装搜索插件"), retryable=False)
+                        if etype == "source_done":
+                            for r in evt.get("results", []) or []:
+                                u = r.get("download_url", "")
+                                if u and u not in seen:
+                                    seen.add(u)
+                                    collected.append(r)
+                        if etype == "done":
+                            break
+                        elapsed = _time.monotonic() - start
+                        if elapsed >= deadline_seconds and len(collected) >= min_results:
+                            break
+        except NapicsError:
+            raise
         except Exception as e:
-            raise NapicsError(f"搜索请求失败: {e}", retryable=True)
-        if r.status_code != 200:
-            raise NapicsError(f"搜索返回 {r.status_code}", retryable=r.status_code >= 500)
-        body = r.json()
-        if body.get("error") == "no_source":
-            raise NapicsError(body.get("message", "未安装搜索插件"), retryable=False)
-        return [Resource(**item) for item in body.get("results", [])]
+            if not collected:
+                raise NapicsError(f"搜索失败: {e}", retryable=True)
+
+        flattened = [self._flatten(r) for r in collected]
+        flattened.sort(key=lambda x: x.score or 0, reverse=True)
+        return flattened[:limit] if limit else flattened
+
+    @staticmethod
+    def _flatten(d: dict) -> Resource:
+        """napics enrich 结果（quality 子对象）→ Resource，同 agent.py::_flatten_resource。"""
+        q = d.get("quality") or {}
+        if not isinstance(q, dict):
+            q = getattr(q, "__dict__", {}) or {}
+        return Resource(
+            title=d.get("title", ""),
+            source=q.get("source"),
+            indexer=d.get("indexer"),
+            download_url=d.get("download_url", ""),
+            size_gb=d.get("size_gb"),
+            seeders=d.get("seeders"),
+            leechers=d.get("leechers"),
+            resolution=q.get("resolution"),
+            codec=q.get("video_codec"),
+            release_group=q.get("release_group"),
+            has_chinese_sub=q.get("has_chinese_sub"),
+            score=(d.get("quality_score") or 0) + (d.get("match_score") or 0),
+        )
 
     # ── §2.2 创建下载（返回 napics task_id + qb_hash，可能空）──
     def submit_download(
