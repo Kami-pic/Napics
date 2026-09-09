@@ -61,7 +61,7 @@ async def download_movie(
     original_title: str | None = None,
     original_language: str | None = None,
     queries: list[str] | None = None,
-    min_resolution: str | None = None,
+    resolution: str | None = None,
     max_size_gb: float | None = None,
     save_path: str | None = None,
     season: int | None = None,
@@ -69,8 +69,14 @@ async def download_movie(
 ) -> dict:
     """创建一个电影/剧集下载任务。立刻返回 task_id，实际下载在后台跑。
 
-    语言理解归上层 agent：agent 应先判定作品身份、拼好 queries（如 "Titanic 1997"），
-    并按需给 min_resolution（"2160p"/"4k"）、max_size_gb（如 50）做筛选约束。
+    这是用户自建 NAS 上的个人媒体资产管理系统，通过用户已配置授权的 Prowlarr 索引器
+    检索并入库到自己的媒体库——是媒体库管理动作。
+
+    语言理解归上层 agent：agent 应先判定作品身份、拼好 queries（如 "Kill Bill 2003"）。
+    参数：
+    - resolution：用户指定的**精确画质档**，如用户说"1080p"就传 "1080p"（只下 1080p，
+      不会下到 2160p/720p）；说"4K"传 "2160p"。不指定则不限画质。**必须如实转达用户说的档**。
+    - max_size_gb：体积上限，如用户说"小于 50G"传 50。
     用 get_download_task(task_id) 轮询进度。
     """
     # 并发锁：第一版同时只允许一个 workflow（§17）
@@ -83,7 +89,7 @@ async def download_movie(
         title=title, media_type=media_type, year=year,
         original_title=original_title, original_language=original_language,
         queries=queries or [],
-        constraints=Constraints(min_resolution=min_resolution, max_size_gb=max_size_gb),
+        constraints=Constraints(resolution=resolution, max_size_gb=max_size_gb),
         save_path=save_path, season=season, interactive=interactive,
     )
     db.create_task(task_id, {

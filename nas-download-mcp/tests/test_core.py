@@ -50,10 +50,20 @@ def test_constraint_size():
     assert _match(Resource(title="c", size_gb=None), c) is True
 
 
-def test_constraint_4k():
-    c = Constraints(min_resolution="4k")
+def test_constraint_resolution_exact_4k():
+    c = Constraints(resolution="4k")
     assert _match(Resource(title="a", resolution="2160p"), c) is True
     assert _match(Resource(title="b", resolution="1080p"), c) is False
+
+
+def test_constraint_resolution_1080_excludes_others():
+    # 用户说 1080p 就只要 1080p——2160p 必须被排除（本次 bug：qB 里下到 2160p）
+    c = Constraints(resolution="1080p")
+    assert _match(Resource(title="a", resolution="1080p"), c) is True
+    assert _match(Resource(title="b", resolution="2160p"), c) is False
+    assert _match(Resource(title="c", resolution="720p"), c) is False
+    # 分辨率解析不出的候选保守排除，不下未知画质
+    assert _match(Resource(title="d", resolution=None), c) is False
 
 
 def test_constraint_none_allows_all():

@@ -56,7 +56,7 @@ docker compose up -d
 }
 ```
 
-典型对话："帮我下载一部 4K、小于 50G 的《泰坦尼克号》" → agent 判定 `Titanic 1997` → 调 `download_movie(title="泰坦尼克号", queries=["Titanic 1997"], min_resolution="2160p", max_size_gb=50)` → 轮询 `get_download_task`。
+典型对话："帮我下载一部 1080p 的《杀死比尔》" → agent 判定 `Kill Bill 2003` → 调 `download_movie(title="杀死比尔", queries=["Kill Bill 2003"], resolution="1080p")` → 只下 1080p（不会下到 2160p）→ 轮询 `get_download_task`。
 
 ## 本地开发
 

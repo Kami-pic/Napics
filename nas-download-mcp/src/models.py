@@ -119,8 +119,24 @@ class DownloadStatus(BaseModel):
 
 
 # ── download_movie 入参 ──
+def normalize_resolution(s: str) -> str:
+    """把口语分辨率归一到标准档：4k/2160->2160p, 1080->1080p, 720->720p。"""
+    if not s:
+        return ""
+    t = s.lower().strip()
+    if "2160" in t or "4k" in t or "uhd" in t:
+        return "2160p"
+    if "1080" in t:
+        return "1080p"
+    if "720" in t:
+        return "720p"
+    if "480" in t:
+        return "480p"
+    return t
+
+
 class Constraints(BaseModel):
-    min_resolution: Optional[str] = None   # "2160p" / "4k"
+    resolution: Optional[str] = None       # 精确档位："1080p" 就只要 1080p，不要 2160p/720p
     max_size_gb: Optional[float] = None
 
 

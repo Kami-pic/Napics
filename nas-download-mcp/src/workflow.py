@@ -31,16 +31,17 @@ logger = logging.getLogger("nas_download_mcp.workflow")
 
 
 def _res_matches(res: Resource, c: Optional[Constraints]) -> bool:
-    """按约束筛候选（4k / <50g）。约束缺省即不限。"""
+    """按约束筛候选。resolution 是精确档位：要 1080p 就只留 1080p（2160p/720p 都排除）。"""
     if c is None:
         return True
     if c.max_size_gb is not None and res.size_gb is not None and res.size_gb > c.max_size_gb:
         return False
-    if c.min_resolution:
-        want = c.min_resolution.lower().replace("4k", "2160p")
-        got = (res.resolution or "").lower()
-        # 简单档位：要 2160p 就必须命中 2160/4k
-        if "2160" in want and not ("2160" in got or "4k" in got):
+    if c.resolution:
+        from models import normalize_resolution
+        want = normalize_resolution(c.resolution)
+        got = normalize_resolution(res.resolution or "")
+        # 精确匹配用户指定的档；候选分辨率解析不出（got 为空）时保守排除，避免下到未知画质
+        if want and got != want:
             return False
     return True
 
