@@ -5,7 +5,7 @@
 // /m/search（按片名找片子，见 MobileDiscoverSearchClient）。
 // 页面只负责把 URL 参数规范化后交给这里，业务逻辑在 useMobileSearch。
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { EnhancedSearchResult, PanResult } from "@/types";
@@ -13,13 +13,9 @@ import { useMobileSearch } from "@/hooks/mobile/useMobileSearch";
 import { useMobileConfig } from "./MobileProviders";
 import { copyText } from "@/lib/mobile/clipboard";
 import type { MobileSearchQuery } from "@/lib/mobile/mobileRouteUtils";
-import {
-  readSearchHistory,
-  pushSearchHistory,
-  removeSearchHistory,
-} from "@/lib/mobile/searchHistory";
 import MobileShell from "./MobileShell";
 import MobileSearchHeader from "./MobileSearchHeader";
+import MobileSearchTabs from "./MobileSearchTabs";
 import MobileKeywordChain from "./MobileKeywordChain";
 import MobileBtResults from "./MobileBtResults";
 import MobilePanResults from "./MobilePanResults";
@@ -36,25 +32,6 @@ export default function MobileSearchClient({ query }: MobileSearchClientProps) {
   const { search, draft, setDraft, submit, submitKeyword, retry, switchTab, tab } = useMobileSearch(query);
   const { defaultSavePath } = useMobileConfig();
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-
-  // 搜索历史：本地读一次，提交/删除后更新。SSR 下 readSearchHistory 返回空数组。
-  const [history, setHistory] = useState<string[]>([]);
-  useEffect(() => { setHistory(readSearchHistory()); }, []);
-
-  // 有真实查询词、且不在搜索中时把它记进历史（提交只改 URL，真正搜索发生在 effect 里，
-  // 所以这里跟着 query.q 走而不是跟着 submit 走）。
-  useEffect(() => {
-    if (query.q && query.q.trim()) setHistory(pushSearchHistory(query.q));
-  }, [query.q]);
-
-  const onPickHistory = useCallback((keyword: string) => {
-    // 历史词是用户曾经手打的完整词，按原样重搜即可（保留当前媒体上下文）
-    submitKeyword(keyword);
-  }, [submitKeyword]);
-
-  const onRemoveHistory = useCallback((keyword: string) => {
-    setHistory(removeSearchHistory(keyword));
-  }, []);
 
   const onPickKeyword = useCallback((keyword: string) => {
     // 回退词点击 = 想换个更宽/更窄的词搜，丢掉结构化上下文（季号等），
@@ -115,19 +92,25 @@ export default function MobileSearchClient({ query }: MobileSearchClientProps) {
   const searchToast = search.toast;
 
   return (
-    <MobileShell title="搜索资源" subtitle={query.q || undefined} onBack={onBack}>
+    <MobileShell
+      title="搜索资源"
+      subtitle={query.q || undefined}
+      onBack={onBack}
+    >
       <MobileSearchHeader
         draft={draft}
         onDraftChange={setDraft}
         onSubmit={submit}
-        tab={tab}
-        onTabChange={switchTab}
-        btCount={search.filtered.length}
-        panCount={search.panResults.length}
-        history={history}
-        onPickHistory={onPickHistory}
-        onRemoveHistory={onRemoveHistory}
       />
+
+      <div className="pt-3">
+        <MobileSearchTabs
+          tab={tab}
+          onTabChange={switchTab}
+          btCount={search.filtered.length}
+          panCount={search.panResults.length}
+        />
+      </div>
 
       {/* 搜索词回退链：搜完之后让用户看到到底拿哪些词搜的，点某个词可用它重搜
           （网盘源不做回退链）。放在搜索头正下方、结果上方，和桌面一致。 */}

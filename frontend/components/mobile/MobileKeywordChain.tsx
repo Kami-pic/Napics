@@ -21,28 +21,28 @@ export default function MobileKeywordChain({ sourceKeywordInfo, searching, onPic
 
   return (
     <div
-      className="-mx-[var(--m-page-px)] flex items-center gap-1 overflow-x-auto px-[var(--m-page-px)] py-1"
+      className="-mx-[var(--m-page-px)] flex items-center gap-2 overflow-x-auto px-[var(--m-page-px)] py-1"
       style={{ scrollbarWidth: "none" }}
       aria-label="搜索词回退链"
     >
-      <span className="shrink-0 text-[10px] text-[var(--m-text-dim)]">回退匹配</span>
+      <span className="shrink-0 text-xs text-[var(--m-text-dim)]">回退匹配</span>
       {chain.map((item, index) => (
-        <span key={item.keyword} className="flex shrink-0 items-center gap-1">
-          {index > 0 && <span className="text-[10px] text-[var(--m-text-dim)]" aria-hidden="true">→</span>}
+        <span key={item.keyword} className="flex shrink-0 items-center gap-2">
+          {index > 0 && <span className="text-xs text-[var(--m-text-dim)]" aria-hidden="true">→</span>}
           <button
             type="button"
             onClick={() => onPick(item.keyword)}
-            className="whitespace-nowrap rounded-[var(--m-radius-sm)] px-1.5 py-0.5 text-[11px] leading-none"
+            className="flex items-center gap-1 whitespace-nowrap rounded-[var(--m-radius-pill)] px-4 text-sm"
             style={
               item.hit
-                ? { background: "var(--m-accent-weak)", color: "var(--m-accent)" }
-                : { background: "var(--m-surface)", color: "var(--m-text-dim)" }
+                ? { minHeight: "var(--m-touch-min)", background: "var(--m-accent-weak)", color: "var(--m-accent)" }
+                : { minHeight: "var(--m-touch-min)", background: "var(--m-surface)", color: "var(--m-text)", border: "1px solid var(--m-border)" }
             }
             // 命中/未命中不能只靠颜色区分；点击提示让用户知道这是可点的
             title={item.hit ? "命中，点击用这个词重搜" : "没有结果，点击用这个词重搜"}
           >
             {item.keyword}
-            {item.hit && <span className="ml-1" aria-label="命中">✓</span>}
+            {item.hit && <span aria-label="命中">✓</span>}
           </button>
         </span>
       ))}

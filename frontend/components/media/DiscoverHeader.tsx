@@ -1,8 +1,13 @@
 // 发现页两层 sticky 头部（一级 tab + 搜索框 + 二级推荐源 tab）
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { RECOMMEND_TABS, PRIMARY_TABS, EXPLORE_TABS } from "./discoverUtils";
 import type { PrimaryTab } from "./discoverUtils";
+import {
+  readSearchHistory,
+  pushSearchHistory,
+  removeSearchHistory,
+} from "@/lib/mobile/searchHistory";
 
 export interface DiscoverHeaderProps {
   primaryTab: PrimaryTab;
@@ -41,6 +46,25 @@ export default function DiscoverHeader({
   onExploreRefresh, exploreRefreshing,
 }: DiscoverHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [history, setHistory] = useState<string[]>(() => readSearchHistory());
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // 提交搜索：记历史 + 关下拉 + 交给父组件搜。web 与移动版共用同一份历史。
+  const runSearch = (q: string) => {
+    const kw = q.trim();
+    if (!kw) return;
+    setHistory(pushSearchHistory(kw));
+    setHistoryOpen(false);
+    onSearch(kw);
+  };
+  const pickHistory = (kw: string) => {
+    setSearchQuery(kw);
+    setHistory(pushSearchHistory(kw));
+    setHistoryOpen(false);
+    onSearch(kw);
+    scrollToDiscover();
+  };
+  const removeHistory = (kw: string) => { setHistory(removeSearchHistory(kw)); };
 
   return (
     <div ref={stickyHeaderRef} className="sticky top-0 z-20 bg-[#0f0f0f] -mx-6 px-6">
@@ -70,11 +94,35 @@ export default function DiscoverHeader({
             </svg>
             <input ref={inputRef} value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { onSearch(searchQuery); scrollToDiscover(); } }}
-              onFocus={() => scrollToDiscover()}
+              onKeyDown={(e) => { if (e.key === "Enter") { runSearch(searchQuery); scrollToDiscover(); } }}
+              onFocus={() => { setHistoryOpen(true); scrollToDiscover(); }}
+              onBlur={() => setTimeout(() => setHistoryOpen(false), 150)}
               onClick={(e) => e.stopPropagation()}
               placeholder="搜索影片..."
               className="bg-white/[0.04] border border-white/[0.06] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none focus:border-blue-500/50 w-44 placeholder:text-slate-600" />
+            {historyOpen && history.length > 0 && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-white/[0.08] bg-[#1a1a1a] shadow-xl"
+              >
+                {history.map((kw) => (
+                  <div key={kw} className="flex items-center hover:bg-white/[0.06]">
+                    <button type="button"
+                      onMouseDown={(e) => { e.preventDefault(); pickHistory(kw); }}
+                      className="min-w-0 flex-1 truncate px-3 py-1.5 text-left text-xs text-slate-200"
+                      title={kw}>
+                      {kw}
+                    </button>
+                    <button type="button"
+                      onMouseDown={(e) => { e.preventDefault(); removeHistory(kw); }}
+                      aria-label={`删除历史词 ${kw}`}
+                      className="px-2 py-1.5 text-slate-600 hover:text-slate-300">
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

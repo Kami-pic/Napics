@@ -18,6 +18,12 @@ import {
   MOBILE_ROUTES,
 } from "@/lib/mobile/mobileRouteUtils";
 import { useMobilePlugins } from "./MobileProviders";
+import {
+  readSearchHistory,
+  pushSearchHistory,
+  removeSearchHistory,
+  clearSearchHistory,
+} from "@/lib/mobile/searchHistory";
 import MobileStateView, { type MobileViewState } from "./MobileStateView";
 import MobileDiscoverGrid from "./MobileDiscoverGrid";
 
@@ -33,6 +39,9 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
   const [items, setItems] = useState<DoubanHotItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [failed, setFailed] = useState(false);
+  // 搜索历史（片名搜索，与 web 发现页共用一份）。平铺在未搜索时的主页空白处。
+  const [history, setHistory] = useState<string[]>([]);
+  useEffect(() => { setHistory(readSearchHistory()); }, []);
   // 同一个词不重复搜（Strict Mode 会跑两次 effect），也用于识别"换词了"
   const searchedRef = useRef("");
   // 代际：换词后迟到的响应一律丢弃
@@ -54,7 +63,10 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
       const data = await api.doubanSearch(keyword);
       if (generationRef.current !== generation) return;
       const raw = (data.candidates || data.items || []) as unknown[];
-      setItems(raw.map(normalizeItem));
+      const normalized = raw.map(normalizeItem);
+      setItems(normalized);
+      // 出现搜索结果才记历史：拿到结果（哪怕 0 条，也是"搜过了"）后记入
+      setHistory(pushSearchHistory(keyword));
     } catch {
       if (generationRef.current !== generation) return;
       setFailed(true);
@@ -81,6 +93,16 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
     }
     router.replace(discoverSearchUrl(next));
   }, [draft, q, router, runSearch]);
+
+  const onPickHistory = useCallback((keyword: string) => {
+    setDraft(keyword);
+    if (keyword === q) { void runSearch(keyword); return; }
+    router.replace(discoverSearchUrl(keyword));
+  }, [q, router, runSearch]);
+
+  const onRemoveHistory = useCallback((keyword: string) => {
+    setHistory(removeSearchHistory(keyword));
+  }, []);
 
   const onOpen = useCallback((item: DoubanHotItem) => {
     router.push(discoverDetailUrl({
@@ -149,12 +171,56 @@ export default function MobileDiscoverSearchClient({ q }: MobileDiscoverSearchCl
           }
         />
       ) : !q ? (
-        // 还没搜过：不显示空态错误，说清楚这里搜的是什么
-        <p className="px-1 pt-6 text-center text-[13px] text-[var(--m-text-dim)]">
-          按片名找片子，能看到评分和本地是否已有。
-          <br />
-          找种子和网盘资源请到片子详情里点「搜索资源」。
-        </p>
+        // 还没搜过：说清这里搜什么，并把历史词铺在空白处，直接点重搜
+        <div className="flex flex-col gap-4 pt-4">
+          <p className="px-1 text-center text-[13px] text-[var(--m-text-dim)]">
+            按片名找片子，能看到评分和本地是否已有。
+            <br />
+            找种子和网盘资源请到片子详情里点「搜索资源」。
+          </p>
+          {history.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-[var(--m-text-dim)]">最近搜索</span>
+                <button
+                  type="button"
+                  onClick={() => setHistory(clearSearchHistory())}
+                  className="text-xs text-[var(--m-text-dim)] active:text-[var(--m-text)]"
+                >
+                  清空
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {history.map(keyword => (
+                  <span
+                    key={keyword}
+                    className="flex items-center overflow-hidden rounded-[var(--m-radius-pill)]"
+                    style={{ background: "var(--m-surface)", border: "1px solid var(--m-border)" }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onPickHistory(keyword)}
+                      className="max-w-[12rem] truncate px-4 text-sm text-[var(--m-text)]"
+                      style={{ minHeight: "var(--m-touch-min)" }}
+                      title={keyword}
+                    >
+                      {keyword}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveHistory(keyword)}
+                      aria-label={`删除历史词 ${keyword}`}
+                      className="flex items-center justify-center text-[var(--m-text-dim)] active:text-[var(--m-text)]"
+                      style={{ minWidth: "var(--m-touch-min)", minHeight: "var(--m-touch-min)" }}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <MobileStateView
           state={state}

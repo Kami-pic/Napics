@@ -177,3 +177,34 @@ describe("底栏搜索 = 豆瓣搜索", () => {
     expect(mockApi.doubanSearch).not.toHaveBeenCalled();
   });
 });
+
+describe("底栏搜索的历史", () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it("拿到结果后才记历史（不是提交时就记）", async () => {
+    // 用一个能手动 resolve 的 promise 卡住豆瓣返回
+    let resolve!: (v: unknown) => void;
+    mockApi.doubanSearch.mockReturnValue(new Promise(r => { resolve = r; }));
+    await mount("沙丘");
+    // 请求已发出但还没返回：此时不该已经记进历史
+    expect(localStorage.getItem("napics_search_history") || "[]").not.toContain("沙丘");
+    await act(async () => { resolve(CANDIDATES); await Promise.resolve(); });
+    await waitFor(() => expect(localStorage.getItem("napics_search_history")).toContain("沙丘"));
+  });
+
+  it("未搜索时把历史平铺在空白处，点标签重搜", async () => {
+    localStorage.setItem("napics_search_history", JSON.stringify(["三体", "沙丘"]));
+    await mount("");
+    expect(screen.getByText("最近搜索")).toBeTruthy();
+    // 平铺的历史词是可点标签
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "三体" })); });
+    expect(mockRouter.replace).toHaveBeenCalledWith(discoverSearchUrl("三体"));
+  });
+
+  it("清空按钮清掉全部历史", async () => {
+    localStorage.setItem("napics_search_history", JSON.stringify(["三体", "沙丘"]));
+    await mount("");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "清空" })); });
+    expect(screen.queryByText("最近搜索")).toBeNull();
+  });
+});

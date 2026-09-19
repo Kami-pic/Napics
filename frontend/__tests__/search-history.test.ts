@@ -1,10 +1,11 @@
-// 资源搜索历史：上限 10、去重置顶、可单删。
+// 片名搜索历史：上限 10、去重置顶、可单删、可清空。web 发现页与移动版共用一份。
 import { describe, it, expect, beforeEach } from "vitest";
 
 import {
   readSearchHistory,
   pushSearchHistory,
   removeSearchHistory,
+  clearSearchHistory,
   SEARCH_HISTORY_LIMIT,
 } from "@/lib/mobile/searchHistory";
 
@@ -45,8 +46,15 @@ describe("搜索历史", () => {
     expect(readSearchHistory()).toEqual(["三体"]);
   });
 
+  it("清空删掉全部历史", () => {
+    pushSearchHistory("沙丘");
+    pushSearchHistory("三体");
+    expect(clearSearchHistory()).toEqual([]);
+    expect(readSearchHistory()).toEqual([]);
+  });
+
   it("坏数据不炸，返回空数组", () => {
-    localStorage.setItem("napics_mobile_search_history", "{not json");
+    localStorage.setItem("napics_search_history", "{not json");
     expect(readSearchHistory()).toEqual([]);
   });
 });
