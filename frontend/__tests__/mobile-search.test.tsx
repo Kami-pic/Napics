@@ -257,7 +257,9 @@ describe("网盘结果", () => {
       results: [panResult()], groups: {}, source_statuses: [], total: 1,
     });
     renderSearch(makeQuery({ tab: "pan" }));
-    await waitFor(() => expect(screen.getByText("奇怪的律师禹英禑")).toBeInTheDocument());
+    // 用网盘结果专属文本作等待信号：标题「奇怪的律师禹英禑」现在也出现在搜索历史 chip 里，
+    // 用它会 match 到多个元素。
+    await waitFor(() => expect(screen.getByText("夸克")).toBeInTheDocument());
   }
 
   it("展示网盘类型、提取码等信息", async () => {

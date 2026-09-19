@@ -140,13 +140,12 @@ describe("轮询间隔", () => {
 describe("批量清理的任务筛选", () => {
   const tasks = BACKEND_STATUSES.map(status => ({ id: `id-${status}`, status }));
 
-  it("只把真正失败的算进「清理失败」", () => {
-    expect(collectFailedTaskIds(tasks)).toEqual(["id-failed"]);
+  it("把真失败和 lost（下载器里已不存在的僵尸任务）算进「清理失败」", () => {
+    expect(collectFailedTaskIds(tasks).sort()).toEqual(["id-failed", "id-lost"].sort());
   });
 
-  it("lost / unknown 不算失败 —— 它们是对账态，下一轮可能就恢复了", () => {
+  it("unknown 不算失败：它是暂时查不到，下一轮可能就恢复了", () => {
     const ids = collectFailedTaskIds(tasks);
-    expect(ids).not.toContain("id-lost");
     expect(ids).not.toContain("id-unknown");
   });
 

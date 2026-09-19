@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import MobileProviders from "@/components/mobile/MobileProviders";
 import MobileGestureLock from "@/components/mobile/MobileGestureLock";
+import MobileToDesktopHint from "@/components/mobile/MobileToDesktopHint";
 
 export const metadata: Metadata = {
   title: "Napics 移动版",
@@ -28,6 +29,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
     <MobileProviders>
       <MobileGestureLock />
       <div className="m-app">{children}</div>
+      <MobileToDesktopHint />
     </MobileProviders>
   );
 }

@@ -1,7 +1,7 @@
 // 搜索词回退链：桌面弹窗与移动端资源搜索页共用一份汇总逻辑。
 // 用户看到「没有结果」时第一个要问的是"你到底拿什么词搜的"。
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 
 import { buildKeywordChain } from "@/lib/domain/searchKeywords";
 import MobileKeywordChain from "@/components/mobile/MobileKeywordChain";
@@ -46,19 +46,26 @@ describe("MobileKeywordChain", () => {
   const INFO = { nyaa: { searched: ["剃刀边缘 S01", "剃刀边缘"], hit: "剃刀边缘" } };
 
   it("搜完后显示整条链，命中项带对勾（不只靠颜色区分）", () => {
-    render(<MobileKeywordChain sourceKeywordInfo={INFO} searching={false} />);
+    render(<MobileKeywordChain sourceKeywordInfo={INFO} searching={false} onPick={() => {}} />);
     expect(screen.getByLabelText("搜索词回退链")).toBeTruthy();
     expect(screen.getByText("剃刀边缘 S01")).toBeTruthy();
     expect(screen.getByLabelText("命中")).toBeTruthy();
   });
 
+  it("点某个回退词回调该词，让用户能一键换词重搜", () => {
+    const onPick = vi.fn();
+    render(<MobileKeywordChain sourceKeywordInfo={INFO} searching={false} onPick={onPick} />);
+    fireEvent.click(screen.getByText("剃刀边缘 S01"));
+    expect(onPick).toHaveBeenCalledWith("剃刀边缘 S01");
+  });
+
   it("搜索中不显示：链还不完整，会一直跳变", () => {
-    render(<MobileKeywordChain sourceKeywordInfo={INFO} searching />);
+    render(<MobileKeywordChain sourceKeywordInfo={INFO} searching onPick={() => {}} />);
     expect(screen.queryByLabelText("搜索词回退链")).toBeNull();
   });
 
   it("没有回退信息时什么都不渲染，不留空条", () => {
-    render(<MobileKeywordChain sourceKeywordInfo={{}} searching={false} />);
+    render(<MobileKeywordChain sourceKeywordInfo={{}} searching={false} onPick={() => {}} />);
     expect(screen.queryByLabelText("搜索词回退链")).toBeNull();
   });
 });

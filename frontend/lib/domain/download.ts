@@ -70,19 +70,28 @@ export function needsPolling(tasks: readonly Pick<DownloadTask, "status">[]): bo
 }
 
 /**
- * 真正失败的任务 id。
+ * 「清理失败」按钮要清掉的任务 id。
  *
- * 判据是 `tone === "danger"` 而不是硬编码 `status === "failed"`：后端将来把某个
- * 状态标成失败时自动纳入，不用再改这里。
+ * 包含两类：
+ * 1. 真失败（`tone === "danger"`，即 status=failed）——提交/下载确实失败了。
+ * 2. `lost`——种子在下载器里已经不存在（用户删了种子 / 清了 qB）。它虽然被建模成
+ *    对账态，但实际是永远不会恢复的僵尸记录，用户看到的"一大堆失败"就是这批，
+ *    必须能一键清掉。
  *
- * **lost / unknown 不算失败** —— 它们是对账态，下一轮对账可能就恢复了。
- * 清理时把它们一起删掉，等于把正在核对的任务记录抹了。
+ * **`unknown` 不在此列**：它是"下载器暂时查不到"，下一轮对账可能就恢复，清了会误删
+ * 正在核对的任务。
+ *
+ * 判据用 `tone === "danger"` 兜真失败（后端将来把某状态标成失败时自动纳入），
+ * 再显式补 `lost`。
  */
 export function collectFailedTaskIds(
   tasks: readonly Pick<DownloadTask, "id" | "status">[],
 ): string[] {
   return tasks
-    .filter(task => describeDownloadStatus(task.status).tone === "danger")
+    .filter(task => {
+      const meta = describeDownloadStatus(task.status);
+      return meta.tone === "danger" || task.status === "lost";
+    })
     .map(task => task.id);
 }
 

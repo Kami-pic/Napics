@@ -23,6 +23,14 @@ export function useMobilePlugins(): InstalledPluginsState {
   return ctx;
 }
 
+/**
+ * 可选版：不在 Provider 内时返回 null，而不是抛错。
+ * 给「有 Provider 就用、没有也能渲染」的组件用（如下载列表在无 Provider 的测试里）。
+ */
+export function useMobilePluginsOptional(): InstalledPluginsState | null {
+  return useContext(MobilePluginContext);
+}
+
 // ── 配置 ──
 
 export interface MobileConfigState {
