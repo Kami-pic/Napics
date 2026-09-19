@@ -18,6 +18,12 @@ export interface MobileSearchController {
   setDraft: (value: string) => void;
   /** 提交搜索：只改 URL */
   submit: () => void;
+  /**
+   * 用指定词重搜（历史词 / 回退词点击）。plain=true 时**丢掉结构化上下文**
+   * （季号、中英文名、folderType），只用这个纯关键词搜 —— 这样"删掉第三季"
+   * 才真的生效，否则后端会拿残留的季号上下文继续构造带季号的默认词。
+   */
+  submitKeyword: (keyword: string, opts?: { plain?: boolean }) => void;
   /** 同词重试：URL 不变，直接重搜 */
   retry: () => void;
   switchTab: (tab: MobileSearchTab) => void;
@@ -70,6 +76,18 @@ export function useMobileSearch(query: MobileSearchQuery): MobileSearchControlle
     router.replace(resourceSearchUrl({ ...query, q: next }));
   }, [draft, query, router]);
 
+  const submitKeyword = useCallback((keyword: string, opts?: { plain?: boolean }) => {
+    const next = keyword.trim();
+    if (!next) return;
+    setDraft(next);
+    if (opts?.plain) {
+      // 丢掉结构化上下文，只保留 tab / 保存路径 —— 让纯关键词真正生效
+      router.replace(resourceSearchUrl({ q: next, tab: query.tab, savePath: query.savePath }));
+    } else {
+      router.replace(resourceSearchUrl({ ...query, q: next }));
+    }
+  }, [query, router]);
+
   const retry = useCallback(() => {
     if (!query.q) return;
     // 同词重试：URL 不会变，effect 不会重跑，只能直接调
@@ -82,5 +100,5 @@ export function useMobileSearch(query: MobileSearchQuery): MobileSearchControlle
     router.replace(resourceSearchUrl({ ...query, tab }));
   }, [query, router, search]);
 
-  return { search, draft, setDraft, submit, retry, switchTab, tab: query.tab };
+  return { search, draft, setDraft, submit, submitKeyword, retry, switchTab, tab: query.tab };
 }
