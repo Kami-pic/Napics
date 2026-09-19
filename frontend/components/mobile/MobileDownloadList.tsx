@@ -1,11 +1,13 @@
 // 下载任务列表 + 筛选 + 快速同步恢复入口
 "use client";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import MobileStateView from "./MobileStateView";
 import MobileDownloadTaskCard from "./MobileDownloadTaskCard";
 import MobileChipRow from "./MobileChipRow";
+import { useMobilePluginsOptional } from "./MobileProviders";
+import { api } from "@/lib/api";
 import { useMobileDownloads } from "@/hooks/mobile/useMobileDownloads";
 import { useMobileQuickSync } from "@/hooks/mobile/useMobileQuickSync";
 import { MOBILE_ROUTES } from "@/lib/mobile/mobileRouteUtils";
@@ -19,8 +21,33 @@ import {
 export default function MobileDownloadList() {
   const router = useRouter();
   const { entries, loading, loadFailed, hasAttention, refresh } = useMobileDownloads();
+  const plugins = useMobilePluginsOptional();
+  const hasDownload = plugins?.hasDownload ?? false;
   const sync = useMobileQuickSync();
   const [filter, setFilter] = useState<MobileDownloadFilterKey>("all");
+
+  // 「从下载器同步」= 把 qB 里有但 napics 库里没有的任务导入 + 刷新进度，
+  // 和下面的「快速同步」（入库对账 /sync）是两件事，不能合并。web 端下载管理里
+  // 有同名按钮，这里把它继承过来。
+  const [qbSyncing, setQbSyncing] = useState(false);
+  const [qbSyncMsg, setQbSyncMsg] = useState("");
+  const syncFromQb = useCallback(async () => {
+    if (qbSyncing) return;
+    setQbSyncing(true);
+    setQbSyncMsg("");
+    try {
+      const res = await api.syncDownloadProgress();
+      await refresh();
+      const parts: string[] = [];
+      if (res?.imported > 0) parts.push(`导入 ${res.imported} 个`);
+      if (res?.updated > 0) parts.push(`更新 ${res.updated} 个`);
+      setQbSyncMsg(parts.length > 0 ? parts.join("，") : "已同步，无新增");
+    } catch {
+      setQbSyncMsg("同步失败");
+    } finally {
+      setQbSyncing(false);
+    }
+  }, [qbSyncing, refresh]);
 
   const counts = useMemo(() => countByDownloadFilter(entries), [entries]);
   const chips = useMemo(
@@ -49,6 +76,22 @@ export default function MobileDownloadList() {
 
   return (
     <div className="flex flex-col gap-4 pt-3">
+      {/* 从下载器同步：导入 qB 里有但库里没有的任务并刷新进度。有下载插件才显示。 */}
+      {hasDownload && (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { void syncFromQb(); }}
+            disabled={qbSyncing}
+            className="rounded-[var(--m-radius-sm)] px-3 text-xs disabled:opacity-50"
+            style={{ minHeight: "var(--m-touch-min)", background: "var(--m-surface-raised)", color: "var(--m-text)" }}
+          >
+            {qbSyncing ? "同步中…" : "从下载器同步"}
+          </button>
+          {qbSyncMsg && <span className="text-xs text-[var(--m-text-dim)]">{qbSyncMsg}</span>}
+        </div>
+      )}
+
       {entries.length > 0 && (
         <MobileChipRow
           items={chips}
